@@ -302,7 +302,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get photoRestored => 'Fotoğraf geri alındı';
 
   @override
-  String get remainingDeletionRights => 'Kalan Silme Hakkı';
+  String get remainingDeletionRights => 'Kalan Silme';
 
   @override
   String get watchAdToEarn => 'Reklam İzle';
@@ -346,7 +346,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get maybeLater => 'Belki Daha Sonra';
 
   @override
-  String get buyUnlimitedRights => 'Sınırsız Hak Satın Al';
+  String get buyUnlimitedRights => 'Sınırsız Silme Satın Al';
 
   @override
   String get oneTimePayment => 'Tek Seferlik Ödeme';

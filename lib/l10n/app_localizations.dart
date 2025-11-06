@@ -625,7 +625,7 @@ abstract class AppLocalizations {
   /// Remaining deletion rights label
   ///
   /// In en, this message translates to:
-  /// **'Remaining Deletion Rights'**
+  /// **'Remaining Deletion'**
   String get remainingDeletionRights;
 
   /// Button text to watch ad
@@ -709,7 +709,7 @@ abstract class AppLocalizations {
   /// Button text to buy unlimited deletion rights
   ///
   /// In en, this message translates to:
-  /// **'Buy Unlimited Rights'**
+  /// **'Buy Unlimited Deletion'**
   String get buyUnlimitedRights;
 
   /// One time payment label

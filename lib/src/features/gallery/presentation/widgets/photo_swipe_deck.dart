@@ -355,8 +355,8 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck> with TickerProviderStat
               ),
             ),
             // Overlays (TOP): Modern badges: delete (top-left) and keep/gallery (bottom-right)
-            RepaintBoundary(
-              child: Positioned.fill(
+            Positioned.fill(
+              child: RepaintBoundary(
                 child: IgnorePointer(
                   ignoring: true,
                   child: Stack(children: [
@@ -448,7 +448,10 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck> with TickerProviderStat
             ),
           );
         },
-        child: SizedBox.expand(key: ValueKey(asset.id), child: card),
+        child: Container(
+          key: ValueKey(asset.id),
+          child: card,
+        ),
       ),
     );
   }

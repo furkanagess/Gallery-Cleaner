@@ -93,7 +93,7 @@
   "cancel": "İptal",
   "restore": "Geri Al",
   "photoRestored": "Fotoğraf geri alındı",
-  "remainingDeletionRights": "Kalan Silme Hakkı",
+  "remainingDeletionRights": "Kalan Silme",
   "@remainingDeletionRights": {
     "description": "Remaining deletion rights label"
   },
@@ -149,7 +149,7 @@
   "@maybeLater": {
     "description": "Maybe later button text"
   },
-  "buyUnlimitedRights": "Sınırsız Hak Satın Al",
+  "buyUnlimitedRights": "Sınırsız Silme Satın Al",
   "@buyUnlimitedRights": {
     "description": "Button text to buy unlimited deletion rights"
   },

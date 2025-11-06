@@ -299,7 +299,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get photoRestored => 'Photo restored';
 
   @override
-  String get remainingDeletionRights => 'Remaining Deletion Rights';
+  String get remainingDeletionRights => 'Remaining Deletion';
 
   @override
   String get watchAdToEarn => 'Watch Ad';
@@ -343,7 +343,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get maybeLater => 'Maybe Later';
 
   @override
-  String get buyUnlimitedRights => 'Buy Unlimited Rights';
+  String get buyUnlimitedRights => 'Buy Unlimited Deletion';
 
   @override
   String get oneTimePayment => 'One-Time Payment';

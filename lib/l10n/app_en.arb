@@ -372,7 +372,7 @@
   "@photoRestored": {
     "description": "Success message when photo is restored"
   },
-  "remainingDeletionRights": "Remaining Deletion Rights",
+  "remainingDeletionRights": "Remaining Deletion",
   "@remainingDeletionRights": {
     "description": "Remaining deletion rights label"
   },
@@ -428,7 +428,7 @@
   "@maybeLater": {
     "description": "Maybe later button text"
   },
-  "buyUnlimitedRights": "Buy Unlimited Rights",
+  "buyUnlimitedRights": "Buy Unlimited Deletion",
   "@buyUnlimitedRights": {
     "description": "Button text to buy unlimited deletion rights"
   },
