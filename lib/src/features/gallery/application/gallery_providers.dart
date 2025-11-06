@@ -1,7 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/foundation.dart';
 import 'package:photo_manager/photo_manager.dart' as pm;
 
 import '../../../core/services/media_library_service.dart';
+import '../../../core/services/preferences_service.dart';
 import '../../onboarding/application/permissions_controller.dart';
 
 final mediaLibraryServiceProvider = Provider<MediaLibraryService>((ref) {
@@ -13,10 +15,18 @@ final selectedAlbumProvider = StateProvider<pm.AssetPathEntity?>((ref) => null);
 final albumsProvider = FutureProvider<List<pm.AssetPathEntity>>((ref) async {
   final permission = ref.watch(permissionsControllerProvider);
   if (permission != GalleryPermissionStatus.authorized) {
+    // Debug: Permission not granted, return empty list
+    // Using debugPrint here to avoid spamming in release builds
+    debugPrint('📁 [albumsProvider] Permission not authorized → returning empty album list');
     return [];
   }
   final service = ref.watch(mediaLibraryServiceProvider);
+  debugPrint('📁 [albumsProvider] Fetching albums (images only)...');
   final albums = await service.fetchAlbums(onlyAll: false, type: pm.RequestType.image);
+  debugPrint('📁 [albumsProvider] Albums fetched: count=${albums.length}');
+  for (final a in albums) {
+    debugPrint('   • ${a.name} (${a.id}) isAll=${a.isAll}');
+  }
   return albums;
 });
 
@@ -38,10 +48,13 @@ class GalleryPagingController extends StateNotifier<AsyncValue<List<pm.AssetEnti
     try {
       final service = _ref.read(mediaLibraryServiceProvider);
       final album = _ref.read(selectedAlbumProvider);
+      debugPrint('📸 [GalleryPagingController.reload] page=$_page size=$_pageSize album=${album?.name ?? 'All'}');
       final items = await service.fetchRecentAssets(page: _page, pageSize: _pageSize, album: album);
+      debugPrint('📸 [GalleryPagingController.reload] fetched ${items.length} items');
       state = AsyncValue.data(items);
       _canLoadMore = items.length == _pageSize;
     } catch (e, st) {
+      debugPrint('🛑 [GalleryPagingController.reload] error: $e');
       state = AsyncValue.error(e, st);
     }
   }
@@ -54,11 +67,14 @@ class GalleryPagingController extends StateNotifier<AsyncValue<List<pm.AssetEnti
       _page += 1;
       final service = _ref.read(mediaLibraryServiceProvider);
       final album = _ref.read(selectedAlbumProvider);
+      debugPrint('📸 [GalleryPagingController.loadMore] page=$_page size=$_pageSize album=${album?.name ?? 'All'}');
       final next = await service.fetchRecentAssets(page: _page, pageSize: _pageSize, album: album);
       final combined = [...current, ...next];
+      debugPrint('📸 [GalleryPagingController.loadMore] fetched ${next.length} (combined ${combined.length})');
       state = AsyncValue.data(combined);
       _canLoadMore = next.length == _pageSize;
     } catch (e, st) {
+      debugPrint('🛑 [GalleryPagingController.loadMore] error: $e');
       state = AsyncValue.error(e, st);
     }
   }
@@ -71,19 +87,39 @@ final galleryPagingControllerProvider =
 
   // Auto-reload when permission granted or album changes
   ref.listen<GalleryPermissionStatus>(permissionsControllerProvider, (prev, next) {
-    if (next == GalleryPermissionStatus.authorized) {
+    if (next == GalleryPermissionStatus.authorized && prev != next) {
+      debugPrint('🔄 [GalleryPagingController] Permission granted → reload');
       controller.reload();
     }
   });
   ref.listen<pm.AssetPathEntity?>(selectedAlbumProvider, (prev, next) {
-    controller.reload();
+    if (prev != next) {
+      debugPrint('🔄 [GalleryPagingController] Selected album changed: prev=${prev?.name} next=${next?.name}');
+      controller.reload();
+    }
   });
 
   if (permission == GalleryPermissionStatus.authorized) {
+    debugPrint('🔄 [GalleryPagingController] Initial authorized state → initial reload');
     controller.reload();
   }
 
   return controller;
+});
+
+/// Silme hakkı provider'ı
+final deleteLimitProvider = FutureProvider<int>((ref) async {
+  final prefsService = PreferencesService();
+  return await prefsService.getDeleteLimit();
+});
+
+/// Silme hakkını azalt
+final decreaseDeleteLimitProvider = FutureProvider.family<int, int>((ref, amount) async {
+  final prefsService = PreferencesService();
+  final newLimit = await prefsService.decreaseDeleteLimit(amount);
+  // Provider'ı yeniden yükle
+  ref.invalidate(deleteLimitProvider);
+  return newLimit;
 });
 
 

@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photo_manager/photo_manager.dart' as pm;
@@ -21,14 +23,26 @@ class ReviewActionsController extends StateNotifier<List<PendingDeleteAction>> {
 
   Future<void> onKeep(pm.AssetEntity asset) async {
     HapticFeedback.lightImpact();
-    _ref.read(reviewHistoryControllerProvider.notifier).addKeep(asset.id);
+    // Dosya boyutunu al
+    final file = await asset.file;
+    final fileSize = file != null ? await file.length() : 0;
+    _ref.read(reviewHistoryControllerProvider.notifier).addKeep(
+      asset.id,
+      fileSizeBytes: fileSize,
+    );
   }
 
   Future<void> onDelete(pm.AssetEntity asset) async {
     HapticFeedback.heavyImpact();
     // Only queue delete - visual is immediate via card animation
     // Real deletion happens when user taps "Apply"
-    _ref.read(reviewHistoryControllerProvider.notifier).addDeletePending(asset.id);
+    // Dosya boyutunu al
+    final file = await asset.file;
+    final fileSize = file != null ? await file.length() : 0;
+    _ref.read(reviewHistoryControllerProvider.notifier).addDeletePending(
+      asset.id,
+      fileSizeBytes: fileSize,
+    );
     state = [...state, PendingDeleteAction(asset: asset)];
     
     // Add to batch queue (no automatic deletion)
@@ -60,9 +74,48 @@ class ReviewActionsController extends StateNotifier<List<PendingDeleteAction>> {
       final successfulIds = Set<String>.from(deletedIds);
       final rejectedIds = ids.where((id) => !successfulIds.contains(id)).toList();
       
-      // Mark successfully deleted items as applied
+      // Mark successfully deleted items as applied and save thumbnails
       for (final id in successfulIds) {
-        _ref.read(reviewHistoryControllerProvider.notifier).markDeleteApplied(id);
+        // Find the asset to get thumbnail before deletion
+        final pendingAction = state.firstWhere(
+          (e) => e.asset.id == id,
+          orElse: () => throw StateError('Asset not found in pending list'),
+        );
+        
+        // Get thumbnail before marking as applied - küçük boyut kullan (daha hızlı ve daha az yer kaplar)
+        Uint8List? thumbnailBytes;
+        try {
+          // Silinen fotoğraflar için daha küçük thumbnail kullan (200x240)
+          thumbnailBytes = await pendingAction.asset.thumbnailDataWithSize(
+            const pm.ThumbnailSize(200, 240),
+            quality: 75,
+          );
+          
+          // Thumbnail başarıyla alındı, kontrol et
+          if (thumbnailBytes == null || thumbnailBytes.isEmpty) {
+            debugPrint('⚠️ [ReviewActionsController] Thumbnail boş: $id');
+            // Tekrar dene, daha küçük boyutla
+            try {
+              thumbnailBytes = await pendingAction.asset.thumbnailDataWithSize(
+                const pm.ThumbnailSize(150, 180),
+                quality: 70,
+              );
+            } catch (e2) {
+              debugPrint('❌ [ReviewActionsController] Thumbnail alınamadı (2. deneme): $id, $e2');
+            }
+          } else {
+            debugPrint('✅ [ReviewActionsController] Thumbnail başarıyla alındı: $id, boyut: ${thumbnailBytes.length} bytes');
+          }
+        } catch (e) {
+          debugPrint('❌ [ReviewActionsController] Thumbnail alınamadı: $id, $e');
+          // Hata olsa bile devam et, thumbnail olmadan da kaydet
+        }
+        
+        // Thumbnail olsa da olmasa da kaydet
+        await _ref.read(reviewHistoryControllerProvider.notifier).markDeleteApplied(
+          id,
+          thumbnailBytes: thumbnailBytes,
+        );
         // Remove from pending state
         final copy = [...state];
         copy.removeWhere((e) => e.asset.id == id);

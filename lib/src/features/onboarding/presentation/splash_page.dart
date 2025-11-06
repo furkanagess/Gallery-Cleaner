@@ -47,8 +47,20 @@ class _SplashPageState extends ConsumerState<SplashPage> {
     final permissionStatus = ref.read(permissionsControllerProvider);
     
     if (permissionStatus == GalleryPermissionStatus.authorized) {
-      // İzin verilmişse doğrudan start clean page'e git
-      context.go('/start');
+      // İzin verilmişse temizlemeye başlanıp başlanmadığını kontrol et
+      final cleaningStarted = await preferencesService.isCleaningStarted();
+      
+      if (!mounted) return;
+      
+      if (cleaningStarted) {
+        // Temizlemeye başlanmışsa direkt swipe page'e git
+        debugPrint('🚀 [SplashPage] Temizlemeye başlanmış, swipe page\'e yönlendiriliyor');
+        context.go('/swipe');
+      } else {
+        // Temizlemeye başlanmamışsa start clean page'e git
+        debugPrint('🚀 [SplashPage] Temizlemeye başlanmamış, start clean page\'e yönlendiriliyor');
+        context.go('/start');
+      }
     } else {
       // İzin verilmemişse permission page'e git
       context.go('/permission');

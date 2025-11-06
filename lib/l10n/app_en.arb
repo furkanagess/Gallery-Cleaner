@@ -1,0 +1,456 @@
+{
+  "@@locale": "en",
+  "appTitle": "Gallery Cleaner",
+  "@appTitle": {
+    "description": "Application title"
+  },
+  "settings": "Settings",
+  "@settings": {
+    "description": "Settings page title"
+  },
+  "theme": "Theme",
+  "@theme": {
+    "description": "Theme section title"
+  },
+  "light": "Light",
+  "@light": {
+    "description": "Light theme option"
+  },
+  "dark": "Dark",
+  "@dark": {
+    "description": "Dark theme option"
+  },
+  "system": "System",
+  "@system": {
+    "description": "System theme option"
+  },
+  "language": "Language",
+  "@language": {
+    "description": "Language section title"
+  },
+  "turkish": "Turkish",
+  "@turkish": {
+    "description": "Turkish language option"
+  },
+  "english": "English",
+  "@english": {
+    "description": "English language option"
+  },
+  "spanish": "Spanish",
+  "@spanish": {
+    "description": "Spanish language option"
+  },
+  "galleryPermissionRequired": "Gallery permission required.",
+  "@galleryPermissionRequired": {
+    "description": "Message when gallery permission is required"
+  },
+  "grantPermission": "Grant Permission",
+  "@grantPermission": {
+    "description": "Button to grant permission"
+  },
+  "folderTargets": "Folder Targets",
+  "@folderTargets": {
+    "description": "Folder targets tooltip"
+  },
+  "history": "History",
+  "@history": {
+    "description": "History button tooltip"
+  },
+  "swipeLeftToDelete": "Swipe left: Delete",
+  "@swipeLeftToDelete": {
+    "description": "Swipe left instruction"
+  },
+  "swipeRightToKeep": "Swipe right: Keep",
+  "@swipeRightToKeep": {
+    "description": "Swipe right instruction"
+  },
+  "noPhotosToShow": "No photos to show.",
+  "@noPhotosToShow": {
+    "description": "Message when there are no photos"
+  },
+  "selectAlbum": "Select Album",
+  "@selectAlbum": {
+    "description": "Album selection dialog title"
+  },
+  "selectAlbumToView": "Select Album to View",
+  "@selectAlbumToView": {
+    "description": "Album selector label"
+  },
+  "allPhotos": "All Photos",
+  "@allPhotos": {
+    "description": "All photos option"
+  },
+  "changeAlbum": "Change Album",
+  "dragPhotoHere": "Drag photo here",
+  "@changeAlbum": {
+    "description": "Drop zone label for changing album"
+  },
+  "albumNotFound": "Album not found",
+  "@albumNotFound": {
+    "description": "Message when album is not found"
+  },
+  "movingToAlbum": "Moving to {album}...",
+  "@movingToAlbum": {
+    "description": "Message when moving photo to album",
+    "placeholders": {
+      "album": {
+        "type": "String"
+      }
+    }
+  },
+  "movedToAlbum": "Moved to {album}",
+  "@movedToAlbum": {
+    "description": "Success message when photo is moved to album",
+    "placeholders": {
+      "album": {
+        "type": "String"
+      }
+    }
+  },
+  "moveToAlbumFailed": "Failed to move to album. Please try again.",
+  "@moveToAlbumFailed": {
+    "description": "Error message when moving to album fails"
+  },
+  "deleteCount": "{count} Delete",
+  "@deleteCount": {
+    "description": "Button text with delete count",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "compact"
+      }
+    }
+  },
+  "deletePhotos": "Delete Photos ({count})",
+  "@deletePhotos": {
+    "description": "Button text for deleting photos with count",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "applyDeletions": "Apply Deletions",
+  "@applyDeletions": {
+    "description": "Button to apply pending deletions"
+  },
+  "undo": "Undo",
+  "@undo": {
+    "description": "Button to undo last action"
+  },
+  "deleteLimitTitle": "100 Photo Delete Limit",
+  "@deleteLimitTitle": {
+    "description": "Title for delete limit info"
+  },
+  "dailyDeleteLimit": "Your daily delete limit: 100 photos",
+  "@dailyDeleteLimit": {
+    "description": "Daily delete limit message"
+  },
+  "undoAll": "Undo All",
+  "@undoAll": {
+    "description": "Button to undo all pending actions"
+  },
+  "historyAndQueue": "Statistics",
+  "@historyAndQueue": {
+    "description": "Statistics page title"
+  },
+  "noHistoryYet": "No history yet.",
+  "@noHistoryYet": {
+    "description": "Message when there is no history"
+  },
+  "keep": "KEEP",
+  "@keep": {
+    "description": "Keep action type"
+  },
+  "delete": "DELETE",
+  "@delete": {
+    "description": "Delete action type"
+  },
+  "move": "MOVE",
+  "@move": {
+    "description": "Move action type"
+  },
+  "pending": "Pending",
+  "@pending": {
+    "description": "Pending status"
+  },
+  "applied": "Applied",
+  "@applied": {
+    "description": "Applied status"
+  },
+  "undone": "Undone",
+  "@undone": {
+    "description": "Undone status"
+  },
+  "undoAllButton": "Undo All",
+  "@undoAllButton": {
+    "description": "Button to undo all actions"
+  },
+  "deletedSuccessfully": "{count} photos deleted successfully.",
+  "@deletedSuccessfully": {
+    "description": "Success message when photos are deleted",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "compact"
+      }
+    }
+  },
+  "success": "Success!",
+  "@success": {
+    "description": "Success dialog title"
+  },
+  "ok": "OK",
+  "@ok": {
+    "description": "OK button"
+  },
+  "startCleaning": "Start cleaning your gallery",
+  "@startCleaning": {
+    "description": "Title on start clean page"
+  },
+  "swipeCardsDescription": "Swipe cards right: Keep • left: Delete. Drag to top targets to move to folders.",
+  "@swipeCardsDescription": {
+    "description": "Description on start clean page"
+  },
+  "quickSwipe": "Quick swipe",
+  "@quickSwipe": {
+    "description": "Feature chip text"
+  },
+  "dragToFolder": "Drag to folder",
+  "@dragToFolder": {
+    "description": "Feature chip text"
+  },
+  "undoSafety": "Undo safety",
+  "@undoSafety": {
+    "description": "Feature chip text"
+  },
+  "galleryInfo": "Gallery Info",
+  "@galleryInfo": {
+    "description": "Gallery information section title"
+  },
+  "album": "Album",
+  "@album": {
+    "description": "Album label"
+  },
+  "photoVideo": "Photos & Videos",
+  "@photoVideo": {
+    "description": "Photos and videos label"
+  },
+  "totalSize": "Total Size",
+  "@totalSize": {
+    "description": "Total size label"
+  },
+  "galleryInfoLoading": "Loading gallery info...",
+  "@galleryInfoLoading": {
+    "description": "Loading message for gallery info"
+  },
+  "loadingMayTakeFewSeconds": "This process may take a few seconds, please wait",
+  "@loadingMayTakeFewSeconds": {
+    "description": "Message during gallery info loading"
+  },
+  "galleryInfoNotAvailable": "Gallery info not available",
+  "@galleryInfoNotAvailable": {
+    "description": "Error message when gallery info cannot be retrieved"
+  },
+  "tryAgain": "Try Again",
+  "@tryAgain": {
+    "description": "Retry button"
+  },
+  "startCleaningButton": "Start Cleaning",
+  "@startCleaningButton": {
+    "description": "Button to start cleaning"
+  },
+  "loading": "Loading...",
+  "@loading": {
+    "description": "Loading text"
+  },
+  "galleryInfoNotLoaded": "Gallery info could not be loaded",
+  "@galleryInfoNotLoaded": {
+    "description": "Error message when gallery info fails to load"
+  },
+  "grantPermissionToStart": "Grant photo access permission to start",
+  "@grantPermissionToStart": {
+    "description": "Message when permission is needed"
+  },
+  "start": "Start",
+  "@start": {
+    "description": "Start button"
+  },
+  "managePermissionsInSettings": "Manage Permissions in Settings",
+  "@managePermissionsInSettings": {
+    "description": "Button to open settings for permissions"
+  },
+  "iosDeleteNote": "On iOS, deletions are moved to \"Recently Deleted\" and can be recovered within 30 days.",
+  "@iosDeleteNote": {
+    "description": "Note about iOS deletion behavior"
+  },
+  "swipeLeftToDeleteTitle": "Swipe Left to Delete,\nSwipe Right to Keep",
+  "@swipeLeftToDeleteTitle": {
+    "description": "Onboarding page 1 title"
+  },
+  "swipeLeftToDeleteDescription": "Quickly review your photos by swiping cards left or right. Swipe right to keep, swipe left to delete.",
+  "@swipeLeftToDeleteDescription": {
+    "description": "Onboarding page 1 description"
+  },
+  "organizeAlbumsTitle": "Organize Your\nAlbums",
+  "@organizeAlbumsTitle": {
+    "description": "Onboarding page 2 title"
+  },
+  "organizeAlbumsDescription": "Drag your photos to the albums above to organize them. Organize your folders and move your photos wherever you want.",
+  "@organizeAlbumsDescription": {
+    "description": "Onboarding page 2 description"
+  },
+  "deleteUselessPhotosTitle": "Delete Useless Bad\nPhotos",
+  "@deleteUselessPhotosTitle": {
+    "description": "Onboarding page 3 title"
+  },
+  "deleteUselessPhotosDescription": "Delete blurry, incorrectly taken, or unnecessary photos to free up space on your phone. Clean up your storage and make more room.",
+  "@deleteUselessPhotosDescription": {
+    "description": "Onboarding page 3 description"
+  },
+  "skip": "Skip",
+  "@skip": {
+    "description": "Skip button"
+  },
+  "continueButton": "Continue",
+  "@continueButton": {
+    "description": "Continue button"
+  },
+  "startButton": "Start",
+  "@startButton": {
+    "description": "Start button"
+  },
+  "galleryPermission": "Gallery Permission",
+  "@galleryPermission": {
+    "description": "Gallery permission page title"
+  },
+  "photoLibraryAccessRequired": "Photo library access is required",
+  "@photoLibraryAccessRequired": {
+    "description": "Permission request title"
+  },
+  "permissionRequestDescription": "We need access to your photos to organize with swipe. You can manage this anytime from settings.",
+  "@permissionRequestDescription": {
+    "description": "Permission request description"
+  },
+  "allowAccess": "Allow Access",
+  "@allowAccess": {
+    "description": "Button to allow access"
+  },
+  "openSettings": "Open Settings",
+  "@openSettings": {
+    "description": "Button to open settings"
+  },
+  "checkAgain": "Check Again",
+  "@checkAgain": {
+    "description": "Button to check permission again"
+  },
+  "weNeedYourAccess": "We need your access",
+  "@weNeedYourAccess": {
+    "description": "Background page title when permission dialog is shown"
+  },
+  "recentlyDeleted": "Recently Deleted Photos",
+  "@recentlyDeleted": {
+    "description": "Title for recently deleted photos section"
+  },
+  "restorePhoto": "Restore Photo",
+  "@restorePhoto": {
+    "description": "Dialog title for restoring a photo"
+  },
+  "restorePhotoMessage": "This photo will be restored. Do you want to continue?",
+  "@restorePhotoMessage": {
+    "description": "Message in restore photo dialog"
+  },
+  "cancel": "Cancel",
+  "@cancel": {
+    "description": "Cancel button"
+  },
+  "restore": "Restore",
+  "@restore": {
+    "description": "Restore button"
+  },
+  "photoRestored": "Photo restored",
+  "@photoRestored": {
+    "description": "Success message when photo is restored"
+  },
+  "remainingDeletionRights": "Remaining Deletion Rights",
+  "@remainingDeletionRights": {
+    "description": "Remaining deletion rights label"
+  },
+  "watchAdToEarn": "Watch Ad",
+  "@watchAdToEarn": {
+    "description": "Button text to watch ad"
+  },
+  "earnDeletionRights": "+20 Deletions",
+  "@earnDeletionRights": {
+    "description": "Text showing deletion rights earned from watching ad"
+  },
+  "adNotReady": "Ad is not ready yet. Please try again in a few seconds.",
+  "@adNotReady": {
+    "description": "Message when ad is not ready"
+  },
+  "earnedDeletionRights": "You earned 20 deletion rights!",
+  "@earnedDeletionRights": {
+    "description": "Success message when user earns deletion rights from ad"
+  },
+  "goPremium": "Go Premium",
+  "@goPremium": {
+    "description": "Button text to go premium"
+  },
+  "premiumTitle": "Go Premium",
+  "@premiumTitle": {
+    "description": "Premium dialog title"
+  },
+  "premiumDescription": "Get unlimited deletion rights and access to all features with Premium membership!",
+  "@premiumDescription": {
+    "description": "Premium dialog description"
+  },
+  "premiumFeatures": "Premium Features",
+  "@premiumFeatures": {
+    "description": "Premium features title"
+  },
+  "unlimitedDeletions": "Unlimited deletion rights",
+  "@unlimitedDeletions": {
+    "description": "Unlimited deletions feature"
+  },
+  "noAds": "Ad-free experience",
+  "@noAds": {
+    "description": "No ads feature"
+  },
+  "prioritySupport": "Priority support",
+  "@prioritySupport": {
+    "description": "Priority support feature"
+  },
+  "upgradeNow": "Upgrade Now",
+  "@upgradeNow": {
+    "description": "Upgrade button text"
+  },
+  "maybeLater": "Maybe Later",
+  "@maybeLater": {
+    "description": "Maybe later button text"
+  },
+  "buyUnlimitedRights": "Buy Unlimited Rights",
+  "@buyUnlimitedRights": {
+    "description": "Button text to buy unlimited deletion rights"
+  },
+  "oneTimePayment": "One-Time Payment",
+  "@oneTimePayment": {
+    "description": "One time payment label"
+  },
+  "unlimitedDeletions": "Unlimited deletion rights",
+  "@unlimitedDeletions": {
+    "description": "Unlimited deletions feature"
+  },
+  "noMoreAds": "No more ads",
+  "@noMoreAds": {
+    "description": "No more ads feature"
+  },
+  "lifetimeAccess": "Lifetime access",
+  "@lifetimeAccess": {
+    "description": "Lifetime access feature"
+  },
+  "purchaseNow": "Purchase Now",
+  "@purchaseNow": {
+    "description": "Purchase now button text"
+  }
+}
+

@@ -1,0 +1,177 @@
+{
+  "@@locale": "es",
+  "appTitle": "Limpiador de Galería",
+  "settings": "Configuración",
+  "theme": "Tema",
+  "light": "Claro",
+  "dark": "Oscuro",
+  "system": "Sistema",
+  "language": "Idioma",
+  "turkish": "Turco",
+  "english": "Inglés",
+  "spanish": "Español",
+  "galleryPermissionRequired": "Se requiere permiso de galería.",
+  "grantPermission": "Conceder Permiso",
+  "folderTargets": "Carpetas Objetivo",
+  "history": "Historial",
+  "swipeLeftToDelete": "Deslizar izquierda: Eliminar",
+  "swipeRightToKeep": "Deslizar derecha: Mantener",
+  "noPhotosToShow": "No hay fotos para mostrar.",
+  "selectAlbum": "Seleccionar Álbum",
+  "selectAlbumToView": "Seleccionar Álbum para Ver",
+  "allPhotos": "Todas las Fotos",
+  "changeAlbum": "Cambiar Álbum",
+  "dragPhotoHere": "Arrastra la foto aquí",
+  "albumNotFound": "Álbum no encontrado",
+  "movingToAlbum": "Moviendo a {album}...",
+  "movedToAlbum": "Movido a {album}",
+  "moveToAlbumFailed": "Error al mover al álbum. Por favor, inténtalo de nuevo.",
+  "deleteCount": "{count} Eliminar",
+  "deletePhotos": "Eliminar Fotos ({count})",
+  "applyDeletions": "Aplicar Eliminaciones",
+  "undo": "Deshacer",
+  "undoAll": "Deshacer Todo",
+  "deleteLimitTitle": "Límite de 100 Fotos para Eliminar",
+  "@deleteLimitTitle": {
+    "description": "Title for delete limit info"
+  },
+  "dailyDeleteLimit": "Tu límite diario de eliminación: 100 fotos",
+  "@dailyDeleteLimit": {
+    "description": "Daily delete limit message"
+  },
+  "historyAndQueue": "Estadísticas",
+  "noHistoryYet": "Aún no hay historial.",
+  "keep": "MANTENER",
+  "delete": "ELIMINAR",
+  "move": "MOVER",
+  "pending": "Pendiente",
+  "applied": "Aplicado",
+  "undone": "Deshecho",
+  "undoAllButton": "Deshacer Todo",
+  "deletedSuccessfully": "{count} fotos eliminadas exitosamente.",
+  "success": "¡Éxito!",
+  "ok": "Aceptar",
+  "startCleaning": "Comienza a\nlimpiar tu galería",
+  "swipeCardsDescription": "Desliza las tarjetas a la derecha: Mantener • izquierda: Eliminar. Arrastra a los objetivos superiores para mover a carpetas.",
+  "quickSwipe": "Deslizamiento rápido",
+  "dragToFolder": "Arrastrar a carpeta",
+  "undoSafety": "Seguridad de deshacer",
+  "galleryInfo": "Información de Galería",
+  "album": "Álbum",
+  "photoVideo": "Fotos y Videos",
+  "totalSize": "Tamaño Total",
+  "galleryInfoLoading": "Cargando información de galería...",
+  "loadingMayTakeFewSeconds": "Este proceso puede tardar unos segundos, por favor espera",
+  "galleryInfoNotAvailable": "Información de galería no disponible",
+  "tryAgain": "Intentar de Nuevo",
+  "startCleaningButton": "Comenzar a Limpiar",
+  "loading": "Cargando...",
+  "galleryInfoNotLoaded": "No se pudo cargar la información de la galería",
+  "grantPermissionToStart": "Concede permiso de acceso a fotos para comenzar",
+  "start": "Comenzar",
+  "managePermissionsInSettings": "Gestionar Permisos en Configuración",
+  "iosDeleteNote": "En iOS, las eliminaciones se mueven a \"Eliminados Recientes\" y se pueden recuperar dentro de 30 días.",
+  "swipeLeftToDeleteTitle": "Deslizar Izquierda para Eliminar,\nDeslizar Derecha para Mantener",
+  "swipeLeftToDeleteDescription": "Revisa rápidamente tus fotos deslizando las tarjetas a la izquierda o derecha. Desliza a la derecha para mantener, desliza a la izquierda para eliminar.",
+  "organizeAlbumsTitle": "Organiza tus\nÁlbumes",
+  "organizeAlbumsDescription": "Arrastra tus fotos a los álbumes superiores para organizarlas. Organiza tus carpetas y mueve tus fotos donde quieras.",
+  "deleteUselessPhotosTitle": "Elimina Fotos Inútiles\ny Malas",
+  "deleteUselessPhotosDescription": "Elimina fotos borrosas, tomadas incorrectamente o innecesarias para liberar espacio en tu teléfono. Limpia tu almacenamiento y crea más espacio.",
+  "skip": "Saltar",
+  "continueButton": "Continuar",
+  "startButton": "Comenzar",
+  "galleryPermission": "Permiso de Galería",
+  "photoLibraryAccessRequired": "Se requiere acceso a la biblioteca de fotos",
+  "permissionRequestDescription": "Necesitamos acceso a tus fotos para organizar con deslizamiento. Puedes gestionar esto en cualquier momento desde la configuración.",
+  "allowAccess": "Permitir Acceso",
+  "openSettings": "Abrir Configuración",
+  "checkAgain": "Verificar de Nuevo",
+  "weNeedYourAccess": "Necesitamos tu acceso",
+  "recentlyDeleted": "Fotos Eliminadas Recientemente",
+  "restorePhoto": "Restaurar Foto",
+  "restorePhotoMessage": "Esta foto será restaurada. ¿Deseas continuar?",
+  "cancel": "Cancelar",
+  "restore": "Restaurar",
+  "photoRestored": "Foto restaurada",
+  "remainingDeletionRights": "Derechos de Eliminación Restantes",
+  "@remainingDeletionRights": {
+    "description": "Remaining deletion rights label"
+  },
+  "watchAdToEarn": "Ver Anuncio",
+  "@watchAdToEarn": {
+    "description": "Button text to watch ad"
+  },
+  "earnDeletionRights": "+20 Eliminaciones",
+  "@earnDeletionRights": {
+    "description": "Text showing deletion rights earned from watching ad"
+  },
+  "adNotReady": "El anuncio aún no está listo. Por favor, inténtalo de nuevo en unos segundos.",
+  "@adNotReady": {
+    "description": "Message when ad is not ready"
+  },
+  "earnedDeletionRights": "¡Ganaste 20 derechos de eliminación!",
+  "@earnedDeletionRights": {
+    "description": "Success message when user earns deletion rights from ad"
+  },
+  "goPremium": "Hazte Premium",
+  "@goPremium": {
+    "description": "Button text to go premium"
+  },
+  "premiumTitle": "Hazte Premium",
+  "@premiumTitle": {
+    "description": "Premium dialog title"
+  },
+  "premiumDescription": "¡Obtén derechos de eliminación ilimitados y acceso a todas las funciones con la membresía Premium!",
+  "@premiumDescription": {
+    "description": "Premium dialog description"
+  },
+  "premiumFeatures": "Características Premium",
+  "@premiumFeatures": {
+    "description": "Premium features title"
+  },
+  "unlimitedDeletions": "Derechos de eliminación ilimitados",
+  "@unlimitedDeletions": {
+    "description": "Unlimited deletions feature"
+  },
+  "noAds": "Experiencia sin anuncios",
+  "@noAds": {
+    "description": "No ads feature"
+  },
+  "prioritySupport": "Soporte prioritario",
+  "@prioritySupport": {
+    "description": "Priority support feature"
+  },
+  "upgradeNow": "Actualizar Ahora",
+  "@upgradeNow": {
+    "description": "Upgrade button text"
+  },
+  "maybeLater": "Tal Vez Más Tarde",
+  "@maybeLater": {
+    "description": "Maybe later button text"
+  },
+  "buyUnlimitedRights": "Comprar Derechos Ilimitados",
+  "@buyUnlimitedRights": {
+    "description": "Button text to buy unlimited deletion rights"
+  },
+  "oneTimePayment": "Pago Único",
+  "@oneTimePayment": {
+    "description": "One time payment label"
+  },
+  "unlimitedDeletions": "Derechos de eliminación ilimitados",
+  "@unlimitedDeletions": {
+    "description": "Unlimited deletions feature"
+  },
+  "noMoreAds": "Sin más anuncios",
+  "@noMoreAds": {
+    "description": "No more ads feature"
+  },
+  "lifetimeAccess": "Acceso de por vida",
+  "@lifetimeAccess": {
+    "description": "Lifetime access feature"
+  },
+  "purchaseNow": "Comprar Ahora",
+  "@purchaseNow": {
+    "description": "Purchase now button text"
+  }
+}
+

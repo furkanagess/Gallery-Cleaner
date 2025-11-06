@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'dart:math' as math;
+import '../../../../../l10n/app_localizations.dart';
 
 import '../application/onboarding_controller.dart';
 
@@ -54,9 +55,15 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                 padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
                 child: Align(
                   alignment: Alignment.topRight,
-                  child: _ModernSkipButton(
-                    onPressed: _completeOnboarding,
-                    theme: theme,
+                  child: Builder(
+                    builder: (ctx) {
+                      final l10n = AppLocalizations.of(ctx)!;
+                      return _ModernSkipButton(
+                        onPressed: _completeOnboarding,
+                        theme: theme,
+                        l10n: l10n,
+                      );
+                    },
                   ),
                 ),
               ),
@@ -104,10 +111,16 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
             // Next/Start button
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-              child: _ModernActionButton(
-                onPressed: _nextPage,
-                isLastPage: _currentPage == 2,
-                theme: theme,
+              child: Builder(
+                builder: (ctx) {
+                  final l10n = AppLocalizations.of(ctx)!;
+                  return _ModernActionButton(
+                    onPressed: _nextPage,
+                    isLastPage: _currentPage == 2,
+                    theme: theme,
+                    l10n: l10n,
+                  );
+                },
               ),
             ),
           ],
@@ -274,20 +287,30 @@ class _OnboardingSlide2 extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 48),
-          Text(
-            'Albümlerini\nOrganize Et',
-            textAlign: TextAlign.center,
-            style: theme.textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+          Builder(
+            builder: (ctx) {
+              final l10n = AppLocalizations.of(ctx)!;
+              return Text(
+                l10n.organizeAlbumsTitle,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              );
+            },
           ),
           const SizedBox(height: 16),
-          Text(
-            'Fotoğraflarınızı üstteki albümlere sürükleyerek düzenleyin. Klasörlerinizi organize edin ve fotoğraflarınızı istediğiniz yere taşıyın.',
-            textAlign: TextAlign.center,
-            style: theme.textTheme.bodyLarge?.copyWith(
-              color: theme.textTheme.bodyMedium?.color?.withOpacity(0.8),
-            ),
+          Builder(
+            builder: (ctx) {
+              final l10n = AppLocalizations.of(ctx)!;
+              return Text(
+                l10n.organizeAlbumsDescription,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: theme.textTheme.bodyMedium?.color?.withOpacity(0.8),
+                ),
+              );
+            },
           ),
         ],
       ),
@@ -356,20 +379,30 @@ class _OnboardingSlide3 extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 48),
-          Text(
-            'Kullanışsız Kötü\nFotoğrafları Sil',
-            textAlign: TextAlign.center,
-            style: theme.textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+          Builder(
+            builder: (ctx) {
+              final l10n = AppLocalizations.of(ctx)!;
+              return Text(
+                l10n.deleteUselessPhotosTitle,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              );
+            },
           ),
           const SizedBox(height: 16),
-          Text(
-            'Telefonunda yer açmak için bulanık, yanlış çekilmiş veya gereksiz fotoğrafları silin. Depolama alanınızı temizleyin ve daha fazla yer açın.',
-            textAlign: TextAlign.center,
-            style: theme.textTheme.bodyLarge?.copyWith(
-              color: theme.textTheme.bodyMedium?.color?.withOpacity(0.8),
-            ),
+          Builder(
+            builder: (ctx) {
+              final l10n = AppLocalizations.of(ctx)!;
+              return Text(
+                l10n.deleteUselessPhotosDescription,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: theme.textTheme.bodyMedium?.color?.withOpacity(0.8),
+                ),
+              );
+            },
           ),
         ],
       ),
@@ -410,10 +443,12 @@ class _ModernSkipButton extends StatelessWidget {
   const _ModernSkipButton({
     required this.onPressed,
     required this.theme,
+    required this.l10n,
   });
 
   final VoidCallback onPressed;
   final ThemeData theme;
+  final AppLocalizations l10n;
 
   @override
   Widget build(BuildContext context) {
@@ -449,7 +484,7 @@ class _ModernSkipButton extends StatelessWidget {
               ),
               const SizedBox(width: 6),
               Text(
-                'Atla',
+                l10n.skip,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   fontWeight: FontWeight.w500,
                   color: theme.colorScheme.onSurface.withOpacity(0.8),
@@ -468,11 +503,13 @@ class _ModernActionButton extends StatelessWidget {
     required this.onPressed,
     required this.isLastPage,
     required this.theme,
+    required this.l10n,
   });
 
   final VoidCallback onPressed;
   final bool isLastPage;
   final ThemeData theme;
+  final AppLocalizations l10n;
 
   @override
   Widget build(BuildContext context) {
@@ -512,7 +549,7 @@ class _ModernActionButton extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Center(
               child: Text(
-                isLastPage ? 'Başla' : 'Devam Et',
+                isLastPage ? l10n.startButton : l10n.continueButton,
                 style: theme.textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: theme.colorScheme.onPrimary,

@@ -1,0 +1,177 @@
+{
+  "@@locale": "tr",
+  "appTitle": "Galeri Temizleyici",
+  "settings": "Ayarlar",
+  "theme": "Tema",
+  "light": "Açık",
+  "dark": "Koyu",
+  "system": "Sistem",
+  "language": "Dil",
+  "turkish": "Türkçe",
+  "english": "İngilizce",
+  "spanish": "İspanyolca",
+  "galleryPermissionRequired": "Galeri izni gerekli.",
+  "grantPermission": "İzin Ver",
+  "folderTargets": "Klasör Hedefleri",
+  "history": "Geçmiş",
+  "swipeLeftToDelete": "Sola kaydır: Sil",
+  "swipeRightToKeep": "Sağa kaydır: Tut",
+  "noPhotosToShow": "Gösterilecek fotoğraf yok.",
+  "selectAlbum": "Albüm Seç",
+  "selectAlbumToView": "Görüntülenecek Albüm Seç",
+  "allPhotos": "Tüm Fotoğraflar",
+  "changeAlbum": "Albüm Değiştir",
+  "dragPhotoHere": "Fotoğrafı buraya sürükleyin",
+  "albumNotFound": "Albüm bulunamadı",
+  "movingToAlbum": "{album} albümüne taşınıyor...",
+  "movedToAlbum": "{album} albümüne taşındı",
+  "moveToAlbumFailed": "Albüme taşıma başarısız oldu. Lütfen tekrar deneyin.",
+  "deleteCount": "{count} Sil",
+  "deletePhotos": "Fotoğrafları sil ({count})",
+  "applyDeletions": "Silme İşlemlerini Uygula",
+  "undo": "Geri Al",
+  "undoAll": "Hepsini Geri Al",
+  "deleteLimitTitle": "100 Görsel Silme Hakkı",
+  "@deleteLimitTitle": {
+    "description": "Title for delete limit info"
+  },
+  "dailyDeleteLimit": "Günlük silme limitiniz: 100 görsel",
+  "@dailyDeleteLimit": {
+    "description": "Daily delete limit message"
+  },
+  "historyAndQueue": "İstatistikler",
+  "noHistoryYet": "Henüz geçmiş yok.",
+  "keep": "TUT",
+  "delete": "SİL",
+  "move": "TAŞI",
+  "pending": "Bekliyor",
+  "applied": "Uygulandı",
+  "undone": "Geri Alındı",
+  "undoAllButton": "Hepsini Undo",
+  "deletedSuccessfully": "{count} fotoğraf başarıyla silindi.",
+  "success": "Başarılı!",
+  "ok": "Tamam",
+  "startCleaning": "Galerini\ntemizlemeye başla",
+  "swipeCardsDescription": "Kartları sağa kaydır: Tut • sola kaydır: Sil. Üst hedeflere sürükleyerek klasörlere taşı.",
+  "quickSwipe": "Hızlı swipe",
+  "dragToFolder": "Klasöre sürükle",
+  "undoSafety": "Undo güvenliği",
+  "galleryInfo": "Galeri Bilgileri",
+  "album": "Albüm",
+  "photoVideo": "Fotoğraf & Video",
+  "totalSize": "Toplam Boyut",
+  "galleryInfoLoading": "Galeri bilgileri yükleniyor...",
+  "loadingMayTakeFewSeconds": "Bu işlem birkaç saniye sürebilir lütfen bekleyiniz",
+  "galleryInfoNotAvailable": "Galeri bilgileri alınamadı",
+  "tryAgain": "Tekrar Dene",
+  "startCleaningButton": "Temizlemeye Başla",
+  "loading": "Yükleniyor...",
+  "galleryInfoNotLoaded": "Galeri bilgileri yüklenemedi",
+  "grantPermissionToStart": "Başlamak için fotoğraf erişimine izin ver",
+  "start": "Başla",
+  "managePermissionsInSettings": "İzinleri Ayarlarda Yönet",
+  "iosDeleteNote": "iOS'ta silmeler \"Recently Deleted\"e taşınır ve 30 gün içinde geri alınabilir.",
+  "swipeLeftToDeleteTitle": "Sola Kaydırarak Sil,\nSağa Kaydırarak Tut",
+  "swipeLeftToDeleteDescription": "Fotoğraflarınızı hızlca gözden geçirmek için kartları sağa veya sola kaydırın. Sağa kaydırarak tutun, sola kaydırarak silin.",
+  "organizeAlbumsTitle": "Albümlerini\nOrganize Et",
+  "organizeAlbumsDescription": "Fotoğraflarınızı üstteki albümlere sürükleyerek düzenleyin. Klasörlerinizi organize edin ve fotoğraflarınızı istediğiniz yere taşıyın.",
+  "deleteUselessPhotosTitle": "Kullanışsız Kötü\nFotoğrafları Sil",
+  "deleteUselessPhotosDescription": "Telefonunda yer açmak için bulanık, yanlış çekilmiş veya gereksiz fotoğrafları silin. Depolama alanınızı temizleyin ve daha fazla yer açın.",
+  "skip": "Atla",
+  "continueButton": "Devam Et",
+  "startButton": "Başla",
+  "galleryPermission": "Galeri İzni",
+  "photoLibraryAccessRequired": "Fotoğraf kütüphanesine erişim gerekli",
+  "permissionRequestDescription": "Swipe ile düzenlemek için fotoğraflarına erişim iznine ihtiyacımız var. İstediğin zaman ayarlardan yönetebilirsin.",
+  "allowAccess": "İzin Ver",
+  "openSettings": "Ayarları Aç",
+  "checkAgain": "Yeniden Kontrol Et",
+  "weNeedYourAccess": "Erişiminize ihtiyacımız var",
+  "recentlyDeleted": "Son Silinen Fotoğraflar",
+  "restorePhoto": "Fotoğrafı Geri Al",
+  "restorePhotoMessage": "Bu fotoğraf geri alınacak. Devam etmek istiyor musunuz?",
+  "cancel": "İptal",
+  "restore": "Geri Al",
+  "photoRestored": "Fotoğraf geri alındı",
+  "remainingDeletionRights": "Kalan Silme Hakkı",
+  "@remainingDeletionRights": {
+    "description": "Remaining deletion rights label"
+  },
+  "watchAdToEarn": "Reklam İzle",
+  "@watchAdToEarn": {
+    "description": "Button text to watch ad"
+  },
+  "earnDeletionRights": "+20 Silme",
+  "@earnDeletionRights": {
+    "description": "Text showing deletion rights earned from watching ad"
+  },
+  "adNotReady": "Reklam henüz hazır değil. Lütfen birkaç saniye sonra tekrar deneyin.",
+  "@adNotReady": {
+    "description": "Message when ad is not ready"
+  },
+  "earnedDeletionRights": "20 silme hakkı kazandınız!",
+  "@earnedDeletionRights": {
+    "description": "Success message when user earns deletion rights from ad"
+  },
+  "goPremium": "Premium Ol",
+  "@goPremium": {
+    "description": "Button text to go premium"
+  },
+  "premiumTitle": "Premium'a Geç",
+  "@premiumTitle": {
+    "description": "Premium dialog title"
+  },
+  "premiumDescription": "Premium üyelik ile sınırsız silme hakkı kazanın ve tüm özelliklere erişin!",
+  "@premiumDescription": {
+    "description": "Premium dialog description"
+  },
+  "premiumFeatures": "Premium Özellikler",
+  "@premiumFeatures": {
+    "description": "Premium features title"
+  },
+  "unlimitedDeletions": "Sınırsız silme hakkı",
+  "@unlimitedDeletions": {
+    "description": "Unlimited deletions feature"
+  },
+  "noAds": "Reklamsız deneyim",
+  "@noAds": {
+    "description": "No ads feature"
+  },
+  "prioritySupport": "Öncelikli destek",
+  "@prioritySupport": {
+    "description": "Priority support feature"
+  },
+  "upgradeNow": "Şimdi Yükselt",
+  "@upgradeNow": {
+    "description": "Upgrade button text"
+  },
+  "maybeLater": "Belki Daha Sonra",
+  "@maybeLater": {
+    "description": "Maybe later button text"
+  },
+  "buyUnlimitedRights": "Sınırsız Hak Satın Al",
+  "@buyUnlimitedRights": {
+    "description": "Button text to buy unlimited deletion rights"
+  },
+  "oneTimePayment": "Tek Seferlik Ödeme",
+  "@oneTimePayment": {
+    "description": "One time payment label"
+  },
+  "unlimitedDeletions": "Sınırsız silme hakkı",
+  "@unlimitedDeletions": {
+    "description": "Unlimited deletions feature"
+  },
+  "noMoreAds": "Artık reklam yok",
+  "@noMoreAds": {
+    "description": "No more ads feature"
+  },
+  "lifetimeAccess": "Ömür boyu erişim",
+  "@lifetimeAccess": {
+    "description": "Lifetime access feature"
+  },
+  "purchaseNow": "Şimdi Satın Al",
+  "@purchaseNow": {
+    "description": "Purchase now button text"
+  }
+}
+

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:photo_manager/photo_manager.dart' as pm;
 import '../../../../app/theme/app_theme.dart';
+import '../../../../../l10n/app_localizations.dart';
 import '../../../../core/services/sound_service.dart';
 
 enum SwipeDecision { keep, delete }
@@ -20,7 +21,7 @@ class PhotoSwipeDeck extends StatefulWidget {
   final List<pm.AssetEntity> assets;
   final void Function(pm.AssetEntity asset, SwipeDecision decision) onDecision;
   final void Function(Offset globalPosition)? onDragUpdate;
-  final void Function(Offset globalPosition)? onDragEnd;
+  final void Function(pm.AssetEntity asset, Offset globalPosition)? onDragEnd;
   final bool Function()? isDraggingToAlbum;
 
   @override
@@ -35,6 +36,7 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck> with TickerProviderStat
 
   late int _topIndex;
   Offset _dragOffset = Offset.zero;
+  Offset? _lastGlobalPosition;
   double _dragRotation = 0;
   late AnimationController _controller;
   late AnimationController _cardTransitionController;
@@ -57,11 +59,7 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck> with TickerProviderStat
     
     _slideAnimation = Tween<Offset>(begin: Offset.zero, end: Offset.zero).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
-    )..addListener(() {
-        setState(() {
-          _dragOffset = _slideAnimation.value;
-        });
-      })
+    )..addListener(_onSlideAnimationUpdate)
       ..addStatusListener((status) {
         if (status == AnimationStatus.completed && _pendingDecision != null) {
           _finalizeSwipe(_pendingDecision!);
@@ -73,16 +71,30 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck> with TickerProviderStat
         parent: _cardTransitionController,
         curve: Curves.easeOutCubic,
       ),
-    )..addListener(() => setState(() {}));
+    )..addListener(_onCardAnimationUpdate);
     
     _cardOpacityAnimation = Tween<double>(begin: 1.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _cardTransitionController,
         curve: Curves.easeOut,
       ),
-    )..addListener(() => setState(() {}));
+    )..addListener(_onCardAnimationUpdate);
     
     _cardTransitionController.forward();
+  }
+
+  void _onSlideAnimationUpdate() {
+    if (mounted) {
+      setState(() {
+        _dragOffset = _slideAnimation.value;
+      });
+    }
+  }
+
+  void _onCardAnimationUpdate() {
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   @override
@@ -203,97 +215,102 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck> with TickerProviderStat
     final borderColor = (decisionStrength >= 0
             ? sem.keep.withOpacity(keepOpacity * 0.8)
             : sem.delete.withOpacity(deleteOpacity * 0.8));
+    final l10n = AppLocalizations.of(context)!;
 
     Widget card = Opacity(
       opacity: cardOpacity,
       child: Transform.translate(
         offset: offset,
-        child: Transform.rotate(
-          angle: rotation * math.pi / 180,
-          child: AnimatedScale(
-            scale: cardScale,
-            duration: const Duration(milliseconds: 350),
-            curve: Curves.easeOutCubic,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.3 - (indexFromTop * 0.06)),
-                    blurRadius: 24 - (indexFromTop * 4),
-                    offset: Offset(0, 10 + (indexFromTop * 2.5)),
-                    spreadRadius: -2,
+          child: Transform.rotate(
+            angle: rotation * math.pi / 180,
+            child: Transform.scale(
+              scale: cardScale,
+              child: RepaintBoundary(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.3 - (indexFromTop * 0.06)),
+                        blurRadius: 24 - (indexFromTop * 4),
+                        offset: Offset(0, 10 + (indexFromTop * 2.5)),
+                        spreadRadius: -2,
+                      ),
+                    ],
                   ),
-                ],
+                  child: _PhotoCard(asset: asset),
+                ),
               ),
-              child: _PhotoCard(asset: asset),
             ),
           ),
-        ),
       ),
     );
 
     if (isTop) {
       card = GestureDetector(
-        onPanStart: (_) => _controller.stop(),
+        onPanStart: (details) {
+          _controller.stop();
+          _lastGlobalPosition = details.globalPosition;
+        },
         onPanUpdate: (details) {
           final newOffset = _dragOffset + details.delta;
           final isDraggingUpward = newOffset.dy < _verticalDragThreshold;
           
-          setState(() {
-            _dragOffset = newOffset;
-            // Eğer yukarı sürükleniyorsa, yatay rotasyonu azalt
-            if (isDraggingUpward) {
-              _dragRotation = (_dragOffset.dx / 20).clamp(-_rotationMaxDeg * 0.5, _rotationMaxDeg * 0.5);
-            } else {
-              _dragRotation = (_dragOffset.dx / 12).clamp(-_rotationMaxDeg, _rotationMaxDeg);
-            }
-          });
+          // Optimize: Sadece değişiklik varsa setState çağır
+          final newRotation = isDraggingUpward
+              ? (newOffset.dx / 20).clamp(-_rotationMaxDeg * 0.5, _rotationMaxDeg * 0.5)
+              : (newOffset.dx / 12).clamp(-_rotationMaxDeg, _rotationMaxDeg);
+          
+          if (_dragOffset != newOffset || _dragRotation != newRotation) {
+            setState(() {
+              _dragOffset = newOffset;
+              _dragRotation = newRotation;
+            });
+          }
           
           // Yukarı sürüklenmiyorsa haptik feedback
           if (!isDraggingUpward) {
-            if (_dragOffset.dx > _swipeThreshold && !_didHapticForKeep) {
+            if (newOffset.dx > _swipeThreshold && !_didHapticForKeep) {
               HapticFeedback.lightImpact();
               _didHapticForKeep = true;
-            } else if (_dragOffset.dx < -_swipeThreshold && !_didHapticForDelete) {
+            } else if (newOffset.dx < -_swipeThreshold && !_didHapticForDelete) {
               HapticFeedback.lightImpact();
               _didHapticForDelete = true;
             }
           }
           
-          // Her zaman onDragUpdate callback'ini çağır (albüm hedefleri için)
-          // Global pozisyonu doğru hesapla
+          // Global pozisyonu sakla ve albüm hedeflerine ilet
+          _lastGlobalPosition = details.globalPosition;
           if (widget.onDragUpdate != null) {
-            final box = context.findRenderObject() as RenderBox?;
-            if (box != null) {
-              // Local offset'i global pozisyona çevir
-              final localTopLeft = box.localToGlobal(Offset.zero);
-              final globalOffset = localTopLeft + _dragOffset;
-              widget.onDragUpdate!(globalOffset);
-            }
+            widget.onDragUpdate!(details.globalPosition);
           }
         },
         onPanEnd: (details) {
           final dx = _dragOffset.dx;
           final dy = _dragOffset.dy;
           
+          final wasDraggingToAlbum = widget.isDraggingToAlbum?.call() ?? false;
+          final isUpwardDrag = dy < _verticalDragThreshold;
+          final releasePosition = _lastGlobalPosition ??
+              (context.findRenderObject() as RenderBox?)
+                  ?.localToGlobal(_dragOffset) ??
+              Offset.zero;
+          final currentAsset = widget.assets[_topIndex];
+          
           // Önce albüm hedefi kontrolü
           if (widget.onDragEnd != null) {
-            final box = context.findRenderObject() as RenderBox?;
-            if (box != null) {
-              final wasDraggingToAlbum = widget.isDraggingToAlbum?.call() ?? false;
-              final isUpwardDrag = dy < _verticalDragThreshold;
-              
-              debugPrint('🔄 [PhotoSwipeDeck] onPanEnd: dy=$dy, wasDraggingToAlbum=$wasDraggingToAlbum, isUpwardDrag=$isUpwardDrag');
-              
-              // Eğer yukarı sürüklenmişse veya albüme sürüklenmişse, onDragEnd'i çağır
-              if (wasDraggingToAlbum || isUpwardDrag) {
-                debugPrint('🔄 [PhotoSwipeDeck] Albüm taşıma modu - onDragEnd çağrılıyor');
-                widget.onDragEnd!(box.localToGlobal(_dragOffset));
-                // Albüme taşındıysa swipe yapma, kartı geri döndür
-                _animateBack();
-                return;
-              }
+            debugPrint(
+              '🔄 [PhotoSwipeDeck] onPanEnd: dy=$dy, wasDraggingToAlbum=$wasDraggingToAlbum, isUpwardDrag=$isUpwardDrag, releasePosition=$releasePosition',
+            );
+            
+            // Eğer yukarı sürüklenmişse veya albüme sürüklenmişse, onDragEnd'i çağır
+            if (wasDraggingToAlbum || isUpwardDrag) {
+              debugPrint('🔄 [PhotoSwipeDeck] Albüm taşıma modu - onDragEnd çağrılıyor');
+              widget.onDragEnd!(currentAsset, releasePosition);
+              // Albüme taşındıysa swipe yapma, kartı geri döndür
+              _animateBack();
+              _lastGlobalPosition = null;
+              return;
             }
           }
           
@@ -305,71 +322,17 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck> with TickerProviderStat
             debugPrint('🔄 [PhotoSwipeDeck] Swipe threshold altında, geri dönüyor');
             _animateBack();
           }
+          
+          _lastGlobalPosition = null;
+        },
+        onPanCancel: () {
+          _lastGlobalPosition = null;
+          _animateBack();
         },
         child: Stack(
           children: [
             card,
-            // Overlays
-            // Modern badges: delete (top-left) and keep/gallery (bottom-right)
-            Positioned.fill(
-              child: IgnorePointer(
-                ignoring: true,
-                child: Stack(children: [
-                  // Delete badge (top-left)
-                  Positioned(
-                    left: 12,
-                    top: 12,
-                    child: AnimatedOpacity(
-                      opacity: deleteOpacity,
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeOut,
-                      child: AnimatedScale(
-                        scale: deleteOpacity > 0.2 ? (0.85 + deleteOpacity * 0.15).clamp(0.85, 1.0) : 0.8,
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeOutCubic,
-                        child: AnimatedRotation(
-                          turns: deleteOpacity > 0.5 ? 0.0 : 0.025,
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.easeOutCubic,
-                          child: _BadgeWithArrow(
-                            color: sem.delete,
-                            icon: Icons.delete,
-                            label: 'Sil',
-                            arrowDirection: _ArrowDirection.bottomRight,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  // Keep/Library badge (bottom-right)
-                  Positioned(
-                    right: 12,
-                    bottom: 12,
-                    child: AnimatedOpacity(
-                      opacity: keepOpacity,
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeOut,
-                      child: AnimatedScale(
-                        scale: keepOpacity > 0.2 ? (0.85 + keepOpacity * 0.15).clamp(0.85, 1.0) : 0.8,
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeOutCubic,
-                        child: AnimatedRotation(
-                          turns: keepOpacity > 0.5 ? 0.0 : -0.025,
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.easeOutCubic,
-                          child: _BadgeWithArrow(
-                            color: sem.keep,
-                            icon: Icons.photo_library_outlined,
-                            label: 'Tut',
-                            arrowDirection: _ArrowDirection.topLeft,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ]),
-              ),
-            ),
+            // Underlay: gradient + dynamic border (keep this BELOW badges so badges stay bright)
             Positioned.fill(
               child: IgnorePointer(
                 child: DecoratedBox(
@@ -379,12 +342,77 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck> with TickerProviderStat
                       begin: Alignment.bottomCenter,
                       end: Alignment.topCenter,
                       colors: [
-                        Colors.black.withOpacity(0.32),
+                        Colors.black.withOpacity(0.22),
                         Colors.transparent,
                       ],
                     ),
-                    border: Border.all(color: borderColor, width: (keepOpacity > deleteOpacity ? keepOpacity : deleteOpacity) * 2),
+                    border: Border.all(
+                      color: borderColor,
+                      width: (keepOpacity > deleteOpacity ? keepOpacity : deleteOpacity) * 3.5 + 1.5,
+                    ),
                   ),
+                ),
+              ),
+            ),
+            // Overlays (TOP): Modern badges: delete (top-left) and keep/gallery (bottom-right)
+            RepaintBoundary(
+              child: Positioned.fill(
+                child: IgnorePointer(
+                  ignoring: true,
+                  child: Stack(children: [
+                  // Delete badge (top-left)
+                  Positioned(
+                    left: 16,
+                    top: 16,
+                    child: AnimatedOpacity(
+                      opacity: deleteOpacity > 0.08 ? deleteOpacity.clamp(0.5, 1.0) : 0.0,
+                      duration: const Duration(milliseconds: 200),
+                      curve: Curves.easeOut,
+                      child: AnimatedScale(
+                        scale: deleteOpacity > 0.08 ? (0.92 + deleteOpacity * 0.08).clamp(0.92, 1.0) : 0.88,
+                        duration: const Duration(milliseconds: 200),
+                        curve: Curves.easeOutCubic,
+                        child: AnimatedRotation(
+                          turns: deleteOpacity > 0.5 ? 0.0 : 0.025,
+                          duration: const Duration(milliseconds: 200),
+                          curve: Curves.easeOutCubic,
+                          child: _BadgeWithArrow(
+                            color: sem.delete,
+                            icon: Icons.delete,
+                            label: l10n.delete,
+                            arrowDirection: _ArrowDirection.bottomRight,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Keep/Library badge (bottom-right)
+                  Positioned(
+                    right: 16,
+                    bottom: 16,
+                    child: AnimatedOpacity(
+                      opacity: keepOpacity > 0.08 ? keepOpacity.clamp(0.5, 1.0) : 0.0,
+                      duration: const Duration(milliseconds: 200),
+                      curve: Curves.easeOut,
+                      child: AnimatedScale(
+                        scale: keepOpacity > 0.08 ? (0.92 + keepOpacity * 0.08).clamp(0.92, 1.0) : 0.88,
+                        duration: const Duration(milliseconds: 200),
+                        curve: Curves.easeOutCubic,
+                        child: AnimatedRotation(
+                          turns: keepOpacity > 0.5 ? 0.0 : -0.025,
+                          duration: const Duration(milliseconds: 200),
+                          curve: Curves.easeOutCubic,
+                          child: _BadgeWithArrow(
+                            color: sem.keep,
+                            icon: Icons.photo_library_outlined,
+                            label: l10n.keep,
+                            arrowDirection: _ArrowDirection.topLeft,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ]),
                 ),
               ),
             ),
@@ -393,32 +421,35 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck> with TickerProviderStat
       );
     }
 
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 500),
-      switchInCurve: Curves.easeOut,
-      switchOutCurve: Curves.easeIn,
-      transitionBuilder: (child, animation) {
-        final slideAnimation = Tween<Offset>(
-          begin: const Offset(0.0, 0.05),
-          end: Offset.zero,
-        ).animate(CurvedAnimation(
-          parent: animation,
-          curve: Curves.easeOut,
-        ));
-        
-        // Use scale and slide only, no fade to avoid black background
-        return SlideTransition(
-          position: slideAnimation,
-          child: ScaleTransition(
-            scale: CurvedAnimation(
-              parent: animation,
-              curve: const Interval(0.0, 1.0, curve: Curves.easeOutCubic),
+    // Optimize: RepaintBoundary ile wrap et
+    return RepaintBoundary(
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 500),
+        switchInCurve: Curves.easeOut,
+        switchOutCurve: Curves.easeIn,
+        transitionBuilder: (child, animation) {
+          final slideAnimation = Tween<Offset>(
+            begin: const Offset(0.0, 0.05),
+            end: Offset.zero,
+          ).animate(CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeOut,
+          ));
+          
+          // Use scale and slide only, no fade to avoid black background
+          return SlideTransition(
+            position: slideAnimation,
+            child: ScaleTransition(
+              scale: CurvedAnimation(
+                parent: animation,
+                curve: const Interval(0.0, 1.0, curve: Curves.easeOutCubic),
+              ),
+              child: child,
             ),
-            child: child,
-          ),
-        );
-      },
-      child: SizedBox.expand(key: ValueKey(asset.id), child: card),
+          );
+        },
+        child: SizedBox.expand(key: ValueKey(asset.id), child: card),
+      ),
     );
   }
 }
@@ -448,25 +479,55 @@ class _BadgeWithArrow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bg = color.withOpacity(0.95);
-    final borderRadius = BorderRadius.circular(14);
+    final bg = color.withOpacity(1.0);
+    final borderRadius = BorderRadius.circular(16);
 
     Widget arrow() {
       return Transform.rotate(
         angle: 0.785398, // 45 deg
-        child: Container(width: 10, height: 10, color: bg),
+        child: Container(width: 12, height: 12, color: bg),
       );
     }
 
     final chip = Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(color: bg, borderRadius: borderRadius, boxShadow: [
-        BoxShadow(color: color.withOpacity(0.28), blurRadius: 14, offset: const Offset(0, 6)),
-      ]),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: borderRadius,
+        border: Border.all(
+          color: Colors.white.withOpacity(0.45),
+          width: 2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.4),
+            blurRadius: 20,
+            spreadRadius: 2,
+            offset: const Offset(0, 8),
+          ),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Icon(icon, color: Colors.white, size: 18),
-        const SizedBox(width: 8),
-        Text(label.toUpperCase(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+        Icon(icon, color: Colors.white, size: 22),
+        const SizedBox(width: 10),
+        Text(
+          label.toUpperCase(),
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w900,
+            fontSize: 16,
+            letterSpacing: 1.2,
+            shadows: [
+              Shadow(color: Colors.black54, blurRadius: 6, offset: Offset(0, 2)),
+              Shadow(color: Colors.black38, blurRadius: 10, offset: Offset(0, 1)),
+            ],
+          ),
+        ),
       ]),
     );
 
@@ -485,46 +546,69 @@ class _BadgeWithArrow extends StatelessWidget {
 
 class _PhotoCardState extends State<_PhotoCard> {
   late Future<Uint8List?> _thumbFuture;
+  static pm.ThumbnailSize? _cachedThumbnailSize;
 
   @override
   void initState() {
     super.initState();
-    _thumbFuture = widget.asset.thumbnailDataWithSize(const pm.ThumbnailSize(1000, 1000), quality: 85);
+    _thumbFuture = _getThumbnailFuture();
   }
 
   @override
   void didUpdateWidget(covariant _PhotoCard oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.asset.id != widget.asset.id) {
-      _thumbFuture = widget.asset.thumbnailDataWithSize(const pm.ThumbnailSize(1000, 1000), quality: 85);
+      _thumbFuture = _getThumbnailFuture();
     }
+  }
+
+  Future<Uint8List?> _getThumbnailFuture() {
+    // Optimize: Ekran boyutuna göre thumbnail boyutu hesapla
+    final size = _cachedThumbnailSize ?? _calculateOptimalThumbnailSize();
+    _cachedThumbnailSize = size;
+    // Quality'yi düşürerek performansı artır (85 -> 75)
+    return widget.asset.thumbnailDataWithSize(size, quality: 75);
+  }
+
+  pm.ThumbnailSize _calculateOptimalThumbnailSize() {
+    // Ekran genişliğini al
+    final screenWidth = WidgetsBinding.instance.platformDispatcher.views.first.physicalSize.width /
+        WidgetsBinding.instance.platformDispatcher.views.first.devicePixelRatio;
+    
+    // Aspect ratio 3:4 için optimize et, 2x pixel density için
+    final targetWidth = (screenWidth * 2).round().clamp(400, 1200);
+    final targetHeight = ((targetWidth / 3) * 4).round().clamp(600, 1600);
+    
+    return pm.ThumbnailSize(targetWidth, targetHeight);
   }
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(20),
-      child: FutureBuilder<Uint8List?>(
-        future: _thumbFuture,
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            // No loading indicator - just show transparent background for smooth transition
-            return const SizedBox.expand();
-          }
-          return RepaintBoundary(
-            child: Image.memory(
+    return RepaintBoundary(
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: FutureBuilder<Uint8List?>(
+          future: _thumbFuture,
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) {
+              // No loading indicator - just show transparent background for smooth transition
+              return const SizedBox.expand();
+            }
+            return Image.memory(
               snapshot.data!,
               fit: BoxFit.cover,
               width: double.infinity,
               height: double.infinity,
               gaplessPlayback: true,
-              filterQuality: FilterQuality.high,
-            ),
-          );
-        },
+              // FilterQuality'yi medium'a düşür (high çok ağır)
+              filterQuality: FilterQuality.medium,
+              // Cache için key ekle
+              cacheWidth: _cachedThumbnailSize?.width,
+              cacheHeight: _cachedThumbnailSize?.height,
+            );
+          },
+        ),
       ),
     );
   }
 }
-
-

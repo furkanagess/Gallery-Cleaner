@@ -49,5 +49,7 @@
 	<string>Galeriyi düzenlemek için fotoğraflara erişim gerekiyor.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Fotoğrafları düzenlemek ve taşımak için kütüphaneye yazma izni gerekiyor.</string>
+	<key>GADApplicationIdentifier</key>
+	<string>ca-app-pub-3499593115543692~6628420898</string>
 </dict>
 </plist>

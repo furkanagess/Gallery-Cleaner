@@ -7,6 +7,8 @@ import '../features/onboarding/presentation/onboarding_page.dart';
 import '../features/onboarding/presentation/permission_request_page.dart';
 import '../features/onboarding/presentation/start_clean_page.dart';
 import '../features/gallery/presentation/pages/swipe_page.dart';
+import '../features/gallery/presentation/pages/history_page.dart';
+import '../features/settings/presentation/settings_page.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -36,6 +38,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/swipe',
         name: 'swipe',
         builder: (context, state) => const SwipePage(),
+      ),
+      GoRoute(
+        path: '/settings',
+        name: 'settings',
+        builder: (context, state) => const SettingsPage(),
+      ),
+      GoRoute(
+        path: '/history/full',
+        name: 'fullHistory',
+        builder: (context, state) => const FullHistoryPage(),
       ),
     ],
     errorBuilder: (context, state) => Scaffold(

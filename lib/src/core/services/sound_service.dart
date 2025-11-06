@@ -7,11 +7,22 @@ class SoundService {
 
   final AudioPlayer _audioPlayer = AudioPlayer();
   final AudioPlayer _scannerPlayer = AudioPlayer(); // Scanner için ayrı player
+  final List<AudioPlayer> _deletePlayers = []; // Delete sesleri için player listesi
 
-  /// Silme ses efektini çalar
+  /// Silme ses efektini çalar (üst üste çalınabilir)
   Future<void> playDeleteSound() async {
     try {
-      await _audioPlayer.play(AssetSource('sound/delete.mp3'));
+      // Her delete sesi için yeni bir AudioPlayer oluştur
+      final deletePlayer = AudioPlayer();
+      _deletePlayers.add(deletePlayer);
+      
+      // Ses bittiğinde player'ı temizle
+      deletePlayer.onPlayerComplete.listen((_) {
+        deletePlayer.dispose();
+        _deletePlayers.remove(deletePlayer);
+      });
+      
+      await deletePlayer.play(AssetSource('sound/delete.mp3'));
     } catch (e) {
       // Ses çalma hatası sessizce yok sayılır
       print('Ses çalma hatası: $e');
@@ -62,6 +73,11 @@ class SoundService {
   void dispose() {
     _audioPlayer.dispose();
     _scannerPlayer.dispose();
+    // Tüm delete player'ları temizle
+    for (final player in _deletePlayers) {
+      player.dispose();
+    }
+    _deletePlayers.clear();
   }
 }
 

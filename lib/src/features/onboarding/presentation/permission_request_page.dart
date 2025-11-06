@@ -4,12 +4,14 @@ import 'package:go_router/go_router.dart';
 
 import '../application/permissions_controller.dart';
 import '../../gallery/application/gallery_stats_provider.dart';
+import '../../../core/services/preferences_service.dart';
 
 class PermissionRequestPage extends ConsumerStatefulWidget {
   const PermissionRequestPage({super.key});
 
   @override
-  ConsumerState<PermissionRequestPage> createState() => _PermissionRequestPageState();
+  ConsumerState<PermissionRequestPage> createState() =>
+      _PermissionRequestPageState();
 }
 
 class _PermissionRequestPageState extends ConsumerState<PermissionRequestPage> {
@@ -29,24 +31,29 @@ class _PermissionRequestPageState extends ConsumerState<PermissionRequestPage> {
   Future<void> _requestPermission() async {
     if (_hasRequestedPermission) return;
     _hasRequestedPermission = true;
-    
+
     final ok = await ref.read(permissionsControllerProvider.notifier).request();
     if (ok && mounted) {
-      ref.refresh(galleryStatsProvider);
+      ref.read(galleryStatsProvider.notifier).refresh();
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final permission = ref.watch(permissionsControllerProvider);
-    final statsAsync = ref.watch(galleryStatsProvider);
+    final statsState = ref.watch(galleryStatsProvider);
 
-    ref.listen<GalleryPermissionStatus>(permissionsControllerProvider, (prev, next) {
-      if (next == GalleryPermissionStatus.authorized && context.mounted && prev != next) {
+    ref.listen<GalleryPermissionStatus>(permissionsControllerProvider, (
+      prev,
+      next,
+    ) {
+      if (next == GalleryPermissionStatus.authorized &&
+          context.mounted &&
+          prev != next) {
         // İzin yeni verildiyse istatistikleri yükle ve start clean page'e yönlendir
         Future.microtask(() {
           if (mounted) {
-            ref.refresh(galleryStatsProvider);
+            ref.read(galleryStatsProvider.notifier).refresh();
             // Start clean page'e yönlendir
             context.go('/start');
           }
@@ -102,7 +109,9 @@ class _PermissionRequestPageState extends ConsumerState<PermissionRequestPage> {
                     Text(
                       'Kartları sağa kaydır: Tut • sola kaydır: Sil. Üst hedeflere sürükleyerek klasörlere taşı.',
                       style: theme.textTheme.bodyLarge?.copyWith(
-                        color: theme.textTheme.bodyMedium?.color?.withOpacity(0.9),
+                        color: theme.textTheme.bodyMedium?.color?.withOpacity(
+                          0.9,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -111,7 +120,10 @@ class _PermissionRequestPageState extends ConsumerState<PermissionRequestPage> {
                       runSpacing: 8,
                       children: const [
                         _FeatureChip(icon: Icons.swipe, label: 'Hızlı swipe'),
-                        _FeatureChip(icon: Icons.folder_open, label: 'Klasöre sürükle'),
+                        _FeatureChip(
+                          icon: Icons.folder_open,
+                          label: 'Klasöre sürükle',
+                        ),
                         _FeatureChip(icon: Icons.undo, label: 'Undo güvenliği'),
                       ],
                     ),
@@ -131,15 +143,62 @@ class _PermissionRequestPageState extends ConsumerState<PermissionRequestPage> {
                             ),
                           ],
                         ),
-                        child: statsAsync.when(
-                          data: (stats) {
-                            if (stats == null) {
-                              return const Center(child: CircularProgressIndicator());
+                        child: Builder(
+                          builder: (context) {
+                            final stats = statsState.stats;
+                            final isLoading =
+                                statsState.isLoading && stats == null;
+                            final hasError =
+                                statsState.error != null && stats == null;
+
+                            if (isLoading) {
+                              return const Center(
+                                child: CircularProgressIndicator(),
+                              );
                             }
+
+                            if (hasError) {
+                              return Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.error_outline,
+                                    size: 72,
+                                    color: theme.colorScheme.error,
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    'Hata: ${statsState.error}',
+                                    style: theme.textTheme.bodyMedium,
+                                    textAlign: TextAlign.center,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  FilledButton(
+                                    onPressed: () {
+                                      ref
+                                          .read(galleryStatsProvider.notifier)
+                                          .refresh();
+                                    },
+                                    child: const Text('Tekrar Dene'),
+                                  ),
+                                ],
+                              );
+                            }
+
+                            if (stats == null) {
+                              return const Center(
+                                child: CircularProgressIndicator(),
+                              );
+                            }
+
                             return Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.photo_library, size: 72, color: theme.colorScheme.primary),
+                                Icon(
+                                  Icons.photo_library,
+                                  size: 72,
+                                  color: theme.colorScheme.primary,
+                                ),
                                 const SizedBox(height: 16),
                                 Text(
                                   'Galeri Bilgileri',
@@ -163,38 +222,36 @@ class _PermissionRequestPageState extends ConsumerState<PermissionRequestPage> {
                                 _StatRow(
                                   icon: Icons.storage,
                                   label: 'Toplam Boyut',
-                                  value: '${stats.totalSizeMB.toStringAsFixed(1)} MB',
+                                  value:
+                                      '${stats.totalSizeMB.toStringAsFixed(1)} MB',
                                 ),
                                 const SizedBox(height: 24),
                                 FilledButton.icon(
                                   icon: const Icon(Icons.play_arrow),
                                   label: const Text('Temizlemeye Başla'),
                                   style: FilledButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 32,
+                                      vertical: 16,
+                                    ),
                                   ),
-                                  onPressed: () {
+                                  onPressed: () async {
                                     if (context.mounted) {
-                                      context.go('/start');
+                                      // Temizlemeye başlandığını işaretle
+                                      final prefsService = PreferencesService();
+                                      await prefsService.setCleaningStarted(
+                                        true,
+                                      );
+
+                                      if (context.mounted) {
+                                        context.go('/swipe');
+                                      }
                                     }
                                   },
                                 ),
                               ],
                             );
                           },
-                          loading: () => const Center(child: CircularProgressIndicator()),
-                          error: (error, stack) => Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.error_outline, size: 72, color: theme.colorScheme.error),
-                              const SizedBox(height: 12),
-                              Text('Hata: $error', style: theme.textTheme.bodyMedium),
-                              const SizedBox(height: 16),
-                              FilledButton(
-                                onPressed: () => ref.refresh(galleryStatsProvider),
-                                child: const Text('Tekrar Dene'),
-                              ),
-                            ],
-                          ),
                         ),
                       ),
                     ),
@@ -275,7 +332,9 @@ class _PermissionRequestPageState extends ConsumerState<PermissionRequestPage> {
                     'Galeri temizleme işlemlerini yapabilmek için fotoğraf ve videolarınıza erişim iznine ihtiyacımız var.',
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodyLarge?.copyWith(
-                      color: theme.textTheme.bodyMedium?.color?.withOpacity(0.8),
+                      color: theme.textTheme.bodyMedium?.color?.withOpacity(
+                        0.8,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 48),
@@ -299,7 +358,8 @@ class _PermissionRequestPageState extends ConsumerState<PermissionRequestPage> {
                         _PermissionFeature(
                           icon: Icons.swipe,
                           title: 'Hızlı Temizlik',
-                          description: 'Fotoğraflarınızı hızlıca gözden geçirin',
+                          description:
+                              'Fotoğraflarınızı hızlıca gözden geçirin',
                         ),
                         const SizedBox(height: 16),
                         _PermissionFeature(
@@ -327,7 +387,7 @@ class _PermissionRequestPageState extends ConsumerState<PermissionRequestPage> {
                         style: FilledButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 16),
                         ),
-                      onPressed: _requestPermission,
+                        onPressed: _requestPermission,
                       ),
                     ),
                   ),
@@ -337,7 +397,9 @@ class _PermissionRequestPageState extends ConsumerState<PermissionRequestPage> {
                     child: SizedBox(
                       width: double.infinity,
                       child: TextButton(
-                        onPressed: () => ref.read(permissionsControllerProvider.notifier).openSettings(),
+                        onPressed: () => ref
+                            .read(permissionsControllerProvider.notifier)
+                            .openSettings(),
                         child: const Text('Ayarlarda Yönet'),
                       ),
                     ),
@@ -456,12 +518,7 @@ class _StatRow extends StatelessWidget {
       children: [
         Icon(icon, size: 20, color: theme.colorScheme.primary),
         const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            label,
-            style: theme.textTheme.bodyLarge,
-          ),
-        ),
+        Expanded(child: Text(label, style: theme.textTheme.bodyLarge)),
         Text(
           value,
           style: theme.textTheme.bodyLarge?.copyWith(
@@ -473,4 +530,3 @@ class _StatRow extends StatelessWidget {
     );
   }
 }
-

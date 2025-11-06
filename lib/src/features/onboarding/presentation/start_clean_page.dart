@@ -3,10 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lottie/lottie.dart';
+import '../../../../../l10n/app_localizations.dart';
 
 import '../../onboarding/application/permissions_controller.dart';
 import '../../gallery/application/gallery_stats_provider.dart';
 import '../../../core/services/sound_service.dart';
+import '../../../core/services/preferences_service.dart';
 
 class StartCleanPage extends ConsumerStatefulWidget {
   const StartCleanPage({super.key});
@@ -42,11 +44,11 @@ class _StartCleanPageState extends ConsumerState<StartCleanPage> {
           );
           await Future.delayed(const Duration(milliseconds: 200));
           if (mounted) {
-            // Provider'ı invalidate ederek yeniden yükle
+            // Provider'ı refresh et - cache varsa önce onu gösterir, sonra günceller
             debugPrint(
-              '🚀 [StartCleanPage] GalleryStats provider invalidate ediliyor',
+              '🚀 [StartCleanPage] GalleryStats provider refresh ediliyor',
             );
-            ref.invalidate(galleryStatsProvider);
+            ref.read(galleryStatsProvider.notifier).refresh();
           }
         }
       }
@@ -65,68 +67,7 @@ class _StartCleanPageState extends ConsumerState<StartCleanPage> {
   @override
   Widget build(BuildContext context) {
     final permission = ref.watch(permissionsControllerProvider);
-    final statsAsync = ref.watch(galleryStatsProvider);
-
-    // İzin durumu değiştiğinde istatistikleri yükle
-    ref.listen<GalleryPermissionStatus>(permissionsControllerProvider, (
-      prev,
-      next,
-    ) {
-      debugPrint(
-        '🚀 [StartCleanPage] Permission durumu değişti: $prev -> $next',
-      );
-      if (next == GalleryPermissionStatus.authorized &&
-          context.mounted &&
-          prev != next) {
-        // İzin yeni verildiyse istatistikleri kesinlikle yükle
-        debugPrint(
-          '🚀 [StartCleanPage] İzin yeni verildi, stats yüklenecek...',
-        );
-        Future.delayed(const Duration(milliseconds: 300), () {
-          if (mounted) {
-            // Invalidate kullanarak provider'ı tamamen yeniden yükle
-            debugPrint(
-              '🚀 [StartCleanPage] GalleryStats provider invalidate ediliyor (permission değişikliği)',
-            );
-            ref.invalidate(galleryStatsProvider);
-          }
-        });
-      }
-    });
-
-    // İzin varsa ama stats null veya loading durumundaysa refresh et
-    if (permission == GalleryPermissionStatus.authorized && mounted) {
-      statsAsync.when(
-        data: (stats) {
-          debugPrint(
-            '🚀 [StartCleanPage] Stats data: ${stats != null ? "Var (${stats.albumCount} albüm, ${stats.mediaCount} medya)" : "Null"}',
-          );
-          // Data null ise tekrar yükle (izin var ama stats yüklenmemiş)
-          if (stats == null) {
-            debugPrint('🚀 [StartCleanPage] Stats null, tekrar yüklenecek...');
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted) {
-                ref.invalidate(galleryStatsProvider);
-              }
-            });
-          }
-        },
-        loading: () {
-          debugPrint('🚀 [StartCleanPage] Stats loading durumunda...');
-          // Loading durumunda - eğer çok uzun sürerse (5 saniye) tekrar dene
-          // Bu durumda bir şey yapma, provider zaten yükleniyor
-        },
-        error: (error, stack) {
-          debugPrint('🚀 [StartCleanPage] Stats error: $error');
-          // Hata varsa tekrar yükle
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) {
-              ref.invalidate(galleryStatsProvider);
-            }
-          });
-        },
-      );
-    }
+    final statsState = ref.watch(galleryStatsProvider);
 
     final theme = Theme.of(context);
 
@@ -137,6 +78,15 @@ class _StartCleanPageState extends ConsumerState<StartCleanPage> {
         elevation: 0,
         title: const Text(''),
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings),
+            tooltip: AppLocalizations.of(context)!.settings,
+            onPressed: () {
+              context.push('/settings');
+            },
+          ),
+        ],
       ),
       body: Stack(
         children: [
@@ -187,48 +137,124 @@ class _StartCleanPageState extends ConsumerState<StartCleanPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 16),
-                  Text(
-                    'Galerini\ntemizlemeye başla',
+                  Builder(
+                    builder: (ctx) {
+                      final l10n = AppLocalizations.of(ctx)!;
+                      return Text(
+                        l10n.startCleaning,
                     style: theme.textTheme.displaySmall?.copyWith(
                       fontWeight: FontWeight.w800,
                       height: 1.05,
                     ),
+                      );
+                    },
                   ),
                   const SizedBox(height: 12),
-                  Text(
-                    'Kartları sağa kaydır: Tut • sola kaydır: Sil. Üst hedeflere sürükleyerek klasörlere taşı.',
+                  Builder(
+                    builder: (ctx) {
+                      final l10n = AppLocalizations.of(ctx)!;
+                      return Text(
+                        l10n.swipeCardsDescription,
                     style: theme.textTheme.bodyLarge?.copyWith(
-                      color: theme.textTheme.bodyMedium?.color?.withOpacity(
-                        0.9,
-                      ),
+                          color: theme.textTheme.bodyMedium?.color?.withOpacity(
+                            0.9,
+                          ),
                     ),
+                      );
+                    },
                   ),
                   const SizedBox(height: 20),
-                  Wrap(
+                  Builder(
+                    builder: (ctx) {
+                      final l10n = AppLocalizations.of(ctx)!;
+                      return Wrap(
                     spacing: 8,
                     runSpacing: 8,
-                    children: const [
-                      _FeatureChip(icon: Icons.swipe, label: 'Hızlı swipe'),
-                      _FeatureChip(
-                        icon: Icons.folder_open,
-                        label: 'Klasöre sürükle',
-                      ),
-                      _FeatureChip(icon: Icons.undo, label: 'Undo güvenliği'),
-                    ],
+                        children: [
+                          _FeatureChip(icon: Icons.swipe, label: l10n.quickSwipe),
+                          _FeatureChip(
+                            icon: Icons.folder_open,
+                            label: l10n.dragToFolder,
+                          ),
+                          _FeatureChip(icon: Icons.undo, label: l10n.undoSafety),
+                        ],
+                      );
+                    },
                   ),
                   const SizedBox(height: 24),
                   // Galeri İstatistikleri - İzin verildiyse göster
                   if (permission == GalleryPermissionStatus.authorized)
-                    statsAsync.when(
-                      data: (stats) {
-                        // Scanner sesini durdur
-                        if (_isScannerPlaying) {
-                          _soundService.stopScannerSound();
-                          _isScannerPlaying = false;
+                    Builder(
+                      builder: (context) {
+                        final stats = statsState.stats;
+                        
+                        // Loading veya error durumunda
+                        if (statsState.isLoading && stats == null) {
+                          // Scanner sesini çal
+                          if (!_isScannerPlaying) {
+                            _soundService.playScannerSound();
+                            _isScannerPlaying = true;
+                          }
+                          
+                          final l10n = AppLocalizations.of(context)!;
+                          return Container(
+                            padding: const EdgeInsets.all(32),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.surface,
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.05),
+                                  blurRadius: 16,
+                                  offset: const Offset(0, 8),
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                SizedBox(
+                                  width: 180,
+                                  height: 180,
+                                  child: Lottie.asset(
+                                    'assets/lottie/gallery_loading.json',
+                                    fit: BoxFit.contain,
+                                    repeat: true,
+                                    animate: true,
+                                  ),
+                                ),
+                                const SizedBox(height: 24),
+                                Text(
+                                  l10n.galleryInfoLoading,
+                                  style: theme.textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: theme.colorScheme.onSurface,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  l10n.loadingMayTakeFewSeconds,
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: theme.colorScheme.onSurface
+                                        .withOpacity(0.7),
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
+                          );
                         }
-
-                        // Stats null ise hata mesajı göster
-                        if (stats == null) {
+                        
+                        // Error durumu
+                        if (statsState.error != null && stats == null) {
+                          // Scanner sesini durdur
+                          if (_isScannerPlaying) {
+                            _soundService.stopScannerSound();
+                            _isScannerPlaying = false;
+                          }
+                          
+                          final l10n = AppLocalizations.of(context)!;
                           return Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
@@ -248,7 +274,7 @@ class _StartCleanPageState extends ConsumerState<StartCleanPage> {
                                 ),
                                 const SizedBox(height: 12),
                                 Text(
-                                  'Galeri bilgileri alınamadı',
+                                  l10n.galleryInfoNotAvailable,
                                   style: theme.textTheme.bodyMedium?.copyWith(
                                     color: theme.colorScheme.error,
                                   ),
@@ -257,15 +283,71 @@ class _StartCleanPageState extends ConsumerState<StartCleanPage> {
                                 const SizedBox(height: 12),
                                 FilledButton.icon(
                                   icon: const Icon(Icons.refresh),
-                                  label: const Text('Tekrar Dene'),
+                                  label: Text(l10n.tryAgain),
                                   onPressed: () {
-                                    ref.invalidate(galleryStatsProvider);
+                                    ref.read(galleryStatsProvider.notifier).refresh();
                                   },
                                 ),
                               ],
                             ),
                           );
                         }
+                        
+                        // Stats null ise (izin var ama cache yok)
+                        if (stats == null) {
+                          // Scanner sesini durdur
+                          if (_isScannerPlaying) {
+                            _soundService.stopScannerSound();
+                            _isScannerPlaying = false;
+                          }
+                          
+                          final l10n = AppLocalizations.of(context)!;
+                          return Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.surface,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: theme.colorScheme.error.withOpacity(0.2),
+                              ),
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.error_outline,
+                                  size: 48,
+                                  color: theme.colorScheme.error,
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  l10n.galleryInfoNotAvailable,
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: theme.colorScheme.error,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 12),
+                                FilledButton.icon(
+                                  icon: const Icon(Icons.refresh),
+                                  label: Text(l10n.tryAgain),
+                                  onPressed: () {
+                                    ref.read(galleryStatsProvider.notifier).refresh();
+                                  },
+                                ),
+                              ],
+                            ),
+                          );
+                        }
+                        
+                        // Stats var - göster
+                        // Scanner sesini durdur
+                        if (_isScannerPlaying) {
+                          _soundService.stopScannerSound();
+                          _isScannerPlaying = false;
+                        }
+
+                        final l10n = AppLocalizations.of(context)!;
                         return Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
@@ -287,7 +369,7 @@ class _StartCleanPageState extends ConsumerState<StartCleanPage> {
                                   ),
                                   const SizedBox(width: 8),
                                   Text(
-                                    'Galeri Bilgileri',
+                                    l10n.galleryInfo,
                                     style: theme.textTheme.titleSmall?.copyWith(
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -297,121 +379,21 @@ class _StartCleanPageState extends ConsumerState<StartCleanPage> {
                               const SizedBox(height: 16),
                               _StatRow(
                                 icon: Icons.folder,
-                                label: 'Albüm',
+                                label: l10n.album,
                                 value: '${stats.albumCount}',
                               ),
                               const SizedBox(height: 12),
                               _StatRow(
                                 icon: Icons.photo,
-                                label: 'Fotoğraf & Video',
+                                label: l10n.photoVideo,
                                 value: '${stats.mediaCount}',
                               ),
                               const SizedBox(height: 12),
                               _StatRow(
                                 icon: Icons.storage,
-                                label: 'Toplam Boyut',
+                                label: l10n.totalSize,
                                 value:
                                     '${stats.totalSizeMB.toStringAsFixed(1)} MB',
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                      loading: () {
-                        // Loading başladığında scanner sesini çal
-                        if (!_isScannerPlaying) {
-                          _soundService.playScannerSound();
-                          _isScannerPlaying = true;
-                        }
-
-                        return Container(
-                          padding: const EdgeInsets.all(32),
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.surface,
-                            borderRadius: BorderRadius.circular(20),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
-                                blurRadius: 16,
-                                offset: const Offset(0, 8),
-                              ),
-                            ],
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              // Lottie animasyonu
-                              SizedBox(
-                                width: 180,
-                                height: 180,
-                                child: Lottie.asset(
-                                  'assets/lottie/gallery_loading.json',
-                                  fit: BoxFit.contain,
-                                  repeat: true,
-                                  animate: true,
-                                ),
-                              ),
-                              const SizedBox(height: 24),
-                              Text(
-                                'Galeri bilgileri yükleniyor...',
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  color: theme.colorScheme.onSurface,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                              const SizedBox(height: 12),
-                              Text(
-                                'Bu işlem birkaç saniye sürebilir lütfen bekleyiniz',
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  color: theme.colorScheme.onSurface
-                                      .withOpacity(0.7),
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                      error: (error, stack) {
-                        // Hata durumunda scanner sesini durdur
-                        if (_isScannerPlaying) {
-                          _soundService.stopScannerSound();
-                          _isScannerPlaying = false;
-                        }
-
-                        return Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.surface,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: theme.colorScheme.error.withOpacity(0.2),
-                            ),
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.error_outline,
-                                size: 48,
-                                color: theme.colorScheme.error,
-                              ),
-                              const SizedBox(height: 12),
-                              Text(
-                                'Galeri bilgileri alınamadı',
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  color: theme.colorScheme.error,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                              const SizedBox(height: 12),
-                              FilledButton.icon(
-                                icon: const Icon(Icons.refresh),
-                                label: const Text('Tekrar Dene'),
-                                onPressed: () {
-                                  ref.invalidate(galleryStatsProvider);
-                                },
                               ),
                             ],
                           ),
@@ -434,145 +416,147 @@ class _StartCleanPageState extends ConsumerState<StartCleanPage> {
                           ),
                         ],
                       ),
-                      child: permission == GalleryPermissionStatus.authorized
-                          ? statsAsync.when(
-                              data: (stats) {
-                                if (stats == null) {
-                                  // İstatistikler yüklenirken butonu göster ama disabled yap
-                                  return FilledButton.icon(
-                                    icon: const SizedBox(
-                                      width: 16,
-                                      height: 16,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: Colors.white,
+                      child: Builder(
+                        builder: (ctx) {
+                          final l10n = AppLocalizations.of(ctx)!;
+                          return permission == GalleryPermissionStatus.authorized
+                              ? Builder(
+                                  builder: (context) {
+                                    final stats = statsState.stats;
+                                    final isLoading = statsState.isLoading && stats == null;
+                                    
+                                    if (isLoading) {
+                                      // İstatistikler yüklenirken butonu göster ama disabled yap
+                                      return FilledButton.icon(
+                                        icon: const SizedBox(
+                                          width: 16,
+                                          height: 16,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                        label: Text(l10n.loading),
+                                        style: FilledButton.styleFrom(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 32,
+                                            vertical: 16,
+                                          ),
+                                        ),
+                                        onPressed: null,
+                                      );
+                                    }
+                                    
+                                    if (stats == null) {
+                                      // Stats yok - hata durumu
+                                      return Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.error_outline,
+                                            size: 48,
+                                            color: theme.colorScheme.error,
+                                          ),
+                                          const SizedBox(height: 12),
+                                          Text(
+                                            l10n.galleryInfoNotLoaded,
+                                            style: theme.textTheme.bodyMedium,
+                                            textAlign: TextAlign.center,
+                                          ),
+                                          const SizedBox(height: 16),
+                                          FilledButton(
+                                            onPressed: () {
+                                              ref.read(galleryStatsProvider.notifier).refresh();
+                                            },
+                                            child: Text(l10n.tryAgain),
+                                          ),
+                                        ],
+                                      );
+                                    }
+                                    
+                                    // Stats var - başlat butonu
+                                    return FilledButton.icon(
+                                      icon: const Icon(Icons.play_arrow),
+                                      label: Text(l10n.startCleaningButton),
+                                      style: FilledButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 32,
+                                          vertical: 16,
+                                        ),
                                       ),
+                                      onPressed: () async {
+                                        if (context.mounted) {
+                                          // Temizlemeye başlandığını işaretle
+                                          final prefsService = PreferencesService();
+                                          await prefsService.setCleaningStarted(true);
+                                          
+                                          if (context.mounted) {
+                                            context.go('/swipe');
+                                          }
+                                        }
+                                      },
+                                    );
+                                  },
+                                )
+                              : Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                                    Icon(
+                                      Icons.photo_library_outlined,
+                                      size: 72,
+                                      color: theme.colorScheme.primary,
                                     ),
-                                    label: const Text('Yükleniyor...'),
-                                    style: FilledButton.styleFrom(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 32,
-                                        vertical: 16,
-                                      ),
+                          const SizedBox(height: 12),
+                                    Text(
+                                      l10n.grantPermissionToStart,
+                                      style: theme.textTheme.titleMedium,
+                                      textAlign: TextAlign.center,
                                     ),
-                                    onPressed: null,
-                                  );
-                                }
-                                return FilledButton.icon(
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: FilledButton.icon(
                                   icon: const Icon(Icons.play_arrow),
-                                  label: const Text('Temizlemeye Başla'),
-                                  style: FilledButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 32,
-                                      vertical: 16,
-                                    ),
-                                  ),
-                                  onPressed: () {
-                                    if (context.mounted) {
-                                      context.go('/swipe');
+                                            label: Text(l10n.start),
+                                  onPressed: () async {
+                                              final ok = await ref
+                                                  .read(
+                                                    permissionsControllerProvider
+                                                        .notifier,
+                                                  )
+                                                  .request();
+                                    if (ok && context.mounted) {
+                                                // İstatistikleri yenile - provider otomatik yüklenecek
+                                                ref.read(galleryStatsProvider.notifier).refresh();
                                     }
                                   },
-                                );
-                              },
-                              loading: () => FilledButton.icon(
-                                icon: const SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
                                 ),
-                                label: const Text('Yükleniyor...'),
-                                style: FilledButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 32,
-                                    vertical: 16,
-                                  ),
-                                ),
-                                onPressed: null,
                               ),
-                              error: (error, stack) => Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.error_outline,
-                                    size: 48,
-                                    color: theme.colorScheme.error,
-                                  ),
-                                  const SizedBox(height: 12),
-                                  Text(
-                                    'Galeri bilgileri yüklenemedi',
-                                    style: theme.textTheme.bodyMedium,
-                                    textAlign: TextAlign.center,
-                                  ),
-                                  const SizedBox(height: 16),
-                                  FilledButton(
-                                    onPressed: () {
-                                      ref.refresh(galleryStatsProvider);
-                                    },
-                                    child: const Text('Tekrar Dene'),
-                                  ),
-                                ],
-                              ),
-                            )
-                          : Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.photo_library_outlined,
-                                  size: 72,
-                                  color: theme.colorScheme.primary,
-                                ),
-                                const SizedBox(height: 12),
-                                Text(
-                                  'Başlamak için fotoğraf erişimine izin ver',
-                                  style: theme.textTheme.titleMedium,
-                                  textAlign: TextAlign.center,
-                                ),
-                                const SizedBox(height: 16),
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: FilledButton.icon(
-                                        icon: const Icon(Icons.play_arrow),
-                                        label: const Text('Başla'),
-                                        onPressed: () async {
-                                          final ok = await ref
-                                              .read(
-                                                permissionsControllerProvider
-                                                    .notifier,
-                                              )
-                                              .request();
-                                          if (ok && context.mounted) {
-                                            // İstatistikleri topla - provider otomatik yüklenecek
-                                            ref.refresh(galleryStatsProvider);
-                                          }
-                                        },
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 8),
-                                TextButton(
-                                  onPressed: () => ref
-                                      .read(
-                                        permissionsControllerProvider.notifier,
-                                      )
-                                      .openSettings(),
-                                  child: const Text('İzinleri Ayarlarda Yönet'),
-                                ),
-                                const SizedBox(height: 4),
-                                Opacity(
-                                  opacity: 0.7,
-                                  child: Text(
-                                    "iOS'ta silmeler \"Recently Deleted\"e taşınır ve 30 gün içinde geri alınabilir.",
-                                    textAlign: TextAlign.center,
-                                    style: theme.textTheme.bodySmall,
-                                  ),
-                                ),
-                              ],
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          TextButton(
+                                      onPressed: () => ref
+                                          .read(
+                                            permissionsControllerProvider.notifier,
+                                          )
+                                          .openSettings(),
+                                      child: Text(l10n.managePermissionsInSettings),
+                          ),
+                          const SizedBox(height: 4),
+                          Opacity(
+                            opacity: 0.7,
+                            child: Text(
+                                        l10n.iosDeleteNote,
+                              textAlign: TextAlign.center,
+                              style: theme.textTheme.bodySmall,
                             ),
+                          ),
+                        ],
+                                );
+                        },
+                      ),
                     ),
                   ),
                 ],
