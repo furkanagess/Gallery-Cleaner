@@ -108,6 +108,18 @@ class SettingsPage extends ConsumerWidget {
             _PremiumSection(
               onTap: () => SettingsPage._showPurchaseDialog(context),
             ),
+            const SizedBox(height: 32),
+            // Version info
+            Center(
+              child: Text(
+                'v1.0.0',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                  fontSize: 12,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
           ],
         ),
       ),

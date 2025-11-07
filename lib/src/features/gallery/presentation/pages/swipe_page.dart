@@ -49,215 +49,111 @@ Offset? _getWidgetCenter(GlobalKey key) {
   );
 }
 
-class _AlbumSelector extends ConsumerWidget {
-  const _AlbumSelector({
-    required this.selectedAlbum,
-    required this.albumsAsync,
-    required this.onAlbumSelected,
-  });
+Future<void> _presentAlbumPicker({
+  required BuildContext context,
+  required List<pm.AssetPathEntity> albums,
+  required pm.AssetPathEntity? selectedAlbum,
+  required ValueChanged<pm.AssetPathEntity?> onSelected,
+}) async {
+  final theme = Theme.of(context);
+  final l10n = AppLocalizations.of(context)!;
 
-  final pm.AssetPathEntity? selectedAlbum;
-  final AsyncValue<List<pm.AssetPathEntity>> albumsAsync;
-  final ValueChanged<pm.AssetPathEntity?> onAlbumSelected;
-
-  Future<void> _showAlbumPicker(
-    BuildContext context,
-    List<pm.AssetPathEntity> albums,
-    pm.AssetPathEntity? currentSelection,
-    ValueChanged<pm.AssetPathEntity?> onSelected,
-  ) async {
-    final theme = Theme.of(context);
-    final l10n = AppLocalizations.of(context)!;
-
-    await showModalBottomSheet<pm.AssetPathEntity?>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) => Container(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.4,
-        ),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              margin: const EdgeInsets.only(top: 12, bottom: 8),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: theme.dividerColor,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-              child: Text(
-                l10n.selectAlbumToView,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            Flexible(
-              child: ListView(
-                shrinkWrap: true,
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                children: [
-                  // "All Photos" option
-                  _AlbumOption(
-                    label: l10n.allPhotos,
-                    icon: Icons.grid_view,
-                    isSelected: currentSelection == null,
-                    onTap: () {
-                      Navigator.of(context).pop(null);
-                      onSelected(null);
-                    },
-                  ),
-                  const Divider(height: 1),
-                  // Albums
-                  ...albums.where((a) => !a.isAll).map((album) {
-                    final isSelected = currentSelection?.id == album.id;
-                    return _AlbumOption(
-                      label: album.name,
-                      icon: Icons.folder,
-                      isSelected: isSelected,
-                      onTap: () {
-                        Navigator.of(context).pop(album);
-                        onSelected(album);
-                      },
-                    );
-                  }),
-                ],
-              ),
-            ),
-          ],
-        ),
+  if (albums.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(l10n.albumNotFound, overflow: TextOverflow.ellipsis),
+        behavior: SnackBarBehavior.floating,
       ),
     );
+    return;
   }
 
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    final l10n = AppLocalizations.of(context)!;
+  final filteredAlbums = albums.where((album) => !album.isAll).toList();
 
-    return albumsAsync.when(
-      loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
-      data: (albums) {
-        if (albums.isEmpty) return const SizedBox.shrink();
-
-        final displayText = selectedAlbum == null
-            ? l10n.allPhotos
-            : selectedAlbum!.name;
-
-        return InkWell(
-          onTap: () =>
-              _showAlbumPicker(context, albums, selectedAlbum, onAlbumSelected),
-          borderRadius: BorderRadius.circular(16),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+  final selection = await showModalBottomSheet<pm.AssetPathEntity?>(
+    context: context,
+    backgroundColor: Colors.transparent,
+    isScrollControlled: true,
+    builder: (context) => Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.4,
+      ),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            margin: const EdgeInsets.only(top: 12, bottom: 8),
+            width: 40,
+            height: 4,
             decoration: BoxDecoration(
-              color:
-                  Theme.of(context).appBarTheme.backgroundColor ??
-                  Theme.of(context).colorScheme.surface,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.transparent),
+              color: theme.dividerColor,
+              borderRadius: BorderRadius.circular(2),
             ),
-            child: Row(
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+            child: Text(
+              l10n.selectAlbumToView,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          Flexible(
+            child: ListView(
+              shrinkWrap: true,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
               children: [
-                Icon(
-                  selectedAlbum == null ? Icons.grid_view : Icons.folder,
-                  size: 20,
-                  color: theme.colorScheme.primary,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    displayText,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w500,
-                    ),
-                    overflow: TextOverflow.ellipsis,
+                ListTile(
+                  contentPadding: const EdgeInsets.symmetric(vertical: 6),
+                  leading: Icon(
+                    Icons.grid_view,
+                    color: theme.colorScheme.primary,
                   ),
+                  title: Text(l10n.allPhotos, overflow: TextOverflow.ellipsis),
+                  trailing: selectedAlbum == null
+                      ? Icon(Icons.check_circle,
+                          color: theme.colorScheme.primary)
+                      : null,
+                  onTap: () => Navigator.of(context).pop(null),
                 ),
-                Icon(
-                  Icons.arrow_drop_down,
-                  color: theme.colorScheme.onSurface.withOpacity(0.6),
-                ),
+                const Divider(height: 1),
+                ...filteredAlbums.map((album) {
+                  final isSelected = selectedAlbum?.id == album.id;
+                  return ListTile(
+                    contentPadding: const EdgeInsets.symmetric(vertical: 6),
+                    leading: Icon(
+                      Icons.folder,
+                      color: isSelected
+                          ? theme.colorScheme.primary
+                          : theme.colorScheme.onSurface.withOpacity(0.6),
+                    ),
+                    title: Text(album.name, overflow: TextOverflow.ellipsis),
+                    trailing: isSelected
+                        ? Icon(Icons.check_circle,
+                            color: theme.colorScheme.primary)
+                        : null,
+                    onTap: () => Navigator.of(context).pop(album),
+                  );
+                }),
               ],
             ),
           ),
-        );
-      },
-    );
-  }
-}
-
-class _AlbumOption extends StatelessWidget {
-  const _AlbumOption({
-    required this.label,
-    required this.icon,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  final String label;
-  final IconData icon;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        color: isSelected
-            ? theme.colorScheme.primaryContainer.withOpacity(0.3)
-            : Colors.transparent,
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              size: 22,
-              color: isSelected
-                  ? theme.colorScheme.primary
-                  : theme.colorScheme.onSurface.withOpacity(0.6),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                label,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                  color: isSelected
-                      ? theme.colorScheme.primary
-                      : theme.colorScheme.onSurface,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            if (isSelected)
-              Icon(
-                Icons.check_circle,
-                size: 20,
-                color: theme.colorScheme.primary,
-              ),
-          ],
-        ),
+        ],
       ),
-    );
-  }
+    ),
+  );
+
+  if (!context.mounted) return;
+  onSelected(selection);
 }
 
+// ignore: unused_element
 class _ChangeAlbumZone extends ConsumerWidget {
   const _ChangeAlbumZone({
     required this.onDragOver,
@@ -517,26 +413,35 @@ class _SwipeAreaContentState extends ConsumerState<_SwipeAreaContent> {
           constraints: const BoxConstraints(maxWidth: 480),
           child: AspectRatio(
             aspectRatio: 3 / 4,
-            child: AnimatedOpacity(
-              opacity: _dragOpacity,
-              duration: const Duration(milliseconds: 200),
-              child: AnimatedScale(
-                scale: _dragScale,
-                duration: const Duration(milliseconds: 150),
-                curve: Curves.easeOutCubic,
-                child: Transform.translate(
-                  offset: _dragOffset,
-                  child: PhotoSwipeDeck(
-                    assets: widget.assets,
-                    isDraggingToAlbum: () => _isDraggingToAlbum,
-                    onDragUpdate: _handleDragUpdate,
-                    onDragEnd: (asset, pos) {
-                      _handleDragEnd(asset, pos);
-                    },
-                    onDecision: (asset, decision) {
-                      _handleDecision(asset, decision);
-                    },
-                  ),
+            child: AnimatedScale(
+              scale: _dragScale,
+              duration: const Duration(milliseconds: 150),
+              curve: Curves.easeOutCubic,
+              child: Transform.translate(
+                offset: _dragOffset,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    PhotoSwipeDeck(
+                      assets: widget.assets,
+                      isDraggingToAlbum: () => _isDraggingToAlbum,
+                      onDragUpdate: _handleDragUpdate,
+                      onDragEnd: (asset, pos) {
+                        _handleDragEnd(asset, pos);
+                      },
+                      onDecision: (asset, decision) {
+                        _handleDecision(asset, decision);
+                      },
+                    ),
+                    if (_dragOpacity < 1.0)
+                      IgnorePointer(
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          curve: Curves.easeOutCubic,
+                          color: Colors.black.withOpacity((1 - _dragOpacity) * 0.4),
+                        ),
+                      ),
+                  ],
                 ),
               ),
             ),
@@ -723,9 +628,41 @@ class SwipePage extends ConsumerWidget {
     final albumsAsync = ref.watch(albumsProvider);
     debugPrint('🧭 [SwipePage] selectedAlbum=${selectedAlbum?.name ?? "All"}');
 
+    final theme = Theme.of(context);
+    final albumsData = albumsAsync.asData?.value;
+    final displayAlbumName = selectedAlbum?.name ?? l10n.allPhotos;
+    final canOpenAlbumPicker = albumsData != null && albumsData.isNotEmpty;
+
+    Future<void> openAlbumPicker() async {
+      final availableAlbums = albumsData;
+      if (availableAlbums == null || availableAlbums.isEmpty) return;
+      await _presentAlbumPicker(
+        context: context,
+        albums: availableAlbums,
+        selectedAlbum: selectedAlbum,
+        onSelected: (album) {
+          ref.read(selectedAlbumProvider.notifier).state = album;
+        },
+      );
+    }
+
+    final albumIconButton = IconButton(
+      icon: const Icon(Icons.photo_library_outlined),
+      tooltip: displayAlbumName,
+      onPressed: canOpenAlbumPicker ? openAlbumPicker : null,
+    );
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(l10n.appTitle, overflow: TextOverflow.ellipsis),
+        leading: albumIconButton,
+        automaticallyImplyLeading: false,
+        title: Text(
+          displayAlbumName,
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+          overflow: TextOverflow.ellipsis,
+        ),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         actions: [
@@ -765,18 +702,7 @@ class SwipePage extends ConsumerWidget {
           ),
           child: Column(
             children: [
-              // 1. Albüm seçme yapısı (hangi albümden swipe edileceği)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                child: _AlbumSelector(
-                  selectedAlbum: selectedAlbum,
-                  albumsAsync: albumsAsync,
-                  onAlbumSelected: (album) {
-                    ref.read(selectedAlbumProvider.notifier).state = album;
-                  },
-                ),
-              ),
-              // state.when ile hem Change Album Zone hem de Swipe Area'yı birlikte yönet
+              // Swipe alanı ve istatistikler
               Expanded(
                 child: state.when(
                   loading: () =>
@@ -797,10 +723,81 @@ class SwipePage extends ConsumerWidget {
                       return Builder(
                         builder: (ctx) {
                           final l10n = AppLocalizations.of(ctx)!;
+                          final theme = Theme.of(ctx);
                           return Center(
-                            child: Text(
-                              l10n.noPhotosToShow,
-                              overflow: TextOverflow.ellipsis,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 32),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    width: 118,
+                                    height: 118,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                        colors: [
+                                          theme.colorScheme.primaryContainer.withOpacity(0.85),
+                                          theme.colorScheme.secondaryContainer.withOpacity(0.75),
+                                        ],
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: theme.colorScheme.primary.withOpacity(0.18),
+                                          blurRadius: 24,
+                                          offset: const Offset(0, 10),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Icon(
+                                      Icons.photo_library_outlined,
+                                      color: theme.colorScheme.onPrimaryContainer,
+                                      size: 48,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 24),
+                                  Text(
+                                    l10n.noPhotosToShow,
+                                    style: theme.textTheme.titleLarge?.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: -0.2,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    l10n.selectAlbumToView,
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      color: theme.colorScheme.onSurface.withOpacity(0.7),
+                                      height: 1.4,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                  const SizedBox(height: 24),
+                                  if (canOpenAlbumPicker)
+                                    FilledButton.icon(
+                                      onPressed: openAlbumPicker,
+                                      icon: const Icon(Icons.folder_open),
+                                      label: Text(l10n.changeAlbum),
+                                      style: FilledButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(14),
+                                        ),
+                                      ),
+                                    )
+                                  else
+                                    OutlinedButton.icon(
+                                      onPressed: () {
+                                        ref.invalidate(galleryPagingControllerProvider);
+                                      },
+                                      icon: const Icon(Icons.refresh),
+                                      label: Text(l10n.tryAgain),
+                                    ),
+                                ],
+                              ),
                             ),
                           );
                         },
@@ -1182,14 +1179,25 @@ class _DeleteLimitInfo extends ConsumerStatefulWidget {
   ConsumerState<_DeleteLimitInfo> createState() => _DeleteLimitInfoState();
 }
 
-class _DeleteLimitInfoState extends ConsumerState<_DeleteLimitInfo> {
+class _DeleteLimitInfoState extends ConsumerState<_DeleteLimitInfo>
+    with SingleTickerProviderStateMixin {
   final RewardedAdsService _adsService = RewardedAdsService();
   bool _isLoadingAd = false;
   bool _isAdReady = false;
+  late AnimationController _breathingController;
+  late Animation<double> _breathingAnimation;
 
   @override
   void initState() {
     super.initState();
+    _breathingController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2200),
+    );
+    _breathingAnimation = CurvedAnimation(
+      parent: _breathingController,
+      curve: Curves.easeInOut,
+    );
     // Preload ad when widget is created
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
@@ -1213,6 +1221,7 @@ class _DeleteLimitInfoState extends ConsumerState<_DeleteLimitInfo> {
           setState(() {
             _isAdReady = isReady;
           });
+          _updateBreathingState();
         }
         if (!isReady) {
           _checkAdReady();
@@ -1223,8 +1232,26 @@ class _DeleteLimitInfoState extends ConsumerState<_DeleteLimitInfo> {
 
   @override
   void dispose() {
+    _breathingController.dispose();
     _adsService.dispose();
     super.dispose();
+  }
+
+  void _updateBreathingState() {
+    if (!mounted) return;
+    final bool isEnabled = !_isLoadingAd && _isAdReady;
+    if (isEnabled) {
+      if (!_breathingController.isAnimating) {
+        _breathingController
+          ..reset()
+          ..repeat(reverse: true);
+      }
+    } else {
+      if (_breathingController.isAnimating) {
+        _breathingController.stop();
+      }
+      _breathingController.reset();
+    }
   }
 
   Future<void> _watchAd() async {
@@ -1233,6 +1260,7 @@ class _DeleteLimitInfoState extends ConsumerState<_DeleteLimitInfo> {
     setState(() {
       _isLoadingAd = true;
     });
+    _updateBreathingState();
 
     try {
       final success = await _adsService.showRewardedAd(
@@ -1265,6 +1293,7 @@ class _DeleteLimitInfoState extends ConsumerState<_DeleteLimitInfo> {
         setState(() {
           _isAdReady = false;
         });
+        _updateBreathingState();
         _checkAdReady();
       }
     } catch (e) {
@@ -1273,6 +1302,7 @@ class _DeleteLimitInfoState extends ConsumerState<_DeleteLimitInfo> {
         setState(() {
           _isAdReady = false;
         });
+        _updateBreathingState();
         _checkAdReady();
       }
     } finally {
@@ -1280,6 +1310,7 @@ class _DeleteLimitInfoState extends ConsumerState<_DeleteLimitInfo> {
         setState(() {
           _isLoadingAd = false;
         });
+        _updateBreathingState();
       }
     }
   }
@@ -1519,7 +1550,7 @@ class _DeleteLimitInfoState extends ConsumerState<_DeleteLimitInfo> {
       error: (_, __) => const SizedBox.shrink(),
       data: (deleteLimit) {
         return Container(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
             color: theme.colorScheme.surface,
             borderRadius: BorderRadius.circular(16),
@@ -1547,8 +1578,8 @@ class _DeleteLimitInfoState extends ConsumerState<_DeleteLimitInfo> {
                     flex: 3,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
+                        horizontal: 12,
+                        vertical: 10,
                       ),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
@@ -1592,7 +1623,7 @@ class _DeleteLimitInfoState extends ConsumerState<_DeleteLimitInfo> {
                                   l10n.remainingDeletionRights,
                                   style: theme.textTheme.labelSmall?.copyWith(
                                     fontWeight: FontWeight.w600,
-                                    fontSize: 11,
+                                    fontSize: 10,
                                     color: theme.colorScheme.onPrimaryContainer
                                         .withOpacity(0.9),
                                     letterSpacing: 0.3,
@@ -1602,12 +1633,12 @@ class _DeleteLimitInfoState extends ConsumerState<_DeleteLimitInfo> {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 2),
                           Text(
                             '$deleteLimit',
                             style: theme.textTheme.headlineSmall?.copyWith(
                               fontWeight: FontWeight.w900,
-                              fontSize: 22,
+                              fontSize: 20,
                               color: theme.colorScheme.onPrimaryContainer,
                               letterSpacing: -1.2,
                               height: 1,
@@ -1622,113 +1653,126 @@ class _DeleteLimitInfoState extends ConsumerState<_DeleteLimitInfo> {
                   // Watch Ad button - Daha küçük, amber/orange renk
                   Expanded(
                     flex: 2,
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: (_isLoadingAd || !_isAdReady) ? null : _watchAd,
-                        borderRadius: BorderRadius.circular(14),
-                        child: Opacity(
-                          opacity: (_isLoadingAd || !_isAdReady) ? 0.5 : 1.0,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 12,
-                            ),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [
-                                  Colors.teal.shade400,
-                                  Colors.cyan.shade400,
-                                ],
-                              ),
+                    child: AnimatedBuilder(
+                      animation: _breathingController,
+                      builder: (context, child) {
+                        final bool isEnabled = !_isLoadingAd && _isAdReady;
+                        final double pulse = isEnabled ? _breathingAnimation.value : 0.0;
+                        final double scale = 1.0 + (pulse * 0.05);
+                        final double blur = 8 + (pulse * 6);
+
+                        return Transform.scale(
+                          scale: scale,
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: isEnabled ? _watchAd : null,
                               borderRadius: BorderRadius.circular(14),
-                              border: Border.all(
-                                color: Colors.teal.shade300.withOpacity(0.3),
-                                width: 1,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.teal.withOpacity(0.2),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 3),
-                                  spreadRadius: 0,
-                                ),
-                              ],
-                            ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    if (_isLoadingAd)
-                                      SizedBox(
-                                        width: 12,
-                                        height: 12,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          valueColor:
-                                              AlwaysStoppedAnimation<Color>(
-                                                Colors.white,
-                                              ),
-                                        ),
-                                      )
-                                    else
-                                      Icon(
-                                        Icons.play_circle_outline,
-                                        size: 11,
-                                        color: Colors.white.withOpacity(0.95),
+                              child: Opacity(
+                                opacity: isEnabled ? 1.0 : 0.5,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 10,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                      colors: [
+                                        Colors.teal.shade400,
+                                        Colors.cyan.shade400,
+                                      ],
+                                    ),
+                                    borderRadius: BorderRadius.circular(14),
+                                    border: Border.all(
+                                      color: Colors.teal.shade300.withOpacity(0.3),
+                                      width: 1,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.teal.withOpacity(0.25 + pulse * 0.15),
+                                        blurRadius: blur,
+                                        offset: const Offset(0, 3),
+                                        spreadRadius: pulse * 2,
                                       ),
-                                    const SizedBox(width: 3),
-                                    Flexible(
-                                      child: Text(
-                                        l10n.watchAdToEarn,
-                                        style: theme.textTheme.labelSmall
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.w700,
-                                              fontSize: 9,
-                                              color: Colors.white.withOpacity(
-                                                0.95,
+                                    ],
+                                  ),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          if (_isLoadingAd)
+                                            SizedBox(
+                                              width: 12,
+                                              height: 12,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                valueColor:
+                                                    AlwaysStoppedAnimation<Color>(
+                                                  Colors.white,
+                                                ),
                                               ),
-                                              letterSpacing: 0.2,
+                                            )
+                                          else
+                                            Icon(
+                                              Icons.play_circle_outline,
+                                              size: 11,
+                                              color: Colors.white.withOpacity(0.95),
+                                            ),
+                                          const SizedBox(width: 3),
+                                          Flexible(
+                                            child: Text(
+                                              l10n.watchAdToEarn,
+                                              style: theme.textTheme.labelSmall
+                                                  ?.copyWith(
+                                                    fontWeight: FontWeight.w700,
+                                                    fontSize: 8.5,
+                                                    color: Colors.white.withOpacity(
+                                                      0.95,
+                                                    ),
+                                                    letterSpacing: 0.2,
+                                                  ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              textAlign: TextAlign.center,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        l10n.earnDeletionRights,
+                                        style: theme.textTheme.headlineSmall
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.w900,
+                                              fontSize: 16,
+                                              color: Colors.white,
+                                              letterSpacing: -0.8,
+                                              height: 1,
                                             ),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                         textAlign: TextAlign.center,
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  l10n.earnDeletionRights,
-                                  style: theme.textTheme.headlineSmall
-                                      ?.copyWith(
-                                        fontWeight: FontWeight.w900,
-                                        fontSize: 18,
-                                        color: Colors.white,
-                                        letterSpacing: -0.8,
-                                        height: 1,
-                                      ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  textAlign: TextAlign.center,
-                                ),
-                              ],
+                              ),
                             ),
                           ),
-                        ),
-                      ),
+                        );
+                      },
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
               // Unlimited deletion rights button - Premium solid color
               SizedBox(
                 width: double.infinity,
@@ -1741,8 +1785,8 @@ class _DeleteLimitInfoState extends ConsumerState<_DeleteLimitInfo> {
                     borderRadius: BorderRadius.circular(18),
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 16,
+                        horizontal: 16,
+                        vertical: 12,
                       ),
                       decoration: BoxDecoration(
                         color: theme.colorScheme.primary,
@@ -1770,8 +1814,8 @@ class _DeleteLimitInfoState extends ConsumerState<_DeleteLimitInfo> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Container(
-                            width: 36,
-                            height: 36,
+                            width: 32,
+                            height: 32,
                             decoration: BoxDecoration(
                               color: theme.colorScheme.onPrimary.withOpacity(
                                 0.15,
@@ -1780,11 +1824,11 @@ class _DeleteLimitInfoState extends ConsumerState<_DeleteLimitInfo> {
                             ),
                             child: Icon(
                               Icons.all_inclusive_rounded,
-                              size: 20,
+                              size: 18,
                               color: theme.colorScheme.onPrimary,
                             ),
                           ),
-                          const SizedBox(width: 14),
+                          const SizedBox(width: 12),
                           Expanded(
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
@@ -1794,7 +1838,7 @@ class _DeleteLimitInfoState extends ConsumerState<_DeleteLimitInfo> {
                                   l10n.buyUnlimitedRights,
                                   style: TextStyle(
                                     fontWeight: FontWeight.w800,
-                                    fontSize: 15,
+                                    fontSize: 14,
                                     color: theme.colorScheme.onPrimary,
                                     letterSpacing: -0.4,
                                     height: 1.2,
@@ -1816,7 +1860,7 @@ class _DeleteLimitInfoState extends ConsumerState<_DeleteLimitInfo> {
                                         l10n.oneTimePayment,
                                         style: TextStyle(
                                           fontWeight: FontWeight.w600,
-                                          fontSize: 11,
+                                          fontSize: 10,
                                           color: theme.colorScheme.onPrimary
                                               .withOpacity(0.9),
                                           letterSpacing: 0.3,
@@ -1831,7 +1875,7 @@ class _DeleteLimitInfoState extends ConsumerState<_DeleteLimitInfo> {
                           ),
                           Icon(
                             Icons.arrow_forward_ios_rounded,
-                            size: 16,
+                            size: 14,
                             color: theme.colorScheme.onPrimary.withOpacity(0.8),
                           ),
                         ],
@@ -2116,7 +2160,7 @@ void _showDeleteSuccessDialog(BuildContext context, int deletedCount) {
                   );
                 },
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
               // Success title
               Text(
                 l10n.success,
@@ -2178,7 +2222,7 @@ void _showDeleteSuccessDialog(BuildContext context, int deletedCount) {
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 18),
               // OK button
               SizedBox(
                 width: double.infinity,

@@ -217,16 +217,18 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck> with TickerProviderStat
             : sem.delete.withOpacity(deleteOpacity * 0.8));
     final l10n = AppLocalizations.of(context)!;
 
-    Widget card = Opacity(
-      opacity: cardOpacity,
-      child: Transform.translate(
-        offset: offset,
-          child: Transform.rotate(
-            angle: rotation * math.pi / 180,
-            child: Transform.scale(
-              scale: cardScale,
-              child: RepaintBoundary(
-                child: DecoratedBox(
+    final overlayAlpha = (1 - cardOpacity).clamp(0.0, 1.0);
+    Widget card = Transform.translate(
+      offset: offset,
+      child: Transform.rotate(
+        angle: rotation * math.pi / 180,
+        child: Transform.scale(
+          scale: cardScale,
+          child: RepaintBoundary(
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                DecoratedBox(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
@@ -240,9 +242,19 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck> with TickerProviderStat
                   ),
                   child: _PhotoCard(asset: asset),
                 ),
-              ),
+                if (overlayAlpha > 0)
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: IgnorePointer(
+                      child: ColoredBox(
+                        color: Colors.black.withOpacity(overlayAlpha * 0.45),
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ),
+        ),
       ),
     );
 
