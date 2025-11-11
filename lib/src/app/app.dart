@@ -33,8 +33,8 @@ class App extends ConsumerWidget {
       themeMode: themeMode,
       locale: locale,
       supportedLocales: const [
-        Locale('tr', 'TR'),
         Locale('en', 'US'),
+        Locale('tr', 'TR'),
         Locale('es', 'ES'),
       ],
       localizationsDelegates: const [

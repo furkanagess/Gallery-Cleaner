@@ -7,6 +7,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:photo_manager/photo_manager.dart' as pm;
+import 'package:lottie/lottie.dart';
 // import '../../application/review_actions_controller.dart';
 import '../../application/review_history_controller.dart';
 import '../../../../app/theme/app_theme.dart';
@@ -338,60 +339,61 @@ Future<void> _restoreDeletedPhoto(
   if (shouldRestore == true) {
     // History'den kaldır veya status'ü değiştir
     ref.read(reviewHistoryControllerProvider.notifier).undoDelete(item.assetId);
-
-    // Başarı mesajı göster
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.photoRestored, overflow: TextOverflow.ellipsis),
-          backgroundColor: Colors.green,
-          duration: const Duration(seconds: 2),
-        ),
-      );
-    }
   }
 }
 
 // Empty state widget
 Widget _buildEmptyState(BuildContext context, AppLocalizations l10n) {
+  final theme = Theme.of(context);
   return Center(
-    child: Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Container(
-          width: 120,
-          height: 120,
-          decoration: BoxDecoration(
-            color: Theme.of(
-              context,
-            ).colorScheme.primaryContainer.withOpacity(0.3),
-            shape: BoxShape.circle,
+    child: Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 100,
+            height: 100,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  theme.colorScheme.primary.withOpacity(0.1),
+                  theme.colorScheme.secondary.withOpacity(0.1),
+                ],
+              ),
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: theme.colorScheme.primary.withOpacity(0.2),
+                width: 2,
+              ),
+            ),
+            child: Icon(
+              Icons.bar_chart_outlined,
+              size: 48,
+              color: theme.colorScheme.primary,
+            ),
           ),
-          child: Icon(
-            Icons.history,
-            size: 64,
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.6),
+          const SizedBox(height: 24),
+          Text(
+            l10n.noHistoryYet,
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: theme.colorScheme.onSurface,
+            ),
+            textAlign: TextAlign.center,
           ),
-        ),
-        const SizedBox(height: 24),
-        Text(
-          l10n.noHistoryYet,
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.w600,
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
+          const SizedBox(height: 12),
+          Text(
+            l10n.noHistoryYetDescription,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurface.withOpacity(0.7),
+            ),
+            textAlign: TextAlign.center,
           ),
-          overflow: TextOverflow.ellipsis,
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Start reviewing photos to see your activity',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
-          ),
-          textAlign: TextAlign.center,
-          overflow: TextOverflow.ellipsis,
-        ),
-      ],
+        ],
+      ),
     ),
   );
 }
@@ -733,11 +735,15 @@ class _DeletedPhotoThumbnail extends StatelessWidget {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Container(
             color: Theme.of(context).colorScheme.surfaceVariant,
-            child: const Center(
+            child: Center(
               child: SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
+                width: 40,
+                height: 40,
+                child: Lottie.asset(
+                  'assets/lottie/loading.json',
+                  fit: BoxFit.contain,
+                  repeat: true,
+                ),
               ),
             ),
           );
@@ -786,11 +792,15 @@ class _DeletedPhotoThumbnail extends StatelessWidget {
             if (thumbSnapshot.connectionState == ConnectionState.waiting) {
               return Container(
                 color: Theme.of(context).colorScheme.surfaceVariant,
-                child: const Center(
+                child: Center(
                   child: SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
+                    width: 40,
+                    height: 40,
+                    child: Lottie.asset(
+                      'assets/lottie/loading.json',
+                      fit: BoxFit.contain,
+                      repeat: true,
+                    ),
                   ),
                 ),
               );

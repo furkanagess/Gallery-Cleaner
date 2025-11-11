@@ -1,0 +1,9 @@
+# Keystore Configuration
+# Bu dosyayı key.properties olarak kaydedin ve değerleri doldurun
+# ÖNEMLİ: Bu dosyayı Git'e commit etmeyin (güvenlik için .gitignore'da)
+
+storePassword=your_keystore_password
+keyPassword=your_key_password
+keyAlias=upload
+storeFile=/path/to/upload-keystore.jks
+

@@ -3,74 +3,165 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
+/// Ad unit types for different features
+enum AdUnitType {
+  deleteLimit,      // Delete rights reward
+  blurScanLimit,    // Blur scan rights reward
+  duplicateScanLimit, // Duplicate scan rights reward
+}
+
 class RewardedAdsService {
-  static const String _androidAdUnitId = 'ca-app-pub-3499593115543692/1575404766';
-  static const String _iosAdUnitId = 'ca-app-pub-3499593115543692/2388248395';
+  // Singleton instance
+  static RewardedAdsService? _instance;
+  static RewardedAdsService get instance {
+    _instance ??= RewardedAdsService._();
+    return _instance!;
+  }
   
-  RewardedAd? _rewardedAd;
-  bool _isLoading = false;
-  bool _isShowing = false;
-  Completer<bool>? _showCompleter;
-  bool _rewardEarned = false;
+  RewardedAdsService._();
+  
+  // Ad Unit IDs for different features
+  // Test Ad Unit IDs (use these for development)
+  // Test rewarded interstitial ad unit ID (same for Android and iOS)
+  static const String _testAdUnitId = 'ca-app-pub-3940256099942544/5354046379'; // Test rewarded interstitial ad
+  
+  // Delete Limit Ads
+  static const String _deleteLimitAndroidAdUnitId = 'ca-app-pub-3499593115543692/1575404766'; // Android Delete Ad Unit ID
+  static const String _deleteLimitIosAdUnitId = 'ca-app-pub-3499593115543692/2388248395'; // iOS Delete Ad Unit ID
+  
+  // Blur Scan Limit Ads
+  static const String _blurScanLimitAndroidAdUnitId = 'ca-app-pub-3499593115543692/1034023877'; // Android Blur Ad Unit ID
+  static const String _blurScanLimitIosAdUnitId = 'ca-app-pub-3499593115543692/7683192707'; // iOS Blur Ad Unit ID
+  
+  // Duplicate Scan Limit Ads
+  static const String _duplicateScanLimitAndroidAdUnitId = 'ca-app-pub-3499593115543692/9608741799'; // Android Duplicate Ad Unit ID
+  static const String _duplicateScanLimitIosAdUnitId = 'ca-app-pub-3499593115543692/1924148305'; // iOS Duplicate Ad Unit ID
+  
+  // Use test ads in debug mode
+  static const bool _useTestAds = true; // Set to false for production
+  
+  // Map to store ads for each type
+  final Map<AdUnitType, RewardedInterstitialAd?> _ads = {};
+  final Map<AdUnitType, bool> _isLoading = {};
+  final Map<AdUnitType, bool> _isShowing = {};
+  final Map<AdUnitType, Completer<bool>?> _showCompleters = {};
+  final Map<AdUnitType, bool> _rewardEarned = {};
   bool _isDisposed = false;
 
   /// Initialize Mobile Ads SDK
   static Future<void> initialize() async {
     try {
-      await MobileAds.instance.initialize();
+      final initializationStatus = await MobileAds.instance.initialize();
       debugPrint('📱 [RewardedAdsService] Mobile Ads SDK initialized');
-    } catch (e) {
+      
+      // Log adapter statuses
+      for (var entry in initializationStatus.adapterStatuses.entries) {
+        final adapterStatus = entry.value;
+        debugPrint('📱 [RewardedAdsService] Adapter: ${entry.key}, State: ${adapterStatus.state}, Latency: ${adapterStatus.latency}ms');
+      }
+    } catch (e, stackTrace) {
       debugPrint('❌ [RewardedAdsService] Failed to initialize Mobile Ads SDK: $e');
+      debugPrint('❌ [RewardedAdsService] Stack trace: $stackTrace');
     }
   }
 
-  /// Load a rewarded ad
-  Future<void> loadRewardedAd() async {
-    if (_isDisposed) return;
-    if (_isLoading || _rewardedAd != null) return;
+  /// Get ad unit ID for a specific type and platform
+  String _getAdUnitId(AdUnitType type) {
+    // Use test ads in debug mode
+    if (_useTestAds || kDebugMode) {
+      debugPrint('📱 [RewardedAdsService] Using test ad unit ID');
+      return _testAdUnitId;
+    }
+    
+    final isAndroid = Platform.isAndroid;
+    switch (type) {
+      case AdUnitType.deleteLimit:
+        return isAndroid ? _deleteLimitAndroidAdUnitId : _deleteLimitIosAdUnitId;
+      case AdUnitType.blurScanLimit:
+        return isAndroid ? _blurScanLimitAndroidAdUnitId : _blurScanLimitIosAdUnitId;
+      case AdUnitType.duplicateScanLimit:
+        return isAndroid ? _duplicateScanLimitAndroidAdUnitId : _duplicateScanLimitIosAdUnitId;
+    }
+  }
+
+  /// Load a rewarded interstitial ad for a specific type
+  Future<void> loadRewardedAd(AdUnitType type) async {
+    if (_isDisposed) {
+      debugPrint('⚠️ [RewardedAdsService] Service is disposed, cannot load ad for type: $type');
+      return;
+    }
+    
+    // If already loading or already loaded, return
+    if (_isLoading[type] == true) {
+      debugPrint('⚠️ [RewardedAdsService] Ad is already loading for type: $type');
+      return;
+    }
+    
+    if (_ads[type] != null) {
+      debugPrint('⚠️ [RewardedAdsService] Ad is already loaded for type: $type');
+      return;
+    }
     
     try {
-      // Check if ads SDK is initialized
+      // Ensure ads SDK is initialized
       try {
         await MobileAds.instance.initialize();
+        debugPrint('✅ [RewardedAdsService] Mobile Ads SDK initialized');
       } catch (e) {
-        debugPrint('⚠️ [RewardedAdsService] Ads SDK already initialized or error: $e');
+        debugPrint('⚠️ [RewardedAdsService] Ads SDK initialization check: $e');
       }
       
-      _isLoading = true;
-      final adUnitId = Platform.isAndroid ? _androidAdUnitId : _iosAdUnitId;
+      _isLoading[type] = true;
+      final adUnitId = _getAdUnitId(type);
       
-      await RewardedAd.load(
+      debugPrint('📱 [RewardedAdsService] Loading ad for type: $type, adUnitId: $adUnitId');
+      
+      await RewardedInterstitialAd.load(
         adUnitId: adUnitId,
         request: const AdRequest(),
-        rewardedAdLoadCallback: RewardedAdLoadCallback(
-          onAdLoaded: (RewardedAd ad) {
+        rewardedInterstitialAdLoadCallback: RewardedInterstitialAdLoadCallback(
+          onAdLoaded: (RewardedInterstitialAd ad) {
             if (_isDisposed) {
               ad.dispose();
               return;
             }
-            debugPrint('✅ [RewardedAdsService] Rewarded ad loaded');
-            _rewardedAd = ad;
-            _isLoading = false;
-            _rewardEarned = false;
+            debugPrint('✅ [RewardedAdsService] Rewarded interstitial ad loaded successfully for type: $type');
+            _ads[type] = ad;
+            _isLoading[type] = false;
+            _rewardEarned[type] = false;
           },
           onAdFailedToLoad: (LoadAdError error) {
             if (_isDisposed) return;
-            debugPrint('❌ [RewardedAdsService] Failed to load rewarded ad: $error');
-            _isLoading = false;
+            debugPrint('❌ [RewardedAdsService] Failed to load rewarded interstitial ad for type: $type');
+            debugPrint('❌ [RewardedAdsService] Error code: ${error.code}, message: ${error.message}');
+            debugPrint('❌ [RewardedAdsService] Domain: ${error.domain}, responseInfo: ${error.responseInfo}');
+            _isLoading[type] = false;
+            _ads[type] = null;
+            
+            // Retry loading after a delay if not disposed
+            if (!_isDisposed) {
+              Future.delayed(const Duration(seconds: 5), () {
+                if (!_isDisposed && _ads[type] == null && _isLoading[type] != true) {
+                  debugPrint('🔄 [RewardedAdsService] Retrying to load ad for type: $type');
+                  loadRewardedAd(type);
+                }
+              });
+            }
           },
         ),
       );
     } catch (e, stackTrace) {
       if (_isDisposed) return;
-      debugPrint('❌ [RewardedAdsService] Exception while loading ad: $e');
+      debugPrint('❌ [RewardedAdsService] Exception while loading ad for type: $type, error: $e');
       debugPrint('❌ [RewardedAdsService] Stack trace: $stackTrace');
-      _isLoading = false;
+      _isLoading[type] = false;
+      _ads[type] = null;
     }
   }
 
-  /// Show rewarded ad and return whether user earned reward
+  /// Show rewarded interstitial ad for a specific type and return whether user earned reward
   Future<bool> showRewardedAd({
+    required AdUnitType type,
     required Function() onRewarded,
     Function(String)? onError,
   }) async {
@@ -79,139 +170,149 @@ class RewardedAdsService {
       return false;
     }
 
-    // Prevent multiple simultaneous show attempts
-    if (_isShowing) {
-      debugPrint('⚠️ [RewardedAdsService] Ad is already being shown');
+    // Prevent multiple simultaneous show attempts for this type
+    if (_isShowing[type] == true) {
+      debugPrint('⚠️ [RewardedAdsService] Ad is already being shown for type: $type');
       onError?.call('Ad is already being shown');
       return false;
     }
 
     try {
-      if (_rewardedAd == null) {
-        debugPrint('⚠️ [RewardedAdsService] No ad loaded, loading now...');
-        await loadRewardedAd();
+      if (_ads[type] == null) {
+        debugPrint('⚠️ [RewardedAdsService] No ad loaded for type: $type, loading now...');
+        await loadRewardedAd(type);
         // Wait a bit for ad to load
         await Future.delayed(const Duration(seconds: 1));
-        if (_rewardedAd == null || _isDisposed) {
+        if (_ads[type] == null || _isDisposed) {
           onError?.call('Ad is not ready yet. Please try again in a moment.');
           return false;
         }
       }
 
-      _showCompleter = Completer<bool>();
-      _rewardEarned = false;
-      _isShowing = true;
+      _showCompleters[type] = Completer<bool>();
+      _rewardEarned[type] = false;
+      _isShowing[type] = true;
       
-      final currentAd = _rewardedAd;
+      final currentAd = _ads[type];
       if (currentAd == null || _isDisposed) {
-        _isShowing = false;
-        _showCompleter?.complete(false);
+        _isShowing[type] = false;
+        _showCompleters[type]?.complete(false);
+        _showCompleters[type] = null;
         onError?.call('Ad is not available');
         return false;
       }
 
       // Set full screen content callbacks
       currentAd.fullScreenContentCallback = FullScreenContentCallback(
-        onAdDismissedFullScreenContent: (RewardedAd ad) {
-          debugPrint('📱 [RewardedAdsService] Ad dismissed');
-          _handleAdDismissed(ad);
+        onAdDismissedFullScreenContent: (RewardedInterstitialAd ad) {
+          debugPrint('📱 [RewardedAdsService] Rewarded interstitial ad dismissed for type: $type');
+          _handleAdDismissed(type, ad);
         },
-        onAdFailedToShowFullScreenContent: (RewardedAd ad, AdError error) {
-          debugPrint('❌ [RewardedAdsService] Ad failed to show: $error');
-          _handleAdFailed(ad, error, onError);
+        onAdFailedToShowFullScreenContent: (RewardedInterstitialAd ad, AdError error) {
+          debugPrint('❌ [RewardedAdsService] Rewarded interstitial ad failed to show for type: $type, error: $error');
+          _handleAdFailed(type, ad, error, onError);
         },
-        onAdShowedFullScreenContent: (RewardedAd ad) {
-          debugPrint('📱 [RewardedAdsService] Ad showed');
+        onAdShowedFullScreenContent: (RewardedInterstitialAd ad) {
+          debugPrint('📱 [RewardedAdsService] Rewarded interstitial ad showed for type: $type');
         },
       );
       
       currentAd.show(
         onUserEarnedReward: (AdWithoutView ad, RewardItem reward) {
-          debugPrint('🎉 [RewardedAdsService] User earned reward: ${reward.amount} ${reward.type}');
-          _rewardEarned = true;
+          debugPrint('🎉 [RewardedAdsService] User earned reward for type: $type, amount: ${reward.amount}, type: ${reward.type}');
+          _rewardEarned[type] = true;
           try {
             onRewarded();
           } catch (e) {
-            debugPrint('❌ [RewardedAdsService] Error in onRewarded callback: $e');
+            debugPrint('❌ [RewardedAdsService] Error in onRewarded callback for type: $type, error: $e');
           }
         },
       );
 
-      final result = await _showCompleter!.future;
+      final result = await _showCompleters[type]!.future;
       return result;
     } catch (e) {
-      debugPrint('❌ [RewardedAdsService] Exception while showing ad: $e');
-      _isShowing = false;
-      _showCompleter?.complete(false);
+      debugPrint('❌ [RewardedAdsService] Exception while showing ad for type: $type, error: $e');
+      _isShowing[type] = false;
+      _showCompleters[type]?.complete(false);
+      _showCompleters[type] = null;
       onError?.call('Failed to show ad: ${e.toString()}');
       return false;
     }
   }
 
-  void _handleAdDismissed(RewardedAd ad) {
+  void _handleAdDismissed(AdUnitType type, RewardedInterstitialAd ad) {
     if (_isDisposed) return;
     
     try {
       ad.dispose();
-      _rewardedAd = null;
-      _isShowing = false;
+      _ads[type] = null;
+      _isShowing[type] = false;
       
-      if (_showCompleter != null && !_showCompleter!.isCompleted) {
-        _showCompleter!.complete(_rewardEarned);
+      if (_showCompleters[type] != null && !_showCompleters[type]!.isCompleted) {
+        _showCompleters[type]!.complete(_rewardEarned[type] ?? false);
       }
-      _showCompleter = null;
+      _showCompleters[type] = null;
       
-      // Load next ad
-      loadRewardedAd();
+      // Load next ad for this type
+      loadRewardedAd(type);
     } catch (e) {
-      debugPrint('❌ [RewardedAdsService] Error handling ad dismissal: $e');
+      debugPrint('❌ [RewardedAdsService] Error handling ad dismissal for type: $type, error: $e');
     }
   }
 
-  void _handleAdFailed(RewardedAd ad, AdError error, Function(String)? onError) {
+  void _handleAdFailed(AdUnitType type, RewardedInterstitialAd ad, AdError error, Function(String)? onError) {
     if (_isDisposed) return;
     
     try {
       ad.dispose();
-      _rewardedAd = null;
-      _isShowing = false;
+      _ads[type] = null;
+      _isShowing[type] = false;
       
-      if (_showCompleter != null && !_showCompleter!.isCompleted) {
-        _showCompleter!.complete(false);
+      if (_showCompleters[type] != null && !_showCompleters[type]!.isCompleted) {
+        _showCompleters[type]!.complete(false);
       }
-      _showCompleter = null;
+      _showCompleters[type] = null;
       
       onError?.call('Failed to show ad: ${error.message}');
       
-      // Try to load next ad
-      loadRewardedAd();
+      // Try to load next ad for this type
+      loadRewardedAd(type);
     } catch (e) {
-      debugPrint('❌ [RewardedAdsService] Error handling ad failure: $e');
+      debugPrint('❌ [RewardedAdsService] Error handling ad failure for type: $type, error: $e');
     }
   }
 
-  /// Check if ad is ready
-  bool get isAdReady => _rewardedAd != null && !_isDisposed;
+  /// Check if ad is ready for a specific type
+  bool isAdReady(AdUnitType type) => _ads[type] != null && !_isDisposed;
 
   /// Dispose resources
   void dispose() {
     if (_isDisposed) return;
     
     _isDisposed = true;
-    _isShowing = false;
     
     try {
-      _rewardedAd?.dispose();
-      _rewardedAd = null;
-      _isLoading = false;
-      
-      if (_showCompleter != null && !_showCompleter!.isCompleted) {
-        _showCompleter!.complete(false);
+      // Dispose all ads
+      for (var entry in _ads.entries) {
+        entry.value?.dispose();
       }
-      _showCompleter = null;
+      _ads.clear();
+      
+      // Clear all state
+      _isLoading.clear();
+      _isShowing.clear();
+      
+      // Complete all pending completers
+      for (var entry in _showCompleters.entries) {
+        if (entry.value != null && !entry.value!.isCompleted) {
+          entry.value!.complete(false);
+        }
+      }
+      _showCompleters.clear();
+      _rewardEarned.clear();
     } catch (e) {
       debugPrint('❌ [RewardedAdsService] Error during dispose: $e');
     }
   }
 }
-

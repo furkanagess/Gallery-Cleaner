@@ -40,9 +40,21 @@ class MediaLibraryService {
   }
 
   Future<List<String>> deleteBatch(List<String> ids) async {
-    if (ids.isEmpty) return const [];
+    if (ids.isEmpty) {
+      debugPrint('⚠️ [MediaLibraryService] deleteBatch: Boş ID listesi');
+      return const [];
+    }
+    
+    debugPrint('🗑️ [MediaLibraryService] deleteBatch başlatılıyor: ${ids.length} fotoğraf');
+    
+    try {
     final deleted = await pm.PhotoManager.editor.deleteWithIds(ids);
+      debugPrint('✅ [MediaLibraryService] deleteBatch tamamlandı: ${deleted.length}/${ids.length} fotoğraf silindi');
     return deleted; // returns deleted ids
+    } catch (e) {
+      debugPrint('❌ [MediaLibraryService] deleteBatch hatası: $e');
+      return const []; // Hata durumunda boş liste döndür
+    }
   }
 
   Future<bool> moveAssetToAlbum({
@@ -310,7 +322,12 @@ class MediaLibraryService {
   }
 
   /// Galeri istatistiklerini toplar (albüm sayısı, medya sayısı, toplam boyut)
-  Future<GalleryStats> fetchGalleryStats() async {
+  /// [onProgress] callback'i her bir veri geldiğinde çağrılır (incremental updates için)
+  /// [shouldCancel] callback'i tarama sırasında kontrol edilir, true dönerse tarama durur
+  Future<GalleryStats> fetchGalleryStats({
+    void Function(GalleryStats partialStats)? onProgress,
+    bool Function()? shouldCancel,
+  }) async {
     debugPrint('📸 [MediaLibraryService] İstatistikler toplanmaya başlandı');
     
     // Albümleri ve "All" albümlerini paralel olarak al
@@ -349,45 +366,241 @@ class MediaLibraryService {
     final albumCount = allAlbums.length;
     debugPrint('📸 [MediaLibraryService] Toplam ${albumCount} benzersiz albüm');
     
-    // Image ve video sayılarını paralel olarak topla (ultra hızlı)
-    debugPrint('📸 [MediaLibraryService] Medya sayıları ve boyutları ultra hızlı toplanıyor...');
+    // İptal kontrolü
+    if (shouldCancel != null && shouldCancel()) {
+      debugPrint('🛑 [MediaLibraryService] Tarama iptal edildi (başlangıç)');
+      return GalleryStats(
+        albumCount: 0,
+        mediaCount: 0,
+        totalSizeMB: 0.0,
+        albumDetails: [],
+        cachedAt: null,
+      );
+    }
     
-    final imageStats = allImagePath.isNotEmpty
-        ? _countMediaAndSizeFast(allImagePath.first, 'Image')
-        : Future.value((count: 0, size: 0));
-    final videoStats = allVideoPath.isNotEmpty
-        ? _countMediaAndSizeFast(allVideoPath.first, 'Video')
-        : Future.value((count: 0, size: 0));
+    // İlk partial stats: sadece albüm sayısı
+    var partialStats = GalleryStats(
+      albumCount: albumCount,
+      mediaCount: 0,
+      totalSizeMB: 0.0,
+      albumDetails: [],
+      cachedAt: null,
+    );
+    onProgress?.call(partialStats);
     
-    final results2 = await Future.wait([imageStats, videoStats]);
-    final imageResult = results2[0];
-    final videoResult = results2[1];
+    // İptal kontrolü
+    if (shouldCancel != null && shouldCancel()) {
+      debugPrint('🛑 [MediaLibraryService] Tarama iptal edildi (albüm sayısı sonrası)');
+      return partialStats;
+    }
     
-    final mediaCount = imageResult.count + videoResult.count;
-    final totalSizeBytes = imageResult.size + videoResult.size;
+    // Image ve video sayılarını incremental olarak topla
+    // Her analizde 0'dan başla
+    debugPrint('📸 [MediaLibraryService] Medya sayıları ve boyutları toplanıyor...');
+    
+    int totalMediaCount = 0;
+    int totalSizeBytes = 0;
+    
+    // Image sayısını say - her analizde 0'dan başla
+    if (allImagePath.isNotEmpty) {
+      final imageResult = await _countMediaAndSizeFast(
+        allImagePath.first,
+        'Image',
+        shouldCancel: shouldCancel,
+        onProgress: (count, size) {
+          // İptal kontrolü
+          if (shouldCancel != null && shouldCancel()) return;
+          
+          // Image sayımı sırasında sadece image değerlerini göster
+          totalMediaCount = count;
+          totalSizeBytes = size;
+          partialStats = GalleryStats(
+            albumCount: albumCount,
+            mediaCount: totalMediaCount,
+            totalSizeMB: totalSizeBytes / (1024 * 1024),
+            albumDetails: [],
+            cachedAt: null,
+          );
+          onProgress?.call(partialStats);
+        },
+      );
+      
+      // Final image sonuçlarını al (onProgress'ten sonra kesin değerler)
+      totalMediaCount = imageResult.count;
+      totalSizeBytes = imageResult.size;
+      debugPrint('📸 [MediaLibraryService] Image sayımı tamamlandı: $totalMediaCount medya, ${(totalSizeBytes / (1024 * 1024)).toStringAsFixed(2)} MB');
+    }
+    
+    // İptal kontrolü
+    if (shouldCancel != null && shouldCancel()) {
+      debugPrint('🛑 [MediaLibraryService] Tarama iptal edildi (image sayımı sonrası)');
+      partialStats = GalleryStats(
+        albumCount: albumCount,
+        mediaCount: totalMediaCount,
+        totalSizeMB: totalSizeBytes / (1024 * 1024),
+        albumDetails: [],
+        cachedAt: null,
+      );
+      return partialStats;
+    }
+    
+    // Video sayısını say (image count'a ekle) - her analizde 0'dan başla
+    if (allVideoPath.isNotEmpty) {
+      final initialImageCount = totalMediaCount;
+      final initialImageSize = totalSizeBytes;
+      
+      final videoResult = await _countMediaAndSizeFast(
+        allVideoPath.first,
+        'Video',
+        shouldCancel: shouldCancel,
+        onProgress: (videoCount, videoSize) {
+          // İptal kontrolü
+          if (shouldCancel != null && shouldCancel()) return;
+          
+          // Video sayımı sırasında image + video toplamını göster
+          totalMediaCount = initialImageCount + videoCount;
+          totalSizeBytes = initialImageSize + videoSize;
+          partialStats = GalleryStats(
+            albumCount: albumCount,
+            mediaCount: totalMediaCount,
+            totalSizeMB: totalSizeBytes / (1024 * 1024),
+            albumDetails: [],
+            cachedAt: null,
+          );
+          onProgress?.call(partialStats);
+        },
+      );
+      
+      // Final video sonuçlarını al ve image değerlerine ekle
+      totalMediaCount = initialImageCount + videoResult.count;
+      totalSizeBytes = initialImageSize + videoResult.size;
+      debugPrint('📸 [MediaLibraryService] Video sayımı tamamlandı: ${videoResult.count} medya, ${(videoResult.size / (1024 * 1024)).toStringAsFixed(2)} MB');
+    }
+    
+    // İptal kontrolü
+    if (shouldCancel != null && shouldCancel()) {
+      debugPrint('🛑 [MediaLibraryService] Tarama iptal edildi (video sayımı sonrası)');
+      partialStats = GalleryStats(
+        albumCount: albumCount,
+        mediaCount: totalMediaCount,
+        totalSizeMB: totalSizeBytes / (1024 * 1024),
+        albumDetails: [],
+        cachedAt: null,
+      );
+      return partialStats;
+    }
+    
     final totalSizeMB = totalSizeBytes / (1024 * 1024);
     
-    debugPrint('📸 [MediaLibraryService] İstatistikler toplandı: $albumCount albüm, $mediaCount medya, ${totalSizeMB.toStringAsFixed(2)} MB');
+    debugPrint('📸 [MediaLibraryService] İstatistikler toplandı: $albumCount albüm, $totalMediaCount medya, ${totalSizeMB.toStringAsFixed(2)} MB');
+    
+    // Albüm bazında detaylı istatistik topla (incremental, paralel işleme ile hızlı)
+    debugPrint('📸 [MediaLibraryService] Albüm bazında detaylı istatistikler toplanıyor...');
+    final albumDetails = <AlbumDetail>[];
+    final albumsList = allAlbums.values.toList();
+    
+    // Albümleri paralel batch'ler halinde işle (daha hızlı)
+    const albumBatchSize = 5; // Her seferde 5 albüm paralel işle
+    
+    for (var i = 0; i < albumsList.length; i += albumBatchSize) {
+      // İptal kontrolü
+      if (shouldCancel != null && shouldCancel()) {
+        debugPrint('🛑 [MediaLibraryService] Tarama iptal edildi (albüm detayları sırasında)');
+        break;
+      }
+      
+      final albumBatch = albumsList.skip(i).take(albumBatchSize).toList();
+      
+      // Albüm batch'ini paralel işle
+      final batchResults = await Future.wait(
+        albumBatch.map((album) async {
+          try {
+            final albumStats = await _countMediaAndSizeFast(
+              album,
+              'Album: ${album.name}',
+              shouldCancel: shouldCancel,
+            );
+            
+            // İptal kontrolü
+            if (shouldCancel != null && shouldCancel()) {
+              return null;
+            }
+            
+            final albumSizeMB = albumStats.size / (1024 * 1024);
+            
+            return AlbumDetail(
+              albumId: album.id,
+              albumName: album.name,
+              mediaCount: albumStats.count,
+              sizeMB: albumSizeMB,
+            );
+          } catch (e) {
+            debugPrint('⚠️ [MediaLibraryService] ${album.name} için istatistik toplama hatası: $e');
+            return null;
+          }
+        }),
+      );
+      
+      // İptal kontrolü
+      if (shouldCancel != null && shouldCancel()) {
+        debugPrint('🛑 [MediaLibraryService] Tarama iptal edildi (albüm batch sonrası)');
+        break;
+      }
+      
+      // Batch sonuçlarını ekle
+      for (final detail in batchResults) {
+        if (detail != null) {
+          albumDetails.add(detail);
+        }
+      }
+      
+      // Boyuta göre sırala (büyükten küçüğe)
+      albumDetails.sort((a, b) => b.sizeMB.compareTo(a.sizeMB));
+      
+      // Her batch eklendiğinde partial stats'i güncelle (incremental update)
+      partialStats = GalleryStats(
+        albumCount: albumCount,
+        mediaCount: totalMediaCount,
+        totalSizeMB: totalSizeMB,
+        albumDetails: List.from(albumDetails),
+        cachedAt: null,
+      );
+      onProgress?.call(partialStats);
+      
+      debugPrint('📸 [MediaLibraryService] ${albumDetails.length}/${albumsList.length} albüm detayı toplandı');
+    }
+    
+    // İptal edildiyse mevcut partial stats'i döndür
+    if (shouldCancel != null && shouldCancel()) {
+      return partialStats;
+    }
+    
+    debugPrint('📸 [MediaLibraryService] ${albumDetails.length} albüm detayı toplandı');
     
     return GalleryStats(
       albumCount: albumCount,
-      mediaCount: mediaCount,
+      mediaCount: totalMediaCount,
       totalSizeMB: totalSizeMB,
+      albumDetails: albumDetails,
       cachedAt: null, // Service'den dönen veri cache değildir
     );
   }
   
-  /// Medya sayısını ve toplam boyutunu hesaplar (memory-efficient)
-  /// Galerideki tüm içeriklerin boyutunu hesaplar (crash önlemli)
+  /// Medya sayısını ve toplam boyutunu hesaplar (hızlı ve memory-efficient)
+  /// Metadata-based boyut hesaplama kullanır (file açmadan, çok daha hızlı)
+  /// [onProgress] callback'i her sayfa işlendiğinde çağrılır (incremental updates için)
+  /// [shouldCancel] callback'i tarama sırasında kontrol edilir, true dönerse tarama durur
   Future<({int count, int size})> _countMediaAndSizeFast(
     pm.AssetPathEntity album,
-    String type,
-  ) async {
-    debugPrint('📸 [MediaLibraryService] $type medyaları sayılıyor ve boyutları hesaplanıyor...');
+    String type, {
+    void Function(int count, int size)? onProgress,
+    bool Function()? shouldCancel,
+  }) async {
+    debugPrint('📸 [MediaLibraryService] $type medyaları sayılıyor ve boyutları hesaplanıyor (hızlı mod)...');
     
-    // Memory-efficient: Küçük sayfa boyutu kullan (crash önlemek için)
-    const pageSize = 150; // 150 medya/sayfa (5000'den çok daha güvenli)
-    const batchDelayMs = 50; // Örnekleme arası delay (memory pressure azaltmak için)
+    // Optimize sayfa boyutu: daha büyük sayfa = daha az I/O = daha hızlı
+    const pageSize = 500; // 500 medya/sayfa (memory-safe, hızlı)
+    const batchSize = 50; // Paralel işlenecek asset sayısı
     
     int mediaCount = 0;
     int totalSizeBytes = 0;
@@ -395,57 +608,54 @@ class MediaLibraryService {
     
     try {
       while (true) {
-        // Her sayfada memory pressure kontrolü
-        if (page > 0 && page % 10 == 0) {
-          // Her 10 sayfada bir kısa delay (memory temizleme için)
-          await Future.delayed(Duration(milliseconds: batchDelayMs * 2));
-          debugPrint('📸 [MediaLibraryService] $type sayfa $page: Memory pressure kontrolü...');
+        // İptal kontrolü
+        if (shouldCancel != null && shouldCancel()) {
+          debugPrint('🛑 [MediaLibraryService] $type taraması iptal edildi');
+          break;
         }
         
         final assets = await album.getAssetListPaged(page: page, size: pageSize);
         if (assets.isEmpty) break;
         
         mediaCount += assets.length;
-        debugPrint('📸 [MediaLibraryService] $type sayfa ${page + 1}: ${assets.length} medya (Toplam: $mediaCount)');
         
-        // Memory-efficient boyut hesaplama: sadece örnekleme yap (her 10 asset'te bir)
-        // Bu çok daha az memory kullanır ve crash riskini azaltır
-        const sampleRate = 10; // Her 10 asset'te bir boyut hesapla
-        int sampledCount = 0;
-        int sampledTotalSize = 0;
-        
-        for (var i = 0; i < assets.length; i += sampleRate) {
-          final asset = assets[i];
-          try {
-            final size = await _getAssetSizeSafe(asset);
-            if (size != null) {
-              sampledCount++;
-              sampledTotalSize += size;
-            }
-          } catch (_) {
-            // Hata olsa bile devam et
+        // Paralel batch processing: asset'leri batch'ler halinde işle
+        int pageSizeBytes = 0;
+        for (var i = 0; i < assets.length; i += batchSize) {
+          // İptal kontrolü (her batch'te)
+          if (shouldCancel != null && shouldCancel()) {
+            break;
           }
           
-          // Her örnekleme arasında kısa delay
-          if (i + sampleRate < assets.length) {
-            await Future.delayed(Duration(milliseconds: batchDelayMs));
+          final batch = assets.skip(i).take(batchSize).toList();
+          
+          // Batch'i paralel işle (senkron fonksiyon, çok hızlı)
+          // Future.wait kullanmaya gerek yok, direkt sync işle
+          for (final asset in batch) {
+            final size = _getAssetSizeFast(asset);
+            if (size != null && size > 0) {
+              pageSizeBytes += size;
+            }
           }
         }
         
-        // Ortalama boyutu hesapla ve tüm asset'lere uygula
-        if (sampledCount > 0) {
-          final avgSize = sampledTotalSize ~/ sampledCount;
-          final estimatedPageSize = avgSize * assets.length;
-          totalSizeBytes += estimatedPageSize;
-          debugPrint('📸 [MediaLibraryService] $type sayfa ${page + 1} tahmini boyutu: ${(estimatedPageSize / (1024 * 1024)).toStringAsFixed(2)} MB (${sampledCount} örnekten)');
+        totalSizeBytes += pageSizeBytes;
+        
+        // Her sayfa işlendiğinde progress callback'i çağır
+        onProgress?.call(mediaCount, totalSizeBytes);
+        
+        // İptal kontrolü
+        if (shouldCancel != null && shouldCancel()) {
+          debugPrint('🛑 [MediaLibraryService] $type taraması iptal edildi (sayfa $page sonrası)');
+          break;
         }
         
         if (assets.length < pageSize) break;
         page++;
         
         // Çok fazla sayfa olursa memory crash riski var - güvenlik sınırı
-        if (page > 1000) {
-          debugPrint('⚠️ [MediaLibraryService] $type: 1000+ sayfa limitine ulaşıldı, güvenlik için durduruluyor');
+        if (page > 2000) {
+          debugPrint('⚠️ [MediaLibraryService] $type: 2000+ sayfa limitine ulaşıldı, güvenlik için durduruluyor');
           break;
         }
       }
@@ -460,43 +670,39 @@ class MediaLibraryService {
     return (count: mediaCount, size: totalSizeBytes);
   }
   
-  /// Asset boyutunu güvenli şekilde alır (crash önlemli, memory-efficient)
-  /// File açmadan önce tahmin yapar, gerekirse file açma denemesi yapar
-  Future<int?> _getAssetSizeSafe(pm.AssetEntity asset) async {
+  /// Asset boyutunu hızlı şekilde tahmin eder (metadata-based, file açmadan)
+  /// File açmak çok yavaş olduğu için metadata'dan tahmin yapar (10-100x daha hızlı)
+  /// Bu yöntem yaklaşık sonuçlar verir ama çok daha hızlıdır
+  int? _getAssetSizeFast(pm.AssetEntity asset) {
     try {
-      // File açmak çok ağır - sadece gerekirse dene (timeout ile)
-      // Önce rough estimate yap (width * height * bytes per pixel tahmin)
-      // Bu çoğu durumda yeterli olur
+      // Metadata'dan direkt boyut tahmini (file açmadan, çok hızlı)
       final sizeObj = asset.size;
       if (sizeObj.width > 0 && sizeObj.height > 0) {
-        // Rough estimate: width * height * bytes per pixel tahmin
-        // Bu çok daha hızlı ve memory-efficient (file açmadan)
-        final estimatedBytes = sizeObj.width * sizeObj.height * 3; // RGB için 3 bytes
-        return estimatedBytes.toInt();
-      }
-      
-      // Size bilgisi yoksa veya 0 ise, file açmayı dene (ama çok sınırlı)
-      // Sadece kritik durumlarda kullan (çok nadir)
-      try {
-        final file = await asset.file
-            .timeout(const Duration(seconds: 1), onTimeout: () => null);
-        if (file != null) {
-          final length = await file.length()
-              .timeout(const Duration(seconds: 1), onTimeout: () => -1);
-          if (length > 0) {
-            return length;
-          }
+        final pixelCount = sizeObj.width * sizeObj.height;
+        
+        // Asset tipine göre farklı tahminler (gerçekçi compression ratios)
+        if (asset.type == pm.AssetType.video) {
+          // Video için: pixel count * bit depth * compression ratio
+          // Ortalama: 0.5-1 bytes per pixel (H.264/HEVC compression)
+          final estimatedBytes = (pixelCount * 0.75).toInt();
+          return estimatedBytes.clamp(500000, 200 * 1024 * 1024); // 500KB - 200MB
+        } else {
+          // Image için: JPEG/HEIC compression (0.2-0.5 bytes per pixel)
+          // Ortalama: 0.3 bytes per pixel
+          final estimatedBytes = (pixelCount * 0.3).toInt();
+          return estimatedBytes.clamp(30000, 15 * 1024 * 1024); // 30KB - 15MB
         }
-      } catch (_) {
-        // File açma hatası - sessizce devam et
-        // Tahmin değeri kullanılacak
       }
       
-      // Fallback: çok küçük bir tahmin (crash önlemek için)
-      return 100000; // 100KB fallback
-    } catch (_) {
-      // Genel hata - fallback değer
-      return 100000; // 100KB fallback
+      // Fallback: ortalama dosya boyutu (metadata yoksa)
+      return asset.type == pm.AssetType.video 
+          ? 8 * 1024 * 1024 // 8MB for video (ortalaması)
+          : (1.5 * 1024 * 1024).toInt(); // 1.5MB for image (ortalaması)
+    } catch (e) {
+      // Hata durumunda fallback
+      return asset.type == pm.AssetType.video 
+          ? 8 * 1024 * 1024 // 8MB for video
+          : (1.5 * 1024 * 1024).toInt(); // 1.5MB for image
     }
   }
 }

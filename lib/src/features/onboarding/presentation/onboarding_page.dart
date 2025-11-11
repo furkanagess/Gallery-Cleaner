@@ -24,7 +24,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
   }
 
   void _nextPage() {
-    if (_currentPage < 2) {
+    if (_currentPage < 4) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
@@ -50,7 +50,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
         child: Column(
           children: [
             // Skip button
-            if (_currentPage < 2)
+            if (_currentPage < 4)
               Padding(
                 padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
                 child: Align(
@@ -81,6 +81,8 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                   _OnboardingSlide1(),
                   _OnboardingSlide2(),
                   _OnboardingSlide3(),
+                  _OnboardingSlide4(), // Blur tespit
+                  _OnboardingSlide5(), // Duplicate tespit
                 ],
               ),
             ),
@@ -90,7 +92,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
               padding: const EdgeInsets.symmetric(vertical: 24),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(3, (index) {
+                children: List.generate(5, (index) {
                   return AnimatedContainer(
                     duration: const Duration(milliseconds: 300),
                     curve: Curves.easeInOut,
@@ -116,7 +118,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                   final l10n = AppLocalizations.of(ctx)!;
                   return _ModernActionButton(
                     onPressed: _nextPage,
-                    isLastPage: _currentPage == 2,
+                    isLastPage: _currentPage == 4,
                     theme: theme,
                     l10n: l10n,
                   );
@@ -201,20 +203,30 @@ class _OnboardingSlide1 extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 48),
-          Text(
-            'Sola Kaydırarak Sil,\nSağa Kaydırarak Tut',
+          Builder(
+            builder: (ctx) {
+              final l10n = AppLocalizations.of(ctx)!;
+              return Text(
+                l10n.swipeLeftToDeleteTitle,
             textAlign: TextAlign.center,
             style: theme.textTheme.headlineMedium?.copyWith(
               fontWeight: FontWeight.bold,
             ),
+              );
+            },
           ),
           const SizedBox(height: 16),
-          Text(
-            'Fotoğraflarınızı hızlıca gözden geçirmek için kartları sağa veya sola kaydırın. Sağa kaydırarak tutun, sola kaydırarak silin.',
+          Builder(
+            builder: (ctx) {
+              final l10n = AppLocalizations.of(ctx)!;
+              return Text(
+                l10n.swipeLeftToDeleteDescription,
             textAlign: TextAlign.center,
             style: theme.textTheme.bodyLarge?.copyWith(
               color: theme.textTheme.bodyMedium?.color?.withOpacity(0.8),
             ),
+              );
+            },
           ),
         ],
       ),
@@ -493,6 +505,285 @@ class _ModernSkipButton extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+// Blur tespit sayfası
+class _OnboardingSlide4 extends StatelessWidget {
+  const _OnboardingSlide4();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // Blur detection illustration
+          Container(
+            width: 220,
+            height: 220,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              color: theme.colorScheme.errorContainer.withOpacity(0.3),
+            ),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                // Blurred photo example
+                Container(
+                  width: 180,
+                  height: 180,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    color: theme.colorScheme.surface,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Blurred background
+                      Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              theme.colorScheme.primary.withOpacity(0.3),
+                              theme.colorScheme.secondary.withOpacity(0.2),
+                            ],
+                          ),
+                        ),
+                      ),
+                      // Blur icon
+                      Icon(
+                        Icons.blur_on,
+                        size: 60,
+                        color: theme.colorScheme.error,
+                      ),
+                      // Warning badge
+                      Positioned(
+                        top: 12,
+                        right: 12,
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.error,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.warning,
+                            color: Colors.white,
+                            size: 16,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 48),
+          Builder(
+            builder: (ctx) {
+              final l10n = AppLocalizations.of(ctx)!;
+              return Text(
+                l10n.blurDetectionOnboardingTitle,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.headlineMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+              );
+            },
+          ),
+          const SizedBox(height: 16),
+          Builder(
+            builder: (ctx) {
+              final l10n = AppLocalizations.of(ctx)!;
+              return Text(
+                l10n.blurDetectionOnboardingDescription,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyLarge?.copyWith(
+              color: theme.textTheme.bodyMedium?.color?.withOpacity(0.8),
+            ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Duplicate tespit sayfası
+class _OnboardingSlide5 extends StatelessWidget {
+  const _OnboardingSlide5();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // Duplicate detection illustration
+          Container(
+            width: 220,
+            height: 220,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              color: theme.colorScheme.tertiaryContainer.withOpacity(0.3),
+            ),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                // Duplicate photos stack
+                Positioned(
+                  left: 30,
+                  top: 40,
+                  child: Container(
+                    width: 140,
+                    height: 140,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      color: theme.colorScheme.surface,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.15),
+                          blurRadius: 8,
+                          offset: const Offset(2, 4),
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      Icons.photo,
+                      size: 50,
+                      color: theme.colorScheme.primary.withOpacity(0.6),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  left: 50,
+                  top: 60,
+                  child: Container(
+                    width: 140,
+                    height: 140,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      color: theme.colorScheme.surface,
+                      border: Border.all(
+                        color: theme.colorScheme.tertiary,
+                        width: 2,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.15),
+                          blurRadius: 8,
+                          offset: const Offset(2, 4),
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      Icons.photo,
+                      size: 50,
+                      color: theme.colorScheme.tertiary,
+                    ),
+                  ),
+                ),
+                // Link icon
+                Positioned(
+                  right: 20,
+                  top: 80,
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.tertiary,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.link,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
+                ),
+                // Count badge
+                Positioned(
+                  bottom: 20,
+                  right: 30,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.tertiary,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.copy,
+                          color: Colors.white,
+                          size: 14,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '2x',
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 48),
+          Builder(
+            builder: (ctx) {
+              final l10n = AppLocalizations.of(ctx)!;
+              return Text(
+                l10n.duplicateDetectionOnboardingTitle,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.headlineMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+              );
+            },
+          ),
+          const SizedBox(height: 16),
+          Builder(
+            builder: (ctx) {
+              final l10n = AppLocalizations.of(ctx)!;
+              return Text(
+                l10n.duplicateDetectionOnboardingDescription,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyLarge?.copyWith(
+              color: theme.textTheme.bodyMedium?.color?.withOpacity(0.8),
+            ),
+              );
+            },
+          ),
+        ],
       ),
     );
   }

@@ -1,22 +1,29 @@
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:photo_manager/photo_manager.dart' as pm;
+import 'package:lottie/lottie.dart';
 import '../../../../core/services/sound_service.dart';
 import '../../../../../l10n/app_localizations.dart';
+import '../../../../core/services/preferences_service.dart';
 
 import '../../application/gallery_providers.dart';
+import '../../application/blur_detection_provider.dart';
+import '../../application/duplicate_detection_provider.dart';
 import '../../../onboarding/application/permissions_controller.dart';
-import '../../../../core/services/preferences_service.dart';
+import '../../../../core/models/blur_photo.dart';
+import '../../../../core/models/duplicate_photo.dart';
 import '../../../../core/services/rewarded_ads_service.dart';
 import '../widgets/photo_swipe_deck.dart';
 import '../../application/review_actions_controller.dart';
 import '../../application/review_history_controller.dart';
+import '../../application/gallery_stats_provider.dart';
 import '../../../../app/theme/app_theme.dart';
-import 'history_page.dart';
+import '../../../settings/presentation/settings_page.dart' as settings;
 
 // Provider for tracking drag over "Change Album" zone
 final _isDraggingOverChangeAlbumProvider = StateProvider<bool>((ref) => false);
@@ -59,12 +66,6 @@ Future<void> _presentAlbumPicker({
   final l10n = AppLocalizations.of(context)!;
 
   if (albums.isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(l10n.albumNotFound, overflow: TextOverflow.ellipsis),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
     return;
   }
 
@@ -117,8 +118,10 @@ Future<void> _presentAlbumPicker({
                   ),
                   title: Text(l10n.allPhotos, overflow: TextOverflow.ellipsis),
                   trailing: selectedAlbum == null
-                      ? Icon(Icons.check_circle,
-                          color: theme.colorScheme.primary)
+                      ? Icon(
+                          Icons.check_circle,
+                          color: theme.colorScheme.primary,
+                        )
                       : null,
                   onTap: () => Navigator.of(context).pop(null),
                 ),
@@ -135,8 +138,10 @@ Future<void> _presentAlbumPicker({
                     ),
                     title: Text(album.name, overflow: TextOverflow.ellipsis),
                     trailing: isSelected
-                        ? Icon(Icons.check_circle,
-                            color: theme.colorScheme.primary)
+                        ? Icon(
+                            Icons.check_circle,
+                            color: theme.colorScheme.primary,
+                          )
                         : null,
                     onTap: () => Navigator.of(context).pop(album),
                   );
@@ -364,12 +369,19 @@ class _AlbumSelectionSheet extends StatelessWidget {
 
 class _SwipeAreaContent extends ConsumerStatefulWidget {
   const _SwipeAreaContent({
+    super.key,
     required this.assets,
     required this.changeAlbumZoneKey,
+    this.initialIndex = 0,
+    this.onIndexChanged,
+    this.onResetCallbackReady,
   });
 
   final List<pm.AssetEntity> assets;
   final GlobalKey changeAlbumZoneKey;
+  final int initialIndex;
+  final void Function(int index)? onIndexChanged;
+  final void Function(VoidCallback resetCallback)? onResetCallbackReady;
 
   @override
   ConsumerState<_SwipeAreaContent> createState() => _SwipeAreaContentState();
@@ -389,6 +401,7 @@ class _SwipeAreaContentState extends ConsumerState<_SwipeAreaContent> {
   Offset _dragOffset = Offset.zero;
   bool _isDraggingToAlbum = false;
   Offset? _dragStartPosition;
+  bool _isDialogShowing = false;
 
   @override
   void didUpdateWidget(covariant _SwipeAreaContent oldWidget) {
@@ -406,6 +419,13 @@ class _SwipeAreaContentState extends ConsumerState<_SwipeAreaContent> {
 
   @override
   Widget build(BuildContext context) {
+    // Silme hakkı kontrolü
+    final deleteLimitAsync = ref.watch(deleteLimitProvider);
+    final canDelete = deleteLimitAsync.maybeWhen(
+      data: (limit) => limit > 0,
+      orElse: () => true, // Loading veya error durumunda varsayılan olarak true
+    );
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Center(
@@ -424,6 +444,8 @@ class _SwipeAreaContentState extends ConsumerState<_SwipeAreaContent> {
                   children: [
                     PhotoSwipeDeck(
                       assets: widget.assets,
+                      initialIndex: widget.initialIndex,
+                      canDelete: canDelete,
                       isDraggingToAlbum: () => _isDraggingToAlbum,
                       onDragUpdate: _handleDragUpdate,
                       onDragEnd: (asset, pos) {
@@ -432,13 +454,20 @@ class _SwipeAreaContentState extends ConsumerState<_SwipeAreaContent> {
                       onDecision: (asset, decision) {
                         _handleDecision(asset, decision);
                       },
+                      onNoRightsLeft: () {
+                        _showNoRightsDialog(context);
+                      },
+                      onIndexChanged: widget.onIndexChanged,
+                      onResetCallbackReady: widget.onResetCallbackReady,
                     ),
                     if (_dragOpacity < 1.0)
                       IgnorePointer(
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 200),
                           curve: Curves.easeOutCubic,
-                          color: Colors.black.withOpacity((1 - _dragOpacity) * 0.4),
+                          color: Colors.black.withOpacity(
+                            (1 - _dragOpacity) * 0.4,
+                          ),
                         ),
                       ),
                   ],
@@ -571,310 +600,659 @@ class _SwipeAreaContentState extends ConsumerState<_SwipeAreaContent> {
 
     ref.read(_isDraggingOverChangeAlbumProvider.notifier).state = false;
   }
+
+  void _showNoRightsDialog(BuildContext context) {
+    // Dialog zaten açıksa, yeni dialog açma
+    if (_isDialogShowing) return;
+
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+
+    _isDialogShowing = true;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black.withOpacity(0.6),
+      builder: (dialogContext) => Dialog(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+        child: TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0.0, end: 1.0),
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeOutCubic,
+          builder: (context, value, child) {
+            return Transform.scale(
+              scale: 0.8 + (value * 0.2),
+              child: Opacity(opacity: value, child: child),
+            );
+          },
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 400),
+            padding: const EdgeInsets.all(28),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              borderRadius: BorderRadius.circular(28),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.25),
+                  blurRadius: 32,
+                  spreadRadius: 2,
+                  offset: const Offset(0, 16),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Icon
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        theme.colorScheme.error,
+                        theme.colorScheme.error.withOpacity(0.7),
+                      ],
+                    ),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: theme.colorScheme.error.withOpacity(0.3),
+                        blurRadius: 16,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    Icons.block,
+                    size: 40,
+                    color: theme.colorScheme.onError,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                // Title
+                Text(
+                  l10n.noDeleteRightsLeft,
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 22,
+                    letterSpacing: -0.5,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                  textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 12),
+                // Message
+                Text(
+                  l10n.noDeleteRightsLeftMessage,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurface.withOpacity(0.7),
+                    height: 1.5,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 28),
+                // Purchase button with gradient
+                SizedBox(
+                  width: double.infinity,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          theme.colorScheme.primary,
+                          theme.colorScheme.primary.withOpacity(0.8),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: theme.colorScheme.primary.withOpacity(0.3),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                          spreadRadius: 0,
+                        ),
+                      ],
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () {
+                          Navigator.of(dialogContext).pop();
+                          _isDialogShowing = false;
+                          context.push('/paywall');
+                        },
+                        borderRadius: BorderRadius.circular(16),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 16,
+                          ),
+                          child: Text(
+                            l10n.unlockPremiumFeatures,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              color: Colors.white,
+                              letterSpacing: 0.5,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                // Cancel button
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(dialogContext).pop();
+                  },
+                  child: Text(
+                    l10n.maybeLater,
+                    style: TextStyle(
+                      color: theme.colorScheme.onSurface.withOpacity(0.6),
+                      fontWeight: FontWeight.w600,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    ).then((_) {
+      // Dialog kapandığında flag'i sıfırla
+      _isDialogShowing = false;
+    });
+  }
 }
 
-class SwipePage extends ConsumerWidget {
-  const SwipePage({super.key});
+// Modern loading overlay widget
+
+// Tab pages
+class _SwipeTab extends ConsumerStatefulWidget {
+  const _SwipeTab();
+
+  @override
+  ConsumerState<_SwipeTab> createState() => _SwipeTabState();
+}
+
+class _SwipeTabState extends ConsumerState<_SwipeTab> {
+  int _currentSwipeIndex = 0;
+  int _previousAssetsLength = 0;
+  bool _showResetToStartButton = false;
+  String? _currentAlbumId;
+  VoidCallback? _resetToStartCallback;
+  bool _isDeleting = false;
+  int? _pendingIndexAdjustment; // Reload sonrası index ayarlaması için
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSwipeIndex();
+  }
+
+  Future<void> _loadSwipeIndex() async {
+    final selectedAlbum = ref.read(selectedAlbumProvider);
+    final albumId = selectedAlbum?.id;
+    _currentAlbumId = albumId;
+
+    final prefsService = PreferencesService();
+    final savedIndex = await prefsService.getSwipeIndex(albumId);
+
+    if (savedIndex != null && savedIndex > 0) {
+      setState(() {
+        _currentSwipeIndex = savedIndex;
+      });
+    }
+  }
+
+  void _onSwipeIndexChanged(int index) {
+    setState(() {
+      _currentSwipeIndex = index;
+      // Index 0 ise butonu gizle
+      if (index == 0) {
+        _showResetToStartButton = false;
+      }
+    });
+
+    // Index'i kaydet (her değişiklikte)
+    _saveSwipeIndex(index);
+  }
+
+  Future<void> _saveSwipeIndex(int index) async {
+    final selectedAlbum = ref.read(selectedAlbumProvider);
+    final albumId = selectedAlbum?.id;
+    _currentAlbumId = albumId;
+
+    final prefsService = PreferencesService();
+    await prefsService.saveSwipeIndex(index, albumId);
+  }
+
+  void _resetToStart() {
+    // Galeriyi yeniden yükle - silinen fotoğraflar artık listede olmayacak
+    ref.read(galleryPagingControllerProvider.notifier).reload();
+
+    _resetToStartCallback?.call();
+    setState(() {
+      _currentSwipeIndex = 0;
+      _showResetToStartButton = false;
+      _previousAssetsLength = 0; // Reset previous length
+    });
+    _saveSwipeIndex(0);
+  }
 
   Widget _buildSwipeArea(
-    WidgetRef _,
     List<pm.AssetEntity> assets,
     GlobalKey changeAlbumZoneKey,
+    String? albumId,
   ) {
+    // Yeni fotoğraf eklendi mi kontrol et (assets uzunluğu arttıysa)
+    if (_previousAssetsLength > 0 && assets.length > _previousAssetsLength) {
+      // Yeni fotoğraf eklendi - butonu göster
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _currentSwipeIndex > 0) {
+          setState(() {
+            _showResetToStartButton = true;
+          });
+        }
+      });
+    }
+    _previousAssetsLength = assets.length;
+
+    // Eğer pending index adjustment varsa, onu kullan
+    int adjustedIndex = _pendingIndexAdjustment ?? _currentSwipeIndex;
+
+    if (assets.isNotEmpty) {
+      final maxIndex = assets.length - 1;
+      adjustedIndex = adjustedIndex.clamp(0, maxIndex);
+    } else {
+      adjustedIndex = 0;
+    }
+
+    // Pending adjustment uygulandıysa temizle
+    if (_pendingIndexAdjustment != null) {
+      _pendingIndexAdjustment = null;
+    }
+
+    if (adjustedIndex != _currentSwipeIndex) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        setState(() {
+          _currentSwipeIndex = adjustedIndex;
+        });
+        _saveSwipeIndex(adjustedIndex);
+      });
+    }
+
+    final swipeAreaKey = albumId ?? 'all_photos';
+
     return _SwipeAreaContent(
+      key: ValueKey('swipe_area_$swipeAreaKey'),
       assets: assets,
       changeAlbumZoneKey: changeAlbumZoneKey,
+      initialIndex: adjustedIndex,
+      onIndexChanged: _onSwipeIndexChanged,
+      onResetCallbackReady: (callback) {
+        _resetToStartCallback = callback;
+      },
     );
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context)!;
-    final permission = ref.watch(permissionsControllerProvider);
+  Widget build(BuildContext context) {
     final state = ref.watch(galleryPagingControllerProvider);
-
-    // Debug summary for current build
-    debugPrint('🧭 [SwipePage] build: permission=$permission');
-
-    if (permission != GalleryPermissionStatus.authorized) {
-      return Scaffold(
-        appBar: AppBar(
-          title: Text(l10n.appTitle, overflow: TextOverflow.ellipsis),
-        ),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                l10n.galleryPermissionRequired,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 8),
-              FilledButton(
-                onPressed: () =>
-                    ref.read(permissionsControllerProvider.notifier).request(),
-                child: Text(
-                  l10n.grantPermission,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
     final selectedAlbum = ref.watch(selectedAlbumProvider);
-    final albumsAsync = ref.watch(albumsProvider);
-    debugPrint('🧭 [SwipePage] selectedAlbum=${selectedAlbum?.name ?? "All"}');
 
-    final theme = Theme.of(context);
-    final albumsData = albumsAsync.asData?.value;
-    final displayAlbumName = selectedAlbum?.name ?? l10n.allPhotos;
-    final canOpenAlbumPicker = albumsData != null && albumsData.isNotEmpty;
-
-    Future<void> openAlbumPicker() async {
-      final availableAlbums = albumsData;
-      if (availableAlbums == null || availableAlbums.isEmpty) return;
-      await _presentAlbumPicker(
-        context: context,
-        albums: availableAlbums,
-        selectedAlbum: selectedAlbum,
-        onSelected: (album) {
-          ref.read(selectedAlbumProvider.notifier).state = album;
-        },
-      );
+    // Album değiştiğinde index'i yükle
+    if (selectedAlbum?.id != _currentAlbumId) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _loadSwipeIndex();
+      });
     }
 
-    final albumIconButton = IconButton(
-      icon: const Icon(Icons.photo_library_outlined),
-      tooltip: displayAlbumName,
-      onPressed: canOpenAlbumPicker ? openAlbumPicker : null,
-    );
+    // Geri al işlemlerini dinle
+    ref.listen<List<dynamic>>(reviewActionsControllerProvider, (
+      previous,
+      next,
+    ) {
+      if (previous != null &&
+          previous.isNotEmpty &&
+          next.isEmpty &&
+          _currentSwipeIndex > 0) {
+        // Tüm geri al işlemleri yapıldı ve index > 0 ise buton göster
+        setState(() {
+          _showResetToStartButton = true;
+        });
+      }
+    });
 
-    return Scaffold(
-      appBar: AppBar(
-        leading: albumIconButton,
-        automaticallyImplyLeading: false,
-        title: Text(
-          displayAlbumName,
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w700,
+    return state.when(
+      loading: () => Center(
+        child: SizedBox(
+          width: 100,
+          height: 100,
+          child: Lottie.asset(
+            'assets/lottie/loading.json',
+            fit: BoxFit.contain,
+            repeat: true,
           ),
-          overflow: TextOverflow.ellipsis,
         ),
-        centerTitle: true,
-        backgroundColor: Colors.transparent,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.history),
-            tooltip: l10n.history,
-            onPressed: () {
-              Navigator.of(
-                context,
-              ).push(MaterialPageRoute(builder: (_) => const HistoryPage()));
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.settings),
-            tooltip: l10n.settings,
-            onPressed: () {
-              context.push('/settings');
-            },
-          ),
-        ],
       ),
-      body: SafeArea(
-        top: false,
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Theme.of(context).colorScheme.primary.withOpacity(0.06),
-                Theme.of(
-                  context,
-                ).colorScheme.secondaryContainer.withOpacity(0.04),
-                Colors.transparent,
-              ],
+      error: (e, _) => Builder(
+        builder: (ctx) {
+          final l10n = AppLocalizations.of(ctx)!;
+          return Center(
+            child: Text(
+              '${l10n.galleryInfoNotAvailable}: $e',
+              overflow: TextOverflow.ellipsis,
             ),
-          ),
-          child: Column(
-            children: [
-              // Swipe alanı ve istatistikler
-              Expanded(
-                child: state.when(
-                  loading: () =>
-                      const Center(child: CircularProgressIndicator()),
-                  error: (e, _) => Builder(
-                    builder: (ctx) {
-                      final l10n = AppLocalizations.of(ctx)!;
-                      return Center(
-                        child: Text(
-                          '${l10n.galleryInfoNotAvailable}: $e',
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      );
-                    },
-                  ),
-                  data: (assets) {
-                    if (assets.isEmpty) {
-                      return Builder(
-                        builder: (ctx) {
-                          final l10n = AppLocalizations.of(ctx)!;
-                          final theme = Theme.of(ctx);
-                          return Center(
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 32),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Container(
-                                    width: 118,
-                                    height: 118,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      gradient: LinearGradient(
-                                        begin: Alignment.topLeft,
-                                        end: Alignment.bottomRight,
-                                        colors: [
-                                          theme.colorScheme.primaryContainer.withOpacity(0.85),
-                                          theme.colorScheme.secondaryContainer.withOpacity(0.75),
-                                        ],
-                                      ),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: theme.colorScheme.primary.withOpacity(0.18),
-                                          blurRadius: 24,
-                                          offset: const Offset(0, 10),
-                                        ),
-                                      ],
-                                    ),
-                                    child: Icon(
-                                      Icons.photo_library_outlined,
-                                      color: theme.colorScheme.onPrimaryContainer,
-                                      size: 48,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 24),
-                                  Text(
-                                    l10n.noPhotosToShow,
-                                    style: theme.textTheme.titleLarge?.copyWith(
-                                      fontWeight: FontWeight.w700,
-                                      letterSpacing: -0.2,
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    l10n.selectAlbumToView,
-                                    style: theme.textTheme.bodyMedium?.copyWith(
-                                      color: theme.colorScheme.onSurface.withOpacity(0.7),
-                                      height: 1.4,
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                  const SizedBox(height: 24),
-                                  if (canOpenAlbumPicker)
-                                    FilledButton.icon(
-                                      onPressed: openAlbumPicker,
-                                      icon: const Icon(Icons.folder_open),
-                                      label: Text(l10n.changeAlbum),
-                                      style: FilledButton.styleFrom(
-                                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(14),
-                                        ),
-                                      ),
-                                    )
-                                  else
-                                    OutlinedButton.icon(
-                                      onPressed: () {
-                                        ref.invalidate(galleryPagingControllerProvider);
-                                      },
-                                      icon: const Icon(Icons.refresh),
-                                      label: Text(l10n.tryAgain),
-                                    ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      );
-                    }
-                    // GlobalKey for Change Album Zone - hem zone hem de swipe area için aynı key
-                    final changeAlbumZoneKey = GlobalKey();
+          );
+        },
+      ),
+      data: (assets) {
+        if (assets.isEmpty) {
+          return Builder(
+            builder: (ctx) {
+              final l10n = AppLocalizations.of(ctx)!;
+              final theme = Theme.of(ctx);
+              final albumsAsync = ref.watch(albumsProvider);
+              final albumsData = albumsAsync.asData?.value;
+              final canOpenAlbumPicker =
+                  albumsData != null && albumsData.isNotEmpty;
+              final selectedAlbum = ref.watch(selectedAlbumProvider);
 
-                    return Column(
+              Future<void> openAlbumPicker() async {
+                final availableAlbums = albumsData;
+                if (availableAlbums == null || availableAlbums.isEmpty) return;
+                await _presentAlbumPicker(
+                  context: ctx,
+                  albums: availableAlbums,
+                  selectedAlbum: selectedAlbum,
+                  onSelected: (album) {
+                    ref.read(selectedAlbumProvider.notifier).state = album;
+                  },
+                );
+              }
+
+              return Center(
+                child: SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 32,
+                      vertical: 48,
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        // 2. Üzerine fotoğraf sürüklenip albüm değiştirmeye yarayan alan
-                        // Padding(
-                        //   padding: const EdgeInsets.symmetric(
-                        //     horizontal: 16,
-                        //     vertical: 8,
-                        //   ),
-                        //   child: _ChangeAlbumZone(
-                        //     changeAlbumZoneKey: changeAlbumZoneKey,
-                        //     onDragOver: (isOver) {
-                        //       ref
-                        //               .read(
-                        //                 _isDraggingOverChangeAlbumProvider
-                        //                     .notifier,
-                        //               )
-                        //               .state =
-                        //           isOver;
-                        //     },
-                        //   ),
-                        // ),
-                        // 2. Kullanıcının 100 görsel silme hakkı bilgilendirmesi
-                        Padding(
+                        // Modern icon container with gradient and animation
+                        Container(
+                          width: 140,
+                          height: 140,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                theme.colorScheme.primaryContainer,
+                                theme.colorScheme.secondaryContainer,
+                              ],
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: theme.colorScheme.primary.withOpacity(
+                                  0.25,
+                                ),
+                                blurRadius: 32,
+                                offset: const Offset(0, 12),
+                                spreadRadius: 0,
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            Icons.photo_library_outlined,
+                            color: theme.colorScheme.primary,
+                            size: 64,
+                          ),
+                        ),
+                        const SizedBox(height: 32),
+                        // Title with better styling
+                        Text(
+                          l10n.noPhotosToShow,
+                          style: theme.textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 24,
+                            letterSpacing: -0.5,
+                            color: theme.colorScheme.onSurface,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 12),
+                        // Description in a container
+                        Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 16,
-                            vertical: 8,
+                            vertical: 12,
                           ),
-                          child: _DeleteLimitInfo(),
-                        ),
-                        // 3. Swipe fotoğraf alanı
-                        Expanded(
-                          child: _buildSwipeArea(
-                            ref,
-                            assets,
-                            changeAlbumZoneKey,
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.surfaceContainerHighest
+                                .withOpacity(0.5),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: theme.colorScheme.outline.withOpacity(0.1),
+                              width: 1,
+                            ),
+                          ),
+                          child: Text(
+                            l10n.selectAlbumToView,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.onSurface.withOpacity(
+                                0.75,
+                              ),
+                              height: 1.5,
+                              fontSize: 14,
+                            ),
+                            textAlign: TextAlign.center,
                           ),
                         ),
+                        const SizedBox(height: 32),
+                        // Modern button with gradient
+                        if (canOpenAlbumPicker)
+                          Container(
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  theme.colorScheme.primary,
+                                  theme.colorScheme.primary.withOpacity(0.8),
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: theme.colorScheme.primary.withOpacity(
+                                    0.3,
+                                  ),
+                                  blurRadius: 16,
+                                  offset: const Offset(0, 6),
+                                  spreadRadius: 0,
+                                ),
+                              ],
+                            ),
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                onTap: openAlbumPicker,
+                                borderRadius: BorderRadius.circular(16),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 24,
+                                    vertical: 16,
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.folder_open_rounded,
+                                        color: Colors.white,
+                                        size: 24,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Text(
+                                        l10n.changeAlbum,
+                                        style: theme.textTheme.titleMedium
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16,
+                                              color: Colors.white,
+                                              letterSpacing: 0.5,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          )
+                        else
+                          Container(
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.surfaceContainerHighest,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: theme.colorScheme.outline.withOpacity(
+                                  0.2,
+                                ),
+                                width: 1.5,
+                              ),
+                            ),
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                onTap: () {
+                                  ref.invalidate(
+                                    galleryPagingControllerProvider,
+                                  );
+                                },
+                                borderRadius: BorderRadius.circular(16),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 24,
+                                    vertical: 16,
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.refresh_rounded,
+                                        color: theme.colorScheme.onSurface,
+                                        size: 24,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Text(
+                                        l10n.tryAgain,
+                                        style: theme.textTheme.titleMedium
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 16,
+                                              color:
+                                                  theme.colorScheme.onSurface,
+                                              letterSpacing: 0.3,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
                       ],
-                    );
-                  },
+                    ),
+                  ),
                 ),
-              ),
-              // 4. Sola kaydır sil sağa kaydır tut bilgilendirmesi
+              );
+            },
+          );
+        }
+        final changeAlbumZoneKey = GlobalKey();
+        final l10n = AppLocalizations.of(context)!;
+
+        return Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: _DeleteLimitInfo(),
+            ),
+            // Galeri Başına Dön butonu
+            if (_showResetToStartButton && _currentSwipeIndex > 0)
               Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
-                  vertical: 12,
+                  vertical: 8,
                 ),
-                child: _AnimatedSwipeInstructions(),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: _resetToStart,
+                    icon: const Icon(Icons.restart_alt),
+                    label: Text(l10n.resetToStart),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      side: BorderSide(
+                        color: Theme.of(context).colorScheme.primary,
+                        width: 1.5,
+                      ),
+                      foregroundColor: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                ),
               ),
-              // Delete button - below swipe area
-              Consumer(
-                builder: (context, ref, _) {
-                  final pending = ref.watch(reviewActionsControllerProvider);
-                  final pendingCount = pending.length;
+            Expanded(
+              child: _buildSwipeArea(
+                assets,
+                changeAlbumZoneKey,
+                selectedAlbum?.id,
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: _AnimatedSwipeInstructions(),
+            ),
+            Consumer(
+              builder: (context, ref, _) {
+                final pending = ref.watch(reviewActionsControllerProvider);
+                final pendingCount = pending.length;
 
-                  if (pendingCount == 0) return const SizedBox.shrink();
+                if (pendingCount == 0 && !_showResetToStartButton) {
+                  return const SizedBox.shrink();
+                }
 
-                  final l10n = AppLocalizations.of(context)!;
-                  return Container(
-                    width: double.infinity,
-                    margin: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                    child: Row(
-                      children: [
+                return Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                  child: Row(
+                    children: [
+                      if (pendingCount > 0)
                         Expanded(
                           flex: 1,
                           child: OutlinedButton(
                             onPressed: () {
-                              // Clear all pending deletions by undoing until empty
                               while (ref
                                   .read(reviewActionsControllerProvider)
                                   .isNotEmpty) {
@@ -905,30 +1283,158 @@ class SwipePage extends ConsumerWidget {
                             ),
                           ),
                         ),
-                        const SizedBox(width: 12),
+                      if (pendingCount > 0) const SizedBox(width: 12),
+                      if (pendingCount > 0)
                         Expanded(
                           flex: 3,
-                          child: FilledButton.icon(
+                          child: FilledButton(
                             onPressed: () async {
+                              final l10n = AppLocalizations.of(context)!;
+                              final theme = Theme.of(context);
+
+                              setState(() {
+                                _isDeleting = true;
+                              });
+
+                              // Delete limit'i kontrol et
+                              final deleteLimitController = ref.read(
+                                deleteLimitProvider.notifier,
+                              );
+                              final deleteLimit = await deleteLimitController
+                                  .currentLimit();
+                              final pendingCount = ref
+                                  .read(reviewActionsControllerProvider)
+                                  .length;
+
+                              // Delete limit'e göre maksimum silinebilecek fotoğraf sayısını belirle
+                              final maxDeleteCount = deleteLimit < 999999999
+                                  ? math.min(deleteLimit, pendingCount)
+                                  : pendingCount;
+
+                              debugPrint(
+                                '📊 [SwipePage] Silme işlemi başlatılıyor: $maxDeleteCount/$pendingCount fotoğraf silinecek (limit: $deleteLimit)',
+                              );
+
                               final deletedCount = await ref
                                   .read(
                                     reviewActionsControllerProvider.notifier,
                                   )
-                                  .applyPendingDeletes();
-                              if (context.mounted && deletedCount > 0) {
-                                // Silme hakkını azalt
-                                final prefsService = PreferencesService();
-                                await prefsService.decreaseDeleteLimit(
-                                  deletedCount,
-                                );
-                                // Provider'ı yeniden yükle
-                                ref.invalidate(deleteLimitProvider);
+                                  .applyPendingDeletes(
+                                    maxDeleteCount: maxDeleteCount,
+                                  );
 
-                                _showDeleteSuccessDialog(context, deletedCount);
+                              debugPrint(
+                                '📊 [SwipePage] Silme işlemi tamamlandı: $deletedCount fotoğraf silindi',
+                              );
+
+                              if (!context.mounted) {
+                                debugPrint(
+                                  '⚠️ [SwipePage] Context mounted değil, işlem iptal edildi',
+                                );
+                                if (mounted) {
+                                  setState(() {
+                                    _isDeleting = false;
+                                  });
+                                }
+                                return;
                               }
+
+                              // Silme işlemi başarılı olup olmadığını kontrol et
+                              if (deletedCount > 0) {
+                                debugPrint(
+                                  '✅ [SwipePage] $deletedCount fotoğraf başarıyla silindi, silme hakkı azaltılıyor...',
+                                );
+
+                                try {
+                                  final newLimit = await deleteLimitController
+                                      .decrease(deletedCount);
+                                  debugPrint(
+                                    '💾 [SwipePage] Delete limit güncellendi, kalan: $newLimit (azaltılan: $deletedCount)',
+                                  );
+
+                                  // Mevcut swipe index'ini kaydet - silme sonrası kaldığı yerden devam etmek için
+                                  final currentIndexBeforeReload =
+                                      _currentSwipeIndex;
+                                  debugPrint(
+                                    '💾 [SwipePage] Mevcut swipe index kaydedildi: $currentIndexBeforeReload',
+                                  );
+
+                                  // Galeriyi yeniden yükle - silinen fotoğraflar listeden çıksın
+                                  // Ancak reload sonrası index'i ayarlayacağız
+                                  ref
+                                      .read(
+                                        galleryPagingControllerProvider
+                                            .notifier,
+                                      )
+                                      .reload();
+
+                                  // Reload sonrası, silinen fotoğraflar listeden çıktığı için
+                                  // index'i ayarla (silinen fotoğraflar kadar azalt)
+                                  // Ancak index 0'dan küçük olamaz
+                                  final adjustedIndex =
+                                      (currentIndexBeforeReload - deletedCount)
+                                          .clamp(0, 999999999);
+
+                                  // Index ayarlamasını işaretle - _buildSwipeArea'da uygulanacak
+                                  setState(() {
+                                    _pendingIndexAdjustment = adjustedIndex;
+                                    _currentSwipeIndex = adjustedIndex;
+                                  });
+                                  _saveSwipeIndex(adjustedIndex);
+                                  debugPrint(
+                                    '💾 [SwipePage] Swipe index ayarlandı: $currentIndexBeforeReload -> $adjustedIndex (silinen: $deletedCount)',
+                                  );
+
+                                  // Başarı dialog'unu göster
+                                  if (context.mounted) {
+                                    _showDeleteSuccessDialog(
+                                      context,
+                                      deletedCount,
+                                    );
+                                  }
+                                } catch (e, stackTrace) {
+                                  debugPrint(
+                                    '❌ [SwipePage] Silme hakkı azaltılırken hata: $e',
+                                  );
+                                  debugPrint(
+                                    '❌ [SwipePage] Stack trace: $stackTrace',
+                                  );
+                                  await deleteLimitController.refresh();
+                                  // Hata olsa bile dialog'u göster
+                                  if (context.mounted) {
+                                    _showDeleteSuccessDialog(
+                                      context,
+                                      deletedCount,
+                                    );
+                                  }
+                                }
+                              } else {
+                                debugPrint(
+                                  '⚠️ [SwipePage] Silme işlemi başarısız veya hiç fotoğraf silinmedi (deletedCount: $deletedCount)',
+                                );
+                                // Kullanıcıya bilgi ver
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(l10n.deleteOperationFailed),
+                                      backgroundColor: theme.colorScheme.error,
+                                      duration: const Duration(seconds: 2),
+                                    ),
+                                  );
+                                }
+                              }
+                              // Animasyonu 1 saniye sonra durdur
+                              Future.delayed(
+                                const Duration(milliseconds: 1000),
+                                () {
+                                  if (mounted) {
+                                    setState(() {
+                                      _isDeleting = false;
+                                    });
+                                  }
+                                },
+                              );
                             },
-                            icon: const Icon(Icons.delete_outline),
-                            label: Text(l10n.deletePhotos(pendingCount)),
                             style: FilledButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 16),
                               backgroundColor:
@@ -940,12 +1446,1755 @@ class SwipePage extends ConsumerWidget {
                                 context,
                               ).colorScheme.onError,
                             ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: ColorFiltered(
+                                    colorFilter: ColorFilter.mode(
+                                      Theme.of(context).colorScheme.onError,
+                                      BlendMode.srcATop,
+                                    ),
+                                    child: Lottie.asset(
+                                      'assets/lottie/trash.json',
+                                      width: 20,
+                                      height: 20,
+                                      fit: BoxFit.contain,
+                                      repeat: _isDeleting,
+                                      options: LottieOptions(
+                                        enableMergePaths: true,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(l10n.deletePhotos(pendingCount)),
+                              ],
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _BlurTab extends ConsumerStatefulWidget {
+  const _BlurTab();
+
+  @override
+  ConsumerState<_BlurTab> createState() => _BlurTabState();
+}
+
+class _BlurTabState extends ConsumerState<_BlurTab> {
+  double _blurThreshold = 0.3;
+  final SoundService _soundService = SoundService();
+
+  @override
+  void dispose() {
+    _soundService.stopScannerSound();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final selectedAlbum = ref.watch(selectedAlbumProvider);
+    final albumsAsync = ref.watch(albumsProvider);
+    final blurState = ref.watch(blurDetectionProvider);
+
+    // Scanner durumu değiştiğinde ses kontrolü yap
+    ref.listen<bool>(
+      blurDetectionProvider.select((state) => state.isScanning),
+      (previous, next) {
+        // Sadece durum değiştiğinde ses kontrolü yap
+        if (next) {
+          _soundService.playScannerSound();
+        } else {
+          _soundService.stopScannerSound();
+        }
+      },
+    );
+
+    return albumsAsync.when(
+      loading: () => Center(
+        child: SizedBox(
+          width: 100,
+          height: 100,
+          child: Lottie.asset(
+            'assets/lottie/loading.json',
+            fit: BoxFit.contain,
+            repeat: true,
+          ),
+        ),
+      ),
+      error: (e, _) => Center(child: Text(l10n.errorMessage(e.toString()))),
+      data: (albums) {
+        if (albums.isEmpty) {
+          return Center(child: Text(l10n.albumNotFound));
+        }
+
+        final selectedAlbums = selectedAlbum != null
+            ? [selectedAlbum]
+            : albums.where((a) => !a.isAll).toList();
+
+        final hasResults = blurState.totalBlurryPhotos > 0;
+        final isScanning = blurState.isScanning;
+
+        // Tarama yapılırken full-screen overlay göster
+        if (isScanning) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    width: 180,
+                    height: 180,
+                    child: Lottie.asset(
+                      'assets/lottie/gallery_loading.json',
+                      fit: BoxFit.contain,
+                      repeat: true,
+                      animate: true,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    l10n.scanningBlurPhotos,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    l10n.loadingMayTakeFewSeconds,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurface.withOpacity(0.7),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  // Progress bilgisi
+                  if (blurState.currentAlbum != null ||
+                      blurState.progress > 0) ...[
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primaryContainer.withOpacity(
+                          0.3,
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        blurState.currentAlbum != null
+                            ? '${blurState.currentAlbum} • ${(blurState.progress * 100).toInt()}%'
+                            : '${(blurState.progress * 100).toInt()}%',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.primary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 24),
+                  // Durdur butonu
+                  FilledButton.icon(
+                    onPressed: () {
+                      ref.read(blurDetectionProvider.notifier).cancel();
+                    },
+                    icon: const Icon(Icons.stop),
+                    label: Text(l10n.stop),
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 16,
+                      ),
+                      backgroundColor: theme.colorScheme.error,
+                      foregroundColor: theme.colorScheme.onError,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        return Stack(
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(
+                top: 8,
+                left: 16,
+                right: 16,
+                bottom: 80,
+              ),
+              child: hasResults
+                  ? _buildResultsView(context, blurState, theme, l10n)
+                  : _buildScanForm(context, theme, l10n),
+            ),
+            // Fixed bottom button
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 10,
+                      offset: const Offset(0, -2),
+                    ),
+                  ],
+                ),
+                child: SafeArea(
+                  child: Consumer(
+                    builder: (context, ref, _) {
+                      final scanLimitAsync = ref.watch(scanLimitProvider);
+                      final isPremiumAsync = ref.watch(isPremiumProvider);
+
+                      return scanLimitAsync.when(
+                        loading: () => hasResults
+                            ? FilledButton.icon(
+                                onPressed: () async {
+                                  final allPhotos = <BlurPhoto>[];
+                                  for (final entry
+                                      in blurState
+                                          .blurryPhotosByAlbum
+                                          .entries) {
+                                    allPhotos.addAll(entry.value);
+                                  }
+
+                                  final l10n = AppLocalizations.of(context)!;
+                                  final confirmed = await showDialog<bool>(
+                                    context: context,
+                                    builder: (context) => AlertDialog(
+                                      title: Text(l10n.deleteAllBlurryPhotos),
+                                      content: Text(
+                                        l10n.deleteAllBlurryPhotosMessage(
+                                          allPhotos.length,
+                                        ),
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () =>
+                                              Navigator.of(context).pop(false),
+                                          child: Text(l10n.cancel),
+                                        ),
+                                        FilledButton(
+                                          onPressed: () =>
+                                              Navigator.of(context).pop(true),
+                                          style: FilledButton.styleFrom(
+                                            backgroundColor:
+                                                theme.colorScheme.error,
+                                          ),
+                                          child: Text(l10n.delete),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+
+                                  if (confirmed != true || !mounted) return;
+
+                                  // Delete limit kontrolü
+                                  final deleteLimitController = ref.read(
+                                    deleteLimitProvider.notifier,
+                                  );
+                                  final deleteLimit =
+                                      await deleteLimitController
+                                          .currentLimit();
+                                  final isPremium = await PreferencesService()
+                                      .isPremium();
+
+                                  // Toplam silinecek fotoğraf sayısını kontrol et
+                                  final totalPhotosToDelete = allPhotos.length;
+
+                                  // Delete limit'e göre maksimum silinebilecek fotoğraf sayısını belirle
+                                  final maxDeleteCount =
+                                      isPremium || deleteLimit >= 999999999
+                                      ? totalPhotosToDelete
+                                      : math.min(
+                                          deleteLimit,
+                                          totalPhotosToDelete,
+                                        );
+
+                                  debugPrint(
+                                    '📊 [SwipePage] Blur tab - Toplu silme: $maxDeleteCount/$totalPhotosToDelete fotoğraf silinecek (limit: $deleteLimit)',
+                                  );
+
+                                  // Eğer limit varsa, sadece limit kadar fotoğrafı sil
+                                  int deletedCount = 0;
+                                  if (maxDeleteCount > 0) {
+                                    // Tüm fotoğrafları al ve limit kadarını sil
+                                    final photosToDelete = allPhotos
+                                        .take(maxDeleteCount)
+                                        .toList();
+                                    deletedCount = await ref
+                                        .read(blurDetectionProvider.notifier)
+                                        .deleteBlurryPhotos(photosToDelete);
+                                  }
+
+                                  if (!mounted) return;
+
+                                  if (deletedCount > 0) {
+                                    // Silme hakkını azalt
+                                    await deleteLimitController.decrease(
+                                      deletedCount,
+                                    );
+
+                                    // Galeriyi yeniden yükle
+                                    ref
+                                        .read(
+                                          galleryPagingControllerProvider
+                                              .notifier,
+                                        )
+                                        .reload();
+
+                                    debugPrint(
+                                      '✅ [SwipePage] Blur tab - $deletedCount fotoğraf silindi',
+                                    );
+                                  } else {
+                                    debugPrint(
+                                      '⚠️ [SwipePage] Blur tab - Silme işlemi başarısız veya limit yok',
+                                    );
+                                  }
+                                },
+                                icon: const Icon(Icons.delete_outline),
+                                label: Text(l10n.deleteAllBlurryPhotos),
+                                style: FilledButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 16,
+                                  ),
+                                  minimumSize: const Size(double.infinity, 56),
+                                  backgroundColor: theme.colorScheme.error,
+                                  foregroundColor: theme.colorScheme.onError,
+                                ),
+                              )
+                            : _buildModernScanButton(
+                                context: context,
+                                theme: theme,
+                                l10n: l10n,
+                                onPressed: null,
+                                icon: Icons.search_rounded,
+                                label: l10n.startScan,
+                                isEnabled: false,
+                                isError: false,
+                              ),
+                        error: (_, __) => hasResults
+                            ? FilledButton.icon(
+                                onPressed: () async {
+                                  final allPhotos = <BlurPhoto>[];
+                                  for (final entry
+                                      in blurState
+                                          .blurryPhotosByAlbum
+                                          .entries) {
+                                    allPhotos.addAll(entry.value);
+                                  }
+
+                                  final l10n = AppLocalizations.of(context)!;
+                                  final confirmed = await showDialog<bool>(
+                                    context: context,
+                                    builder: (context) => AlertDialog(
+                                      title: Text(l10n.deleteAllBlurryPhotos),
+                                      content: Text(
+                                        l10n.deleteAllBlurryPhotosMessage(
+                                          allPhotos.length,
+                                        ),
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () =>
+                                              Navigator.of(context).pop(false),
+                                          child: Text(l10n.cancel),
+                                        ),
+                                        FilledButton(
+                                          onPressed: () =>
+                                              Navigator.of(context).pop(true),
+                                          style: FilledButton.styleFrom(
+                                            backgroundColor:
+                                                theme.colorScheme.error,
+                                          ),
+                                          child: Text(l10n.delete),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+
+                                  if (confirmed != true || !mounted) return;
+
+                                  // Delete limit kontrolü
+                                  final deleteLimitController = ref.read(
+                                    deleteLimitProvider.notifier,
+                                  );
+                                  final deleteLimit =
+                                      await deleteLimitController
+                                          .currentLimit();
+                                  final isPremium = await PreferencesService()
+                                      .isPremium();
+
+                                  // Toplam silinecek fotoğraf sayısını kontrol et
+                                  final totalPhotosToDelete = allPhotos.length;
+
+                                  // Delete limit'e göre maksimum silinebilecek fotoğraf sayısını belirle
+                                  final maxDeleteCount =
+                                      isPremium || deleteLimit >= 999999999
+                                      ? totalPhotosToDelete
+                                      : math.min(
+                                          deleteLimit,
+                                          totalPhotosToDelete,
+                                        );
+
+                                  debugPrint(
+                                    '📊 [SwipePage] Blur tab - Toplu silme: $maxDeleteCount/$totalPhotosToDelete fotoğraf silinecek (limit: $deleteLimit)',
+                                  );
+
+                                  // Eğer limit varsa, sadece limit kadar fotoğrafı sil
+                                  int deletedCount = 0;
+                                  if (maxDeleteCount > 0) {
+                                    // Tüm fotoğrafları al ve limit kadarını sil
+                                    final photosToDelete = allPhotos
+                                        .take(maxDeleteCount)
+                                        .toList();
+                                    deletedCount = await ref
+                                        .read(blurDetectionProvider.notifier)
+                                        .deleteBlurryPhotos(photosToDelete);
+                                  }
+
+                                  if (!mounted) return;
+
+                                  if (deletedCount > 0) {
+                                    // Silme hakkını azalt
+                                    await deleteLimitController.decrease(
+                                      deletedCount,
+                                    );
+
+                                    // Galeriyi yeniden yükle
+                                    ref
+                                        .read(
+                                          galleryPagingControllerProvider
+                                              .notifier,
+                                        )
+                                        .reload();
+
+                                    debugPrint(
+                                      '✅ [SwipePage] Blur tab - $deletedCount fotoğraf silindi',
+                                    );
+                                  } else {
+                                    debugPrint(
+                                      '⚠️ [SwipePage] Blur tab - Silme işlemi başarısız veya limit yok',
+                                    );
+                                  }
+                                },
+                                icon: const Icon(Icons.delete_outline),
+                                label: Text(l10n.deleteAllBlurryPhotos),
+                                style: FilledButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 16,
+                                  ),
+                                  minimumSize: const Size(double.infinity, 56),
+                                  backgroundColor: theme.colorScheme.error,
+                                  foregroundColor: theme.colorScheme.onError,
+                                ),
+                              )
+                            : _buildModernScanButton(
+                                context: context,
+                                theme: theme,
+                                l10n: l10n,
+                                onPressed: null,
+                                icon: Icons.search_rounded,
+                                label: l10n.startScan,
+                                isEnabled: false,
+                                isError: false,
+                              ),
+                        data: (scanLimit) {
+                          return isPremiumAsync.when(
+                            loading: () => hasResults
+                                ? FilledButton.icon(
+                                    onPressed: () async {
+                                      final allPhotos = <BlurPhoto>[];
+                                      for (final entry
+                                          in blurState
+                                              .blurryPhotosByAlbum
+                                              .entries) {
+                                        allPhotos.addAll(entry.value);
+                                      }
+
+                                      final l10n = AppLocalizations.of(
+                                        context,
+                                      )!;
+                                      final confirmed = await showDialog<bool>(
+                                        context: context,
+                                        builder: (context) => AlertDialog(
+                                          title: Text(
+                                            l10n.deleteAllBlurryPhotos,
+                                          ),
+                                          content: Text(
+                                            l10n.deleteAllBlurryPhotosMessage(
+                                              allPhotos.length,
+                                            ),
+                                          ),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () => Navigator.of(
+                                                context,
+                                              ).pop(false),
+                                              child: Text(l10n.cancel),
+                                            ),
+                                            FilledButton(
+                                              onPressed: () => Navigator.of(
+                                                context,
+                                              ).pop(true),
+                                              style: FilledButton.styleFrom(
+                                                backgroundColor:
+                                                    theme.colorScheme.error,
+                                              ),
+                                              child: Text(l10n.delete),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+
+                                      if (confirmed != true || !mounted) return;
+
+                                      final deletedCount = await ref
+                                          .read(blurDetectionProvider.notifier)
+                                          .deleteAllBlurryPhotos();
+
+                                      if (!mounted) return;
+
+                                      await ref
+                                          .read(deleteLimitProvider.notifier)
+                                          .decrease(deletedCount);
+                                    },
+                                    icon: const Icon(Icons.delete_outline),
+                                    label: Text(l10n.deleteAllBlurryPhotos),
+                                    style: FilledButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 16,
+                                      ),
+                                      minimumSize: const Size(
+                                        double.infinity,
+                                        56,
+                                      ),
+                                      backgroundColor: theme.colorScheme.error,
+                                      foregroundColor:
+                                          theme.colorScheme.onError,
+                                    ),
+                                  )
+                                : _buildModernScanButton(
+                                    context: context,
+                                    theme: theme,
+                                    l10n: l10n,
+                                    onPressed: null,
+                                    icon: Icons.search_rounded,
+                                    label: l10n.startScan,
+                                    isEnabled: false,
+                                    isError: false,
+                                  ),
+                            error: (_, __) => hasResults
+                                ? FilledButton.icon(
+                                    onPressed: () async {
+                                      final allPhotos = <BlurPhoto>[];
+                                      for (final entry
+                                          in blurState
+                                              .blurryPhotosByAlbum
+                                              .entries) {
+                                        allPhotos.addAll(entry.value);
+                                      }
+
+                                      final l10n = AppLocalizations.of(
+                                        context,
+                                      )!;
+                                      final confirmed = await showDialog<bool>(
+                                        context: context,
+                                        builder: (context) => AlertDialog(
+                                          title: Text(
+                                            l10n.deleteAllBlurryPhotos,
+                                          ),
+                                          content: Text(
+                                            l10n.deleteAllBlurryPhotosMessage(
+                                              allPhotos.length,
+                                            ),
+                                          ),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () => Navigator.of(
+                                                context,
+                                              ).pop(false),
+                                              child: Text(l10n.cancel),
+                                            ),
+                                            FilledButton(
+                                              onPressed: () => Navigator.of(
+                                                context,
+                                              ).pop(true),
+                                              style: FilledButton.styleFrom(
+                                                backgroundColor:
+                                                    theme.colorScheme.error,
+                                              ),
+                                              child: Text(l10n.delete),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+
+                                      if (confirmed != true || !mounted) return;
+
+                                      final deletedCount = await ref
+                                          .read(blurDetectionProvider.notifier)
+                                          .deleteAllBlurryPhotos();
+
+                                      if (!mounted) return;
+
+                                      await ref
+                                          .read(deleteLimitProvider.notifier)
+                                          .decrease(deletedCount);
+                                    },
+                                    icon: const Icon(Icons.delete_outline),
+                                    label: Text(l10n.deleteAllBlurryPhotos),
+                                    style: FilledButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 16,
+                                      ),
+                                      minimumSize: const Size(
+                                        double.infinity,
+                                        56,
+                                      ),
+                                      backgroundColor: theme.colorScheme.error,
+                                      foregroundColor:
+                                          theme.colorScheme.onError,
+                                    ),
+                                  )
+                                : _buildModernScanButton(
+                                    context: context,
+                                    theme: theme,
+                                    l10n: l10n,
+                                    onPressed: null,
+                                    icon: Icons.search_rounded,
+                                    label: l10n.startScan,
+                                    isEnabled: false,
+                                    isError: false,
+                                  ),
+                            data: (isPremium) {
+                              final hasNoScanRights =
+                                  !isPremium && scanLimit <= 0;
+
+                              return hasResults
+                                  ? FilledButton.icon(
+                                      onPressed: () async {
+                                        final allPhotos = <BlurPhoto>[];
+                                        for (final entry
+                                            in blurState
+                                                .blurryPhotosByAlbum
+                                                .entries) {
+                                          allPhotos.addAll(entry.value);
+                                        }
+
+                                        final l10n = AppLocalizations.of(
+                                          context,
+                                        )!;
+                                        final confirmed = await showDialog<bool>(
+                                          context: context,
+                                          builder: (context) => AlertDialog(
+                                            title: Text(
+                                              l10n.deleteAllBlurryPhotos,
+                                            ),
+                                            content: Text(
+                                              l10n.deleteAllBlurryPhotosMessage(
+                                                allPhotos.length,
+                                              ),
+                                            ),
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () => Navigator.of(
+                                                  context,
+                                                ).pop(false),
+                                                child: Text(l10n.cancel),
+                                              ),
+                                              FilledButton(
+                                                onPressed: () => Navigator.of(
+                                                  context,
+                                                ).pop(true),
+                                                style: FilledButton.styleFrom(
+                                                  backgroundColor:
+                                                      theme.colorScheme.error,
+                                                ),
+                                                child: Text(l10n.delete),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+
+                                        if (confirmed != true || !mounted)
+                                          return;
+
+                                        final deletedCount = await ref
+                                            .read(
+                                              blurDetectionProvider.notifier,
+                                            )
+                                            .deleteAllBlurryPhotos();
+
+                                        if (!mounted) return;
+
+                                        await ref
+                                            .read(deleteLimitProvider.notifier)
+                                            .decrease(deletedCount);
+                                      },
+                                      icon: const Icon(Icons.delete_outline),
+                                      label: Text(l10n.deleteAllBlurryPhotos),
+                                      style: FilledButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 16,
+                                        ),
+                                        minimumSize: const Size(
+                                          double.infinity,
+                                          56,
+                                        ),
+                                        backgroundColor:
+                                            theme.colorScheme.error,
+                                        foregroundColor:
+                                            theme.colorScheme.onError,
+                                      ),
+                                    )
+                                  : _buildModernScanButton(
+                                      context: context,
+                                      theme: theme,
+                                      l10n: l10n,
+                                      onPressed: isScanning || hasNoScanRights
+                                          ? null
+                                          : () async {
+                                              await ref
+                                                  .read(
+                                                    blurDetectionProvider
+                                                        .notifier,
+                                                  )
+                                                  .scanAlbums(
+                                                    selectedAlbums,
+                                                    blurThreshold:
+                                                        _blurThreshold,
+                                                  );
+
+                                              if (!mounted) return;
+                                            },
+                                      icon: hasNoScanRights
+                                          ? Icons.block
+                                          : Icons.search_rounded,
+                                      label: hasNoScanRights
+                                          ? l10n.noScanRightsLeft
+                                          : l10n.startScan,
+                                      isEnabled:
+                                          !isScanning && !hasNoScanRights,
+                                      isError: hasNoScanRights,
+                                    );
+                            },
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildScanForm(
+    BuildContext context,
+    ThemeData theme,
+    AppLocalizations l10n,
+  ) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Kompakt info card
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                theme.colorScheme.primaryContainer,
+                theme.colorScheme.secondaryContainer,
+              ],
+            ),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: theme.colorScheme.primary.withOpacity(0.1),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.onPrimaryContainer.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.blur_on_rounded,
+                  size: 28,
+                  color: theme.colorScheme.onPrimaryContainer,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.primary.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.auto_awesome,
+                                size: 12,
+                                color: theme.colorScheme.onPrimaryContainer,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                l10n.aiPowered,
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 10,
+                                  color: theme.colorScheme.onPrimaryContainer,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
                     ),
-                  );
+                    const SizedBox(height: 4),
+                    Text(
+                      l10n.blurPhotoDetection,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: theme.colorScheme.onPrimaryContainer,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      l10n.blurDetectionDescriptionFromAppBar,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontSize: 11,
+                        height: 1.3,
+                        color: theme.colorScheme.onPrimaryContainer.withOpacity(
+                          0.8,
+                        ),
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        // Scan limit info
+        _ScanLimitInfo(adUnitType: AdUnitType.blurScanLimit),
+        const SizedBox(height: 8),
+        // Kompakt sensitivity section
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: theme.colorScheme.outline.withOpacity(0.1),
+              width: 1,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.tune_rounded,
+                    size: 16,
+                    color: theme.colorScheme.primary,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    l10n.sensitivity,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              // Sensitivity levels
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _buildSensitivityChip(
+                    theme,
+                    l10n.sensitivityLow,
+                    Icons.visibility_outlined,
+                    0.1,
+                    _blurThreshold <= 0.2,
+                    () => setState(() => _blurThreshold = 0.1),
+                  ),
+                  _buildSensitivityChip(
+                    theme,
+                    l10n.sensitivityMedium,
+                    Icons.visibility,
+                    0.3,
+                    _blurThreshold > 0.2 && _blurThreshold <= 0.4,
+                    () => setState(() => _blurThreshold = 0.3),
+                  ),
+                  _buildSensitivityChip(
+                    theme,
+                    l10n.sensitivityHigh,
+                    Icons.visibility_off_outlined,
+                    0.5,
+                    _blurThreshold > 0.4,
+                    () => setState(() => _blurThreshold = 0.5),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              // Kompakt description
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    size: 14,
+                    color: theme.colorScheme.primary.withOpacity(0.7),
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      l10n.sensitivityLevelsDescription,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurface.withOpacity(0.7),
+                        height: 1.3,
+                        fontSize: 10,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildModernScanButton({
+    required BuildContext context,
+    required ThemeData theme,
+    required AppLocalizations l10n,
+    required VoidCallback? onPressed,
+    required IconData icon,
+    required String label,
+    required bool isEnabled,
+    required bool isError,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: isEnabled && !isError
+            ? LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  theme.colorScheme.primary,
+                  theme.colorScheme.primary.withOpacity(0.8),
+                ],
+              )
+            : null,
+        color: isError
+            ? theme.colorScheme.errorContainer
+            : !isEnabled
+            ? theme.colorScheme.surfaceContainerHighest
+            : null,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: isEnabled && !isError
+            ? [
+                BoxShadow(
+                  color: theme.colorScheme.primary.withOpacity(0.3),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                  spreadRadius: 0,
+                ),
+              ]
+            : null,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: (isEnabled && !isError)
+                        ? Colors.white.withOpacity(0.2)
+                        : theme.colorScheme.onSurface.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    icon,
+                    size: 24,
+                    color: isError
+                        ? theme.colorScheme.onErrorContainer
+                        : isEnabled
+                        ? Colors.white
+                        : theme.colorScheme.onSurface.withOpacity(0.6),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  label,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: isError
+                        ? theme.colorScheme.onErrorContainer
+                        : isEnabled
+                        ? Colors.white
+                        : theme.colorScheme.onSurface.withOpacity(0.6),
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                if (isEnabled && !isError) ...[
+                  const SizedBox(width: 8),
+                  Icon(
+                    Icons.arrow_forward_rounded,
+                    size: 20,
+                    color: Colors.white,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSensitivityChip(
+    ThemeData theme,
+    String label,
+    IconData icon,
+    double value,
+    bool isSelected,
+    VoidCallback onTap,
+  ) {
+    return Expanded(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 3),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(10),
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? theme.colorScheme.primaryContainer.withOpacity(0.5)
+                    : theme.colorScheme.surfaceContainerHighest.withOpacity(
+                        0.3,
+                      ),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: isSelected
+                      ? theme.colorScheme.primary.withOpacity(0.4)
+                      : theme.colorScheme.outline.withOpacity(0.1),
+                  width: isSelected ? 1.5 : 1,
+                ),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    icon,
+                    size: 16,
+                    color: isSelected
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.onSurface.withOpacity(0.6),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    label,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      fontWeight: isSelected
+                          ? FontWeight.w700
+                          : FontWeight.w500,
+                      color: isSelected
+                          ? theme.colorScheme.primary
+                          : theme.colorScheme.onSurface.withOpacity(0.7),
+                      fontSize: 10,
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildResultsView(
+    BuildContext context,
+    BlurDetectionState state,
+    ThemeData theme,
+    AppLocalizations l10n,
+  ) {
+    final allPhotos = <BlurPhoto>[];
+    for (final entry in state.blurryPhotosByAlbum.entries) {
+      allPhotos.addAll(entry.value);
+    }
+    allPhotos.sort((a, b) => a.blurScore.compareTo(b.blurScore));
+
+    if (allPhotos.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primaryContainer.withValues(
+                    alpha: 0.3,
+                  ),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.check_circle_outline,
+                  size: 64,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                l10n.noResultsFound,
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                l10n.noBlurryPhotosFound,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      mainAxisSize: MainAxisSize.max,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Kompakt Success Banner
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                theme.colorScheme.primaryContainer,
+                theme.colorScheme.primaryContainer.withValues(alpha: 0.7),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(14),
+            boxShadow: [
+              BoxShadow(
+                color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.check_circle,
+                color: theme.colorScheme.primary,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      l10n.scanCompleted,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onPrimaryContainer,
+                        fontSize: 13,
+                      ),
+                    ),
+                    Text(
+                      l10n.scanCompletedBlurMessage(allPhotos.length),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onPrimaryContainer.withValues(
+                          alpha: 0.8,
+                        ),
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              OutlinedButton(
+                onPressed: () {
+                  ref.read(blurDetectionProvider.notifier).clear();
                 },
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  minimumSize: const Size(0, 32),
+                  side: BorderSide(
+                    color: theme.colorScheme.primary.withValues(alpha: 0.3),
+                  ),
+                  foregroundColor: theme.colorScheme.onPrimaryContainer,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.refresh, size: 14),
+                    const SizedBox(width: 4),
+                    Text(
+                      l10n.startNewScan,
+                      style: const TextStyle(fontSize: 11),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        // Kompakt Stats Cards
+        Row(
+          children: [
+            Expanded(
+              child: _BlurTabState._buildModernStatCard(
+                theme,
+                Icons.photo_library,
+                '${allPhotos.length}',
+                l10n.photo,
+                theme.colorScheme.secondaryContainer,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _BlurTabState._buildModernStatCard(
+                theme,
+                Icons.storage,
+                '${state.totalSpaceToSaveMB.toStringAsFixed(1)} MB',
+                l10n.spaceToSave,
+                theme.colorScheme.tertiaryContainer,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        // Kompakt Photos Grid - Expanded ile scroll edilebilir yap
+        Expanded(child: _buildGridView(context, allPhotos, theme, l10n)),
+      ],
+    );
+  }
+
+  static Widget _buildModernStatCard(
+    ThemeData theme,
+    IconData icon,
+    String value,
+    String label,
+    Color backgroundColor,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            icon,
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+            size: 20,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            value,
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: theme.colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGridView(
+    BuildContext context,
+    List<BlurPhoto> allPhotos,
+    ThemeData theme,
+    AppLocalizations l10n,
+  ) {
+    return GridView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 8,
+        mainAxisSpacing: 8,
+        childAspectRatio: 0.8,
+      ),
+      itemCount: allPhotos.length,
+      itemBuilder: (context, index) {
+        final photo = allPhotos[index];
+        return TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0.0, end: 1.0),
+          duration: Duration(milliseconds: 300 + (index * 50)),
+          curve: Curves.easeOut,
+          builder: (context, value, child) {
+            return Opacity(
+              opacity: value,
+              child: Transform.translate(
+                offset: Offset(0, 20 * (1 - value)),
+                child: child,
+              ),
+            );
+          },
+          child: _buildPhotoCard(context, photo, theme, l10n),
+        );
+      },
+    );
+  }
+
+  String _getProblemTypeLabel(BlurPhoto photo, AppLocalizations l10n) {
+    if (photo.isPixelated()) {
+      if (photo.isBlurry()) {
+        return l10n.blurryAndPixelated;
+      }
+      return l10n.pixelated;
+    }
+    if (photo.isBlurry()) {
+      return l10n.blurry;
+    }
+    return l10n.sharp;
+  }
+
+  Widget _buildPhotoCard(
+    BuildContext context,
+    BlurPhoto photo,
+    ThemeData theme,
+    AppLocalizations l10n,
+  ) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+            spreadRadius: 0,
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Material(
+          color: theme.colorScheme.surface,
+          child: InkWell(
+            onTap: () => _showPhotoDetail(context, photo, theme),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      FutureBuilder<Uint8List?>(
+                        future: photo.asset.thumbnailDataWithSize(
+                          const pm.ThumbnailSize(400, 400),
+                          quality: 85,
+                        ),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return Container(
+                              color: theme.colorScheme.surfaceContainerHighest,
+                              child: Center(
+                                child: SizedBox(
+                                  width: 40,
+                                  height: 40,
+                                  child: Lottie.asset(
+                                    'assets/lottie/loading.json',
+                                    fit: BoxFit.contain,
+                                    repeat: true,
+                                  ),
+                                ),
+                              ),
+                            );
+                          }
+                          if (snapshot.hasError) {
+                            return Container(
+                              color: theme.colorScheme.errorContainer,
+                              child: Icon(
+                                Icons.error_outline,
+                                color: theme.colorScheme.onErrorContainer,
+                              ),
+                            );
+                          }
+                          if (snapshot.hasData) {
+                            return Image.memory(
+                              snapshot.data!,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  color: theme.colorScheme.errorContainer,
+                                  child: Icon(
+                                    Icons.broken_image,
+                                    color: theme.colorScheme.onErrorContainer,
+                                  ),
+                                );
+                              },
+                            );
+                          }
+                          return Container(
+                            color: theme.colorScheme.surfaceContainerHighest,
+                            child: Icon(
+                              Icons.photo,
+                              color: theme.colorScheme.onSurface.withValues(
+                                alpha: 0.3,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                      // Delete button
+                      Positioned(
+                        top: 12,
+                        right: 12,
+                        child: Material(
+                          color: Colors.black.withValues(alpha: 0.5),
+                          shape: const CircleBorder(),
+                          child: InkWell(
+                            onTap: () => _deletePhoto(context, photo, theme),
+                            customBorder: const CircleBorder(),
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              child: const Icon(
+                                Icons.delete_outline,
+                                size: 18,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _deletePhoto(
+    BuildContext context,
+    BlurPhoto photo,
+    ThemeData theme,
+  ) async {
+    final l10n = AppLocalizations.of(context)!;
+    final problemType = _getProblemTypeLabel(photo, l10n);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.deletePhoto),
+        content: Text(l10n.deletePhotoMessage(problemType.toLowerCase())),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: FilledButton.styleFrom(
+              backgroundColor: theme.colorScheme.error,
+            ),
+            child: Text(l10n.delete),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    final deletedCount = await ref
+        .read(blurDetectionProvider.notifier)
+        .deleteBlurryPhotos([photo]);
+
+    if (!mounted) return;
+
+    await ref.read(deleteLimitProvider.notifier).decrease(deletedCount);
+  }
+
+  Future<void> _showPhotoDetail(
+    BuildContext context,
+    BlurPhoto photo,
+    ThemeData theme,
+  ) async {
+    final l10n = AppLocalizations.of(context)!;
+    final isPixelated = photo.isPixelated();
+    final isBlurry = photo.isBlurry();
+    final problemColor = isPixelated && isBlurry
+        ? Colors.purple
+        : isPixelated
+        ? Colors.blue
+        : Colors.red;
+
+    await showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.9,
+          ),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _getProblemTypeLabel(photo, l10n),
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Wrap(
+                            spacing: 8,
+                            children: [
+                              if (isBlurry)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.red.withValues(alpha: 0.2),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    l10n.blurScoreLabel(
+                                      photo.blurScore.toStringAsFixed(2),
+                                    ),
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.red.shade700,
+                                    ),
+                                  ),
+                                ),
+                              if (isPixelated)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.blue.withValues(alpha: 0.2),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    l10n.pixelationScoreLabel(
+                                      photo.pixelationScore.toStringAsFixed(2),
+                                    ),
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.blue.shade700,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(Icons.close),
+                    ),
+                  ],
+                ),
+              ),
+              Flexible(
+                child: Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 20),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: problemColor, width: 3),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(13),
+                    child: FutureBuilder(
+                      future: photo.asset.thumbnailDataWithSize(
+                        const pm.ThumbnailSize(800, 800),
+                        quality: 90,
+                      ),
+                      builder: (context, snapshot) {
+                        if (snapshot.hasData) {
+                          return Image.memory(
+                            snapshot.data!,
+                            fit: BoxFit.contain,
+                          );
+                        }
+                        return Container(
+                          height: 200,
+                          color: theme.colorScheme.surfaceContainerHighest,
+                          child: Center(
+                            child: SizedBox(
+                              width: 40,
+                              height: 40,
+                              child: Lottie.asset(
+                                'assets/lottie/loading.json',
+                                fit: BoxFit.contain,
+                                repeat: true,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        child: Text(l10n.close),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: FilledButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          _deletePhoto(context, photo, theme);
+                        },
+                        style: FilledButton.styleFrom(
+                          backgroundColor: theme.colorScheme.error,
+                        ),
+                        child: Text(l10n.delete),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -955,8 +3204,3061 @@ class SwipePage extends ConsumerWidget {
   }
 }
 
+class _DuplicateTab extends ConsumerStatefulWidget {
+  const _DuplicateTab();
+
+  @override
+  ConsumerState<_DuplicateTab> createState() => _DuplicateTabState();
+}
+
+class _DuplicateTabState extends ConsumerState<_DuplicateTab> {
+  final SoundService _soundService = SoundService();
+
+  @override
+  void dispose() {
+    _soundService.stopScannerSound();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final selectedAlbum = ref.watch(selectedAlbumProvider);
+    final albumsAsync = ref.watch(albumsProvider);
+    final duplicateState = ref.watch(duplicateDetectionProvider);
+
+    // Scanner durumu değiştiğinde ses kontrolü yap
+    ref.listen<bool>(
+      duplicateDetectionProvider.select((state) => state.isScanning),
+      (previous, next) {
+        // Sadece durum değiştiğinde ses kontrolü yap
+        if (next) {
+          _soundService.playScannerSound();
+        } else {
+          _soundService.stopScannerSound();
+        }
+      },
+    );
+
+    return albumsAsync.when(
+      loading: () => Center(
+        child: SizedBox(
+          width: 100,
+          height: 100,
+          child: Lottie.asset(
+            'assets/lottie/loading.json',
+            fit: BoxFit.contain,
+            repeat: true,
+          ),
+        ),
+      ),
+      error: (e, _) => Center(child: Text(l10n.errorMessage(e.toString()))),
+      data: (albums) {
+        if (albums.isEmpty) {
+          return Center(child: Text(l10n.albumNotFound));
+        }
+
+        final selectedAlbums = selectedAlbum != null
+            ? [selectedAlbum]
+            : albums.where((a) => !a.isAll).toList();
+
+        final hasResults = duplicateState.totalGroups > 0;
+        final isScanning = duplicateState.isScanning;
+
+        // Tarama yapılırken full-screen overlay göster
+        if (isScanning) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    width: 180,
+                    height: 180,
+                    child: Lottie.asset(
+                      'assets/lottie/gallery_loading.json',
+                      fit: BoxFit.contain,
+                      repeat: true,
+                      animate: true,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    l10n.scanningDuplicatePhotos,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    l10n.loadingMayTakeFewSeconds,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurface.withOpacity(0.7),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  // Progress bilgisi
+                  if (duplicateState.currentAlbum != null ||
+                      duplicateState.progress > 0) ...[
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primaryContainer.withOpacity(
+                          0.3,
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        duplicateState.currentAlbum != null
+                            ? '${duplicateState.currentAlbum} • ${(duplicateState.progress * 100).toInt()}%'
+                            : '${(duplicateState.progress * 100).toInt()}%',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.primary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 24),
+                  // Durdur butonu
+                  FilledButton.icon(
+                    onPressed: () {
+                      ref.read(duplicateDetectionProvider.notifier).cancel();
+                    },
+                    icon: const Icon(Icons.stop),
+                    label: Text(l10n.stop),
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 16,
+                      ),
+                      backgroundColor: theme.colorScheme.error,
+                      foregroundColor: theme.colorScheme.onError,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        return Stack(
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(
+                top: 8,
+                left: 16,
+                right: 16,
+                bottom: 80,
+              ),
+              child: hasResults
+                  ? _buildResultsView(context, duplicateState, theme, l10n)
+                  : _buildScanForm(context, theme, l10n),
+            ),
+            // Fixed bottom button
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 10,
+                      offset: const Offset(0, -2),
+                    ),
+                  ],
+                ),
+                child: SafeArea(
+                  child: Consumer(
+                    builder: (context, ref, _) {
+                      final scanLimitAsync = ref.watch(scanLimitProvider);
+                      final isPremiumAsync = ref.watch(isPremiumProvider);
+
+                      return scanLimitAsync.when(
+                        loading: () => hasResults
+                            ? FilledButton.icon(
+                                onPressed: () async {
+                                  final l10n = AppLocalizations.of(context)!;
+                                  final confirmed = await showDialog<bool>(
+                                    context: context,
+                                    builder: (context) => AlertDialog(
+                                      title: Text(l10n.deleteAllDuplicates),
+                                      content: Text(
+                                        l10n.deleteAllDuplicatesMessage(
+                                          duplicateState.totalDuplicatePhotos,
+                                        ),
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () =>
+                                              Navigator.of(context).pop(false),
+                                          child: Text(l10n.cancel),
+                                        ),
+                                        FilledButton(
+                                          onPressed: () =>
+                                              Navigator.of(context).pop(true),
+                                          style: FilledButton.styleFrom(
+                                            backgroundColor:
+                                                theme.colorScheme.error,
+                                          ),
+                                          child: Text(l10n.delete),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+
+                                  if (confirmed != true || !mounted) return;
+
+                                  final deletedCount = await ref
+                                      .read(duplicateDetectionProvider.notifier)
+                                      .deleteAllDuplicates();
+
+                                  if (!mounted) return;
+
+                                  await ref
+                                      .read(deleteLimitProvider.notifier)
+                                      .decrease(deletedCount);
+                                },
+                                icon: const Icon(Icons.delete_outline),
+                                label: Text(l10n.deleteAllDuplicates),
+                                style: FilledButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 16,
+                                  ),
+                                  minimumSize: const Size(double.infinity, 56),
+                                  backgroundColor: theme.colorScheme.error,
+                                  foregroundColor: theme.colorScheme.onError,
+                                ),
+                              )
+                            : _DuplicateTabState._buildModernScanButton(
+                                context: context,
+                                theme: theme,
+                                l10n: l10n,
+                                onPressed: null,
+                                icon: Icons.search_rounded,
+                                label: l10n.scanSelectedAlbums,
+                                isEnabled: false,
+                                isError: false,
+                              ),
+                        error: (_, __) => hasResults
+                            ? FilledButton.icon(
+                                onPressed: () async {
+                                  final l10n = AppLocalizations.of(context)!;
+                                  final confirmed = await showDialog<bool>(
+                                    context: context,
+                                    builder: (context) => AlertDialog(
+                                      title: Text(l10n.deleteAllDuplicates),
+                                      content: Text(
+                                        l10n.deleteAllDuplicatesMessage(
+                                          duplicateState.totalDuplicatePhotos,
+                                        ),
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () =>
+                                              Navigator.of(context).pop(false),
+                                          child: Text(l10n.cancel),
+                                        ),
+                                        FilledButton(
+                                          onPressed: () =>
+                                              Navigator.of(context).pop(true),
+                                          style: FilledButton.styleFrom(
+                                            backgroundColor:
+                                                theme.colorScheme.error,
+                                          ),
+                                          child: Text(l10n.delete),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+
+                                  if (confirmed != true || !mounted) return;
+
+                                  // Delete limit kontrolü
+                                  final deleteLimitController = ref.read(
+                                    deleteLimitProvider.notifier,
+                                  );
+                                  final deleteLimit =
+                                      await deleteLimitController
+                                          .currentLimit();
+                                  final isPremium = await PreferencesService()
+                                      .isPremium();
+
+                                  // Toplam silinecek fotoğraf sayısını kontrol et
+                                  final totalPhotosToDelete =
+                                      duplicateState.totalDuplicatePhotos;
+
+                                  // Delete limit'e göre maksimum silinebilecek fotoğraf sayısını belirle
+                                  final maxDeleteCount =
+                                      isPremium || deleteLimit >= 999999999
+                                      ? totalPhotosToDelete
+                                      : math.min(
+                                          deleteLimit,
+                                          totalPhotosToDelete,
+                                        );
+
+                                  debugPrint(
+                                    '📊 [SwipePage] Duplicate tab - Toplu silme: $maxDeleteCount/$totalPhotosToDelete fotoğraf silinecek (limit: $deleteLimit)',
+                                  );
+
+                                  // Eğer limit varsa, sadece limit kadar fotoğrafı sil
+                                  int deletedCount = 0;
+                                  if (maxDeleteCount > 0) {
+                                    deletedCount = await ref
+                                        .read(
+                                          duplicateDetectionProvider.notifier,
+                                        )
+                                        .deleteAllDuplicates(
+                                          maxDeleteCount: maxDeleteCount,
+                                        );
+                                  }
+
+                                  if (!mounted) return;
+
+                                  if (deletedCount > 0) {
+                                    // Silme hakkını azalt
+                                    await deleteLimitController.decrease(
+                                      deletedCount,
+                                    );
+
+                                    // Galeriyi yeniden yükle
+                                    ref
+                                        .read(
+                                          galleryPagingControllerProvider
+                                              .notifier,
+                                        )
+                                        .reload();
+
+                                    debugPrint(
+                                      '✅ [SwipePage] Duplicate tab - $deletedCount fotoğraf silindi',
+                                    );
+                                  } else {
+                                    debugPrint(
+                                      '⚠️ [SwipePage] Duplicate tab - Silme işlemi başarısız veya limit yok',
+                                    );
+                                  }
+                                },
+                                icon: const Icon(Icons.delete_outline),
+                                label: Text(l10n.deleteAllDuplicates),
+                                style: FilledButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 16,
+                                  ),
+                                  minimumSize: const Size(double.infinity, 56),
+                                  backgroundColor: theme.colorScheme.error,
+                                  foregroundColor: theme.colorScheme.onError,
+                                ),
+                              )
+                            : FilledButton.icon(
+                                onPressed: null,
+                                icon: const Icon(Icons.search),
+                                label: Text(l10n.scanSelectedAlbums),
+                                style: FilledButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 16,
+                                  ),
+                                  minimumSize: const Size(double.infinity, 56),
+                                ),
+                              ),
+                        data: (scanLimit) {
+                          return isPremiumAsync.when(
+                            loading: () => hasResults
+                                ? FilledButton.icon(
+                                    onPressed: () async {
+                                      final l10n = AppLocalizations.of(
+                                        context,
+                                      )!;
+                                      final confirmed = await showDialog<bool>(
+                                        context: context,
+                                        builder: (context) => AlertDialog(
+                                          title: Text(l10n.deleteAllDuplicates),
+                                          content: Text(
+                                            l10n.deleteAllDuplicatesMessage(
+                                              duplicateState
+                                                  .totalDuplicatePhotos,
+                                            ),
+                                          ),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () => Navigator.of(
+                                                context,
+                                              ).pop(false),
+                                              child: Text(l10n.cancel),
+                                            ),
+                                            FilledButton(
+                                              onPressed: () => Navigator.of(
+                                                context,
+                                              ).pop(true),
+                                              style: FilledButton.styleFrom(
+                                                backgroundColor:
+                                                    theme.colorScheme.error,
+                                              ),
+                                              child: Text(l10n.delete),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+
+                                      if (confirmed != true || !mounted) return;
+
+                                      final deletedCount = await ref
+                                          .read(
+                                            duplicateDetectionProvider.notifier,
+                                          )
+                                          .deleteAllDuplicates();
+
+                                      if (!mounted) return;
+
+                                      await ref
+                                          .read(deleteLimitProvider.notifier)
+                                          .decrease(deletedCount);
+                                    },
+                                    icon: const Icon(Icons.delete_outline),
+                                    label: Text(l10n.deleteAllDuplicates),
+                                    style: FilledButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 16,
+                                      ),
+                                      minimumSize: const Size(
+                                        double.infinity,
+                                        56,
+                                      ),
+                                      backgroundColor: theme.colorScheme.error,
+                                      foregroundColor:
+                                          theme.colorScheme.onError,
+                                    ),
+                                  )
+                                : _DuplicateTabState._buildModernScanButton(
+                                    context: context,
+                                    theme: theme,
+                                    l10n: l10n,
+                                    onPressed: null,
+                                    icon: Icons.search_rounded,
+                                    label: l10n.scanSelectedAlbums,
+                                    isEnabled: false,
+                                    isError: false,
+                                  ),
+                            error: (_, __) => hasResults
+                                ? FilledButton.icon(
+                                    onPressed: () async {
+                                      final l10n = AppLocalizations.of(
+                                        context,
+                                      )!;
+                                      final confirmed = await showDialog<bool>(
+                                        context: context,
+                                        builder: (context) => AlertDialog(
+                                          title: Text(l10n.deleteAllDuplicates),
+                                          content: Text(
+                                            l10n.deleteAllDuplicatesMessage(
+                                              duplicateState
+                                                  .totalDuplicatePhotos,
+                                            ),
+                                          ),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () => Navigator.of(
+                                                context,
+                                              ).pop(false),
+                                              child: Text(l10n.cancel),
+                                            ),
+                                            FilledButton(
+                                              onPressed: () => Navigator.of(
+                                                context,
+                                              ).pop(true),
+                                              style: FilledButton.styleFrom(
+                                                backgroundColor:
+                                                    theme.colorScheme.error,
+                                              ),
+                                              child: Text(l10n.delete),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+
+                                      if (confirmed != true || !mounted) return;
+
+                                      final deletedCount = await ref
+                                          .read(
+                                            duplicateDetectionProvider.notifier,
+                                          )
+                                          .deleteAllDuplicates();
+
+                                      if (!mounted) return;
+
+                                      await ref
+                                          .read(deleteLimitProvider.notifier)
+                                          .decrease(deletedCount);
+                                    },
+                                    icon: const Icon(Icons.delete_outline),
+                                    label: Text(l10n.deleteAllDuplicates),
+                                    style: FilledButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 16,
+                                      ),
+                                      minimumSize: const Size(
+                                        double.infinity,
+                                        56,
+                                      ),
+                                      backgroundColor: theme.colorScheme.error,
+                                      foregroundColor:
+                                          theme.colorScheme.onError,
+                                    ),
+                                  )
+                                : _DuplicateTabState._buildModernScanButton(
+                                    context: context,
+                                    theme: theme,
+                                    l10n: l10n,
+                                    onPressed: null,
+                                    icon: Icons.search_rounded,
+                                    label: l10n.scanSelectedAlbums,
+                                    isEnabled: false,
+                                    isError: false,
+                                  ),
+                            data: (isPremium) {
+                              final hasNoScanRights =
+                                  !isPremium && scanLimit <= 0;
+
+                              return hasResults
+                                  ? FilledButton.icon(
+                                      onPressed: () async {
+                                        final l10n = AppLocalizations.of(
+                                          context,
+                                        )!;
+                                        final confirmed = await showDialog<bool>(
+                                          context: context,
+                                          builder: (context) => AlertDialog(
+                                            title: Text(
+                                              l10n.deleteAllDuplicates,
+                                            ),
+                                            content: Text(
+                                              l10n.deleteAllDuplicatesMessage(
+                                                duplicateState
+                                                    .totalDuplicatePhotos,
+                                              ),
+                                            ),
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () => Navigator.of(
+                                                  context,
+                                                ).pop(false),
+                                                child: Text(l10n.cancel),
+                                              ),
+                                              FilledButton(
+                                                onPressed: () => Navigator.of(
+                                                  context,
+                                                ).pop(true),
+                                                style: FilledButton.styleFrom(
+                                                  backgroundColor:
+                                                      theme.colorScheme.error,
+                                                ),
+                                                child: Text(l10n.delete),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+
+                                        if (confirmed != true || !mounted)
+                                          return;
+
+                                        final deletedCount = await ref
+                                            .read(
+                                              duplicateDetectionProvider
+                                                  .notifier,
+                                            )
+                                            .deleteAllDuplicates();
+
+                                        if (!mounted) return;
+
+                                        await ref
+                                            .read(deleteLimitProvider.notifier)
+                                            .decrease(deletedCount);
+                                      },
+                                      icon: const Icon(Icons.delete_outline),
+                                      label: Text(l10n.deleteAllDuplicates),
+                                      style: FilledButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 16,
+                                        ),
+                                        minimumSize: const Size(
+                                          double.infinity,
+                                          56,
+                                        ),
+                                        backgroundColor:
+                                            theme.colorScheme.error,
+                                        foregroundColor:
+                                            theme.colorScheme.onError,
+                                      ),
+                                    )
+                                  : _DuplicateTabState._buildModernScanButton(
+                                      context: context,
+                                      theme: theme,
+                                      l10n: l10n,
+                                      onPressed: isScanning || hasNoScanRights
+                                          ? null
+                                          : () async {
+                                              await ref
+                                                  .read(
+                                                    duplicateDetectionProvider
+                                                        .notifier,
+                                                  )
+                                                  .scanAlbums(selectedAlbums);
+
+                                              if (!mounted) return;
+                                            },
+                                      icon: hasNoScanRights
+                                          ? Icons.block
+                                          : Icons.search_rounded,
+                                      label: hasNoScanRights
+                                          ? l10n.noScanRightsLeft
+                                          : l10n.scanSelectedAlbums,
+                                      isEnabled:
+                                          !isScanning && !hasNoScanRights,
+                                      isError: hasNoScanRights,
+                                    );
+                            },
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildScanForm(
+    BuildContext context,
+    ThemeData theme,
+    AppLocalizations l10n,
+  ) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Kompakt info card
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                theme.colorScheme.primaryContainer,
+                theme.colorScheme.secondaryContainer,
+              ],
+            ),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: theme.colorScheme.primary.withOpacity(0.1),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.onPrimaryContainer.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.content_copy_rounded,
+                  size: 28,
+                  color: theme.colorScheme.onPrimaryContainer,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.primary.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.auto_awesome,
+                                size: 12,
+                                color: theme.colorScheme.onPrimaryContainer,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                l10n.aiPowered,
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 10,
+                                  color: theme.colorScheme.onPrimaryContainer,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      l10n.duplicatePhotoDetection,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: theme.colorScheme.onPrimaryContainer,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      l10n.duplicateDetectionDescriptionFromAppBar,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontSize: 11,
+                        height: 1.3,
+                        color: theme.colorScheme.onPrimaryContainer.withOpacity(
+                          0.8,
+                        ),
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        // Scan limit info
+        _ScanLimitInfo(adUnitType: AdUnitType.duplicateScanLimit),
+      ],
+    );
+  }
+
+  static Widget _buildModernScanButton({
+    required BuildContext context,
+    required ThemeData theme,
+    required AppLocalizations l10n,
+    required VoidCallback? onPressed,
+    required IconData icon,
+    required String label,
+    required bool isEnabled,
+    required bool isError,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: isEnabled && !isError
+            ? LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  theme.colorScheme.primary,
+                  theme.colorScheme.primary.withOpacity(0.8),
+                ],
+              )
+            : null,
+        color: isError
+            ? theme.colorScheme.errorContainer
+            : !isEnabled
+            ? theme.colorScheme.surfaceContainerHighest
+            : null,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: isEnabled && !isError
+            ? [
+                BoxShadow(
+                  color: theme.colorScheme.primary.withOpacity(0.3),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                  spreadRadius: 0,
+                ),
+              ]
+            : null,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: (isEnabled && !isError)
+                        ? Colors.white.withOpacity(0.2)
+                        : theme.colorScheme.onSurface.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    icon,
+                    size: 24,
+                    color: isError
+                        ? theme.colorScheme.onErrorContainer
+                        : isEnabled
+                        ? Colors.white
+                        : theme.colorScheme.onSurface.withOpacity(0.6),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  label,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: isError
+                        ? theme.colorScheme.onErrorContainer
+                        : isEnabled
+                        ? Colors.white
+                        : theme.colorScheme.onSurface.withOpacity(0.6),
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                if (isEnabled && !isError) ...[
+                  const SizedBox(width: 8),
+                  Icon(
+                    Icons.arrow_forward_rounded,
+                    size: 20,
+                    color: Colors.white,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildResultsView(
+    BuildContext context,
+    DuplicateDetectionState state,
+    ThemeData theme,
+    AppLocalizations l10n,
+  ) {
+    final albumEntries = state.duplicatesByAlbum.entries
+        .where((entry) => entry.value.isNotEmpty)
+        .toList();
+
+    if (albumEntries.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primaryContainer.withValues(
+                    alpha: 0.3,
+                  ),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.check_circle_outline,
+                  size: 64,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                l10n.noResultsFound,
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                l10n.noDuplicatePhotosFound,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Kompakt Success Banner
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                theme.colorScheme.primaryContainer,
+                theme.colorScheme.primaryContainer.withValues(alpha: 0.7),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(14),
+            boxShadow: [
+              BoxShadow(
+                color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.check_circle,
+                color: theme.colorScheme.primary,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      l10n.scanCompleted,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onPrimaryContainer,
+                        fontSize: 13,
+                      ),
+                    ),
+                    Text(
+                      l10n.scanCompletedDuplicateMessage(state.totalGroups),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onPrimaryContainer.withValues(
+                          alpha: 0.8,
+                        ),
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              OutlinedButton(
+                onPressed: () {
+                  ref.read(duplicateDetectionProvider.notifier).clear();
+                },
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  minimumSize: const Size(0, 32),
+                  side: BorderSide(
+                    color: theme.colorScheme.primary.withValues(alpha: 0.3),
+                  ),
+                  foregroundColor: theme.colorScheme.onPrimaryContainer,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.refresh, size: 14),
+                    const SizedBox(width: 4),
+                    Text(
+                      l10n.startNewScan,
+                      style: const TextStyle(fontSize: 11),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        // Kompakt Stats Cards
+        Row(
+          children: [
+            Expanded(
+              child: _BlurTabState._buildModernStatCard(
+                theme,
+                Icons.collections,
+                '${state.totalGroups}',
+                l10n.group,
+                theme.colorScheme.secondaryContainer,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _BlurTabState._buildModernStatCard(
+                theme,
+                Icons.photo_library,
+                '${state.totalDuplicatePhotos}',
+                l10n.photo,
+                theme.colorScheme.tertiaryContainer,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _BlurTabState._buildModernStatCard(
+                theme,
+                Icons.storage,
+                '${state.totalSpaceToSaveMB.toStringAsFixed(1)} MB',
+                l10n.spaceToSave,
+                theme.colorScheme.errorContainer.withValues(alpha: 0.3),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        // Kompakt Results grid - Flexible ile sınırlandır
+        Flexible(child: _buildDuplicateGrid(context, state, theme, l10n)),
+      ],
+    );
+  }
+
+  Widget _buildDuplicateGrid(
+    BuildContext context,
+    DuplicateDetectionState state,
+    ThemeData theme,
+    AppLocalizations l10n,
+  ) {
+    final allGroups = <DuplicatePhotoGroup>[];
+    for (final entry in state.duplicatesByAlbum.entries) {
+      allGroups.addAll(entry.value);
+    }
+
+    if (allGroups.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 8,
+        mainAxisSpacing: 8,
+        childAspectRatio: 0.85,
+      ),
+      itemCount: allGroups.length,
+      itemBuilder: (context, index) {
+        final group = allGroups[index];
+        return TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0.0, end: 1.0),
+          duration: Duration(milliseconds: 300 + (index * 50)),
+          curve: Curves.easeOut,
+          builder: (context, value, child) {
+            return Opacity(
+              opacity: value,
+              child: Transform.translate(
+                offset: Offset(0, 20 * (1 - value)),
+                child: child,
+              ),
+            );
+          },
+          child: _DuplicateGroupCard(
+            group: group,
+            onDelete: () => _deleteGroup(context, group, l10n, theme),
+            onTap: () => _showDuplicateGroupDetail(context, group, l10n, theme),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _deleteGroup(
+    BuildContext context,
+    DuplicatePhotoGroup group,
+    AppLocalizations l10n,
+    ThemeData theme,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.deleteDuplicates),
+        content: Text(
+          l10n.deleteDuplicatesMessage(group.duplicatesToDelete.length),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: FilledButton.styleFrom(
+              backgroundColor: theme.colorScheme.error,
+            ),
+            child: Text(l10n.delete),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    final deletedCount = await ref
+        .read(duplicateDetectionProvider.notifier)
+        .deleteDuplicates([group]);
+
+    if (!mounted) return;
+
+    await ref.read(deleteLimitProvider.notifier).decrease(deletedCount);
+  }
+
+  Future<void> _showDuplicateGroupDetail(
+    BuildContext context,
+    DuplicatePhotoGroup group,
+    AppLocalizations l10n,
+    ThemeData theme,
+  ) async {
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _DuplicateGroupDetailSheet(
+        group: group,
+        onDelete: () {
+          Navigator.of(context).pop();
+          _deleteGroup(context, group, l10n, theme);
+        },
+      ),
+    );
+  }
+}
+
+class _DuplicateGroupCard extends StatelessWidget {
+  const _DuplicateGroupCard({
+    required this.group,
+    required this.onDelete,
+    required this.onTap,
+  });
+
+  final DuplicatePhotoGroup group;
+  final VoidCallback onDelete;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
+    final toDelete = group.duplicatesToDelete;
+
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+            spreadRadius: 0,
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Material(
+          color: theme.colorScheme.surface,
+          child: InkWell(
+            onTap: onTap,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      // Main thumbnail as background
+                      if (group.assets.isNotEmpty)
+                        FutureBuilder(
+                          future: group.assets[0].thumbnailDataWithSize(
+                            const pm.ThumbnailSize(400, 400),
+                            quality: 85,
+                          ),
+                          builder: (context, snapshot) {
+                            if (snapshot.hasData) {
+                              return Image.memory(
+                                snapshot.data!,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    color: theme
+                                        .colorScheme
+                                        .surfaceContainerHighest,
+                                  );
+                                },
+                              );
+                            }
+                            return Container(
+                              color: theme.colorScheme.surfaceContainerHighest,
+                              child: Center(
+                                child: SizedBox(
+                                  width: 40,
+                                  height: 40,
+                                  child: Lottie.asset(
+                                    'assets/lottie/loading.json',
+                                    fit: BoxFit.contain,
+                                    repeat: true,
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      // Gradient overlay
+                      Positioned.fill(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                Colors.transparent,
+                                Colors.black.withValues(alpha: 0.7),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      // Count badge
+                      Positioned(
+                        top: 12,
+                        left: 12,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.primary,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.2),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Text(
+                            '${group.assets.length}',
+                            style: TextStyle(
+                              color: theme.colorScheme.onPrimary,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                      // Delete button
+                      Positioned(
+                        top: 12,
+                        right: 12,
+                        child: Material(
+                          color: Colors.black.withValues(alpha: 0.5),
+                          shape: const CircleBorder(),
+                          child: InkWell(
+                            onTap: onDelete,
+                            customBorder: const CircleBorder(),
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              child: const Icon(
+                                Icons.delete_outline,
+                                size: 18,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      // Info at bottom
+                      Positioned(
+                        bottom: 8,
+                        left: 12,
+                        right: 12,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '${toDelete.length} ${l10n.photo}',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              '${group.spaceToSaveMB.toStringAsFixed(1)} MB',
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.9),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ScanLimitInfo extends ConsumerStatefulWidget {
+  const _ScanLimitInfo({required this.adUnitType});
+
+  final AdUnitType adUnitType;
+
+  @override
+  ConsumerState<_ScanLimitInfo> createState() => _ScanLimitInfoState();
+}
+
+class _ScanLimitInfoState extends ConsumerState<_ScanLimitInfo>
+    with SingleTickerProviderStateMixin {
+  final RewardedAdsService _adsService = RewardedAdsService.instance;
+  bool _isLoadingAd = false;
+  bool _isAdReady = false;
+  late AnimationController _breathingController;
+  late Animation<double> _breathingAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _breathingController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2200),
+    );
+    _breathingAnimation = CurvedAnimation(
+      parent: _breathingController,
+      curve: Curves.easeInOut,
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadAd();
+    });
+  }
+
+  @override
+  void dispose() {
+    _breathingController.dispose();
+    // Don't dispose the service, it's a singleton
+    super.dispose();
+  }
+
+  void _updateBreathingState() {
+    if (!mounted) return;
+    final bool isEnabled = !_isLoadingAd && _isAdReady;
+    if (isEnabled) {
+      if (!_breathingController.isAnimating) {
+        _breathingController
+          ..reset()
+          ..repeat(reverse: true);
+      }
+    } else {
+      if (_breathingController.isAnimating) {
+        _breathingController.stop();
+      }
+      _breathingController.reset();
+    }
+  }
+
+  void _loadAd() {
+    _adsService.loadRewardedAd(widget.adUnitType);
+    _checkAdReady();
+  }
+
+  void _checkAdReady() {
+    if (!mounted) return;
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        final isReady = _adsService.isAdReady(widget.adUnitType);
+        if (_isAdReady != isReady) {
+          setState(() {
+            _isAdReady = isReady;
+          });
+          _updateBreathingState();
+        }
+        if (!isReady) {
+          _checkAdReady();
+        }
+      }
+    });
+  }
+
+  Future<void> _watchAd() async {
+    if (_isLoadingAd || !_isAdReady || !mounted) return;
+
+    setState(() {
+      _isLoadingAd = true;
+    });
+    _updateBreathingState();
+
+    try {
+      final success = await _adsService.showRewardedAd(
+        type: widget.adUnitType,
+        onRewarded: () async {
+          if (!mounted) return;
+
+          try {
+            // Increase scan limit by 100
+            final prefsService = PreferencesService();
+            await prefsService.increaseScanLimit(100);
+
+            // Refresh the provider
+            if (mounted) {
+              ref.invalidate(scanLimitProvider);
+            }
+          } catch (e) {
+            debugPrint('❌ [ScanLimitInfo] Error in onRewarded callback: $e');
+          }
+        },
+        onError: (error) {
+          debugPrint('❌ [ScanLimitInfo] Ad error: $error');
+        },
+      );
+
+      if (success && mounted) {
+        // Ad was shown successfully, check if new ad is ready
+        _checkAdReady();
+      } else if (mounted) {
+        // Ad was not ready, update state
+        setState(() {
+          _isAdReady = false;
+        });
+        _updateBreathingState();
+        _checkAdReady();
+      }
+    } catch (e) {
+      debugPrint('❌ [ScanLimitInfo] Error showing ad: $e');
+      if (mounted) {
+        setState(() {
+          _isAdReady = false;
+        });
+        _updateBreathingState();
+        _checkAdReady();
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingAd = false;
+        });
+        _updateBreathingState();
+      }
+    }
+  }
+
+  void _showAddRightsDialog(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isBlur = widget.adUnitType == AdUnitType.blurScanLimit;
+
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierColor: Colors.black.withOpacity(0.6),
+      builder: (dialogContext) => Dialog(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+        child: TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0.0, end: 1.0),
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOutCubic,
+          builder: (context, value, child) {
+            return Transform.scale(
+              scale: 0.9 + (value * 0.1),
+              child: Opacity(opacity: value, child: child),
+            );
+          },
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 400),
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 24,
+                  spreadRadius: 2,
+                  offset: const Offset(0, 12),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Title
+                Text(
+                  l10n.increaseScanRights,
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 20,
+                    letterSpacing: -0.5,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                // Watch Ad button
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () async {
+                      Navigator.of(dialogContext).pop();
+                      await _watchAd();
+                    },
+                    borderRadius: BorderRadius.circular(16),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            theme.colorScheme.primaryContainer,
+                            theme.colorScheme.secondaryContainer,
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: theme.colorScheme.primary.withOpacity(0.3),
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.play_circle_outline,
+                            color: theme.colorScheme.onPrimaryContainer,
+                            size: 24,
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            l10n.watchAdToGetScanLimit(100),
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: theme.colorScheme.onPrimaryContainer,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                // Premium purchase button
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: () {
+                      Navigator.of(dialogContext).pop();
+                      settings.SettingsPage.showPurchaseDialog(context);
+                    },
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      backgroundColor: theme.colorScheme.primary,
+                      foregroundColor: theme.colorScheme.onPrimary,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    child: Text(
+                      isBlur
+                          ? l10n.buyUnlimitedBlurRights
+                          : l10n.buyUnlimitedDuplicateRights,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                      ),
+                      textAlign: TextAlign.center,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                // Cancel button
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  style: TextButton.styleFrom(
+                    foregroundColor: theme.colorScheme.onSurface.withOpacity(
+                      0.7,
+                    ),
+                  ),
+                  child: Text(
+                    l10n.cancel,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final scanLimitAsync = ref.watch(scanLimitProvider);
+    final isPremiumAsync = ref.watch(isPremiumProvider);
+
+    return scanLimitAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (scanLimit) {
+        return isPremiumAsync.when(
+          loading: () => const SizedBox.shrink(),
+          error: (_, __) => const SizedBox.shrink(),
+          data: (isPremium) {
+            if (isPremium) {
+              // Premium kullanıcılar için şaşalı container - sonsuzluk işareti ve premium ikon
+              return Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: theme.colorScheme.outline.withOpacity(0.1),
+                    width: 1,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.04),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                      spreadRadius: 0,
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Premium scan rights container - şaşalı tasarım
+                    IntrinsicHeight(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // Premium scan rights badge - sonsuzluk işareti ile
+                          Expanded(
+                            flex: 2,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 10,
+                              ),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    theme.colorScheme.primaryContainer,
+                                    theme.colorScheme.primaryContainer
+                                        .withOpacity(0.8),
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: theme.colorScheme.primary.withOpacity(
+                                    0.3,
+                                  ),
+                                  width: 2,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: theme.colorScheme.primary
+                                        .withOpacity(0.4),
+                                    blurRadius: 20,
+                                    offset: const Offset(0, 4),
+                                    spreadRadius: 3,
+                                  ),
+                                  BoxShadow(
+                                    color: theme.colorScheme.primary
+                                        .withOpacity(0.25),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 2),
+                                    spreadRadius: 1,
+                                  ),
+                                  BoxShadow(
+                                    color: theme.colorScheme.primary
+                                        .withOpacity(0.15),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 1),
+                                    spreadRadius: 0,
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              Icons.search_rounded,
+                                              size: 13,
+                                              color: theme
+                                                  .colorScheme
+                                                  .onPrimaryContainer
+                                                  .withOpacity(0.9),
+                                            ),
+                                            const SizedBox(width: 5),
+                                            Flexible(
+                                              child: Text(
+                                                l10n.remainingScanRights,
+                                                style: theme
+                                                    .textTheme
+                                                    .labelSmall
+                                                    ?.copyWith(
+                                                      fontWeight:
+                                                          FontWeight.w700,
+                                                      fontSize: 10,
+                                                      color: theme
+                                                          .colorScheme
+                                                          .onPrimaryContainer
+                                                          .withOpacity(0.9),
+                                                      letterSpacing: 0.4,
+                                                    ),
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          '∞',
+                                          style: theme.textTheme.headlineSmall
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.w900,
+                                                fontSize: 26,
+                                                color: theme
+                                                    .colorScheme
+                                                    .onPrimaryContainer,
+                                                letterSpacing: -1.5,
+                                                height: 1,
+                                                shadows: [
+                                                  Shadow(
+                                                    color: theme
+                                                        .colorScheme
+                                                        .primary
+                                                        .withOpacity(0.5),
+                                                    blurRadius: 10,
+                                                    offset: const Offset(0, 2),
+                                                  ),
+                                                  Shadow(
+                                                    color: theme
+                                                        .colorScheme
+                                                        .onPrimaryContainer
+                                                        .withOpacity(0.3),
+                                                    blurRadius: 6,
+                                                    offset: const Offset(0, 1),
+                                                  ),
+                                                ],
+                                              ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  // Premium icon button
+                                  Container(
+                                    width: 36,
+                                    height: 36,
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                        colors: [
+                                          theme.colorScheme.primaryContainer,
+                                          theme.colorScheme.primaryContainer
+                                              .withOpacity(0.7),
+                                        ],
+                                      ),
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: theme.colorScheme.primary
+                                            .withOpacity(0.4),
+                                        width: 2,
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: theme.colorScheme.primary
+                                              .withOpacity(0.5),
+                                          blurRadius: 12,
+                                          offset: const Offset(0, 2),
+                                          spreadRadius: 2,
+                                        ),
+                                        BoxShadow(
+                                          color: theme.colorScheme.primary
+                                              .withOpacity(0.3),
+                                          blurRadius: 6,
+                                          offset: const Offset(0, 1),
+                                          spreadRadius: 0,
+                                        ),
+                                      ],
+                                    ),
+                                    child: Icon(
+                                      Icons.workspace_premium_rounded,
+                                      size: 22,
+                                      color:
+                                          theme.colorScheme.onPrimaryContainer,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          // Album selection dropdown button
+                          const SizedBox(width: 6),
+                          Expanded(
+                            flex: 2,
+                            child: Consumer(
+                              builder: (context, ref, _) {
+                                final albumsAsync = ref.watch(albumsProvider);
+                                final selectedAlbum = ref.watch(
+                                  selectedAlbumProvider,
+                                );
+                                final albumsData = albumsAsync.asData?.value;
+                                final canOpenAlbumPicker =
+                                    albumsData != null && albumsData.isNotEmpty;
+                                final displayAlbumName =
+                                    selectedAlbum?.name ?? l10n.allPhotos;
+
+                                Future<void> openAlbumPicker() async {
+                                  final availableAlbums = albumsData;
+                                  if (availableAlbums == null ||
+                                      availableAlbums.isEmpty)
+                                    return;
+                                  await _presentAlbumPicker(
+                                    context: context,
+                                    albums: availableAlbums,
+                                    selectedAlbum: selectedAlbum,
+                                    onSelected: (album) {
+                                      ref
+                                              .read(
+                                                selectedAlbumProvider.notifier,
+                                              )
+                                              .state =
+                                          album;
+                                    },
+                                  );
+                                }
+
+                                return Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    onTap: canOpenAlbumPicker
+                                        ? openAlbumPicker
+                                        : null,
+                                    borderRadius: BorderRadius.circular(16),
+                                    child: Container(
+                                      height: double.infinity,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 10,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: theme
+                                            .colorScheme
+                                            .surfaceContainerHighest
+                                            .withOpacity(0.6),
+                                        borderRadius: BorderRadius.circular(16),
+                                        border: Border.all(
+                                          color: theme.colorScheme.outline
+                                              .withOpacity(0.2),
+                                          width: 1,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Icon(
+                                            Icons.photo_library_outlined,
+                                            size: 16,
+                                            color: canOpenAlbumPicker
+                                                ? theme.colorScheme.onSurface
+                                                : theme.colorScheme.onSurface
+                                                      .withOpacity(0.3),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              displayAlbumName,
+                                              style: theme.textTheme.labelMedium
+                                                  ?.copyWith(
+                                                    fontWeight: FontWeight.w600,
+                                                    fontSize: 12,
+                                                    color: canOpenAlbumPicker
+                                                        ? theme
+                                                              .colorScheme
+                                                              .onSurface
+                                                        : theme
+                                                              .colorScheme
+                                                              .onSurface
+                                                              .withOpacity(0.3),
+                                                  ),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Icon(
+                                            Icons.arrow_drop_down,
+                                            size: 20,
+                                            color: canOpenAlbumPicker
+                                                ? theme.colorScheme.onSurface
+                                                      .withOpacity(0.7)
+                                                : theme.colorScheme.onSurface
+                                                      .withOpacity(0.3),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            // Premium olmayan kullanıcılar için delete limit gibi yapı
+            return Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: theme.colorScheme.outline.withOpacity(0.1),
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.04),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                    spreadRadius: 0,
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Top row: Scan rights badge and Album selection
+                  IntrinsicHeight(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Scan rights badge - Daha geniş, primary renk
+                        Expanded(
+                          flex: 2,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 10,
+                            ),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  theme.colorScheme.primaryContainer,
+                                  theme.colorScheme.primaryContainer
+                                      .withOpacity(0.8),
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: theme.colorScheme.primary.withOpacity(
+                                  0.2,
+                                ),
+                                width: 1,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: theme.colorScheme.primary.withOpacity(
+                                    0.15,
+                                  ),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 3),
+                                  spreadRadius: 0,
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.search_rounded,
+                                            size: 13,
+                                            color: theme
+                                                .colorScheme
+                                                .onPrimaryContainer
+                                                .withOpacity(0.9),
+                                          ),
+                                          const SizedBox(width: 5),
+                                          Flexible(
+                                            child: Text(
+                                              l10n.remainingScanRights,
+                                              style: theme.textTheme.labelSmall
+                                                  ?.copyWith(
+                                                    fontWeight: FontWeight.w600,
+                                                    fontSize: 10,
+                                                    color: theme
+                                                        .colorScheme
+                                                        .onPrimaryContainer
+                                                        .withOpacity(0.9),
+                                                    letterSpacing: 0.3,
+                                                  ),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        '$scanLimit',
+                                        style: theme.textTheme.headlineSmall
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.w900,
+                                              fontSize: 20,
+                                              color: theme
+                                                  .colorScheme
+                                                  .onPrimaryContainer,
+                                              letterSpacing: -1.2,
+                                              height: 1,
+                                            ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                // + Button
+                                Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    onTap: () => _showAddRightsDialog(context),
+                                    borderRadius: BorderRadius.circular(20),
+                                    child: Container(
+                                      width: 32,
+                                      height: 32,
+                                      decoration: BoxDecoration(
+                                        color: theme
+                                            .colorScheme
+                                            .onPrimaryContainer
+                                            .withOpacity(0.15),
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: theme
+                                              .colorScheme
+                                              .onPrimaryContainer
+                                              .withOpacity(0.3),
+                                          width: 1.5,
+                                        ),
+                                      ),
+                                      child: Icon(
+                                        Icons.add_rounded,
+                                        size: 18,
+                                        color: theme
+                                            .colorScheme
+                                            .onPrimaryContainer,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        // Album selection dropdown button
+                        const SizedBox(width: 6),
+                        Expanded(
+                          flex: 2,
+                          child: Consumer(
+                            builder: (context, ref, _) {
+                              final albumsAsync = ref.watch(albumsProvider);
+                              final selectedAlbum = ref.watch(
+                                selectedAlbumProvider,
+                              );
+                              final albumsData = albumsAsync.asData?.value;
+                              final canOpenAlbumPicker =
+                                  albumsData != null && albumsData.isNotEmpty;
+                              final displayAlbumName =
+                                  selectedAlbum?.name ?? l10n.allPhotos;
+
+                              Future<void> openAlbumPicker() async {
+                                final availableAlbums = albumsData;
+                                if (availableAlbums == null ||
+                                    availableAlbums.isEmpty)
+                                  return;
+                                await _presentAlbumPicker(
+                                  context: context,
+                                  albums: availableAlbums,
+                                  selectedAlbum: selectedAlbum,
+                                  onSelected: (album) {
+                                    ref
+                                            .read(
+                                              selectedAlbumProvider.notifier,
+                                            )
+                                            .state =
+                                        album;
+                                  },
+                                );
+                              }
+
+                              return Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  onTap: canOpenAlbumPicker
+                                      ? openAlbumPicker
+                                      : null,
+                                  borderRadius: BorderRadius.circular(16),
+                                  child: Container(
+                                    height: double.infinity,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 10,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: theme
+                                          .colorScheme
+                                          .surfaceContainerHighest
+                                          .withOpacity(0.6),
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border.all(
+                                        color: theme.colorScheme.outline
+                                            .withOpacity(0.2),
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          Icons.photo_library_outlined,
+                                          size: 16,
+                                          color: canOpenAlbumPicker
+                                              ? theme.colorScheme.onSurface
+                                              : theme.colorScheme.onSurface
+                                                    .withOpacity(0.3),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            displayAlbumName,
+                                            style: theme.textTheme.labelMedium
+                                                ?.copyWith(
+                                                  fontWeight: FontWeight.w600,
+                                                  fontSize: 12,
+                                                  color: canOpenAlbumPicker
+                                                      ? theme
+                                                            .colorScheme
+                                                            .onSurface
+                                                      : theme
+                                                            .colorScheme
+                                                            .onSurface
+                                                            .withOpacity(0.3),
+                                                ),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Icon(
+                                          Icons.arrow_drop_down,
+                                          size: 20,
+                                          color: canOpenAlbumPicker
+                                              ? theme.colorScheme.onSurface
+                                                    .withOpacity(0.7)
+                                              : theme.colorScheme.onSurface
+                                                    .withOpacity(0.3),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+class _DuplicateGroupDetailSheet extends StatelessWidget {
+  const _DuplicateGroupDetailSheet({
+    required this.group,
+    required this.onDelete,
+  });
+
+  final DuplicatePhotoGroup group;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
+    final sortedAssets = List<pm.AssetEntity>.from(group.assets)
+      ..sort((a, b) => a.createDateTime.compareTo(b.createDateTime));
+    final keepAsset = group.keepAsset;
+    final toDelete = group.duplicatesToDelete;
+
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.9,
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        l10n.duplicatePhotos,
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${l10n.photosInGroup(group.assets.length)} • ${l10n.totalDuplicates}: ${toDelete.length}',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.7,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: const Icon(Icons.close),
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          Container(
+            margin: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primaryContainer.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: theme.colorScheme.primary.withValues(alpha: 0.3),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.info_outline,
+                  color: theme.colorScheme.primary,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    l10n.keepOldest,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onPrimaryContainer,
+                    ),
+                  ),
+                ),
+                Text(
+                  '${group.spaceToSaveMB.toStringAsFixed(1)} MB',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: GridView.builder(
+              padding: const EdgeInsets.all(16),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                childAspectRatio: 0.75,
+              ),
+              itemCount: sortedAssets.length,
+              itemBuilder: (context, index) {
+                final asset = sortedAssets[index];
+                final isKeep = asset.id == keepAsset.id;
+                final isToDelete = toDelete.any((a) => a.id == asset.id);
+
+                return Stack(
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isKeep
+                              ? Colors.green
+                              : isToDelete
+                              ? theme.colorScheme.error
+                              : theme.colorScheme.outline.withValues(
+                                  alpha: 0.2,
+                                ),
+                          width: isKeep || isToDelete ? 3 : 1,
+                        ),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(9),
+                        child: FutureBuilder(
+                          future: asset.thumbnailDataWithSize(
+                            const pm.ThumbnailSize(300, 300),
+                            quality: 85,
+                          ),
+                          builder: (context, snapshot) {
+                            if (snapshot.hasData && snapshot.data != null) {
+                              return Image.memory(
+                                snapshot.data!,
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                                height: double.infinity,
+                              );
+                            }
+                            return Container(
+                              color: theme.colorScheme.surfaceContainerHighest,
+                              child: Center(
+                                child: Icon(
+                                  Icons.photo,
+                                  size: 40,
+                                  color: theme.colorScheme.onSurface.withValues(
+                                    alpha: 0.3,
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      top: 8,
+                      left: 8,
+                      right: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isKeep
+                              ? Colors.green
+                              : theme.colorScheme.error,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          isKeep ? l10n.keepOldest : l10n.deleteDuplicates,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: 8,
+                      left: 8,
+                      right: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.6),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          '${asset.width}x${asset.height}',
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: Colors.white,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: onDelete,
+                icon: const Icon(Icons.delete_outline),
+                label: Text(l10n.deleteDuplicates),
+                style: FilledButton.styleFrom(
+                  backgroundColor: theme.colorScheme.error,
+                  foregroundColor: theme.colorScheme.onError,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class SwipePage extends ConsumerStatefulWidget {
+  const SwipePage({super.key});
+
+  @override
+  ConsumerState<SwipePage> createState() => _SwipePageState();
+}
+
+class _SwipePageState extends ConsumerState<SwipePage>
+    with TickerProviderStateMixin {
+  late TabController _tabController;
+  late AnimationController _historyPulseController;
+  late AnimationController _blurTabPulseController;
+  late AnimationController _duplicateTabPulseController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+    _historyPulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    );
+    _blurTabPulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    );
+    _duplicateTabPulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    );
+
+    // İzin durumunu hemen kontrol et - böylece izin varsa hiç izin ekranı gösterilmez
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      // İzin durumunu refresh et (güncel durumu almak için)
+      await ref.read(permissionsControllerProvider.notifier).refresh();
+    });
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    _historyPulseController.dispose();
+    _blurTabPulseController.dispose();
+    _duplicateTabPulseController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final permission = ref.watch(permissionsControllerProvider);
+    final selectedAlbum = ref.watch(selectedAlbumProvider);
+
+    // İzin durumu değiştiğinde dinle - otomatik analiz yapılmıyor
+    // Analiz sadece permission_request_page'de izin verildiğinde (ilk defa) başlatılıyor
+    // veya kullanıcı galeri istatistikleri sayfasından "Tekrardan Analiz Et" butonuna basarak başlatıyor
+    ref.listen<GalleryPermissionStatus>(permissionsControllerProvider, (
+      previous,
+      next,
+    ) {
+      // İzin durumu değişikliği sadece UI güncellemesi için kullanılıyor
+      // Otomatik analiz başlatılmıyor
+    });
+
+    // Blur tarama durumunu dinle - tarama bittiğinde pulse başlat
+    ref.listen<BlurDetectionState>(blurDetectionProvider, (previous, next) {
+      if (!mounted) return;
+
+      final wasScanning = previous?.isScanning ?? false;
+      final isNowScanning = next.isScanning;
+      final hasCompleted = next.hasCompletedScan && !next.isScanning;
+
+      // Tarama bittiğinde ve tamamlandıysa pulse başlat
+      if (wasScanning && !isNowScanning && hasCompleted) {
+        if (!_blurTabPulseController.isAnimating) {
+          _blurTabPulseController.repeat(reverse: true);
+        }
+      } else if (next.isScanning) {
+        // Tarama başladığında pulse'u durdur
+        if (_blurTabPulseController.isAnimating) {
+          _blurTabPulseController.stop();
+          _blurTabPulseController.reset();
+        }
+      }
+    });
+
+    // Duplicate tarama durumunu dinle - tarama bittiğinde pulse başlat
+    ref.listen<DuplicateDetectionState>(duplicateDetectionProvider, (
+      previous,
+      next,
+    ) {
+      if (!mounted) return;
+
+      final wasScanning = previous?.isScanning ?? false;
+      final isNowScanning = next.isScanning;
+      final hasCompleted = next.hasCompletedScan && !next.isScanning;
+
+      // Tarama bittiğinde ve tamamlandıysa pulse başlat
+      if (wasScanning && !isNowScanning && hasCompleted) {
+        if (!_duplicateTabPulseController.isAnimating) {
+          _duplicateTabPulseController.repeat(reverse: true);
+        }
+      } else if (next.isScanning) {
+        // Tarama başladığında pulse'u durdur
+        if (_duplicateTabPulseController.isAnimating) {
+          _duplicateTabPulseController.stop();
+          _duplicateTabPulseController.reset();
+        }
+      }
+    });
+
+    // İzin durumu unknown ise lottie'li splash loading göster (izin kontrolü yapılıyor)
+    // Böylece izin varsa hiç izin ekranı gösterilmez
+    if (permission == GalleryPermissionStatus.unknown) {
+      return Scaffold(
+        body: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                theme.colorScheme.primary.withOpacity(0.1),
+                theme.colorScheme.secondary.withOpacity(0.05),
+                Colors.transparent,
+              ],
+            ),
+          ),
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Lottie animasyonu
+                SizedBox(
+                  width: 200,
+                  height: 200,
+                  child: Lottie.asset(
+                    'assets/lottie/loading.json',
+                    fit: BoxFit.contain,
+                    repeat: true,
+                  ),
+                ),
+                const SizedBox(height: 32),
+                // App ismi
+                Text(
+                  'Gallery Cleaner',
+                  style: theme.textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    // İzin yoksa izin ekranı göster
+    if (permission != GalleryPermissionStatus.authorized) {
+      return Scaffold(
+        extendBodyBehindAppBar: true,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          title: Text(l10n.appTitle, overflow: TextOverflow.ellipsis),
+        ),
+        body: Stack(
+          children: [
+            // Background gradient
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      theme.colorScheme.primary.withOpacity(0.1),
+                      theme.colorScheme.secondary.withOpacity(0.05),
+                      Colors.transparent,
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            // Decorative circles
+            Positioned(
+              top: -60,
+              right: -40,
+              child: Container(
+                width: 220,
+                height: 220,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary.withOpacity(0.10),
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+            Positioned(
+              bottom: -40,
+              left: -20,
+              child: Container(
+                width: 160,
+                height: 160,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.tertiary.withOpacity(0.10),
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.photo_library_outlined,
+                      size: 120,
+                      color: theme.colorScheme.primary,
+                    ),
+                    const SizedBox(height: 32),
+                    Text(
+                      l10n.galleryPermissionRequired,
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.headlineLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      l10n.galleryPermissionDescription,
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        color: theme.textTheme.bodyMedium?.color?.withOpacity(
+                          0.8,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 48),
+                    Container(
+                      constraints: const BoxConstraints(maxWidth: 400),
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surface,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.06),
+                            blurRadius: 16,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _PermissionFeature(
+                            icon: Icons.swipe,
+                            title: l10n.quickCleanupTitle,
+                            description: l10n.quickCleanupDescription,
+                          ),
+                          const SizedBox(height: 16),
+                          _PermissionFeature(
+                            icon: Icons.folder,
+                            title: l10n.organizeTitle,
+                            description: l10n.organizeDescription,
+                          ),
+                          const SizedBox(height: 16),
+                          _PermissionFeature(
+                            icon: Icons.delete_outline,
+                            title: l10n.safeDeleteTitle,
+                            description: l10n.safeDeleteDescription,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 400),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: FilledButton.icon(
+                          icon: const Icon(Icons.lock_open),
+                          label: Text(l10n.grantPermission),
+                          style: FilledButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                          ),
+                          onPressed: () async {
+                            await ref
+                                .read(permissionsControllerProvider.notifier)
+                                .request();
+                            // İzin verildiğinde otomatik analiz başlatılmıyor
+                            // Analiz sadece permission_request_page'de izin verildiğinde (ilk defa) başlatılıyor
+                            // veya kullanıcı galeri istatistikleri sayfasından "Tekrardan Analiz Et" butonuna basarak başlatıyor
+                          },
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final displayAlbumName = selectedAlbum?.name ?? l10n.allPhotos;
+
+    return Scaffold(
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        title: Text(
+          displayAlbumName,
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+          overflow: TextOverflow.ellipsis,
+        ),
+        centerTitle: true,
+        backgroundColor: Colors.transparent,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(72),
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: TabBar(
+              controller: _tabController,
+              onTap: (index) {
+                HapticFeedback.lightImpact();
+                // Tab değiştiğinde pulse animasyonlarını durdur
+                if (_blurTabPulseController.isAnimating) {
+                  _blurTabPulseController.stop();
+                  _blurTabPulseController.reset();
+                }
+                if (_duplicateTabPulseController.isAnimating) {
+                  _duplicateTabPulseController.stop();
+                  _duplicateTabPulseController.reset();
+                }
+              },
+              indicator: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    theme.colorScheme.primary,
+                    theme.colorScheme.primary.withOpacity(0.85),
+                  ],
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: theme.colorScheme.primary.withOpacity(0.4),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                    spreadRadius: 0,
+                  ),
+                ],
+              ),
+              indicatorSize: TabBarIndicatorSize.tab,
+              dividerColor: Colors.transparent,
+              labelColor: theme.colorScheme.onPrimary,
+              unselectedLabelColor: theme.colorScheme.onSurface.withOpacity(
+                0.7,
+              ),
+              labelStyle: theme.textTheme.labelLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+                letterSpacing: 0.3,
+              ),
+              unselectedLabelStyle: theme.textTheme.labelMedium?.copyWith(
+                fontWeight: FontWeight.w500,
+                fontSize: 13,
+                letterSpacing: 0.2,
+              ),
+              tabs: [
+                Tab(
+                  height: 56,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.swipe_rounded, size: 20),
+                      const SizedBox(width: 6),
+                      Text(l10n.swipeTab),
+                    ],
+                  ),
+                ),
+                Tab(
+                  height: 56,
+                  child: _BlurTabIndicator(
+                    pulseController: _blurTabPulseController,
+                  ),
+                ),
+                Tab(
+                  height: 56,
+                  child: _DuplicateTabIndicator(
+                    pulseController: _duplicateTabPulseController,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          // Debug mod: Premium durumu toggle butonu
+          if (kDebugMode)
+            Consumer(
+              builder: (context, ref, _) {
+                final isPremiumAsync = ref.watch(isPremiumProvider);
+                return isPremiumAsync.when(
+                  loading: () => const SizedBox.shrink(),
+                  error: (_, __) => const SizedBox.shrink(),
+                  data: (isPremium) {
+                    return IconButton(
+                      icon: Icon(
+                        isPremium
+                            ? Icons.workspace_premium
+                            : Icons.workspace_premium_outlined,
+                        color: isPremium
+                            ? Colors.amber
+                            : theme.colorScheme.onSurface.withOpacity(0.6),
+                      ),
+                      tooltip: isPremium
+                          ? 'Premium: AÇIK (Debug)'
+                          : 'Premium: KAPALI (Debug)',
+                      onPressed: () async {
+                        final prefsService = PreferencesService();
+                        await prefsService.setPremium(!isPremium);
+                        ref.invalidate(isPremiumProvider);
+                        // Show snackbar
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                isPremium
+                                    ? 'Premium kapatıldı (Debug)'
+                                    : 'Premium açıldı (Debug)',
+                              ),
+                              duration: const Duration(seconds: 1),
+                            ),
+                          );
+                        }
+                      },
+                    );
+                  },
+                );
+              },
+            ),
+          _HistoryButton(pulseController: _historyPulseController),
+          IconButton(
+            icon: const Icon(Icons.settings),
+            tooltip: l10n.settings,
+            onPressed: () {
+              context.push('/settings');
+            },
+          ),
+        ],
+      ),
+      body: SafeArea(
+        top: false,
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Theme.of(context).colorScheme.primary.withOpacity(0.06),
+                Theme.of(
+                  context,
+                ).colorScheme.secondaryContainer.withOpacity(0.04),
+                Colors.transparent,
+              ],
+            ),
+          ),
+          child: TabBarView(
+            controller: _tabController,
+            physics: const NeverScrollableScrollPhysics(),
+            children: const [_SwipeTab(), _BlurTab(), _DuplicateTab()],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 int _topIndexHint(List<pm.AssetEntity> list, pm.AssetEntity current) {
   return list.indexWhere((e) => e.id == current.id);
+}
+
+// History button with pulse animation when gallery stats scan completes
+class _HistoryButton extends ConsumerStatefulWidget {
+  const _HistoryButton({required this.pulseController});
+  final AnimationController pulseController;
+
+  @override
+  ConsumerState<_HistoryButton> createState() => _HistoryButtonState();
+}
+
+class _HistoryButtonState extends ConsumerState<_HistoryButton> {
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final statsState = ref.watch(galleryStatsProvider);
+    final isScanning = statsState.isScanning;
+    final hasNewData =
+        statsState.stats != null &&
+        statsState.previousStats != null &&
+        !statsState.isFromCache &&
+        !statsState.isScanning;
+
+    // Galeri analizi tamamlandığında animasyonu başlat
+    ref.listen<GalleryStatsState>(galleryStatsProvider, (previous, next) {
+      if (!mounted) return;
+
+      final wasScanning = previous?.isScanning ?? false;
+      final isNowScanning = next.isScanning;
+      final hasNewData =
+          next.stats != null &&
+          next.previousStats != null &&
+          !next.isFromCache &&
+          !next.isScanning;
+
+      // Tarama bittiğinde ve yeni veri varsa pulse başlat
+      if (wasScanning && !isNowScanning && hasNewData) {
+        if (!widget.pulseController.isAnimating) {
+          widget.pulseController.repeat(reverse: true);
+        }
+      } else if (!hasNewData || isNowScanning) {
+        if (widget.pulseController.isAnimating) {
+          widget.pulseController.stop();
+          widget.pulseController.reset();
+        }
+      }
+    });
+
+    // Tarama bittiğinde ve yeni veri varsa pulse yap
+    final shouldPulse = !isScanning && hasNewData;
+
+    return AnimatedBuilder(
+      animation: widget.pulseController,
+      builder: (context, child) {
+        final scale = shouldPulse
+            ? 1.0 + (widget.pulseController.value * 0.15)
+            : 1.0;
+        return Transform.scale(
+          scale: scale,
+          child: IconButton(
+            icon: Icon(
+              Icons.history,
+              color: shouldPulse
+                  ? Theme.of(context).colorScheme.primary
+                  : Theme.of(context).colorScheme.onSurface,
+            ),
+            tooltip: l10n.history,
+            onPressed: () {
+              // İstatistikler sayfasına git
+              if (context.mounted) {
+                context.push('/gallery/stats');
+                // Pulse'u durdur
+                if (widget.pulseController.isAnimating) {
+                  widget.pulseController.stop();
+                  widget.pulseController.reset();
+                }
+              }
+            },
+          ),
+        );
+      },
+    );
+  }
 }
 
 void _maybePrefetch(
@@ -1001,16 +6303,8 @@ Future<void> _showAlbumSelectionDialog(
     return;
   }
 
-  final l10n = AppLocalizations.of(context)!;
-
   if (albums.isEmpty) {
     debugPrint('📁 [SwipePage] Albüm bulunamadı');
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(l10n.albumNotFound, overflow: TextOverflow.ellipsis),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
     return;
   }
 
@@ -1034,40 +6328,6 @@ Future<void> _showAlbumSelectionDialog(
     // Haptic feedback
     HapticFeedback.mediumImpact();
 
-    // Loading göstergesi göster
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  Theme.of(context).colorScheme.onPrimaryContainer,
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Flexible(
-              child: Text(
-                l10n.movingToAlbum(selectedAlbum.name),
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onPrimaryContainer,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 5),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
-
     // Seçilen albüme taşı
     bool ok = false;
     try {
@@ -1079,11 +6339,6 @@ Future<void> _showAlbumSelectionDialog(
       debugPrint('🛑 [SwipePage] moveAssetToAlbum exception: $e');
       debugPrint('🛑 [SwipePage] Stack trace: $st');
       ok = false;
-    }
-
-    // Loading mesajını kapat
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).clearSnackBars();
     }
 
     if (ok && context.mounted) {
@@ -1102,36 +6357,6 @@ Future<void> _showAlbumSelectionDialog(
       // Başarı haptic feedback
       HapticFeedback.lightImpact();
 
-      // Başarı mesajı göster
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              Icon(
-                Icons.check_circle,
-                color: Theme.of(context).colorScheme.onPrimaryContainer,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  l10n.movedToAlbum(selectedAlbum.name),
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.onPrimaryContainer,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-          behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 2),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      );
-
       _maybePrefetch(ref, assets, asset);
     } else if (context.mounted) {
       debugPrint(
@@ -1139,35 +6364,6 @@ Future<void> _showAlbumSelectionDialog(
       );
       // Hata haptic feedback
       HapticFeedback.heavyImpact();
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              Icon(
-                Icons.error_outline,
-                color: Theme.of(context).colorScheme.onError,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  l10n.moveToAlbumFailed,
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.onError,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-          backgroundColor: Theme.of(context).colorScheme.error,
-          behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 3),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      );
     }
   }
 }
@@ -1181,7 +6377,7 @@ class _DeleteLimitInfo extends ConsumerStatefulWidget {
 
 class _DeleteLimitInfoState extends ConsumerState<_DeleteLimitInfo>
     with SingleTickerProviderStateMixin {
-  final RewardedAdsService _adsService = RewardedAdsService();
+  final RewardedAdsService _adsService = RewardedAdsService.instance;
   bool _isLoadingAd = false;
   bool _isAdReady = false;
   late AnimationController _breathingController;
@@ -1202,7 +6398,7 @@ class _DeleteLimitInfoState extends ConsumerState<_DeleteLimitInfo>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         try {
-          _adsService.loadRewardedAd();
+          _adsService.loadRewardedAd(AdUnitType.deleteLimit);
           // Check ad readiness periodically
           _checkAdReady();
         } catch (e) {
@@ -1216,7 +6412,7 @@ class _DeleteLimitInfoState extends ConsumerState<_DeleteLimitInfo>
     if (!mounted) return;
     Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted) {
-        final isReady = _adsService.isAdReady;
+        final isReady = _adsService.isAdReady(AdUnitType.deleteLimit);
         if (_isAdReady != isReady) {
           setState(() {
             _isAdReady = isReady;
@@ -1233,7 +6429,7 @@ class _DeleteLimitInfoState extends ConsumerState<_DeleteLimitInfo>
   @override
   void dispose() {
     _breathingController.dispose();
-    _adsService.dispose();
+    // Don't dispose the service, it's a singleton
     super.dispose();
   }
 
@@ -1264,18 +6460,13 @@ class _DeleteLimitInfoState extends ConsumerState<_DeleteLimitInfo>
 
     try {
       final success = await _adsService.showRewardedAd(
+        type: AdUnitType.deleteLimit,
         onRewarded: () async {
           if (!mounted) return;
 
           try {
             // Increase delete limit by 20
-            final prefsService = PreferencesService();
-            await prefsService.increaseDeleteLimit(20);
-
-            // Refresh the provider
-            if (mounted) {
-              ref.invalidate(deleteLimitProvider);
-            }
+            await ref.read(deleteLimitProvider.notifier).increase(20);
           } catch (e) {
             debugPrint('❌ [SwipePage] Error in onRewarded callback: $e');
           }
@@ -1315,7 +6506,7 @@ class _DeleteLimitInfoState extends ConsumerState<_DeleteLimitInfo>
     }
   }
 
-  void _showPurchaseDialog(BuildContext context) {
+  void _showAddRightsDialog(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
 
@@ -1323,192 +6514,123 @@ class _DeleteLimitInfoState extends ConsumerState<_DeleteLimitInfo>
       context: context,
       barrierDismissible: true,
       barrierColor: Colors.black.withOpacity(0.6),
-      builder: (context) => Dialog(
+      builder: (dialogContext) => Dialog(
         backgroundColor: Colors.transparent,
         elevation: 0,
         insetPadding: const EdgeInsets.symmetric(horizontal: 24),
         child: TweenAnimationBuilder<double>(
           tween: Tween(begin: 0.0, end: 1.0),
-          duration: const Duration(milliseconds: 400),
+          duration: const Duration(milliseconds: 300),
           curve: Curves.easeOutCubic,
           builder: (context, value, child) {
             return Transform.scale(
-              scale: 0.8 + (value * 0.2),
+              scale: 0.9 + (value * 0.1),
               child: Opacity(opacity: value, child: child),
             );
           },
           child: Container(
             constraints: const BoxConstraints(maxWidth: 400),
-            padding: const EdgeInsets.all(28),
+            padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  theme.colorScheme.primaryContainer,
-                  theme.colorScheme.secondaryContainer,
-                ],
-              ),
-              borderRadius: BorderRadius.circular(28),
+              color: theme.colorScheme.surface,
+              borderRadius: BorderRadius.circular(24),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.25),
-                  blurRadius: 32,
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 24,
                   spreadRadius: 2,
-                  offset: const Offset(0, 16),
+                  offset: const Offset(0, 12),
                 ),
               ],
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Icon
-                Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        theme.colorScheme.primary,
-                        theme.colorScheme.primary.withOpacity(0.7),
-                      ],
-                    ),
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: theme.colorScheme.primary.withOpacity(0.3),
-                        blurRadius: 16,
-                        spreadRadius: 2,
-                      ),
-                    ],
-                  ),
-                  child: Icon(
-                    Icons.all_inclusive_rounded,
-                    size: 40,
-                    color: theme.colorScheme.onPrimary,
-                  ),
-                ),
-                const SizedBox(height: 24),
                 // Title
                 Text(
-                  l10n.buyUnlimitedRights,
-                  style: theme.textTheme.headlineSmall?.copyWith(
+                  l10n.increaseDeletionRights,
+                  style: theme.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.w800,
-                    fontSize: 22,
+                    fontSize: 20,
                     letterSpacing: -0.5,
                     color: theme.colorScheme.onSurface,
                   ),
                   textAlign: TextAlign.center,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 8),
-                // Subtitle - One-time payment for lifetime
-                Text(
-                  '${l10n.oneTimePayment} • ${l10n.lifetimeAccess}',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
-                    color: theme.colorScheme.onSurface.withOpacity(0.7),
-                  ),
-                  textAlign: TextAlign.center,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 8),
-                // One-time payment badge
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primary.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: theme.colorScheme.primary.withOpacity(0.3),
-                      width: 1,
-                    ),
-                  ),
-                  child: Text(
-                    l10n.oneTimePayment,
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 12,
-                      color: theme.colorScheme.primary,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
                 ),
                 const SizedBox(height: 24),
-                // Features
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surface.withOpacity(0.5),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: theme.colorScheme.outline.withOpacity(0.1),
-                      width: 1,
+                // Watch Ad button
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () async {
+                      Navigator.of(dialogContext).pop();
+                      await _watchAd();
+                    },
+                    borderRadius: BorderRadius.circular(16),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            theme.colorScheme.primaryContainer,
+                            theme.colorScheme.secondaryContainer,
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: theme.colorScheme.primary.withOpacity(0.3),
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.play_circle_outline,
+                            color: theme.colorScheme.onPrimaryContainer,
+                            size: 24,
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            '${l10n.watchAdToEarn} +20',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: theme.colorScheme.onPrimaryContainer,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                  child: Column(
-                    children: [
-                      _PurchaseFeatureItem(
-                        icon: Icons.all_inclusive,
-                        text:
-                            '${l10n.unlimitedDeletions} • ${l10n.lifetimeAccess}',
-                      ),
-                      const SizedBox(height: 16),
-                      _PurchaseFeatureItem(
-                        icon: Icons.block,
-                        text: l10n.noMoreAds,
-                      ),
-                      const SizedBox(height: 16),
-                      _PurchaseFeatureItem(
-                        icon: Icons.verified,
-                        text: l10n.oneTimePayment,
-                      ),
-                    ],
-                  ),
                 ),
-                const SizedBox(height: 28),
-                // Purchase button
+                const SizedBox(height: 12),
+                // Premium purchase button
                 SizedBox(
                   width: double.infinity,
                   child: FilledButton(
                     onPressed: () {
-                      Navigator.of(context).pop();
-                      // TODO: Implement actual purchase logic
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'Purchase functionality will be implemented',
-                          ),
-                          backgroundColor: theme.colorScheme.primaryContainer,
-                          behavior: SnackBarBehavior.floating,
-                          duration: const Duration(seconds: 2),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      );
+                      Navigator.of(dialogContext).pop();
+                      settings.SettingsPage.showPurchaseDialog(context);
                     },
                     style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 18),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
                       backgroundColor: theme.colorScheme.primary,
                       foregroundColor: theme.colorScheme.onPrimary,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
-                      elevation: 0,
                     ),
                     child: Text(
-                      l10n.purchaseNow,
+                      l10n.buyUnlimitedRights,
                       style: const TextStyle(
                         fontWeight: FontWeight.w700,
                         fontSize: 16,
                       ),
+                      textAlign: TextAlign.center,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -1516,7 +6638,7 @@ class _DeleteLimitInfoState extends ConsumerState<_DeleteLimitInfo>
                 const SizedBox(height: 12),
                 // Cancel button
                 TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
+                  onPressed: () => Navigator.of(dialogContext).pop(),
                   style: TextButton.styleFrom(
                     foregroundColor: theme.colorScheme.onSurface.withOpacity(
                       0.7,
@@ -1528,7 +6650,6 @@ class _DeleteLimitInfoState extends ConsumerState<_DeleteLimitInfo>
                       fontWeight: FontWeight.w600,
                       fontSize: 14,
                     ),
-                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
@@ -1544,348 +6665,405 @@ class _DeleteLimitInfoState extends ConsumerState<_DeleteLimitInfo>
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
     final deleteLimitAsync = ref.watch(deleteLimitProvider);
+    final isPremiumAsync = ref.watch(isPremiumProvider);
 
     return deleteLimitAsync.when(
       loading: () => const SizedBox.shrink(),
       error: (_, __) => const SizedBox.shrink(),
       data: (deleteLimit) {
-        return Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: theme.colorScheme.outline.withOpacity(0.1),
-              width: 1,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.04),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-                spreadRadius: 0,
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Top row: Deletion rights badge and Watch Ad button
-              Row(
-                children: [
-                  // Deletion rights badge - Daha geniş, primary renk
-                  Expanded(
-                    flex: 3,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 10,
-                      ),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            theme.colorScheme.primaryContainer,
-                            theme.colorScheme.primaryContainer.withOpacity(0.8),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: theme.colorScheme.primary.withOpacity(0.2),
-                          width: 1,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: theme.colorScheme.primary.withOpacity(0.15),
-                            blurRadius: 8,
-                            offset: const Offset(0, 3),
-                            spreadRadius: 0,
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.delete_outline,
-                                size: 13,
-                                color: theme.colorScheme.onPrimaryContainer
-                                    .withOpacity(0.9),
-                              ),
-                              const SizedBox(width: 5),
-                              Flexible(
-                                child: Text(
-                                  l10n.remainingDeletionRights,
-                                  style: theme.textTheme.labelSmall?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 10,
-                                    color: theme.colorScheme.onPrimaryContainer
-                                        .withOpacity(0.9),
-                                    letterSpacing: 0.3,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            '$deleteLimit',
-                            style: theme.textTheme.headlineSmall?.copyWith(
-                              fontWeight: FontWeight.w900,
-                              fontSize: 20,
-                              color: theme.colorScheme.onPrimaryContainer,
-                              letterSpacing: -1.2,
-                              height: 1,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
+        return isPremiumAsync.when(
+          loading: () => const SizedBox.shrink(),
+          error: (_, __) => const SizedBox.shrink(),
+          data: (isPremium) {
+            return Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: theme.colorScheme.outline.withOpacity(0.1),
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.04),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                    spreadRadius: 0,
                   ),
-                  const SizedBox(width: 10),
-                  // Watch Ad button - Daha küçük, amber/orange renk
-                  Expanded(
-                    flex: 2,
-                    child: AnimatedBuilder(
-                      animation: _breathingController,
-                      builder: (context, child) {
-                        final bool isEnabled = !_isLoadingAd && _isAdReady;
-                        final double pulse = isEnabled ? _breathingAnimation.value : 0.0;
-                        final double scale = 1.0 + (pulse * 0.05);
-                        final double blur = 8 + (pulse * 6);
-
-                        return Transform.scale(
-                          scale: scale,
-                          child: Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              onTap: isEnabled ? _watchAd : null,
-                              borderRadius: BorderRadius.circular(14),
-                              child: Opacity(
-                                opacity: isEnabled ? 1.0 : 0.5,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 10,
-                                    vertical: 10,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                      colors: [
-                                        Colors.teal.shade400,
-                                        Colors.cyan.shade400,
-                                      ],
-                                    ),
-                                    borderRadius: BorderRadius.circular(14),
-                                    border: Border.all(
-                                      color: Colors.teal.shade300.withOpacity(0.3),
-                                      width: 1,
-                                    ),
-                                    boxShadow: [
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Top row: Deletion rights badge and Album selection
+                  IntrinsicHeight(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Deletion rights badge - Premium için parlak tasarım
+                        Expanded(
+                          flex: 2,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 10,
+                            ),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  theme.colorScheme.primaryContainer,
+                                  theme.colorScheme.primaryContainer
+                                      .withOpacity(0.8),
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: isPremium
+                                    ? theme.colorScheme.primary.withOpacity(0.3)
+                                    : theme.colorScheme.primary.withOpacity(
+                                        0.2,
+                                      ),
+                                width: isPremium ? 2 : 1,
+                              ),
+                              boxShadow: isPremium
+                                  ? [
                                       BoxShadow(
-                                        color: Colors.teal.withOpacity(0.25 + pulse * 0.15),
-                                        blurRadius: blur,
+                                        color: theme.colorScheme.primary
+                                            .withOpacity(0.4),
+                                        blurRadius: 20,
+                                        offset: const Offset(0, 4),
+                                        spreadRadius: 3,
+                                      ),
+                                      BoxShadow(
+                                        color: theme.colorScheme.primary
+                                            .withOpacity(0.25),
+                                        blurRadius: 12,
+                                        offset: const Offset(0, 2),
+                                        spreadRadius: 1,
+                                      ),
+                                      BoxShadow(
+                                        color: theme.colorScheme.primary
+                                            .withOpacity(0.15),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 1),
+                                        spreadRadius: 0,
+                                      ),
+                                    ]
+                                  : [
+                                      BoxShadow(
+                                        color: theme.colorScheme.primary
+                                            .withOpacity(0.15),
+                                        blurRadius: 8,
                                         offset: const Offset(0, 3),
-                                        spreadRadius: pulse * 2,
+                                        spreadRadius: 0,
                                       ),
                                     ],
-                                  ),
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
                                   child: Column(
                                     mainAxisSize: MainAxisSize.min,
-                                    crossAxisAlignment: CrossAxisAlignment.center,
-                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Row(
                                         mainAxisSize: MainAxisSize.min,
-                                        mainAxisAlignment: MainAxisAlignment.center,
                                         children: [
-                                          if (_isLoadingAd)
-                                            SizedBox(
-                                              width: 12,
-                                              height: 12,
-                                              child: CircularProgressIndicator(
-                                                strokeWidth: 2,
-                                                valueColor:
-                                                    AlwaysStoppedAnimation<Color>(
-                                                  Colors.white,
+                                          SizedBox(
+                                            width: 13,
+                                            height: 13,
+                                            child: ColorFiltered(
+                                              colorFilter: ColorFilter.mode(
+                                                theme
+                                                    .colorScheme
+                                                    .onPrimaryContainer
+                                                    .withOpacity(0.9),
+                                                BlendMode.srcATop,
+                                              ),
+                                              child: Lottie.asset(
+                                                'assets/lottie/trash.json',
+                                                width: 13,
+                                                height: 13,
+                                                fit: BoxFit.contain,
+                                                repeat: true,
+                                                options: LottieOptions(
+                                                  enableMergePaths: true,
                                                 ),
                                               ),
-                                            )
-                                          else
-                                            Icon(
-                                              Icons.play_circle_outline,
-                                              size: 11,
-                                              color: Colors.white.withOpacity(0.95),
                                             ),
-                                          const SizedBox(width: 3),
+                                          ),
+                                          const SizedBox(width: 5),
                                           Flexible(
                                             child: Text(
-                                              l10n.watchAdToEarn,
+                                              l10n.remainingDeletionRights,
                                               style: theme.textTheme.labelSmall
                                                   ?.copyWith(
-                                                    fontWeight: FontWeight.w700,
-                                                    fontSize: 8.5,
-                                                    color: Colors.white.withOpacity(
-                                                      0.95,
-                                                    ),
-                                                    letterSpacing: 0.2,
+                                                    fontWeight: isPremium
+                                                        ? FontWeight.w700
+                                                        : FontWeight.w600,
+                                                    fontSize: 10,
+                                                    color: theme
+                                                        .colorScheme
+                                                        .onPrimaryContainer
+                                                        .withOpacity(0.9),
+                                                    letterSpacing: isPremium
+                                                        ? 0.4
+                                                        : 0.3,
                                                   ),
-                                              maxLines: 1,
                                               overflow: TextOverflow.ellipsis,
-                                              textAlign: TextAlign.center,
                                             ),
                                           ),
                                         ],
                                       ),
-                                      const SizedBox(height: 4),
+                                      const SizedBox(height: 2),
                                       Text(
-                                        l10n.earnDeletionRights,
+                                        isPremium ? '∞' : '$deleteLimit',
                                         style: theme.textTheme.headlineSmall
                                             ?.copyWith(
                                               fontWeight: FontWeight.w900,
-                                              fontSize: 16,
-                                              color: Colors.white,
-                                              letterSpacing: -0.8,
+                                              fontSize: isPremium ? 26 : 20,
+                                              color: theme
+                                                  .colorScheme
+                                                  .onPrimaryContainer,
+                                              letterSpacing: isPremium
+                                                  ? -1.5
+                                                  : -1.2,
                                               height: 1,
+                                              shadows: isPremium
+                                                  ? [
+                                                      Shadow(
+                                                        color: theme
+                                                            .colorScheme
+                                                            .primary
+                                                            .withOpacity(0.5),
+                                                        blurRadius: 10,
+                                                        offset: const Offset(
+                                                          0,
+                                                          2,
+                                                        ),
+                                                      ),
+                                                      Shadow(
+                                                        color: theme
+                                                            .colorScheme
+                                                            .onPrimaryContainer
+                                                            .withOpacity(0.3),
+                                                        blurRadius: 6,
+                                                        offset: const Offset(
+                                                          0,
+                                                          1,
+                                                        ),
+                                                      ),
+                                                    ]
+                                                  : null,
                                             ),
-                                        maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
-                                        textAlign: TextAlign.center,
                                       ),
                                     ],
                                   ),
                                 ),
-                              ),
+                                // Premium icon veya + Button
+                                if (isPremium)
+                                  Container(
+                                    width: 36,
+                                    height: 36,
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                        colors: [
+                                          theme.colorScheme.primaryContainer,
+                                          theme.colorScheme.primaryContainer
+                                              .withOpacity(0.7),
+                                        ],
+                                      ),
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: theme.colorScheme.primary
+                                            .withOpacity(0.4),
+                                        width: 2,
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: theme.colorScheme.primary
+                                              .withOpacity(0.5),
+                                          blurRadius: 12,
+                                          offset: const Offset(0, 2),
+                                          spreadRadius: 2,
+                                        ),
+                                        BoxShadow(
+                                          color: theme.colorScheme.primary
+                                              .withOpacity(0.3),
+                                          blurRadius: 6,
+                                          offset: const Offset(0, 1),
+                                          spreadRadius: 0,
+                                        ),
+                                      ],
+                                    ),
+                                    child: Icon(
+                                      Icons.workspace_premium_rounded,
+                                      size: 22,
+                                      color:
+                                          theme.colorScheme.onPrimaryContainer,
+                                    ),
+                                  )
+                                else
+                                  Material(
+                                    color: Colors.transparent,
+                                    child: InkWell(
+                                      onTap: () =>
+                                          _showAddRightsDialog(context),
+                                      borderRadius: BorderRadius.circular(20),
+                                      child: Container(
+                                        width: 32,
+                                        height: 32,
+                                        decoration: BoxDecoration(
+                                          color: theme
+                                              .colorScheme
+                                              .onPrimaryContainer
+                                              .withOpacity(0.15),
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: theme
+                                                .colorScheme
+                                                .onPrimaryContainer
+                                                .withOpacity(0.3),
+                                            width: 1.5,
+                                          ),
+                                        ),
+                                        child: Icon(
+                                          Icons.add_rounded,
+                                          size: 18,
+                                          color: theme
+                                              .colorScheme
+                                              .onPrimaryContainer,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                              ],
                             ),
                           ),
-                        );
-                      },
+                        ),
+                        // Album selection dropdown button
+                        const SizedBox(width: 6),
+                        Expanded(
+                          flex: 2,
+                          child: Consumer(
+                            builder: (context, ref, _) {
+                              final albumsAsync = ref.watch(albumsProvider);
+                              final selectedAlbum = ref.watch(
+                                selectedAlbumProvider,
+                              );
+                              final albumsData = albumsAsync.asData?.value;
+                              final canOpenAlbumPicker =
+                                  albumsData != null && albumsData.isNotEmpty;
+                              final displayAlbumName =
+                                  selectedAlbum?.name ?? l10n.allPhotos;
+
+                              Future<void> openAlbumPicker() async {
+                                final availableAlbums = albumsData;
+                                if (availableAlbums == null ||
+                                    availableAlbums.isEmpty)
+                                  return;
+                                await _presentAlbumPicker(
+                                  context: context,
+                                  albums: availableAlbums,
+                                  selectedAlbum: selectedAlbum,
+                                  onSelected: (album) {
+                                    ref
+                                            .read(
+                                              selectedAlbumProvider.notifier,
+                                            )
+                                            .state =
+                                        album;
+                                  },
+                                );
+                              }
+
+                              return Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  onTap: canOpenAlbumPicker
+                                      ? openAlbumPicker
+                                      : null,
+                                  borderRadius: BorderRadius.circular(16),
+                                  child: Container(
+                                    height: double.infinity,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 10,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: theme
+                                          .colorScheme
+                                          .surfaceContainerHighest
+                                          .withOpacity(0.6),
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border.all(
+                                        color: theme.colorScheme.outline
+                                            .withOpacity(0.2),
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          Icons.photo_library_outlined,
+                                          size: 16,
+                                          color: canOpenAlbumPicker
+                                              ? theme.colorScheme.onSurface
+                                              : theme.colorScheme.onSurface
+                                                    .withOpacity(0.3),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            displayAlbumName,
+                                            style: theme.textTheme.labelMedium
+                                                ?.copyWith(
+                                                  fontWeight: FontWeight.w600,
+                                                  fontSize: 12,
+                                                  color: canOpenAlbumPicker
+                                                      ? theme
+                                                            .colorScheme
+                                                            .onSurface
+                                                      : theme
+                                                            .colorScheme
+                                                            .onSurface
+                                                            .withOpacity(0.3),
+                                                ),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Icon(
+                                          Icons.arrow_drop_down,
+                                          size: 20,
+                                          color: canOpenAlbumPicker
+                                              ? theme.colorScheme.onSurface
+                                                    .withOpacity(0.7)
+                                              : theme.colorScheme.onSurface
+                                                    .withOpacity(0.3),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
-              // Unlimited deletion rights button - Premium solid color
-              SizedBox(
-                width: double.infinity,
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: () {
-                      _showPurchaseDialog(context);
-                    },
-                    borderRadius: BorderRadius.circular(18),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.primary,
-                        borderRadius: BorderRadius.circular(18),
-                        border: Border.all(
-                          color: theme.colorScheme.primary.withOpacity(0.2),
-                          width: 1.5,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: theme.colorScheme.primary.withOpacity(0.3),
-                            blurRadius: 16,
-                            offset: const Offset(0, 6),
-                            spreadRadius: 0,
-                          ),
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.08),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                            spreadRadius: 0,
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            width: 32,
-                            height: 32,
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.onPrimary.withOpacity(
-                                0.15,
-                              ),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              Icons.all_inclusive_rounded,
-                              size: 18,
-                              color: theme.colorScheme.onPrimary,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  l10n.buyUnlimitedRights,
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 14,
-                                    color: theme.colorScheme.onPrimary,
-                                    letterSpacing: -0.4,
-                                    height: 1.2,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                const SizedBox(height: 2),
-                                Row(
-                                  children: [
-                                    Icon(
-                                      Icons.verified_rounded,
-                                      size: 12,
-                                      color: theme.colorScheme.onPrimary
-                                          .withOpacity(0.9),
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Flexible(
-                                      child: Text(
-                                        l10n.oneTimePayment,
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 10,
-                                          color: theme.colorScheme.onPrimary
-                                              .withOpacity(0.9),
-                                          letterSpacing: 0.3,
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                          Icon(
-                            Icons.arrow_forward_ios_rounded,
-                            size: 14,
-                            color: theme.colorScheme.onPrimary.withOpacity(0.8),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
+            );
+          },
         );
       },
     );
@@ -1904,8 +7082,6 @@ class _AnimatedSwipeInstructionsState extends State<_AnimatedSwipeInstructions>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _pulseAnimation;
-  late Animation<double> _arrowLeftAnimation;
-  late Animation<double> _arrowRightAnimation;
 
   @override
   void initState() {
@@ -1918,16 +7094,6 @@ class _AnimatedSwipeInstructionsState extends State<_AnimatedSwipeInstructions>
     _pulseAnimation = Tween<double>(
       begin: 0.8,
       end: 1.0,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
-
-    _arrowLeftAnimation = Tween<double>(
-      begin: -3.0,
-      end: 0.0,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
-
-    _arrowRightAnimation = Tween<double>(
-      begin: 0.0,
-      end: 3.0,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
@@ -1971,9 +7137,22 @@ class _AnimatedSwipeInstructionsState extends State<_AnimatedSwipeInstructions>
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Transform.translate(
-                    offset: Offset(_arrowLeftAnimation.value, 0),
-                    child: Icon(Icons.arrow_back, size: 18, color: sem.delete),
+                  SizedBox(
+                    width: 32,
+                    height: 32,
+                    child: ColorFiltered(
+                      colorFilter: ColorFilter.mode(
+                        sem.delete,
+                        BlendMode.srcATop,
+                      ),
+                      child: Lottie.asset(
+                        'assets/lottie/left.json',
+                        width: 32,
+                        height: 32,
+                        fit: BoxFit.contain,
+                        repeat: true,
+                      ),
+                    ),
                   ),
                   const SizedBox(width: 6),
                   Text(
@@ -2030,9 +7209,22 @@ class _AnimatedSwipeInstructionsState extends State<_AnimatedSwipeInstructions>
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(width: 6),
-                  Transform.translate(
-                    offset: Offset(_arrowRightAnimation.value, 0),
-                    child: Icon(Icons.arrow_forward, size: 18, color: sem.keep),
+                  SizedBox(
+                    width: 32,
+                    height: 32,
+                    child: ColorFiltered(
+                      colorFilter: ColorFilter.mode(
+                        sem.keep,
+                        BlendMode.srcATop,
+                      ),
+                      child: Lottie.asset(
+                        'assets/lottie/right.json',
+                        width: 32,
+                        height: 32,
+                        fit: BoxFit.contain,
+                        repeat: true,
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -2081,6 +7273,165 @@ class _PurchaseFeatureItem extends StatelessWidget {
   }
 }
 
+// Blur tab indicator with pulse animation when scan completes
+class _BlurTabIndicator extends ConsumerStatefulWidget {
+  const _BlurTabIndicator({required this.pulseController});
+  final AnimationController pulseController;
+
+  @override
+  ConsumerState<_BlurTabIndicator> createState() => _BlurTabIndicatorState();
+}
+
+class _BlurTabIndicatorState extends ConsumerState<_BlurTabIndicator> {
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
+    final blurState = ref.watch(blurDetectionProvider);
+    final isScanning = blurState.isScanning;
+    final hasCompleted = blurState.hasCompletedScan && !isScanning;
+
+    return AnimatedBuilder(
+      animation: widget.pulseController,
+      builder: (context, child) {
+        final scale = hasCompleted
+            ? 1.0 + (widget.pulseController.value * 0.2)
+            : 1.0;
+        return Transform.scale(
+          scale: scale,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.blur_on_rounded,
+                size: 20,
+                color: hasCompleted ? theme.colorScheme.primary : null,
+              ),
+              const SizedBox(width: 6),
+              Text(l10n.blurTab),
+              if (hasCompleted) ...[
+                const SizedBox(width: 4),
+                Icon(
+                  Icons.check_circle,
+                  size: 14,
+                  color: theme.colorScheme.primary,
+                ),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+// Duplicate tab indicator with pulse animation when scan completes
+class _DuplicateTabIndicator extends ConsumerStatefulWidget {
+  const _DuplicateTabIndicator({required this.pulseController});
+  final AnimationController pulseController;
+
+  @override
+  ConsumerState<_DuplicateTabIndicator> createState() =>
+      _DuplicateTabIndicatorState();
+}
+
+class _DuplicateTabIndicatorState
+    extends ConsumerState<_DuplicateTabIndicator> {
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
+    final duplicateState = ref.watch(duplicateDetectionProvider);
+    final isScanning = duplicateState.isScanning;
+    final hasCompleted = duplicateState.hasCompletedScan && !isScanning;
+
+    return AnimatedBuilder(
+      animation: widget.pulseController,
+      builder: (context, child) {
+        final scale = hasCompleted
+            ? 1.0 + (widget.pulseController.value * 0.2)
+            : 1.0;
+        return Transform.scale(
+          scale: scale,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.content_copy_rounded,
+                size: 20,
+                color: hasCompleted ? theme.colorScheme.primary : null,
+              ),
+              const SizedBox(width: 6),
+              Text(l10n.duplicateTab),
+              if (hasCompleted) ...[
+                const SizedBox(width: 4),
+                Icon(
+                  Icons.check_circle,
+                  size: 14,
+                  color: theme.colorScheme.primary,
+                ),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+// Permission feature widget for permission request screen
+class _PermissionFeature extends StatelessWidget {
+  const _PermissionFeature({
+    required this.icon,
+    required this.title,
+    required this.description,
+  });
+
+  final IconData icon;
+  final String title;
+  final String description;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.primaryContainer,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: theme.colorScheme.primary),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                description,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.textTheme.bodyMedium?.color?.withOpacity(0.7),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 void _showDeleteSuccessDialog(BuildContext context, int deletedCount) {
   final l10n = AppLocalizations.of(context)!;
   final theme = Theme.of(context);
@@ -2105,14 +7456,10 @@ void _showDeleteSuccessDialog(BuildContext context, int deletedCount) {
         },
         child: Container(
           constraints: const BoxConstraints(maxWidth: 380),
-          padding: const EdgeInsets.all(28),
+          padding: const EdgeInsets.all(32),
           decoration: BoxDecoration(
             color: theme.colorScheme.surface,
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: theme.colorScheme.outline.withOpacity(0.1),
-              width: 1,
-            ),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.15),
@@ -2125,126 +7472,103 @@ void _showDeleteSuccessDialog(BuildContext context, int deletedCount) {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Success icon with animation
-              TweenAnimationBuilder<double>(
-                tween: Tween(begin: 0.0, end: 1.0),
-                duration: const Duration(milliseconds: 500),
-                curve: Curves.elasticOut,
-                builder: (context, value, child) {
-                  return Transform.scale(
-                    scale: value,
-                    child: Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        color: Colors.green.shade50,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: Colors.green.shade200.withOpacity(0.5),
-                          width: 2,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.green.withOpacity(0.15),
-                            blurRadius: 16,
-                            spreadRadius: 2,
-                          ),
-                        ],
-                      ),
-                      child: Icon(
-                        Icons.check_circle_rounded,
-                        size: 48,
-                        color: Colors.green.shade600,
-                      ),
-                    ),
-                  );
-                },
+              // Lottie animation
+              SizedBox(
+                width: 120,
+                height: 120,
+                child: Lottie.asset(
+                  'assets/lottie/wipe.json',
+                  fit: BoxFit.contain,
+                  repeat: true,
+                  animate: true,
+                ),
               ),
-              const SizedBox(height: 16),
-              // Success title
+              const SizedBox(height: 24),
+              // Title
               Text(
-                l10n.success,
+                l10n.cleanupComplete,
                 style: theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 22,
-                  letterSpacing: -0.5,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 24,
                   color: theme.colorScheme.onSurface,
                 ),
                 textAlign: TextAlign.center,
-                overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 16),
-              // Deleted count message
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 18,
-                  vertical: 14,
+              // Description with deleted count
+              Text(
+                l10n.cleanupCompleteMessageWithCount(deletedCount),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurface.withOpacity(0.7),
+                  fontSize: 14,
+                  height: 1.5,
                 ),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.primaryContainer.withOpacity(0.5),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: theme.colorScheme.primary.withOpacity(0.2),
-                    width: 1,
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.primary.withOpacity(0.15),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.delete_outline,
-                        size: 18,
-                        color: theme.colorScheme.primary,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Flexible(
-                      child: Text(
-                        l10n.deletedSuccessfully(deletedCount),
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                          color: theme.colorScheme.onSurface,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 15,
-                          letterSpacing: -0.2,
-                        ),
-                        textAlign: TextAlign.center,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
+                textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 18),
-              // OK button
+              const SizedBox(height: 32),
+              // Done button - uygulamadaki buton yapısına uygun
               SizedBox(
                 width: double.infinity,
-                child: FilledButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    backgroundColor: theme.colorScheme.primary,
-                    foregroundColor: theme.colorScheme.onPrimary,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        theme.colorScheme.primary,
+                        theme.colorScheme.primary.withOpacity(0.8),
+                      ],
                     ),
-                    elevation: 0,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: theme.colorScheme.primary.withOpacity(0.3),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                        spreadRadius: 0,
+                      ),
+                    ],
                   ),
-                  child: Text(
-                    l10n.ok,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 15,
-                      letterSpacing: 0.2,
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () => Navigator.of(context).pop(),
+                      borderRadius: BorderRadius.circular(16),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 16,
+                          horizontal: 24,
+                        ),
+                        child: Text(
+                          l10n.done,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: Colors.white,
+                            letterSpacing: 0.5,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
                     ),
-                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              // View Gallery link
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  // Navigate to gallery view if needed
+                },
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                ),
+                child: Text(
+                  l10n.viewGallery,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurface,
+                    fontSize: 14,
                   ),
                 ),
               ),

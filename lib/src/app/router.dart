@@ -5,17 +5,51 @@ import 'package:go_router/go_router.dart';
 import '../features/onboarding/presentation/splash_page.dart';
 import '../features/onboarding/presentation/onboarding_page.dart';
 import '../features/onboarding/presentation/permission_request_page.dart';
-import '../features/onboarding/presentation/start_clean_page.dart';
 import '../features/gallery/presentation/pages/swipe_page.dart';
 import '../features/gallery/presentation/pages/history_page.dart';
+import '../features/gallery/presentation/pages/gallery_stats_page.dart';
 import '../features/settings/presentation/settings_page.dart';
+import '../features/settings/presentation/paywall_page.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
-    initialLocation: '/',
+    initialLocation: '/splash',
+    redirect: (context, state) async {
+      final location = state.uri.path;
+
+      // Splash ve onboarding sayfalarında redirect yapma
+      // Splash page kendi içinde animasyon bitince route edecek
+      if (location == '/splash' ||
+          location == '/onboarding' ||
+          location == '/permission' ||
+          location == '/swipe' ||
+          location.startsWith('/settings') ||
+          location.startsWith('/duplicates') ||
+          location.startsWith('/blur') ||
+          location.startsWith('/gallery') ||
+          location.startsWith('/history')) {
+        return null; // Bu sayfalarda redirect yapma
+      }
+
+      // Root path'ten geliyorsak splash page'e yönlendir
+      if (location == '/') {
+        return '/splash';
+      }
+
+      return null;
+    },
     routes: [
       GoRoute(
         path: '/',
+        name: 'root',
+        redirect: (context, state) {
+          // Bu route'a asla gelinmemeli, redirect'te splash'e yönlendirilecek
+          // Ama yine de bir fallback ekleyelim
+          return '/splash';
+        },
+      ),
+      GoRoute(
+        path: '/splash',
         name: 'splash',
         builder: (context, state) => const SplashPage(),
       ),
@@ -30,11 +64,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const PermissionRequestPage(),
       ),
       GoRoute(
-        path: '/start',
-        name: 'start',
-        builder: (context, state) => const StartCleanPage(),
-      ),
-      GoRoute(
         path: '/swipe',
         name: 'swipe',
         builder: (context, state) => const SwipePage(),
@@ -45,16 +74,29 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const SettingsPage(),
       ),
       GoRoute(
+        path: '/paywall',
+        name: 'paywall',
+        builder: (context, state) => const PaywallPage(),
+      ),
+      GoRoute(
         path: '/history/full',
         name: 'fullHistory',
         builder: (context, state) => const FullHistoryPage(),
       ),
+
+      GoRoute(
+        path: '/gallery/stats',
+        name: 'galleryStats',
+        builder: (context, state) => const GalleryStatsPage(),
+      ),
     ],
     errorBuilder: (context, state) => Scaffold(
       body: Center(
-        child: Text('Navigation error: ${state.error}', textAlign: TextAlign.center),
+        child: Text(
+          'Navigation error: ${state.error}',
+          textAlign: TextAlign.center,
+        ),
       ),
     ),
   );
 });
-

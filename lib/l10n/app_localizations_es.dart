@@ -125,7 +125,11 @@ class AppLocalizationsEs extends AppLocalizations {
   String get historyAndQueue => 'Estadísticas';
 
   @override
-  String get noHistoryYet => 'Aún no hay historial.';
+  String get noHistoryYet => 'Aún No Hay Estadísticas';
+
+  @override
+  String get noHistoryYetDescription =>
+      'Comienza a revisar y organizar tus fotos para ver tu actividad y estadísticas aquí.';
 
   @override
   String get keep => 'MANTENER';
@@ -313,8 +317,56 @@ class AppLocalizationsEs extends AppLocalizations {
   String get earnDeletionRights => '+20 Eliminaciones';
 
   @override
-  String get adNotReady =>
-      'El anuncio aún no está listo. Por favor, inténtalo de nuevo en unos segundos.';
+  String get watchAdAndEarnDeletionRights => '+20 Eliminaciones';
+
+  @override
+  String get galleryPermissionDescription =>
+      'Necesitamos acceso a tus fotos y videos para realizar operaciones de limpieza de galería.';
+
+  @override
+  String get quickCleanupTitle => 'Limpieza Rápida';
+
+  @override
+  String get quickCleanupDescription => 'Revisa rápidamente tus fotos';
+
+  @override
+  String get organizeTitle => 'Organizar';
+
+  @override
+  String get organizeDescription => 'Mueve y organiza en tus álbumes';
+
+  @override
+  String get safeDeleteTitle => 'Eliminación Segura';
+
+  @override
+  String get safeDeleteDescription => 'Limpia fotos innecesarias';
+
+  @override
+  String get increaseDeletionRights => 'Aumentar Derechos de Eliminación';
+
+  @override
+  String get increaseScanRights => 'Aumentar Derechos de Escaneo';
+
+  @override
+  String earnDeleteRights(int amount) {
+    final intl.NumberFormat amountNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String amountString = amountNumberFormat.format(amount);
+
+    return '+$amountString Eliminaciones';
+  }
+
+  @override
+  String earnScanRights(int amount) {
+    final intl.NumberFormat amountNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String amountString = amountNumberFormat.format(amount);
+
+    return '+$amountString Escaneos';
+  }
+
+  @override
+  String get adNotReady => 'Cargando Anuncio...';
 
   @override
   String get earnedDeletionRights => '¡Ganaste 20 derechos de eliminación!';
@@ -324,6 +376,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get premiumTitle => 'Hazte Premium';
+
+  @override
+  String get unlockPremiumFeatures => 'Desbloquea Funciones Premium';
 
   @override
   String get premiumDescription =>
@@ -351,6 +406,20 @@ class AppLocalizationsEs extends AppLocalizations {
   String get buyUnlimitedRights => 'Comprar Derechos Ilimitados';
 
   @override
+  String get buyUnlimitedBlurRights => 'Comprar Blur Ilimitado';
+
+  @override
+  String get buyUnlimitedDuplicateRights => 'Comprar Duplicados Ilimitados';
+
+  @override
+  String get unlimitedBlurScans =>
+      'Escaneos de Blur Ilimitados • Acceso de por Vida';
+
+  @override
+  String get unlimitedDuplicateScans =>
+      'Escaneos de Duplicados Ilimitados • Acceso de por Vida';
+
+  @override
   String get oneTimePayment => 'Pago Único';
 
   @override
@@ -361,4 +430,428 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get purchaseNow => 'Comprar Ahora';
+
+  @override
+  String get limitedTimeOffer => 'Tiempo Limitado';
+
+  @override
+  String get discount25 => '25% Descuento';
+
+  @override
+  String get originalPrice => 'Precio Original';
+
+  @override
+  String get saveNow => 'Ahorra Ahora';
+
+  @override
+  String get bestValue => 'Mejor Valor';
+
+  @override
+  String get purchaseSuccessful =>
+      '¡Compra exitosa! Ahora tienes acceso a las funciones premium.';
+
+  @override
+  String get lifetimeAccessMessage =>
+      '¡Ahora tienes acceso de por vida a estos beneficios!';
+
+  @override
+  String get youArePremium => 'Eres Premium';
+
+  @override
+  String get active => 'ACTIVO';
+
+  @override
+  String get premiumAccessDescription =>
+      '¡Tienes acceso a todas las funciones premium. Eliminación ilimitada, escaneo y más!';
+
+  @override
+  String get unlimited => 'Ilimitado';
+
+  @override
+  String get adFree => 'Sin anuncios';
+
+  @override
+  String get priority => 'Prioritario';
+
+  @override
+  String get storeNotAvailable => 'La tienda no está disponible';
+
+  @override
+  String get purchaseFailed =>
+      'La compra falló. Por favor, inténtalo de nuevo.';
+
+  @override
+  String get failedToInitiatePurchase => 'No se pudo iniciar la compra';
+
+  @override
+  String get purchaseError => 'Error de compra';
+
+  @override
+  String get purchasesRestoredSuccessfully =>
+      '¡Compras restauradas exitosamente!';
+
+  @override
+  String get noPreviousPurchases =>
+      'No se encontraron compras anteriores para restaurar.';
+
+  @override
+  String get restoreError => 'Error de restauración';
+
+  @override
+  String get restoring => 'Restaurando...';
+
+  @override
+  String get restorePurchases => 'Restaurar Compras';
+
+  @override
+  String get duplicatePhotos => 'Duplicate Photos';
+
+  @override
+  String get scanForDuplicates => 'Scan for Duplicates';
+
+  @override
+  String get scanningDuplicates => 'Scanning for duplicates...';
+
+  @override
+  String get noDuplicatesFound => 'No duplicate photos found';
+
+  @override
+  String duplicatesFound(int count) {
+    return '$count duplicate groups found';
+  }
+
+  @override
+  String get totalDuplicates => 'Total Duplicates';
+
+  @override
+  String get spaceToSave => 'Space to Save';
+
+  @override
+  String get deleteDuplicates => 'Delete Duplicates';
+
+  @override
+  String get selectAlbumsToScan => 'Select Albums to Scan';
+
+  @override
+  String get scanSelectedAlbums => 'Scan Selected Albums';
+
+  @override
+  String get deleteAllDuplicates => 'Eliminar Todos los Duplicados';
+
+  @override
+  String deleteAllDuplicatesMessage(int count) {
+    return 'Se eliminarán $count fotos duplicadas. ¿Estás seguro?';
+  }
+
+  @override
+  String get deleteAllBlurryPhotos => 'Eliminar Todas las Fotos Borrosas';
+
+  @override
+  String deleteAllBlurryPhotosMessage(int count) {
+    return 'Se eliminarán $count fotos borrosas. ¿Estás seguro?';
+  }
+
+  @override
+  String get startNewScan => 'Iniciar Nuevo Escaneo';
+
+  @override
+  String get scanCompleted => 'Escaneo Completado';
+
+  @override
+  String scanCompletedBlurMessage(int count) {
+    return 'Se encontraron $count fotos borrosas';
+  }
+
+  @override
+  String scanCompletedDuplicateMessage(int count) {
+    return 'Se encontraron $count grupos duplicados';
+  }
+
+  @override
+  String get noBlurryPhotosFound =>
+      'No se encontraron fotos borrosas o pixeladas en su galería.';
+
+  @override
+  String get noDuplicatePhotosFound =>
+      'No se encontraron fotos duplicadas en su galería.';
+
+  @override
+  String get duplicateGroup => 'Duplicate Group';
+
+  @override
+  String photosInGroup(int count) {
+    return '$count photos';
+  }
+
+  @override
+  String get keepOldest => 'Keep Oldest';
+
+  @override
+  String scanningAlbum(String album) {
+    return 'Scanning $album...';
+  }
+
+  @override
+  String get noDeleteRightsLeft => 'Sin Derechos de Eliminación';
+
+  @override
+  String get noDeleteRightsLeftMessage =>
+      'No tienes derechos de eliminación. Obtén derechos de eliminación ilimitados para continuar limpiando tu galería.';
+
+  @override
+  String get galleryStatsTitle => 'Estadísticas de Galería';
+
+  @override
+  String get stop => 'Detener';
+
+  @override
+  String get spaceSaved => 'Espacio Ahorrado';
+
+  @override
+  String get lastAnalysis => 'Último análisis:';
+
+  @override
+  String get previousAnalysis => 'Análisis anterior:';
+
+  @override
+  String get mediaLabel => 'Medios';
+
+  @override
+  String get sizeLabel => 'Tamaño';
+
+  @override
+  String get albumDetails => 'Detalles del Álbum';
+
+  @override
+  String get mediaUnit => 'medios';
+
+  @override
+  String get reAnalyze => 'Re-analizar';
+
+  @override
+  String progressFormat(String albums, int media) {
+    return '$albums álbumes • $media medios';
+  }
+
+  @override
+  String errorMessage(String error) {
+    return 'Error: $error';
+  }
+
+  @override
+  String get deleteOperationFailed =>
+      'La operación de eliminación falló. Por favor, inténtalo de nuevo.';
+
+  @override
+  String get blurPhotosTitle => 'Fotos Borrosas';
+
+  @override
+  String get blurDetectionTitle => 'Detección de Desenfoque y Pixelación';
+
+  @override
+  String get blurPhotoDetection => 'Detección de Fotos Borrosas';
+
+  @override
+  String get blurDetectionDescription =>
+      'Detecta fotos borrosas y pixeladas en los álbumes seleccionados';
+
+  @override
+  String get sensitivity => 'Sensibilidad';
+
+  @override
+  String thresholdLabel(String value) {
+    return 'Umbral: $value';
+  }
+
+  @override
+  String get thresholdDescription =>
+      'Valor bajo = Más detección de desenfoque\nValor alto = Solo fotos muy borrosas';
+
+  @override
+  String get sensitivityLow => 'Baja';
+
+  @override
+  String get sensitivityMedium => 'Media';
+
+  @override
+  String get sensitivityHigh => 'Alta';
+
+  @override
+  String get sensitivityDescription =>
+      'El nivel de sensibilidad determina cuántas fotos borrosas se detectan. Baja sensibilidad detecta más fotos, alta sensibilidad solo encuentra fotos muy borrosas.';
+
+  @override
+  String get sensitivityLevelsDescription =>
+      '• Baja: Detecta fotos ligeramente borrosas también (más resultados)\n• Media: Detecta fotos moderadamente borrosas (equilibrado)\n• Alta: Solo detecta fotos muy borrosas (menos resultados)';
+
+  @override
+  String get currentSensitivity => 'Sensibilidad Actual';
+
+  @override
+  String get noScanRightsLeft => 'Sin Derechos de Escaneo';
+
+  @override
+  String get albumSelection => 'Selección de Álbum';
+
+  @override
+  String get startScan => 'Iniciar Escaneo';
+
+  @override
+  String get scanningBlurPhotos => 'Escaneando fotos borrosas y pixeladas...';
+
+  @override
+  String get premiumScan => 'Escaneo Premium';
+
+  @override
+  String get remainingScanRights => 'Escaneo Restante';
+
+  @override
+  String get scanLimit => 'Límite de Escaneo';
+
+  @override
+  String get scanLimitLow =>
+      '¡Tu límite de escaneo se está agotando! Actualiza a Premium.';
+
+  @override
+  String watchAdToGetScanLimit(int amount) {
+    final intl.NumberFormat amountNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String amountString = amountNumberFormat.format(amount);
+
+    return 'Ver Anuncio +$amountString Límite de Escaneo';
+  }
+
+  @override
+  String get photoUnit => 'fotos';
+
+  @override
+  String get selectAlbumsAndScan => 'Selecciona álbumes y escanea';
+
+  @override
+  String get noDuplicateGroupsFound => 'No se encontraron grupos duplicados';
+
+  @override
+  String stateInfo(int albums, int groups) {
+    return '$albums álbumes, $groups grupos';
+  }
+
+  @override
+  String get blurDetectionDescriptionFromAppBar =>
+      'Detección de fotos borrosas y pixeladas con inteligencia artificial. Limpia tu almacenamiento y mantén solo imágenes de calidad.';
+
+  @override
+  String get duplicateDetectionDescriptionFromAppBar =>
+      'Detección de fotos duplicadas con inteligencia artificial. Limpia copias innecesarias y optimiza tu espacio de almacenamiento.';
+
+  @override
+  String get aiPowered => 'Con Inteligencia Artificial';
+
+  @override
+  String get listView => 'Vista de lista';
+
+  @override
+  String get gridView => 'Vista de cuadrícula';
+
+  @override
+  String get unknown => 'Desconocido';
+
+  @override
+  String blurScoreLabel(String score) {
+    return 'Desenfoque: $score';
+  }
+
+  @override
+  String pixelationScoreLabel(String score) {
+    return 'Pixelación: $score';
+  }
+
+  @override
+  String get deletePhoto => 'Eliminar Foto';
+
+  @override
+  String deletePhotoMessage(String type) {
+    return 'Esta $type foto será eliminada.';
+  }
+
+  @override
+  String get close => 'Cerrar';
+
+  @override
+  String deleteDuplicatesMessage(int count) {
+    return '$count fotos duplicadas serán eliminadas.';
+  }
+
+  @override
+  String get noResultsFound => 'No se encontraron resultados';
+
+  @override
+  String get group => 'Grupo';
+
+  @override
+  String get photo => 'Foto';
+
+  @override
+  String get blurry => 'Borrosa';
+
+  @override
+  String get pixelated => 'Pixelada';
+
+  @override
+  String get blurryAndPixelated => 'Borrosa y Pixelada';
+
+  @override
+  String get sharp => 'Nitida';
+
+  @override
+  String get scanningDuplicatePhotos => 'Escaneando fotos duplicadas...';
+
+  @override
+  String get duplicatePhotoDetection => 'Detección de Fotos Duplicadas';
+
+  @override
+  String get blurDetectionOnboardingTitle => 'Detectar Fotos Borrosas';
+
+  @override
+  String get blurDetectionOnboardingDescription =>
+      'Detecta automáticamente fotos borrosas y pixeladas en tu galería. Puedes encontrar y eliminar estas fotos fácilmente.';
+
+  @override
+  String get duplicateDetectionOnboardingTitle => 'Encontrar Fotos Duplicadas';
+
+  @override
+  String get duplicateDetectionOnboardingDescription =>
+      'Detecta fotos duplicadas en tu galería con algoritmo inteligente. Libera espacio limpiando copias innecesarias.';
+
+  @override
+  String get weNeedYourAccessTitle => 'Necesitamos Tu\nAcceso';
+
+  @override
+  String get resetToStart => 'Volver al Inicio';
+
+  @override
+  String get swipeTab => 'Deslizar';
+
+  @override
+  String get blurTab => 'Desenfoque';
+
+  @override
+  String get duplicateTab => 'Duplicado';
+
+  @override
+  String get cleanupComplete => '¡Limpieza Completada!';
+
+  @override
+  String get cleanupCompleteMessage =>
+      'Todas las fotos seleccionadas han sido eliminadas exitosamente. Tu galería ahora está más limpia y ligera.';
+
+  @override
+  String cleanupCompleteMessageWithCount(int count) {
+    return '$count foto(s) han sido eliminadas exitosamente. Tu galería ahora está más limpia y ligera.';
+  }
+
+  @override
+  String get done => 'Hecho';
+
+  @override
+  String get viewGallery => 'Ver Galería';
 }

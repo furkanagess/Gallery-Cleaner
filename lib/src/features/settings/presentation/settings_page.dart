@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../application/theme_controller.dart';
 import '../application/locale_controller.dart';
+import '../../gallery/application/gallery_providers.dart';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
@@ -18,10 +19,7 @@ class SettingsPage extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          l10n.settings,
-          overflow: TextOverflow.ellipsis,
-        ),
+        title: Text(l10n.settings, overflow: TextOverflow.ellipsis),
         centerTitle: true,
         leading: Platform.isIOS
             ? IconButton(
@@ -30,7 +28,7 @@ class SettingsPage extends ConsumerWidget {
                   if (context.canPop()) {
                     context.pop();
                   } else {
-                    context.go('/start');
+                    context.go('/swipe');
                   }
                 },
               )
@@ -51,7 +49,9 @@ class SettingsPage extends ConsumerWidget {
                   title: l10n.light,
                   isSelected: themeMode == AppThemeMode.light,
                   onTap: () {
-                    ref.read(themeModeProvider.notifier).setThemeMode(AppThemeMode.light);
+                    ref
+                        .read(themeModeProvider.notifier)
+                        .setThemeMode(AppThemeMode.light);
                   },
                 ),
                 _ThemeOption(
@@ -59,7 +59,9 @@ class SettingsPage extends ConsumerWidget {
                   title: l10n.dark,
                   isSelected: themeMode == AppThemeMode.dark,
                   onTap: () {
-                    ref.read(themeModeProvider.notifier).setThemeMode(AppThemeMode.dark);
+                    ref
+                        .read(themeModeProvider.notifier)
+                        .setThemeMode(AppThemeMode.dark);
                   },
                 ),
                 _ThemeOption(
@@ -67,7 +69,9 @@ class SettingsPage extends ConsumerWidget {
                   title: l10n.system,
                   isSelected: themeMode == AppThemeMode.system,
                   onTap: () {
-                    ref.read(themeModeProvider.notifier).setThemeMode(AppThemeMode.system);
+                    ref
+                        .read(themeModeProvider.notifier)
+                        .setThemeMode(AppThemeMode.system);
                   },
                 ),
               ],
@@ -82,7 +86,9 @@ class SettingsPage extends ConsumerWidget {
                   title: l10n.turkish,
                   isSelected: locale.languageCode == 'tr',
                   onTap: () {
-                    ref.read(localeProvider.notifier).setAppLocale(AppLocale.tr);
+                    ref
+                        .read(localeProvider.notifier)
+                        .setAppLocale(AppLocale.tr);
                   },
                 ),
                 _LocaleOption(
@@ -90,7 +96,9 @@ class SettingsPage extends ConsumerWidget {
                   title: l10n.english,
                   isSelected: locale.languageCode == 'en',
                   onTap: () {
-                    ref.read(localeProvider.notifier).setAppLocale(AppLocale.en);
+                    ref
+                        .read(localeProvider.notifier)
+                        .setAppLocale(AppLocale.en);
                   },
                 ),
                 _LocaleOption(
@@ -98,23 +106,25 @@ class SettingsPage extends ConsumerWidget {
                   title: l10n.spanish,
                   isSelected: locale.languageCode == 'es',
                   onTap: () {
-                    ref.read(localeProvider.notifier).setAppLocale(AppLocale.es);
+                    ref
+                        .read(localeProvider.notifier)
+                        .setAppLocale(AppLocale.es);
                   },
                 ),
               ],
             ),
             const SizedBox(height: 24),
             // Premium Section - Dil seçiminin altında
-            _PremiumSection(
-              onTap: () => SettingsPage._showPurchaseDialog(context),
-            ),
+            _PremiumSection(),
             const SizedBox(height: 32),
             // Version info
             Center(
               child: Text(
                 'v1.0.0',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withOpacity(0.5),
                   fontSize: 12,
                 ),
               ),
@@ -126,239 +136,19 @@ class SettingsPage extends ConsumerWidget {
     );
   }
 
-  static void _showPurchaseDialog(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-
-    showDialog(
-      context: context,
-      barrierDismissible: true,
-      barrierColor: Colors.black.withOpacity(0.6),
-      builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        insetPadding: const EdgeInsets.symmetric(horizontal: 24),
-        child: TweenAnimationBuilder<double>(
-          tween: Tween(begin: 0.0, end: 1.0),
-          duration: const Duration(milliseconds: 400),
-          curve: Curves.easeOutCubic,
-          builder: (context, value, child) {
-            return Transform.scale(
-              scale: 0.8 + (value * 0.2),
-              child: Opacity(opacity: value, child: child),
-            );
-          },
-          child: Container(
-            constraints: const BoxConstraints(maxWidth: 400),
-            padding: const EdgeInsets.all(28),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  theme.colorScheme.primaryContainer,
-                  theme.colorScheme.secondaryContainer,
-                ],
-              ),
-              borderRadius: BorderRadius.circular(28),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.25),
-                  blurRadius: 32,
-                  spreadRadius: 2,
-                  offset: const Offset(0, 16),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Icon
-                Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        theme.colorScheme.primary,
-                        theme.colorScheme.primary.withOpacity(0.7),
-                      ],
-                    ),
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: theme.colorScheme.primary.withOpacity(0.3),
-                        blurRadius: 16,
-                        spreadRadius: 2,
-                      ),
-                    ],
-                  ),
-                  child: Icon(
-                    Icons.all_inclusive_rounded,
-                    size: 40,
-                    color: theme.colorScheme.onPrimary,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                // Title
-                Text(
-                  l10n.buyUnlimitedRights,
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 22,
-                    letterSpacing: -0.5,
-                    color: theme.colorScheme.onSurface,
-                  ),
-                  textAlign: TextAlign.center,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 8),
-                // Subtitle - One-time payment for lifetime
-                Text(
-                  '${l10n.oneTimePayment} • ${l10n.lifetimeAccess}',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
-                    color: theme.colorScheme.onSurface.withOpacity(0.7),
-                  ),
-                  textAlign: TextAlign.center,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 8),
-                // One-time payment badge
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primary.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: theme.colorScheme.primary.withOpacity(0.3),
-                      width: 1,
-                    ),
-                  ),
-                  child: Text(
-                    l10n.oneTimePayment,
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 12,
-                      color: theme.colorScheme.primary,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                // Features
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surface.withOpacity(0.5),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: theme.colorScheme.outline.withOpacity(0.1),
-                      width: 1,
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      _PurchaseFeatureItem(
-                        icon: Icons.all_inclusive,
-                        text: '${l10n.unlimitedDeletions} • ${l10n.lifetimeAccess}',
-                      ),
-                      const SizedBox(height: 16),
-                      _PurchaseFeatureItem(
-                        icon: Icons.block,
-                        text: l10n.noMoreAds,
-                      ),
-                      const SizedBox(height: 16),
-                      _PurchaseFeatureItem(
-                        icon: Icons.verified,
-                        text: l10n.oneTimePayment,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 28),
-                // Purchase button
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      // TODO: Implement actual purchase logic
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'Purchase functionality will be implemented',
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          backgroundColor: theme.colorScheme.primaryContainer,
-                          behavior: SnackBarBehavior.floating,
-                          duration: const Duration(seconds: 2),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      );
-                    },
-                    style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 18),
-                      backgroundColor: theme.colorScheme.primary,
-                      foregroundColor: theme.colorScheme.onPrimary,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      elevation: 0,
-                    ),
-                    child: Text(
-                      l10n.purchaseNow,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 16,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                // Cancel button
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  style: TextButton.styleFrom(
-                    foregroundColor: theme.colorScheme.onSurface.withOpacity(0.7),
-                  ),
-                  child: Text(
-                    l10n.cancel,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
+  static void showPurchaseDialog(BuildContext context) {
+    context.push('/paywall');
   }
 }
 
-class _PremiumSection extends StatefulWidget {
-  const _PremiumSection({required this.onTap});
-
-  final VoidCallback onTap;
+class _PremiumSection extends ConsumerStatefulWidget {
+  const _PremiumSection();
 
   @override
-  State<_PremiumSection> createState() => _PremiumSectionState();
+  ConsumerState<_PremiumSection> createState() => _PremiumSectionState();
 }
 
-class _PremiumSectionState extends State<_PremiumSection>
+class _PremiumSectionState extends ConsumerState<_PremiumSection>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
@@ -373,17 +163,11 @@ class _PremiumSectionState extends State<_PremiumSection>
     )..repeat(reverse: true);
 
     _scaleAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeInOut,
-      ),
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
 
     _glowAnimation = Tween<double>(begin: 0.3, end: 0.7).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeInOut,
-      ),
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
   }
 
@@ -397,214 +181,419 @@ class _PremiumSectionState extends State<_PremiumSection>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
+    final isPremiumAsync = ref.watch(isPremiumProvider);
 
-    return AnimatedBuilder(
-      animation: _animationController,
-      builder: (context, child) {
-        return Transform.scale(
-          scale: _scaleAnimation.value,
-          child: Container(
+    return isPremiumAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (isPremium) {
+        // Premium kullanıcı için modern bilgi kartı
+        if (isPremium) {
+          return Container(
+            padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
                   theme.colorScheme.primaryContainer,
-                  theme.colorScheme.secondaryContainer,
-                  theme.colorScheme.tertiaryContainer,
+                  theme.colorScheme.secondaryContainer.withOpacity(0.6),
+                  theme.colorScheme.primaryContainer.withOpacity(0.8),
                 ],
+                stops: const [0.0, 0.5, 1.0],
               ),
               borderRadius: BorderRadius.circular(24),
               border: Border.all(
-                color: theme.colorScheme.primary.withOpacity(0.2),
+                color: theme.colorScheme.primary.withOpacity(0.25),
                 width: 2,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: theme.colorScheme.primary.withOpacity(_glowAnimation.value),
-                  blurRadius: 24,
-                  spreadRadius: 2,
+                  color: theme.colorScheme.primary.withOpacity(0.2),
+                  blurRadius: 20,
                   offset: const Offset(0, 8),
+                  spreadRadius: 2,
                 ),
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 16,
+                  color: theme.colorScheme.primary.withOpacity(0.1),
+                  blurRadius: 12,
                   offset: const Offset(0, 4),
+                  spreadRadius: 0,
+                ),
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                  spreadRadius: 0,
                 ),
               ],
             ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: widget.onTap,
-                borderRadius: BorderRadius.circular(24),
-                child: Container(
-                  padding: const EdgeInsets.all(24),
-                  child: Row(
-                    children: [
-                      // Animated Icon Container
-                      Container(
-                        width: 64,
-                        height: 64,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              theme.colorScheme.primary,
-                              theme.colorScheme.primary.withOpacity(0.7),
-                              theme.colorScheme.secondary,
-                            ],
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header row: Icon + Title + Badge
+                Row(
+                  children: [
+                    // Premium Icon Container with glow
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            theme.colorScheme.onPrimaryContainer.withOpacity(0.2),
+                            theme.colorScheme.onPrimaryContainer.withOpacity(0.1),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(
+                          color: theme.colorScheme.onPrimaryContainer.withOpacity(0.3),
+                          width: 1.5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: theme.colorScheme.primary.withOpacity(0.2),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                            spreadRadius: 1,
                           ),
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: theme.colorScheme.primary.withOpacity(0.5),
-                              blurRadius: 20,
-                              spreadRadius: 2,
-                            ),
-                          ],
-                        ),
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            // Glow effect
-                            Container(
-                              width: 64,
-                              height: 64,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                gradient: RadialGradient(
-                                  colors: [
-                                    theme.colorScheme.primary.withOpacity(_glowAnimation.value),
-                                    Colors.transparent,
-                                  ],
-                                ),
-                              ),
-                            ),
-                            // Icon
-                            Icon(
-                              Icons.all_inclusive_rounded,
-                              color: theme.colorScheme.onPrimary,
-                              size: 32,
-                            ),
-                          ],
-                        ),
+                        ],
                       ),
-                      const SizedBox(width: 20),
-                      // Content
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Row(
-                              children: [
-                                Text(
-                                  l10n.goPremium,
+                      child: Icon(
+                        Icons.workspace_premium_rounded,
+                        size: 32,
+                        color: theme.colorScheme.onPrimaryContainer,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    // Title and Badge
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  l10n.youArePremium,
                                   style: theme.textTheme.headlineSmall?.copyWith(
                                     fontWeight: FontWeight.w900,
                                     fontSize: 22,
-                                    color: theme.colorScheme.onSurface,
+                                    color: theme.colorScheme.onPrimaryContainer,
                                     letterSpacing: -0.8,
                                     height: 1.2,
                                   ),
                                   overflow: TextOverflow.ellipsis,
                                 ),
-                                const SizedBox(width: 8),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        theme.colorScheme.primary,
-                                        theme.colorScheme.secondary,
-                                      ],
-                                    ),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Text(
-                                    'PRO',
-                                    style: theme.textTheme.labelSmall?.copyWith(
-                                      fontWeight: FontWeight.w800,
-                                      fontSize: 10,
-                                      color: theme.colorScheme.onPrimary,
-                                      letterSpacing: 1,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              l10n.premiumDescription,
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                fontSize: 14,
-                                color: theme.colorScheme.onSurface.withOpacity(0.75),
-                                height: 1.4,
                               ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 12),
-                            // Features preview
-                            Row(
-                              children: [
-                                _FeatureBadge(
-                                  icon: Icons.all_inclusive,
-                                  theme: theme,
+                              const SizedBox(width: 10),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
                                 ),
-                                const SizedBox(width: 8),
-                                _FeatureBadge(
-                                  icon: Icons.block,
-                                  theme: theme,
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [
+                                      Colors.green.shade400,
+                                      Colors.green.shade600,
+                                    ],
+                                  ),
+                                  borderRadius: BorderRadius.circular(14),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.green.withOpacity(0.4),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 2),
+                                      spreadRadius: 1,
+                                    ),
+                                  ],
                                 ),
-                                const SizedBox(width: 8),
-                                _FeatureBadge(
-                                  icon: Icons.verified,
-                                  theme: theme,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.check_circle_rounded,
+                                      size: 14,
+                                      color: Colors.white,
+                                    ),
+                                    const SizedBox(width: 5),
+                                    Text(
+                                      l10n.active,
+                                      style: theme.textTheme.labelSmall?.copyWith(
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 11,
+                                        color: Colors.white,
+                                        letterSpacing: 1.2,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      // Arrow with gradient
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              theme.colorScheme.primary,
-                              theme.colorScheme.secondary,
+                              ),
                             ],
                           ),
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: theme.colorScheme.primary.withOpacity(0.3),
-                              blurRadius: 12,
-                              spreadRadius: 1,
-                            ),
-                          ],
-                        ),
-                        child: Icon(
-                          Icons.arrow_forward_rounded,
-                          size: 20,
-                          color: theme.colorScheme.onPrimary,
-                        ),
+                        ],
                       ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                // Description
+                Text(
+                  l10n.premiumAccessDescription,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    fontSize: 15,
+                    height: 1.6,
+                    color: theme.colorScheme.onPrimaryContainer.withOpacity(0.9),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                // Features row with improved design
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: [
+                    _PremiumFeatureChip(
+                      icon: Icons.all_inclusive_rounded,
+                      label: l10n.unlimited,
+                      theme: theme,
+                    ),
+                    _PremiumFeatureChip(
+                      icon: Icons.block_rounded,
+                      label: l10n.adFree,
+                      theme: theme,
+                    ),
+                    _PremiumFeatureChip(
+                      icon: Icons.verified_rounded,
+                      label: l10n.priority,
+                      theme: theme,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          );
+        }
+
+        // Premium olmayan kullanıcı için "Premium Ol" butonu
+        return AnimatedBuilder(
+          animation: _animationController,
+          builder: (context, child) {
+            return Transform.scale(
+              scale: _scaleAnimation.value,
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      theme.colorScheme.primaryContainer,
+                      theme.colorScheme.secondaryContainer,
+                      theme.colorScheme.tertiaryContainer,
                     ],
+                  ),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: theme.colorScheme.primary.withOpacity(0.2),
+                    width: 2,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: theme.colorScheme.primary.withOpacity(
+                        _glowAnimation.value,
+                      ),
+                      blurRadius: 24,
+                      spreadRadius: 2,
+                      offset: const Offset(0, 8),
+                    ),
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 16,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => SettingsPage.showPurchaseDialog(context),
+                    borderRadius: BorderRadius.circular(24),
+                    child: Container(
+                      padding: const EdgeInsets.all(24),
+                      child: Row(
+                        children: [
+                          // Animated Icon Container
+                          Container(
+                            width: 64,
+                            height: 64,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  theme.colorScheme.primary,
+                                  theme.colorScheme.primary.withOpacity(0.7),
+                                  theme.colorScheme.secondary,
+                                ],
+                              ),
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: theme.colorScheme.primary.withOpacity(0.5),
+                                  blurRadius: 20,
+                                  spreadRadius: 2,
+                                ),
+                              ],
+                            ),
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                // Glow effect
+                                Container(
+                                  width: 64,
+                                  height: 64,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    gradient: RadialGradient(
+                                      colors: [
+                                        theme.colorScheme.primary.withOpacity(
+                                          _glowAnimation.value,
+                                        ),
+                                        Colors.transparent,
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                // Icon
+                                Icon(
+                                  Icons.all_inclusive_rounded,
+                                  color: theme.colorScheme.onPrimary,
+                                  size: 32,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 20),
+                          // Content
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Row(
+                                  children: [
+                                    Text(
+                                      l10n.goPremium,
+                                      style: theme.textTheme.headlineSmall
+                                          ?.copyWith(
+                                        fontWeight: FontWeight.w900,
+                                        fontSize: 22,
+                                        color: theme.colorScheme.onSurface,
+                                        letterSpacing: -0.8,
+                                        height: 1.2,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          colors: [
+                                            theme.colorScheme.primary,
+                                            theme.colorScheme.secondary,
+                                          ],
+                                        ),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Text(
+                                        'PRO',
+                                        style: theme.textTheme.labelSmall?.copyWith(
+                                          fontWeight: FontWeight.w800,
+                                          fontSize: 10,
+                                          color: theme.colorScheme.onPrimary,
+                                          letterSpacing: 1,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  l10n.premiumDescription,
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    fontSize: 14,
+                                    color: theme.colorScheme.onSurface.withOpacity(
+                                      0.75,
+                                    ),
+                                    height: 1.4,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 12),
+                                // Features preview
+                                Row(
+                                  children: [
+                                    _FeatureBadge(
+                                      icon: Icons.all_inclusive,
+                                      theme: theme,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    _FeatureBadge(icon: Icons.block, theme: theme),
+                                    const SizedBox(width: 8),
+                                    _FeatureBadge(
+                                      icon: Icons.verified,
+                                      theme: theme,
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          // Arrow with gradient
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  theme.colorScheme.primary,
+                                  theme.colorScheme.secondary,
+                                ],
+                              ),
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: theme.colorScheme.primary.withOpacity(0.3),
+                                  blurRadius: 12,
+                                  spreadRadius: 1,
+                                ),
+                              ],
+                            ),
+                            child: Icon(
+                              Icons.arrow_forward_rounded,
+                              size: 20,
+                              color: theme.colorScheme.onPrimary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               ),
-            ),
-          ),
+            );
+          },
         );
       },
     );
@@ -642,52 +631,77 @@ class _FeatureBadge extends StatelessWidget {
   }
 }
 
-class _PurchaseFeatureItem extends StatelessWidget {
-  const _PurchaseFeatureItem({required this.icon, required this.text});
+class _PremiumFeatureChip extends StatelessWidget {
+  const _PremiumFeatureChip({
+    required this.icon,
+    required this.label,
+    required this.theme,
+  });
 
   final IconData icon;
-  final String text;
+  final String label;
+  final ThemeData theme;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Row(
-      children: [
-        Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            color: theme.colorScheme.primary.withOpacity(0.15),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            icon,
-            size: 20,
-            color: theme.colorScheme.primary,
-          ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            theme.colorScheme.onPrimaryContainer.withOpacity(0.18),
+            theme.colorScheme.onPrimaryContainer.withOpacity(0.12),
+          ],
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            text,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-              fontSize: 14,
-              color: theme.colorScheme.onSurface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: theme.colorScheme.onPrimaryContainer.withOpacity(0.25),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: theme.colorScheme.primary.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+            spreadRadius: 0,
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.onPrimaryContainer.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(8),
             ),
-            overflow: TextOverflow.ellipsis,
+            child: Icon(
+              icon,
+              size: 16,
+              color: theme.colorScheme.onPrimaryContainer,
+            ),
           ),
-        ),
-      ],
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: theme.textTheme.labelMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+              fontSize: 12,
+              color: theme.colorScheme.onPrimaryContainer,
+              letterSpacing: 0.3,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
 
 class _SettingsSection extends StatelessWidget {
-  const _SettingsSection({
-    required this.title,
-    required this.children,
-  });
+  const _SettingsSection({required this.title, required this.children});
 
   final String title;
   final List<Widget> children;
@@ -728,9 +742,7 @@ class _SettingsSection extends StatelessWidget {
               ),
             ],
           ),
-          child: Column(
-            children: children,
-          ),
+          child: Column(children: children),
         ),
       ],
     );
@@ -867,10 +879,7 @@ class _LocaleOption extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Center(
-                  child: Text(
-                    flag,
-                    style: const TextStyle(fontSize: 24),
-                  ),
+                  child: Text(flag, style: const TextStyle(fontSize: 24)),
                 ),
               ),
               const SizedBox(width: 14),
@@ -909,4 +918,3 @@ class _LocaleOption extends StatelessWidget {
     );
   }
 }
-

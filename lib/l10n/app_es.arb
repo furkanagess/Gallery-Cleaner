@@ -40,7 +40,14 @@
     "description": "Daily delete limit message"
   },
   "historyAndQueue": "Estadísticas",
-  "noHistoryYet": "Aún no hay historial.",
+  "noHistoryYet": "Aún No Hay Estadísticas",
+  "@noHistoryYet": {
+    "description": "Title when there is no history"
+  },
+  "noHistoryYetDescription": "Comienza a revisar y organizar tus fotos para ver tu actividad y estadísticas aquí.",
+  "@noHistoryYetDescription": {
+    "description": "Description when there is no history"
+  },
   "keep": "MANTENER",
   "delete": "ELIMINAR",
   "move": "MOVER",
@@ -105,6 +112,66 @@
   "@earnDeletionRights": {
     "description": "Text showing deletion rights earned from watching ad"
   },
+  "watchAdAndEarnDeletionRights": "+20 Eliminaciones",
+  "@watchAdAndEarnDeletionRights": {
+    "description": "Button text to watch ad and earn deletion rights"
+  },
+  "galleryPermissionDescription": "Necesitamos acceso a tus fotos y videos para realizar operaciones de limpieza de galería.",
+  "@galleryPermissionDescription": {
+    "description": "Description for gallery permission request"
+  },
+  "quickCleanupTitle": "Limpieza Rápida",
+  "@quickCleanupTitle": {
+    "description": "Quick cleanup feature title"
+  },
+  "quickCleanupDescription": "Revisa rápidamente tus fotos",
+  "@quickCleanupDescription": {
+    "description": "Quick cleanup feature description"
+  },
+  "organizeTitle": "Organizar",
+  "@organizeTitle": {
+    "description": "Organize feature title"
+  },
+  "organizeDescription": "Mueve y organiza en tus álbumes",
+  "@organizeDescription": {
+    "description": "Organize feature description"
+  },
+  "safeDeleteTitle": "Eliminación Segura",
+  "@safeDeleteTitle": {
+    "description": "Safe delete feature title"
+  },
+  "safeDeleteDescription": "Limpia fotos innecesarias",
+  "@safeDeleteDescription": {
+    "description": "Safe delete feature description"
+  },
+  "increaseDeletionRights": "Aumentar Derechos de Eliminación",
+  "@increaseDeletionRights": {
+    "description": "Title for increasing deletion rights dialog"
+  },
+  "increaseScanRights": "Aumentar Derechos de Escaneo",
+  "@increaseScanRights": {
+    "description": "Title for increasing scan rights dialog"
+  },
+  "earnDeleteRights": "+{amount} Eliminaciones",
+  "@earnDeleteRights": {
+    "description": "Text showing deletion rights earned from watching ad with amount",
+    "placeholders": {
+      "amount": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "earnScanRights": "+{amount} Escaneos",
+  "@earnScanRights": {
+    "description": "Text showing scan rights earned from watching ad with amount",
+    "placeholders": {
+      "amount": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
   "adNotReady": "El anuncio aún no está listo. Por favor, inténtalo de nuevo en unos segundos.",
   "@adNotReady": {
     "description": "Message when ad is not ready"
@@ -120,6 +187,10 @@
   "premiumTitle": "Hazte Premium",
   "@premiumTitle": {
     "description": "Premium dialog title"
+  },
+  "unlockPremiumFeatures": "Desbloquea Funciones Premium",
+  "@unlockPremiumFeatures": {
+    "description": "Title for premium paywall dialog"
   },
   "premiumDescription": "¡Obtén derechos de eliminación ilimitados y acceso a todas las funciones con la membresía Premium!",
   "@premiumDescription": {
@@ -153,6 +224,22 @@
   "@buyUnlimitedRights": {
     "description": "Button text to buy unlimited deletion rights"
   },
+  "buyUnlimitedBlurRights": "Comprar Blur Ilimitado",
+  "@buyUnlimitedBlurRights": {
+    "description": "Button text to buy unlimited blur scan rights"
+  },
+  "buyUnlimitedDuplicateRights": "Comprar Duplicados Ilimitados",
+  "@buyUnlimitedDuplicateRights": {
+    "description": "Button text to buy unlimited duplicate scan rights"
+  },
+  "unlimitedBlurScans": "Escaneos de Blur Ilimitados • Acceso de por Vida",
+  "@unlimitedBlurScans": {
+    "description": "Unlimited blur scans feature text"
+  },
+  "unlimitedDuplicateScans": "Escaneos de Duplicados Ilimitados • Acceso de por Vida",
+  "@unlimitedDuplicateScans": {
+    "description": "Unlimited duplicate scans feature text"
+  },
   "oneTimePayment": "Pago Único",
   "@oneTimePayment": {
     "description": "One time payment label"
@@ -172,6 +259,523 @@
   "purchaseNow": "Comprar Ahora",
   "@purchaseNow": {
     "description": "Purchase now button text"
+  },
+  "limitedTimeOffer": "Tiempo Limitado",
+  "@limitedTimeOffer": {
+    "description": "Limited time offer label"
+  },
+  "discount25": "25% Descuento",
+  "@discount25": {
+    "description": "25% discount label"
+  },
+  "originalPrice": "Precio Original",
+  "@originalPrice": {
+    "description": "Original price label"
+  },
+  "saveNow": "Ahorra Ahora",
+  "@saveNow": {
+    "description": "Save now text"
+  },
+  "bestValue": "Mejor Valor",
+  "@bestValue": {
+    "description": "Best value badge"
+  },
+  "purchaseSuccessful": "¡Compra exitosa! Ahora tienes acceso a las funciones premium.",
+  "@purchaseSuccessful": {
+    "description": "Message when purchase is successful"
+  },
+  "lifetimeAccessMessage": "¡Ahora tienes acceso de por vida a estos beneficios!",
+  "@lifetimeAccessMessage": {
+    "description": "Message shown when user becomes premium - lifetime access confirmation"
+  },
+  "youArePremium": "Eres Premium",
+  "@youArePremium": {
+    "description": "Title shown when user is premium"
+  },
+  "active": "ACTIVO",
+  "@active": {
+    "description": "Active status badge text"
+  },
+  "premiumAccessDescription": "¡Tienes acceso a todas las funciones premium. Eliminación ilimitada, escaneo y más!",
+  "@premiumAccessDescription": {
+    "description": "Description text for premium users explaining their access"
+  },
+  "unlimited": "Ilimitado",
+  "@unlimited": {
+    "description": "Short label for unlimited feature"
+  },
+  "adFree": "Sin anuncios",
+  "@adFree": {
+    "description": "Short label for ad-free feature"
+  },
+  "priority": "Prioritario",
+  "@priority": {
+    "description": "Short label for priority support feature"
+  },
+  "storeNotAvailable": "La tienda no está disponible",
+  "@storeNotAvailable": {
+    "description": "Message when store is not available"
+  },
+  "purchaseFailed": "La compra falló. Por favor, inténtalo de nuevo.",
+  "@purchaseFailed": {
+    "description": "Message when purchase fails"
+  },
+  "failedToInitiatePurchase": "No se pudo iniciar la compra",
+  "@failedToInitiatePurchase": {
+    "description": "Message when purchase initiation fails"
+  },
+  "purchaseError": "Error de compra",
+  "@purchaseError": {
+    "description": "Message when purchase error occurs"
+  },
+  "purchasesRestoredSuccessfully": "¡Compras restauradas exitosamente!",
+  "@purchasesRestoredSuccessfully": {
+    "description": "Message when purchases are restored successfully"
+  },
+  "noPreviousPurchases": "No se encontraron compras anteriores para restaurar.",
+  "@noPreviousPurchases": {
+    "description": "Message when no previous purchases are found"
+  },
+  "restoreError": "Error de restauración",
+  "@restoreError": {
+    "description": "Message when restore error occurs"
+  },
+  "restoring": "Restaurando...",
+  "@restoring": {
+    "description": "Message when restoring purchases"
+  },
+  "restorePurchases": "Restaurar Compras",
+  "@restorePurchases": {
+    "description": "Button text to restore purchases"
+  },
+  "noDeleteRightsLeft": "Sin Derechos de Eliminación",
+  "@noDeleteRightsLeft": {
+    "description": "Title when deletion rights are exhausted"
+  },
+  "noDeleteRightsLeftMessage": "No tienes derechos de eliminación. Obtén derechos de eliminación ilimitados para continuar limpiando tu galería.",
+  "@noDeleteRightsLeftMessage": {
+    "description": "Message when deletion rights are exhausted"
+  },
+  "galleryStatsTitle": "Estadísticas de Galería",
+  "@galleryStatsTitle": {
+    "description": "Gallery statistics page title"
+  },
+  "stop": "Detener",
+  "@stop": {
+    "description": "Stop button text"
+  },
+  "spaceSaved": "Espacio Ahorrado",
+  "@spaceSaved": {
+    "description": "Space saved label"
+  },
+  "lastAnalysis": "Último análisis:",
+  "@lastAnalysis": {
+    "description": "Last analysis label"
+  },
+  "previousAnalysis": "Análisis anterior:",
+  "@previousAnalysis": {
+    "description": "Previous analysis label"
+  },
+  "mediaLabel": "Medios",
+  "@mediaLabel": {
+    "description": "Media label for change chip"
+  },
+  "sizeLabel": "Tamaño",
+  "@sizeLabel": {
+    "description": "Size label for change chip"
+  },
+  "albumDetails": "Detalles del Álbum",
+  "@albumDetails": {
+    "description": "Album details section title"
+  },
+  "mediaUnit": "medios",
+  "@mediaUnit": {
+    "description": "Media unit text (singular/plural)"
+  },
+  "reAnalyze": "Re-analizar",
+  "@reAnalyze": {
+    "description": "Re-analyze button text"
+  },
+  "progressFormat": "{albums} álbumes • {media} medios",
+  "@progressFormat": {
+    "description": "Progress text format showing albums and media count",
+    "placeholders": {
+      "albums": {
+        "type": "String"
+      },
+      "media": {
+        "type": "int"
+      }
+    }
+  },
+  "errorMessage": "Error: {error}",
+  "@errorMessage": {
+    "description": "Error message with error text",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteOperationFailed": "La operación de eliminación falló. Por favor, inténtalo de nuevo.",
+  "@deleteOperationFailed": {
+    "description": "Message shown when delete operation fails"
+  },
+  "blurPhotosTitle": "Fotos Borrosas",
+  "@blurPhotosTitle": {
+    "description": "Blur photos page title"
+  },
+  "blurDetectionTitle": "Detección de Desenfoque y Pixelación",
+  "@blurDetectionTitle": {
+    "description": "Blur detection page title"
+  },
+  "blurPhotoDetection": "Detección de Fotos Borrosas",
+  "@blurPhotoDetection": {
+    "description": "Blur photo detection title"
+  },
+  "blurDetectionDescription": "Detecta fotos borrosas y pixeladas en los álbumes seleccionados",
+  "@blurDetectionDescription": {
+    "description": "Blur detection description"
+  },
+  "sensitivity": "Sensibilidad",
+  "@sensitivity": {
+    "description": "Sensitivity label"
+  },
+  "thresholdLabel": "Umbral: {value}",
+  "@thresholdLabel": {
+    "description": "Threshold label with value",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "thresholdDescription": "Valor bajo = Más detección de desenfoque\nValor alto = Solo fotos muy borrosas",
+  "@thresholdDescription": {
+    "description": "Threshold description"
+  },
+  "sensitivityLow": "Baja",
+  "@sensitivityLow": {
+    "description": "Low sensitivity label"
+  },
+  "sensitivityMedium": "Media",
+  "@sensitivityMedium": {
+    "description": "Medium sensitivity label"
+  },
+  "sensitivityHigh": "Alta",
+  "@sensitivityHigh": {
+    "description": "High sensitivity label"
+  },
+  "sensitivityDescription": "El nivel de sensibilidad determina cuántas fotos borrosas se detectan. Baja sensibilidad detecta más fotos, alta sensibilidad solo encuentra fotos muy borrosas.",
+  "@sensitivityDescription": {
+    "description": "Sensitivity description"
+  },
+  "sensitivityLevelsDescription": "• Baja: Detecta fotos ligeramente borrosas también (más resultados)\n• Media: Detecta fotos moderadamente borrosas (equilibrado)\n• Alta: Solo detecta fotos muy borrosas (menos resultados)",
+  "@sensitivityLevelsDescription": {
+    "description": "Detailed description of sensitivity levels"
+  },
+  "currentSensitivity": "Sensibilidad Actual",
+  "@currentSensitivity": {
+    "description": "Current sensitivity label"
+  },
+  "noScanRightsLeft": "Sin Derechos de Escaneo",
+  "@noScanRightsLeft": {
+    "description": "No scan rights left message"
+  },
+  "albumSelection": "Selección de Álbum",
+  "@albumSelection": {
+    "description": "Album selection label"
+  },
+  "startScan": "Iniciar Escaneo",
+  "@startScan": {
+    "description": "Start scan button text"
+  },
+  "scanningBlurPhotos": "Escaneando fotos borrosas y pixeladas...",
+  "@scanningBlurPhotos": {
+    "description": "Scanning blur photos message"
+  },
+  "premiumScan": "Escaneo Premium",
+  "@premiumScan": {
+    "description": "Premium scan label"
+  },
+  "remainingScanRights": "Escaneo Restante",
+  "@remainingScanRights": {
+    "description": "Remaining scan rights label"
+  },
+  "scanLimit": "Límite de Escaneo",
+  "@scanLimit": {
+    "description": "Scan limit label"
+  },
+  "scanLimitLow": "¡Tu límite de escaneo se está agotando! Actualiza a Premium.",
+  "@scanLimitLow": {
+    "description": "Scan limit low warning message"
+  },
+  "watchAdToGetScanLimit": "Ver Anuncio +{amount} Límite de Escaneo",
+  "@watchAdToGetScanLimit": {
+    "description": "Watch ad to get scan limit button text",
+    "placeholders": {
+      "amount": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "adNotReady": "Cargando Anuncio...",
+  "@adNotReady": {
+    "description": "Ad not ready message"
+  },
+  "loading": "Cargando...",
+  "@loading": {
+    "description": "Loading text"
+  },
+  "photoUnit": "fotos",
+  "@photoUnit": {
+    "description": "Photo unit text"
+  },
+  "selectAlbumsAndScan": "Selecciona álbumes y escanea",
+  "@selectAlbumsAndScan": {
+    "description": "Select albums and scan message"
+  },
+  "noDuplicateGroupsFound": "No se encontraron grupos duplicados",
+  "@noDuplicateGroupsFound": {
+    "description": "No duplicate groups found message"
+  },
+  "stateInfo": "{albums} álbumes, {groups} grupos",
+  "@stateInfo": {
+    "description": "State information with albums and groups count",
+    "placeholders": {
+      "albums": {
+        "type": "int"
+      },
+      "groups": {
+        "type": "int"
+      }
+    }
+  },
+  "blurDetectionDescriptionFromAppBar": "Detección de fotos borrosas y pixeladas con inteligencia artificial. Limpia tu almacenamiento y mantén solo imágenes de calidad.",
+  "@blurDetectionDescriptionFromAppBar": {
+    "description": "Blur detection description from app bar"
+  },
+  "duplicateDetectionDescriptionFromAppBar": "Detección de fotos duplicadas con inteligencia artificial. Limpia copias innecesarias y optimiza tu espacio de almacenamiento.",
+  "@duplicateDetectionDescriptionFromAppBar": {
+    "description": "Duplicate detection description from app bar"
+  },
+  "aiPowered": "Con Inteligencia Artificial",
+  "@aiPowered": {
+    "description": "AI powered label"
+  },
+  "listView": "Vista de lista",
+  "@listView": {
+    "description": "List view tooltip"
+  },
+  "gridView": "Vista de cuadrícula",
+  "@gridView": {
+    "description": "Grid view tooltip"
+  },
+  "unknown": "Desconocido",
+  "@unknown": {
+    "description": "Unknown album name"
+  },
+  "blurScoreLabel": "Desenfoque: {score}",
+  "@blurScoreLabel": {
+    "description": "Blur score label",
+    "placeholders": {
+      "score": {
+        "type": "String"
+      }
+    }
+  },
+  "pixelationScoreLabel": "Pixelación: {score}",
+  "@pixelationScoreLabel": {
+    "description": "Pixelation score label",
+    "placeholders": {
+      "score": {
+        "type": "String"
+      }
+    }
+  },
+  "deletePhoto": "Eliminar Foto",
+  "@deletePhoto": {
+    "description": "Delete photo dialog title"
+  },
+  "deletePhotoMessage": "Esta {type} foto será eliminada.",
+  "@deletePhotoMessage": {
+    "description": "Delete photo confirmation message",
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
+  "close": "Cerrar",
+  "@close": {
+    "description": "Close button text"
+  },
+  "deleteDuplicatesMessage": "{count} fotos duplicadas serán eliminadas.",
+  "@deleteDuplicatesMessage": {
+    "description": "Delete duplicates confirmation message",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noResultsFound": "No se encontraron resultados",
+  "@noResultsFound": {
+    "description": "No results found message"
+  },
+  "group": "Grupo",
+  "@group": {
+    "description": "Group label"
+  },
+  "photo": "Foto",
+  "@photo": {
+    "description": "Photo label"
+  },
+  "blurry": "Borrosa",
+  "@blurry": {
+    "description": "Blurry photo type"
+  },
+  "pixelated": "Pixelada",
+  "@pixelated": {
+    "description": "Pixelated photo type"
+  },
+  "blurryAndPixelated": "Borrosa y Pixelada",
+  "@blurryAndPixelated": {
+    "description": "Blurry and pixelated photo type"
+  },
+  "sharp": "Nitida",
+  "@sharp": {
+    "description": "Sharp photo type"
+  },
+  "deleteAllDuplicates": "Eliminar Todos los Duplicados",
+  "@deleteAllDuplicates": {
+    "description": "Button to delete all duplicate photos"
+  },
+  "deleteAllDuplicatesMessage": "Se eliminarán {count} fotos duplicadas. ¿Estás seguro?",
+  "@deleteAllDuplicatesMessage": {
+    "description": "Message for deleting all duplicate photos",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "deleteAllBlurryPhotos": "Eliminar Todas las Fotos Borrosas",
+  "@deleteAllBlurryPhotos": {
+    "description": "Button to delete all blurry photos"
+  },
+  "deleteAllBlurryPhotosMessage": "Se eliminarán {count} fotos borrosas. ¿Estás seguro?",
+  "@deleteAllBlurryPhotosMessage": {
+    "description": "Message for deleting all blurry photos",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "startNewScan": "Iniciar Nuevo Escaneo",
+  "@startNewScan": {
+    "description": "Button to start a new scan"
+  },
+  "scanCompleted": "Escaneo Completado",
+  "@scanCompleted": {
+    "description": "Scan completed title"
+  },
+  "scanCompletedBlurMessage": "Se encontraron {count} fotos borrosas",
+  "@scanCompletedBlurMessage": {
+    "description": "Scan completed message for blur photos",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "scanCompletedDuplicateMessage": "Se encontraron {count} grupos duplicados",
+  "@scanCompletedDuplicateMessage": {
+    "description": "Scan completed message for duplicate photos",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noBlurryPhotosFound": "No se encontraron fotos borrosas o pixeladas en su galería.",
+  "@noBlurryPhotosFound": {
+    "description": "No blurry photos found message"
+  },
+  "noDuplicatePhotosFound": "No se encontraron fotos duplicadas en su galería.",
+  "@noDuplicatePhotosFound": {
+    "description": "No duplicate photos found message"
+  },
+  "scanningDuplicatePhotos": "Escaneando fotos duplicadas...",
+  "@scanningDuplicatePhotos": {
+    "description": "Scanning duplicate photos message"
+  },
+  "duplicatePhotoDetection": "Detección de Fotos Duplicadas",
+  "@duplicatePhotoDetection": {
+    "description": "Duplicate photo detection title"
+  },
+  "blurDetectionOnboardingTitle": "Detectar Fotos Borrosas",
+  "@blurDetectionOnboardingTitle": {
+    "description": "Onboarding page 4 title for blur detection"
+  },
+  "blurDetectionOnboardingDescription": "Detecta automáticamente fotos borrosas y pixeladas en tu galería. Puedes encontrar y eliminar estas fotos fácilmente.",
+  "@blurDetectionOnboardingDescription": {
+    "description": "Onboarding page 4 description for blur detection"
+  },
+  "duplicateDetectionOnboardingTitle": "Encontrar Fotos Duplicadas",
+  "@duplicateDetectionOnboardingTitle": {
+    "description": "Onboarding page 5 title for duplicate detection"
+  },
+  "duplicateDetectionOnboardingDescription": "Detecta fotos duplicadas en tu galería con algoritmo inteligente. Libera espacio limpiando copias innecesarias.",
+  "@duplicateDetectionOnboardingDescription": {
+    "description": "Onboarding page 5 description for duplicate detection"
+  },
+  "weNeedYourAccessTitle": "Necesitamos Tu\nAcceso",
+  "@weNeedYourAccessTitle": {
+    "description": "Permission request page title with line break"
+  },
+  "resetToStart": "Volver al Inicio",
+  "@resetToStart": {
+    "description": "Button text to reset gallery to start"
+  },
+  "swipeTab": "Deslizar",
+  "@swipeTab": {
+    "description": "Swipe tab name"
+  },
+  "blurTab": "Desenfoque",
+  "@blurTab": {
+    "description": "Blur tab name"
+  },
+  "duplicateTab": "Duplicado",
+  "@duplicateTab": {
+    "description": "Duplicate tab name"
+  },
+  "cleanupComplete": "¡Limpieza Completada!",
+  "@cleanupComplete": {
+    "description": "Title for cleanup complete dialog"
+  },
+  "cleanupCompleteMessage": "Todas las fotos seleccionadas han sido eliminadas exitosamente. Tu galería ahora está más limpia y ligera.",
+  "@cleanupCompleteMessage": {
+    "description": "Message for cleanup complete dialog"
+  },
+  "cleanupCompleteMessageWithCount": "{count} foto(s) han sido eliminadas exitosamente. Tu galería ahora está más limpia y ligera.",
+  "@cleanupCompleteMessageWithCount": {
+    "description": "Message for cleanup complete dialog with deleted count",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "done": "Hecho",
+  "@done": {
+    "description": "Done button text"
+  },
+  "viewGallery": "Ver Galería",
+  "@viewGallery": {
+    "description": "View gallery link text"
   }
 }
 

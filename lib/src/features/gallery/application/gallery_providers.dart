@@ -107,19 +107,64 @@ final galleryPagingControllerProvider =
   return controller;
 });
 
-/// Silme hakkı provider'ı
-final deleteLimitProvider = FutureProvider<int>((ref) async {
+class DeleteLimitController extends StateNotifier<AsyncValue<int>> {
+  DeleteLimitController()
+      : _prefs = PreferencesService(),
+        super(const AsyncValue.loading()) {
+    refresh();
+  }
+
+  final PreferencesService _prefs;
+
+  Future<int> refresh() async {
+    try {
+      final limit = await _prefs.getDeleteLimit();
+      state = AsyncValue.data(limit);
+      return limit;
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+      rethrow;
+    }
+  }
+
+  Future<int> currentLimit() async {
+    final value = state.valueOrNull;
+    if (value != null) return value;
+    return await refresh();
+  }
+
+  Future<int> decrease(int amount) async {
+    final newLimit = await _prefs.decreaseDeleteLimit(amount);
+    state = AsyncValue.data(newLimit);
+    return newLimit;
+  }
+
+  Future<int> increase(int amount) async {
+    final newLimit = await _prefs.increaseDeleteLimit(amount);
+    state = AsyncValue.data(newLimit);
+    return newLimit;
+  }
+
+  Future<void> set(int value) async {
+    await _prefs.setDeleteLimit(value);
+    state = AsyncValue.data(value);
+  }
+}
+
+/// Silme hakkı provider'ı (StateNotifier tabanlı)
+final deleteLimitProvider =
+    StateNotifierProvider<DeleteLimitController, AsyncValue<int>>(
+  (ref) => DeleteLimitController(),
+);
+
+/// Premium durumu provider'ı
+final isPremiumProvider = FutureProvider<bool>((ref) async {
   final prefsService = PreferencesService();
-  return await prefsService.getDeleteLimit();
+  return await prefsService.isPremium();
 });
 
-/// Silme hakkını azalt
-final decreaseDeleteLimitProvider = FutureProvider.family<int, int>((ref, amount) async {
+/// Tarama limiti provider'ı (Premium olmayan kullanıcılar için 1000)
+final scanLimitProvider = FutureProvider<int>((ref) async {
   final prefsService = PreferencesService();
-  final newLimit = await prefsService.decreaseDeleteLimit(amount);
-  // Provider'ı yeniden yükle
-  ref.invalidate(deleteLimitProvider);
-  return newLimit;
+  return await prefsService.getScanLimit();
 });
-
-

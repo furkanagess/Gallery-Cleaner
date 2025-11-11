@@ -124,7 +124,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get historyAndQueue => 'Statistics';
 
   @override
-  String get noHistoryYet => 'No history yet.';
+  String get noHistoryYet => 'No Statistics Yet';
+
+  @override
+  String get noHistoryYetDescription =>
+      'Start reviewing and organizing your photos to see your activity and statistics here.';
 
   @override
   String get keep => 'KEEP';
@@ -308,8 +312,56 @@ class AppLocalizationsEn extends AppLocalizations {
   String get earnDeletionRights => '+20 Deletions';
 
   @override
-  String get adNotReady =>
-      'Ad is not ready yet. Please try again in a few seconds.';
+  String get watchAdAndEarnDeletionRights => '+20 Deletions';
+
+  @override
+  String get galleryPermissionDescription =>
+      'We need access to your photos and videos to perform gallery cleaning operations.';
+
+  @override
+  String get quickCleanupTitle => 'Quick Cleanup';
+
+  @override
+  String get quickCleanupDescription => 'Quickly review your photos';
+
+  @override
+  String get organizeTitle => 'Organize';
+
+  @override
+  String get organizeDescription => 'Move and organize to your albums';
+
+  @override
+  String get safeDeleteTitle => 'Safe Delete';
+
+  @override
+  String get safeDeleteDescription => 'Clean up unnecessary photos';
+
+  @override
+  String get increaseDeletionRights => 'Increase Deletion Rights';
+
+  @override
+  String get increaseScanRights => 'Increase Scan Rights';
+
+  @override
+  String earnDeleteRights(int amount) {
+    final intl.NumberFormat amountNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String amountString = amountNumberFormat.format(amount);
+
+    return '+$amountString Deletions';
+  }
+
+  @override
+  String earnScanRights(int amount) {
+    final intl.NumberFormat amountNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String amountString = amountNumberFormat.format(amount);
+
+    return '+$amountString Scans';
+  }
+
+  @override
+  String get adNotReady => 'Ad Loading...';
 
   @override
   String get earnedDeletionRights => 'You earned 20 deletion rights!';
@@ -319,6 +371,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get premiumTitle => 'Go Premium';
+
+  @override
+  String get unlockPremiumFeatures => 'Unlock Premium Features';
 
   @override
   String get premiumDescription =>
@@ -346,6 +401,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get buyUnlimitedRights => 'Buy Unlimited Deletion';
 
   @override
+  String get buyUnlimitedBlurRights => 'Buy Unlimited Blur';
+
+  @override
+  String get buyUnlimitedDuplicateRights => 'Buy Unlimited Duplicate';
+
+  @override
+  String get unlimitedBlurScans => 'Unlimited Blur Scans • Lifetime Access';
+
+  @override
+  String get unlimitedDuplicateScans =>
+      'Unlimited Duplicate Scans • Lifetime Access';
+
+  @override
   String get oneTimePayment => 'One-Time Payment';
 
   @override
@@ -356,4 +424,426 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get purchaseNow => 'Purchase Now';
+
+  @override
+  String get limitedTimeOffer => 'Limited Time';
+
+  @override
+  String get discount25 => '25% Off';
+
+  @override
+  String get originalPrice => 'Original Price';
+
+  @override
+  String get saveNow => 'Save Now';
+
+  @override
+  String get bestValue => 'Best Value';
+
+  @override
+  String get purchaseSuccessful =>
+      'Purchase successful! You now have access to premium features.';
+
+  @override
+  String get lifetimeAccessMessage =>
+      'You now have lifetime access to these benefits!';
+
+  @override
+  String get youArePremium => 'You are Premium';
+
+  @override
+  String get active => 'ACTIVE';
+
+  @override
+  String get premiumAccessDescription =>
+      'You have access to all premium features. Unlimited deletion, scanning, and more!';
+
+  @override
+  String get unlimited => 'Unlimited';
+
+  @override
+  String get adFree => 'Ad-free';
+
+  @override
+  String get priority => 'Priority';
+
+  @override
+  String get storeNotAvailable => 'Store is not available';
+
+  @override
+  String get purchaseFailed => 'Purchase failed. Please try again.';
+
+  @override
+  String get failedToInitiatePurchase => 'Failed to initiate purchase';
+
+  @override
+  String get purchaseError => 'Purchase error';
+
+  @override
+  String get purchasesRestoredSuccessfully =>
+      'Purchases restored successfully!';
+
+  @override
+  String get noPreviousPurchases => 'No previous purchases found to restore.';
+
+  @override
+  String get restoreError => 'Restore error';
+
+  @override
+  String get restoring => 'Restoring...';
+
+  @override
+  String get restorePurchases => 'Restore Purchases';
+
+  @override
+  String get duplicatePhotos => 'Duplicate Photos';
+
+  @override
+  String get scanForDuplicates => 'Scan for Duplicates';
+
+  @override
+  String get scanningDuplicates => 'Scanning for duplicates...';
+
+  @override
+  String get noDuplicatesFound => 'No duplicate photos found';
+
+  @override
+  String duplicatesFound(int count) {
+    return '$count duplicate groups found';
+  }
+
+  @override
+  String get totalDuplicates => 'Total Duplicates';
+
+  @override
+  String get spaceToSave => 'Space to Save';
+
+  @override
+  String get deleteDuplicates => 'Delete Duplicates';
+
+  @override
+  String get selectAlbumsToScan => 'Select Albums to Scan';
+
+  @override
+  String get scanSelectedAlbums => 'Scan Selected Albums';
+
+  @override
+  String get deleteAllDuplicates => 'Delete All Duplicates';
+
+  @override
+  String deleteAllDuplicatesMessage(int count) {
+    return '$count duplicate photos will be deleted. Are you sure?';
+  }
+
+  @override
+  String get deleteAllBlurryPhotos => 'Delete All Blurry Photos';
+
+  @override
+  String deleteAllBlurryPhotosMessage(int count) {
+    return '$count blurry photos will be deleted. Are you sure?';
+  }
+
+  @override
+  String get startNewScan => 'Start New Scan';
+
+  @override
+  String get scanCompleted => 'Scan Completed';
+
+  @override
+  String scanCompletedBlurMessage(int count) {
+    return '$count blurry photos found';
+  }
+
+  @override
+  String scanCompletedDuplicateMessage(int count) {
+    return '$count duplicate groups found';
+  }
+
+  @override
+  String get noBlurryPhotosFound =>
+      'No blurry or pixelated photos found in your gallery.';
+
+  @override
+  String get noDuplicatePhotosFound =>
+      'No duplicate photos found in your gallery.';
+
+  @override
+  String get duplicateGroup => 'Duplicate Group';
+
+  @override
+  String photosInGroup(int count) {
+    return '$count photos';
+  }
+
+  @override
+  String get keepOldest => 'Keep Oldest';
+
+  @override
+  String scanningAlbum(String album) {
+    return 'Scanning $album...';
+  }
+
+  @override
+  String get noDeleteRightsLeft => 'No Deletion Rights Left';
+
+  @override
+  String get noDeleteRightsLeftMessage =>
+      'You have no deletion rights left. Get unlimited deletion rights to continue cleaning your gallery.';
+
+  @override
+  String get galleryStatsTitle => 'Gallery Statistics';
+
+  @override
+  String get stop => 'Stop';
+
+  @override
+  String get spaceSaved => 'Space Saved';
+
+  @override
+  String get lastAnalysis => 'Last analysis:';
+
+  @override
+  String get previousAnalysis => 'Previous analysis:';
+
+  @override
+  String get mediaLabel => 'Media';
+
+  @override
+  String get sizeLabel => 'Size';
+
+  @override
+  String get albumDetails => 'Album Details';
+
+  @override
+  String get mediaUnit => 'media';
+
+  @override
+  String get reAnalyze => 'Re-analyze';
+
+  @override
+  String progressFormat(String albums, int media) {
+    return '$albums albums • $media media';
+  }
+
+  @override
+  String errorMessage(String error) {
+    return 'Error: $error';
+  }
+
+  @override
+  String get deleteOperationFailed =>
+      'Delete operation failed. Please try again.';
+
+  @override
+  String get blurPhotosTitle => 'Blurry Photos';
+
+  @override
+  String get blurDetectionTitle => 'Blur and Pixelation Detection';
+
+  @override
+  String get blurPhotoDetection => 'Blurry Photo Detection';
+
+  @override
+  String get blurDetectionDescription =>
+      'Detect blurry and pixelated photos in selected albums';
+
+  @override
+  String get sensitivity => 'Sensitivity';
+
+  @override
+  String thresholdLabel(String value) {
+    return 'Threshold: $value';
+  }
+
+  @override
+  String get thresholdDescription =>
+      'Low value = More blur detection\nHigh value = Only very blurry photos';
+
+  @override
+  String get sensitivityLow => 'Low';
+
+  @override
+  String get sensitivityMedium => 'Medium';
+
+  @override
+  String get sensitivityHigh => 'High';
+
+  @override
+  String get sensitivityDescription =>
+      'Sensitivity level determines how many blurry photos are detected. Low sensitivity detects more photos, high sensitivity only finds very blurry photos.';
+
+  @override
+  String get sensitivityLevelsDescription =>
+      '• Low: Detects slightly blurry photos as well (more results)\n• Medium: Detects moderately blurry photos (balanced)\n• High: Only detects very blurry photos (fewer results)';
+
+  @override
+  String get currentSensitivity => 'Current Sensitivity';
+
+  @override
+  String get noScanRightsLeft => 'No Scan Rights Left';
+
+  @override
+  String get albumSelection => 'Album Selection';
+
+  @override
+  String get startScan => 'Start Scan';
+
+  @override
+  String get scanningBlurPhotos => 'Scanning blurry and pixelated photos...';
+
+  @override
+  String get premiumScan => 'Premium Scan';
+
+  @override
+  String get remainingScanRights => 'Remaining Scan';
+
+  @override
+  String get scanLimit => 'Scan Limit';
+
+  @override
+  String get scanLimitLow =>
+      'Your scan limit is running low! Upgrade to Premium.';
+
+  @override
+  String watchAdToGetScanLimit(int amount) {
+    final intl.NumberFormat amountNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String amountString = amountNumberFormat.format(amount);
+
+    return 'Watch Ad +$amountString Scan Limit';
+  }
+
+  @override
+  String get photoUnit => 'photos';
+
+  @override
+  String get selectAlbumsAndScan => 'Select albums and scan';
+
+  @override
+  String get noDuplicateGroupsFound => 'No duplicate groups found';
+
+  @override
+  String stateInfo(int albums, int groups) {
+    return '$albums albums, $groups groups';
+  }
+
+  @override
+  String get blurDetectionDescriptionFromAppBar =>
+      'AI-powered blurry and pixelated photo detection. Clean up your storage and keep only quality images.';
+
+  @override
+  String get duplicateDetectionDescriptionFromAppBar =>
+      'AI-powered duplicate photo detection. Clean up unnecessary copies and optimize your storage space.';
+
+  @override
+  String get aiPowered => 'AI-Powered';
+
+  @override
+  String get listView => 'List view';
+
+  @override
+  String get gridView => 'Grid view';
+
+  @override
+  String get unknown => 'Unknown';
+
+  @override
+  String blurScoreLabel(String score) {
+    return 'Blur: $score';
+  }
+
+  @override
+  String pixelationScoreLabel(String score) {
+    return 'Pixel: $score';
+  }
+
+  @override
+  String get deletePhoto => 'Delete Photo';
+
+  @override
+  String deletePhotoMessage(String type) {
+    return 'This $type photo will be deleted.';
+  }
+
+  @override
+  String get close => 'Close';
+
+  @override
+  String deleteDuplicatesMessage(int count) {
+    return '$count duplicate photos will be deleted.';
+  }
+
+  @override
+  String get noResultsFound => 'No results found';
+
+  @override
+  String get group => 'Group';
+
+  @override
+  String get photo => 'Photo';
+
+  @override
+  String get blurry => 'Blurry';
+
+  @override
+  String get pixelated => 'Pixelated';
+
+  @override
+  String get blurryAndPixelated => 'Blurry and Pixelated';
+
+  @override
+  String get sharp => 'Sharp';
+
+  @override
+  String get scanningDuplicatePhotos => 'Scanning duplicate photos...';
+
+  @override
+  String get duplicatePhotoDetection => 'Duplicate Photo Detection';
+
+  @override
+  String get blurDetectionOnboardingTitle => 'Detect Blurry Photos';
+
+  @override
+  String get blurDetectionOnboardingDescription =>
+      'Automatically detect blurry and pixelated photos in your gallery. You can easily find and delete these photos.';
+
+  @override
+  String get duplicateDetectionOnboardingTitle => 'Find Duplicate Photos';
+
+  @override
+  String get duplicateDetectionOnboardingDescription =>
+      'Detect duplicate photos in your gallery with smart algorithm. Free up space by cleaning unnecessary copies.';
+
+  @override
+  String get weNeedYourAccessTitle => 'We Need Your\nAccess';
+
+  @override
+  String get resetToStart => 'Reset to Start';
+
+  @override
+  String get swipeTab => 'Swipe';
+
+  @override
+  String get blurTab => 'Blur';
+
+  @override
+  String get duplicateTab => 'Duplicate';
+
+  @override
+  String get cleanupComplete => 'Cleanup Complete!';
+
+  @override
+  String get cleanupCompleteMessage =>
+      'All selected photos have been successfully deleted. Your gallery is now cleaner and lighter.';
+
+  @override
+  String cleanupCompleteMessageWithCount(int count) {
+    return '$count photo(s) have been successfully deleted. Your gallery is now cleaner and lighter.';
+  }
+
+  @override
+  String get done => 'Done';
+
+  @override
+  String get viewGallery => 'View Gallery';
 }

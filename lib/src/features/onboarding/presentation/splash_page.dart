@@ -14,16 +14,16 @@ class SplashPage extends ConsumerStatefulWidget {
 }
 
 class _SplashPageState extends ConsumerState<SplashPage> {
-  @override
-  void initState() {
-    super.initState();
+  bool _isAnimationCompleted = false;
+
+  void _onAnimationComplete() {
+    if (!mounted || _isAnimationCompleted) return;
+    _isAnimationCompleted = true;
+    debugPrint('✅ [SplashPage] Lottie animasyonu tamamlandı, yönlendirme yapılıyor...');
     _navigateToNext();
   }
 
   Future<void> _navigateToNext() async {
-    // Minimum splash gösterim süresi (animasyonun tamamlanması için)
-    await Future.delayed(const Duration(seconds: 3));
-    
     if (!mounted) return;
     
     // Onboarding durumunu kontrol et
@@ -47,25 +47,15 @@ class _SplashPageState extends ConsumerState<SplashPage> {
     final permissionStatus = ref.read(permissionsControllerProvider);
     
     if (permissionStatus == GalleryPermissionStatus.authorized) {
-      // İzin verilmişse temizlemeye başlanıp başlanmadığını kontrol et
-      final cleaningStarted = await preferencesService.isCleaningStarted();
-      
-      if (!mounted) return;
-      
-      if (cleaningStarted) {
-        // Temizlemeye başlanmışsa direkt swipe page'e git
-        debugPrint('🚀 [SplashPage] Temizlemeye başlanmış, swipe page\'e yönlendiriliyor');
-        context.go('/swipe');
-      } else {
-        // Temizlemeye başlanmamışsa start clean page'e git
-        debugPrint('🚀 [SplashPage] Temizlemeye başlanmamış, start clean page\'e yönlendiriliyor');
-        context.go('/start');
-      }
+      // İzin verilmişse direkt swipe page'e git
+      debugPrint('🚀 [SplashPage] İzin verilmiş, swipe page\'e yönlendiriliyor');
+      context.go('/swipe');
     } else {
       // İzin verilmemişse permission page'e git
       context.go('/permission');
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -88,14 +78,29 @@ class _SplashPageState extends ConsumerState<SplashPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Lottie animasyonu
+              // Lottie animasyonu - bir kere çal ve bitince navigate et
               SizedBox(
                 width: 200,
                 height: 200,
                 child: Lottie.asset(
                   'assets/lottie/loading.json',
                   fit: BoxFit.contain,
-                  repeat: true,
+                  repeat: false, // Bir kere çal, tekrarlama
+                  onLoaded: (composition) {
+                    // Animasyon yüklendiğinde süreyi al ve çeyreğini bekle
+                    final fullDuration = composition.duration;
+                    final quarterDuration = Duration(
+                      milliseconds: fullDuration.inMilliseconds ~/ 4,
+                    );
+                    debugPrint('⏱️ [SplashPage] Lottie animasyonu yüklendi, tam süre: $fullDuration, çeyrek süre: $quarterDuration');
+                    
+                    // Animasyonun çeyreği tamamlanınca navigate et
+                    Future.delayed(quarterDuration, () {
+                      if (mounted && !_isAnimationCompleted) {
+                        _onAnimationComplete();
+                      }
+                    });
+                  },
                 ),
               ),
               const SizedBox(height: 32),

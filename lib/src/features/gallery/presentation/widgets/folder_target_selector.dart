@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photo_manager/photo_manager.dart' as pm;
+import 'package:lottie/lottie.dart';
 
 import '../../application/folder_targets_provider.dart';
 import '../../application/gallery_providers.dart';
@@ -52,9 +53,19 @@ class _FolderTargetSelectorSheetState extends ConsumerState<FolderTargetSelector
             ),
             const SizedBox(height: 12),
             albumsAsync.when(
-              loading: () => const Padding(
-                padding: EdgeInsets.all(24),
-                child: Center(child: CircularProgressIndicator()),
+              loading: () => Padding(
+                padding: const EdgeInsets.all(24),
+                child: Center(
+                  child: SizedBox(
+                    width: 100,
+                    height: 100,
+                    child: Lottie.asset(
+                      'assets/lottie/loading.json',
+                      fit: BoxFit.contain,
+                      repeat: true,
+                    ),
+                  ),
+                ),
               ),
               error: (e, _) => Padding(
                 padding: const EdgeInsets.all(24),

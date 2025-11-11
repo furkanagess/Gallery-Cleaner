@@ -1,10 +1,27 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../features/settings/application/theme_controller.dart';
 import '../models/gallery_stats.dart';
 
 class PreferencesService {
+  // Secure Storage instance (Keychain/Keystore)
+  static const FlutterSecureStorage _secureStorage = FlutterSecureStorage(
+    aOptions: AndroidOptions(
+      encryptedSharedPreferences: true,
+      // Android'de backup'a dahil edilir (Google backup açıksa)
+      resetOnError: false,
+    ),
+    iOptions: IOSOptions(
+      accessibility: KeychainAccessibility.first_unlock_this_device,
+      // iOS'ta iCloud Keychain sync açıksa veriler korunur
+    ),
+  );
+
+  // Migration flag key
+  static const String _migrationCompletedKey = 'secure_storage_migration_completed';
+
   static const String _onboardingCompletedKey = 'onboarding_completed';
   static const String _themeModeKey = 'theme_mode';
   static const String _localeKey = 'locale';
@@ -12,7 +29,130 @@ class PreferencesService {
   static const String _cleaningStartedKey = 'cleaning_started';
   static const String _deleteLimitKey = 'delete_limit';
   static const String _deleteLimitLastResetKey = 'delete_limit_last_reset';
+  static const String _isPremiumKey = 'is_premium';
+  static const String _previousGalleryStatsKey = 'previous_gallery_stats';
+  static const String _firstAnalysisCompletedKey = 'first_analysis_completed';
+  static const String _scanLimitKey = 'scan_limit';
+  static const String _scanLimitLastResetKey = 'scan_limit_last_reset';
+  static const String _swipeIndexKey = 'swipe_index';
+  static const String _swipeAlbumIdKey = 'swipe_album_id';
   static const int _defaultDeleteLimit = 100;
+  static const int _defaultScanLimit = 1000;
+
+  /// Secure storage'dan integer değer oku
+  Future<int?> _getSecureInt(String key) async {
+    try {
+      final value = await _secureStorage.read(key: key);
+      if (value == null) return null;
+      return int.tryParse(value);
+    } catch (e) {
+      debugPrint('❌ [PreferencesService] Secure storage okuma hatası ($key): $e');
+      return null;
+    }
+  }
+
+  /// Secure storage'a integer değer yaz
+  Future<void> _setSecureInt(String key, int value) async {
+    try {
+      await _secureStorage.write(key: key, value: value.toString());
+      debugPrint('💾 [PreferencesService] Secure storage\'a kaydedildi ($key): $value');
+    } catch (e) {
+      debugPrint('❌ [PreferencesService] Secure storage yazma hatası ($key): $e');
+    }
+  }
+
+  /// Secure storage'dan string değer oku
+  Future<String?> _getSecureString(String key) async {
+    try {
+      return await _secureStorage.read(key: key);
+    } catch (e) {
+      debugPrint('❌ [PreferencesService] Secure storage okuma hatası ($key): $e');
+      return null;
+    }
+  }
+
+  /// Secure storage'a string değer yaz
+  Future<void> _setSecureString(String key, String value) async {
+    try {
+      await _secureStorage.write(key: key, value: value);
+      debugPrint('💾 [PreferencesService] Secure storage\'a kaydedildi ($key): $value');
+    } catch (e) {
+      debugPrint('❌ [PreferencesService] Secure storage yazma hatası ($key): $e');
+    }
+  }
+
+  /// Secure storage'dan bool değer oku
+  Future<bool?> _getSecureBool(String key) async {
+    try {
+      final value = await _secureStorage.read(key: key);
+      if (value == null) return null;
+      return value == 'true';
+    } catch (e) {
+      debugPrint('❌ [PreferencesService] Secure storage okuma hatası ($key): $e');
+      return null;
+    }
+  }
+
+  /// Secure storage'a bool değer yaz
+  Future<void> _setSecureBool(String key, bool value) async {
+    try {
+      await _secureStorage.write(key: key, value: value.toString());
+      debugPrint('💾 [PreferencesService] Secure storage\'a kaydedildi ($key): $value');
+    } catch (e) {
+      debugPrint('❌ [PreferencesService] Secure storage yazma hatası ($key): $e');
+    }
+  }
+
+  /// Mevcut SharedPreferences verilerini secure storage'a migrate et
+  Future<void> _migrateToSecureStorage() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final migrationCompleted = prefs.getBool(_migrationCompletedKey) ?? false;
+      
+      if (migrationCompleted) {
+        debugPrint('💾 [PreferencesService] Migration zaten tamamlanmış');
+        return;
+      }
+
+      debugPrint('💾 [PreferencesService] SharedPreferences\'dan secure storage\'a migration başlıyor...');
+
+      // Delete limit'i migrate et
+      final deleteLimit = prefs.getInt(_deleteLimitKey);
+      if (deleteLimit != null) {
+        await _setSecureInt(_deleteLimitKey, deleteLimit);
+      }
+
+      // Delete limit last reset'i migrate et
+      final deleteLimitLastReset = prefs.getString(_deleteLimitLastResetKey);
+      if (deleteLimitLastReset != null) {
+        await _setSecureString(_deleteLimitLastResetKey, deleteLimitLastReset);
+      }
+
+      // Scan limit'i migrate et
+      final scanLimit = prefs.getInt(_scanLimitKey);
+      if (scanLimit != null) {
+        await _setSecureInt(_scanLimitKey, scanLimit);
+      }
+
+      // Scan limit last reset'i migrate et
+      final scanLimitLastReset = prefs.getString(_scanLimitLastResetKey);
+      if (scanLimitLastReset != null) {
+        await _setSecureString(_scanLimitLastResetKey, scanLimitLastReset);
+      }
+
+      // Premium durumunu migrate et
+      final isPremium = prefs.getBool(_isPremiumKey);
+      if (isPremium != null) {
+        await _setSecureBool(_isPremiumKey, isPremium);
+      }
+
+      // Migration tamamlandı olarak işaretle
+      await prefs.setBool(_migrationCompletedKey, true);
+      debugPrint('💾 [PreferencesService] Migration tamamlandı');
+    } catch (e) {
+      debugPrint('❌ [PreferencesService] Migration hatası: $e');
+    }
+  }
 
   Future<bool> isOnboardingCompleted() async {
     final prefs = await SharedPreferences.getInstance();
@@ -100,6 +240,34 @@ class PreferencesService {
     }
   }
 
+  /// Önceki galeri istatistiklerini kaydet
+  Future<void> savePreviousGalleryStats(GalleryStats stats) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final json = jsonEncode(stats.toJson());
+      await prefs.setString(_previousGalleryStatsKey, json);
+      debugPrint('💾 [PreferencesService] Önceki GalleryStats kaydedildi');
+    } catch (e) {
+      debugPrint('❌ [PreferencesService] Önceki GalleryStats kaydedilemedi: $e');
+    }
+  }
+
+  /// Önceki galeri istatistiklerini al
+  Future<GalleryStats?> getPreviousGalleryStats() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final jsonString = prefs.getString(_previousGalleryStatsKey);
+      if (jsonString == null) {
+        return null;
+      }
+      final json = jsonDecode(jsonString) as Map<String, dynamic>;
+      return GalleryStats.fromJson(json);
+    } catch (e) {
+      debugPrint('❌ [PreferencesService] Önceki GalleryStats okunamadı: $e');
+      return null;
+    }
+  }
+
   /// Temizlemeye başlandığını işaretle
   Future<void> setCleaningStarted(bool started) async {
     final prefs = await SharedPreferences.getInstance();
@@ -115,33 +283,89 @@ class PreferencesService {
 
   /// Silme hakkını al (günlük reset kontrolü ile)
   Future<int> getDeleteLimit() async {
-    final prefs = await SharedPreferences.getInstance();
-    final lastReset = prefs.getString(_deleteLimitLastResetKey);
+    // İlk çalıştırmada migration yap
+    await _migrateToSecureStorage();
+    
+    final premiumStatus = await isPremium();
+    if (premiumStatus) {
+      return 999999999; // Premium için sınırsız
+    }
+    
+    final lastReset = await _getSecureString(_deleteLimitLastResetKey);
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
+    final todayString = today.toIso8601String().split('T')[0];
     
     // Eğer bugün reset edilmemişse, limiti sıfırla
-    if (lastReset == null || lastReset != today.toIso8601String().split('T')[0]) {
-      await prefs.setInt(_deleteLimitKey, _defaultDeleteLimit);
-      await prefs.setString(_deleteLimitLastResetKey, today.toIso8601String().split('T')[0]);
+    if (lastReset == null || lastReset != todayString) {
+      await _setSecureInt(_deleteLimitKey, _defaultDeleteLimit);
+      await _setSecureString(_deleteLimitLastResetKey, todayString);
       return _defaultDeleteLimit;
     }
     
-    return prefs.getInt(_deleteLimitKey) ?? _defaultDeleteLimit;
+    final limit = await _getSecureInt(_deleteLimitKey);
+    return limit ?? _defaultDeleteLimit;
   }
 
   /// Silme hakkını kaydet
   Future<void> setDeleteLimit(int limit) async {
+    await _setSecureInt(_deleteLimitKey, limit);
+    // SharedPreferences'a da yaz (backward compatibility)
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_deleteLimitKey, limit);
-    debugPrint('💾 [PreferencesService] Delete limit kaydedildi: $limit');
   }
 
   /// Silme hakkını azalt
   Future<int> decreaseDeleteLimit(int amount) async {
-    final currentLimit = await getDeleteLimit();
-    final newLimit = (currentLimit - amount).clamp(0, _defaultDeleteLimit);
-    await setDeleteLimit(newLimit);
+    final premiumStatus = await isPremium();
+    if (premiumStatus) {
+      return 999999999; // Premium kullanıcılar için limit düşürme yok
+    }
+    
+    // İlk çalıştırmada migration yap
+    await _migrateToSecureStorage();
+    
+    // Günlük reset kontrolü yapmadan direkt secure storage'dan oku
+    final lastReset = await _getSecureString(_deleteLimitLastResetKey);
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final todayString = today.toIso8601String().split('T')[0];
+    
+    int currentLimit;
+    
+    // Eğer bugün reset edilmemişse, limiti sıfırla
+    if (lastReset == null || lastReset != todayString) {
+      currentLimit = _defaultDeleteLimit;
+      await _setSecureInt(_deleteLimitKey, _defaultDeleteLimit);
+      await _setSecureString(_deleteLimitLastResetKey, todayString);
+    } else {
+      // Secure storage'dan direkt oku (getDeleteLimit metodundaki reset kontrolü olmadan)
+      final limit = await _getSecureInt(_deleteLimitKey);
+      currentLimit = limit ?? _defaultDeleteLimit;
+    }
+    
+    final newLimit = (currentLimit - amount).clamp(0, 999999999);
+    
+    // Secure storage'a yaz
+    await _setSecureInt(_deleteLimitKey, newLimit);
+    // SharedPreferences'a da yaz (backward compatibility)
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_deleteLimitKey, newLimit);
+    
+    // Yazma işleminin tamamlandığından emin ol
+    await Future.delayed(const Duration(milliseconds: 10));
+    
+    debugPrint('💾 [PreferencesService] Delete limit azaltıldı: $currentLimit -> $newLimit (azaltılan: $amount)');
+    
+    // Doğrulama: Yazdığımız değeri okuyarak kontrol et
+    final verifiedLimit = await _getSecureInt(_deleteLimitKey);
+    if (verifiedLimit != newLimit) {
+      debugPrint('⚠️ [PreferencesService] UYARI: Yazılan değer doğrulanamadı! Beklenen: $newLimit, Okunan: $verifiedLimit');
+      // Tekrar dene
+      await _setSecureInt(_deleteLimitKey, newLimit);
+      await prefs.setInt(_deleteLimitKey, newLimit);
+    }
+    
     return newLimit;
   }
 
@@ -152,6 +376,155 @@ class PreferencesService {
     await setDeleteLimit(newLimit);
     debugPrint('💾 [PreferencesService] Delete limit artırıldı: $currentLimit -> $newLimit');
     return newLimit;
+  }
+
+  /// Premium kullanıcı mı?
+  Future<bool> isPremium() async {
+    // İlk çalıştırmada migration yap
+    await _migrateToSecureStorage();
+    
+    final premiumStatus = await _getSecureBool(_isPremiumKey);
+    return premiumStatus ?? false;
+  }
+
+  /// Premium durumunu ayarla
+  Future<void> setPremium(bool isPremium) async {
+    await _setSecureBool(_isPremiumKey, isPremium);
+    // SharedPreferences'a da yaz (backward compatibility)
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_isPremiumKey, isPremium);
+  }
+
+  /// İlk analiz tamamlandı mı?
+  Future<bool> isFirstAnalysisCompleted() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_firstAnalysisCompletedKey) ?? false;
+  }
+
+  /// İlk analizi tamamlandı olarak işaretle
+  Future<void> setFirstAnalysisCompleted(bool completed) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_firstAnalysisCompletedKey, completed);
+    debugPrint('💾 [PreferencesService] İlk analiz tamamlandı: $completed');
+  }
+
+  /// Scan limit'ini al (günlük reset kontrolü ile)
+  Future<int> getScanLimit() async {
+    // İlk çalıştırmada migration yap
+    await _migrateToSecureStorage();
+    
+    final premiumStatus = await isPremium();
+    if (premiumStatus) {
+      return 999999999; // Premium için sınırsız
+    }
+    
+    final lastReset = await _getSecureString(_scanLimitLastResetKey);
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final todayString = today.toIso8601String().split('T')[0];
+    
+    // Eğer bugün reset edilmemişse, limiti kontrol et
+    if (lastReset == null || lastReset != todayString) {
+      final currentLimit = await _getSecureInt(_scanLimitKey) ?? _defaultScanLimit;
+      // Günlük reset: Eğer limit 1000'den azsa, 1000'e çıkar
+      // Reklam izleyerek kazanılan limit'ler (1000'den fazla) korunur
+      final newLimit = currentLimit < _defaultScanLimit ? _defaultScanLimit : currentLimit;
+      await _setSecureInt(_scanLimitKey, newLimit);
+      await _setSecureString(_scanLimitLastResetKey, todayString);
+      debugPrint('💾 [PreferencesService] Günlük reset: $currentLimit -> $newLimit');
+      return newLimit;
+    }
+    
+    final limit = await _getSecureInt(_scanLimitKey);
+    return limit ?? _defaultScanLimit;
+  }
+
+  /// Scan limit'ini kaydet
+  Future<void> setScanLimit(int limit) async {
+    await _setSecureInt(_scanLimitKey, limit);
+    // SharedPreferences'a da yaz (backward compatibility)
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_scanLimitKey, limit);
+  }
+
+  /// Scan limit'ini azalt
+  Future<int> decreaseScanLimit(int amount) async {
+    final premiumStatus = await isPremium();
+    if (premiumStatus) {
+      return 999999999; // Premium kullanıcılar için limit düşürme yok
+    }
+    
+    final currentLimit = await getScanLimit();
+    final newLimit = (currentLimit - amount).clamp(0, _defaultScanLimit);
+    await setScanLimit(newLimit);
+    debugPrint('💾 [PreferencesService] Scan limit azaltıldı: $currentLimit -> $newLimit (kullanılan: $amount)');
+    return newLimit;
+  }
+
+  /// Scan limit'ini artır (reklam izleyerek)
+  Future<int> increaseScanLimit(int amount) async {
+    final premiumStatus = await isPremium();
+    if (premiumStatus) {
+      return 999999999; // Premium kullanıcılar için limit artırma yok (zaten sınırsız)
+    }
+    
+    final currentLimit = await getScanLimit();
+    // Reklam izleyerek limit artırılabilir (günlük reset mekanizması sadece 1000'e sıfırlar)
+    final newLimit = currentLimit + amount;
+    await setScanLimit(newLimit);
+    debugPrint('💾 [PreferencesService] Scan limit artırıldı: $currentLimit -> $newLimit (kazanılan: $amount)');
+    return newLimit;
+  }
+
+  /// Swipe index'ini kaydet (album ID ile birlikte)
+  Future<void> saveSwipeIndex(int index, String? albumId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt(_swipeIndexKey, index);
+      if (albumId != null) {
+        await prefs.setString(_swipeAlbumIdKey, albumId);
+      } else {
+        await prefs.remove(_swipeAlbumIdKey);
+      }
+      debugPrint('💾 [PreferencesService] Swipe index kaydedildi: $index (album: $albumId)');
+    } catch (e) {
+      debugPrint('❌ [PreferencesService] Swipe index kaydedilemedi: $e');
+    }
+  }
+
+  /// Swipe index'ini al
+  Future<int?> getSwipeIndex(String? albumId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedAlbumId = prefs.getString(_swipeAlbumIdKey);
+      
+      // Eğer album ID eşleşmiyorsa, index'i sıfırla
+      if (albumId != null && savedAlbumId != albumId) {
+        debugPrint('💾 [PreferencesService] Album ID eşleşmiyor, swipe index sıfırlanıyor');
+        await prefs.remove(_swipeIndexKey);
+        await prefs.remove(_swipeAlbumIdKey);
+        return null;
+      }
+      
+      final index = prefs.getInt(_swipeIndexKey);
+      debugPrint('💾 [PreferencesService] Swipe index okundu: $index (album: $albumId)');
+      return index;
+    } catch (e) {
+      debugPrint('❌ [PreferencesService] Swipe index okunamadı: $e');
+      return null;
+    }
+  }
+
+  /// Swipe index'ini temizle
+  Future<void> clearSwipeIndex() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_swipeIndexKey);
+      await prefs.remove(_swipeAlbumIdKey);
+      debugPrint('💾 [PreferencesService] Swipe index temizlendi');
+    } catch (e) {
+      debugPrint('❌ [PreferencesService] Swipe index temizlenemedi: $e');
+    }
   }
 }
 

@@ -1,0 +1,880 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../l10n/app_localizations.dart';
+import '../../../core/services/in_app_purchase_service.dart';
+import '../../gallery/application/gallery_providers.dart';
+import 'premium_success_dialog.dart';
+
+/// Purchase dialog widget for in-app purchases
+class PurchaseDialog extends ConsumerStatefulWidget {
+  const PurchaseDialog({super.key});
+
+  @override
+  ConsumerState<PurchaseDialog> createState() => _PurchaseDialogState();
+}
+
+class _PurchaseDialogState extends ConsumerState<PurchaseDialog>
+    with TickerProviderStateMixin {
+  bool _isLoading = false;
+  bool _isRestoring = false;
+  String? _errorMessage;
+  String? _successMessage;
+  String? _productPrice;
+  String? _originalPrice;
+  late AnimationController _pulseController;
+  late Animation<double> _pulseAnimation;
+  late AnimationController _sparkleController;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2000),
+    )..repeat(reverse: true);
+    
+    _pulseAnimation = Tween<double>(
+      begin: 0.95,
+      end: 1.05,
+    ).animate(CurvedAnimation(
+      parent: _pulseController,
+      curve: Curves.easeInOut,
+    ));
+    
+    _sparkleController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 3000),
+    )..repeat();
+    
+    _loadProductPrice();
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    _sparkleController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadProductPrice() async {
+    final iapService = InAppPurchaseService.instance;
+    await iapService.loadProducts();
+    final product = iapService.getPremiumProduct();
+    if (product != null && mounted) {
+      // Calculate 25% discount
+      final priceValue = _parsePrice(product.price);
+      if (priceValue != null) {
+        final discountedPrice = priceValue * 0.75;
+        final currencySymbol = _extractCurrencySymbol(product.price);
+        setState(() {
+          _originalPrice = product.price;
+          _productPrice = '$currencySymbol${discountedPrice.toStringAsFixed(2)}';
+        });
+      } else {
+        setState(() {
+          _productPrice = product.price;
+        });
+      }
+    }
+  }
+
+  double? _parsePrice(String price) {
+    // Remove currency symbols and parse number
+    final cleaned = price.replaceAll(RegExp(r'[^\d.,]'), '').replaceAll(',', '.');
+    return double.tryParse(cleaned);
+  }
+
+  String _extractCurrencySymbol(String price) {
+    // Extract currency symbol (first non-digit character)
+    final match = RegExp(r'[^\d.,\s]').firstMatch(price);
+    return match?.group(0) ?? '';
+  }
+
+  Future<void> _handlePurchase() async {
+    if (_isLoading) return;
+
+    if (!mounted) return;
+    final l10n = AppLocalizations.of(context)!;
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final iapService = InAppPurchaseService.instance;
+      
+      if (!iapService.isAvailable) {
+        if (!mounted) return;
+        setState(() {
+          _errorMessage = l10n.storeNotAvailable;
+          _isLoading = false;
+        });
+        return;
+      }
+
+      final success = await iapService.purchasePremium(
+        onComplete: (purchaseSuccess) async {
+          if (!mounted) return;
+          final contextL10n = AppLocalizations.of(context)!;
+          
+          if (purchaseSuccess) {
+            // Invalidate premium provider to refresh UI
+            ref.invalidate(isPremiumProvider);
+            ref.invalidate(scanLimitProvider);
+            await ref.read(deleteLimitProvider.notifier).refresh();
+            
+            if (mounted) {
+              Navigator.of(context).pop();
+              // Show premium success dialog
+              await PremiumSuccessDialog.show(context);
+            }
+          } else {
+            if (!mounted) return;
+            setState(() {
+              _errorMessage = contextL10n.purchaseFailed;
+              _isLoading = false;
+            });
+          }
+        },
+      );
+      
+      if (!mounted) return;
+
+      if (!success) {
+        setState(() {
+          _errorMessage = l10n.failedToInitiatePurchase;
+          _isLoading = false;
+        });
+      }
+      // If success, wait for callback
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = '${l10n.purchaseError}: $e';
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _handleRestorePurchases() async {
+    if (_isLoading || _isRestoring) return;
+
+    if (!mounted) return;
+    final l10n = AppLocalizations.of(context)!;
+
+    setState(() {
+      _isRestoring = true;
+      _errorMessage = null;
+      _successMessage = null;
+    });
+
+    try {
+      final iapService = InAppPurchaseService.instance;
+      
+      if (!iapService.isAvailable) {
+        if (!mounted) return;
+        setState(() {
+          _errorMessage = l10n.storeNotAvailable;
+          _isRestoring = false;
+        });
+        return;
+      }
+
+      await iapService.restorePurchases(
+        onComplete: (success, hasRestored) async {
+          if (!mounted) return;
+          final contextL10n = AppLocalizations.of(context)!;
+          
+          if (success && hasRestored) {
+            // Invalidate premium provider to refresh UI
+            ref.invalidate(isPremiumProvider);
+            ref.invalidate(scanLimitProvider);
+            await ref.read(deleteLimitProvider.notifier).refresh();
+            
+            if (!mounted) return;
+            setState(() {
+              _successMessage = contextL10n.purchasesRestoredSuccessfully;
+              _isRestoring = false;
+            });
+            
+            // Close dialog after a short delay
+            Future.delayed(const Duration(seconds: 2), () {
+              if (mounted) {
+                Navigator.of(context).pop();
+              }
+            });
+          } else {
+            if (!mounted) return;
+            setState(() {
+              _errorMessage = contextL10n.noPreviousPurchases;
+              _isRestoring = false;
+            });
+          }
+        },
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = '${l10n.restoreError}: $e';
+        _isRestoring = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+      child: TweenAnimationBuilder<double>(
+        tween: Tween(begin: 0.0, end: 1.0),
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeOutCubic,
+        builder: (context, value, child) {
+          return Transform.scale(
+            scale: 0.8 + (value * 0.2),
+            child: Opacity(opacity: value, child: child),
+          );
+        },
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 400),
+          padding: const EdgeInsets.all(28),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                theme.colorScheme.primaryContainer,
+                theme.colorScheme.secondaryContainer,
+              ],
+            ),
+            borderRadius: BorderRadius.circular(28),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.25),
+                blurRadius: 32,
+                spreadRadius: 2,
+                offset: const Offset(0, 16),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Animated Icon with pulse
+              AnimatedBuilder(
+                animation: _pulseAnimation,
+                builder: (context, child) {
+                  return Transform.scale(
+                    scale: _pulseAnimation.value,
+                    child: Container(
+                      width: 90,
+                      height: 90,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            theme.colorScheme.primary,
+                            theme.colorScheme.primary.withOpacity(0.7),
+                          ],
+                        ),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: theme.colorScheme.primary.withOpacity(0.4 * _pulseAnimation.value),
+                            blurRadius: 20 * _pulseAnimation.value,
+                            spreadRadius: 3 * _pulseAnimation.value,
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        Icons.all_inclusive_rounded,
+                        size: 45,
+                        color: theme.colorScheme.onPrimary,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 20),
+              // Discount Badge with animation
+              AnimatedBuilder(
+                animation: _sparkleController,
+                builder: (context, child) {
+                  return Transform.rotate(
+                    angle: _sparkleController.value * 0.1,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.red.shade400,
+                            Colors.orange.shade400,
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(25),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.red.withOpacity(0.4),
+                            blurRadius: 15,
+                            spreadRadius: 2,
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.local_fire_department_rounded,
+                            color: Colors.white,
+                            size: 22,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            l10n.discount25,
+                            style: theme.textTheme.labelLarge?.copyWith(
+                              fontWeight: FontWeight.w900,
+                              fontSize: 16,
+                              letterSpacing: 1,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 12),
+              // Limited Time Badge
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: Colors.orange.withOpacity(0.4),
+                    width: 1.5,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.access_time_rounded,
+                      color: Colors.orange.shade700,
+                      size: 16,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      l10n.limitedTimeOffer,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12,
+                        color: Colors.orange.shade700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              // Features - Horizontal Scroll
+              SizedBox(
+                height: 140,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  children: [
+                    const SizedBox(width: 4),
+                    _PurchaseFeatureCard(
+                      icon: Icons.delete_outline_rounded,
+                      iconColor: Colors.red,
+                      text: l10n.unlimitedDeletions,
+                      subtitle: l10n.lifetimeAccess,
+                    ),
+                    const SizedBox(width: 12),
+                    _PurchaseFeatureCard(
+                      icon: Icons.blur_on_rounded,
+                      iconColor: Colors.blue,
+                      text: l10n.unlimitedBlurScans,
+                    ),
+                    const SizedBox(width: 12),
+                    _PurchaseFeatureCard(
+                      icon: Icons.photo_library_outlined,
+                      iconColor: Colors.purple,
+                      text: l10n.unlimitedDuplicateScans,
+                    ),
+                    const SizedBox(width: 12),
+                    _PurchaseFeatureCard(
+                      icon: Icons.block_rounded,
+                      iconColor: Colors.orange,
+                      text: l10n.noMoreAds,
+                    ),
+                    const SizedBox(width: 12),
+                    _PurchaseFeatureCard(
+                      icon: Icons.verified_rounded,
+                      iconColor: theme.colorScheme.primary,
+                      text: l10n.oneTimePayment,
+                      subtitle: l10n.lifetimeAccess,
+                    ),
+                    const SizedBox(width: 4),
+                  ],
+                ),
+              ),
+              if (_errorMessage != null) ...[
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.errorContainer,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        color: theme.colorScheme.onErrorContainer,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _errorMessage!,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onErrorContainer,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              if (_successMessage != null) ...[
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.check_circle_outline,
+                        color: Colors.green,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _successMessage!,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: Colors.green,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              const SizedBox(height: 28),
+              // Price section with discount
+              if (_productPrice != null && _originalPrice != null) ...[
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                        theme.colorScheme.surface.withOpacity(0.3),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: theme.colorScheme.primary.withOpacity(0.2),
+                      width: 2,
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      // Original price (strikethrough)
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            l10n.originalPrice,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurface.withOpacity(0.6),
+                              fontSize: 12,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            _originalPrice!,
+                            style: theme.textTheme.bodyLarge?.copyWith(
+                              decoration: TextDecoration.lineThrough,
+                              decorationThickness: 2,
+                              color: theme.colorScheme.onSurface.withOpacity(0.5),
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      // Discounted price
+                      AnimatedBuilder(
+                        animation: _pulseAnimation,
+                        builder: (context, child) {
+                          return Transform.scale(
+                            scale: 0.98 + (_pulseAnimation.value - 1) * 0.02,
+                            child: Text(
+                              _productPrice!,
+                              style: theme.textTheme.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.w900,
+                                fontSize: 32,
+                                color: theme.colorScheme.primary,
+                                letterSpacing: -0.5,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        l10n.saveNow,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                          color: Colors.green.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+              ],
+              // Purchase button with gradient and animation
+              AnimatedBuilder(
+                animation: _pulseAnimation,
+                builder: (context, child) {
+                  return Transform.scale(
+                    scale: _pulseAnimation.value,
+                    child: Container(
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            theme.colorScheme.primary,
+                            theme.colorScheme.primary.withOpacity(0.8),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: theme.colorScheme.primary.withOpacity(0.5 * _pulseAnimation.value),
+                            blurRadius: 25 * _pulseAnimation.value,
+                            spreadRadius: 3 * _pulseAnimation.value,
+                            offset: Offset(0, 10 * _pulseAnimation.value),
+                          ),
+                        ],
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: _isLoading ? null : _handlePurchase,
+                          borderRadius: BorderRadius.circular(20),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 22),
+                            child: _isLoading
+                                ? SizedBox(
+                                    height: 24,
+                                    width: 24,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.5,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        theme.colorScheme.onPrimary,
+                                      ),
+                                    ),
+                                  )
+                                : Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.star_rounded,
+                                        color: theme.colorScheme.onPrimary,
+                                        size: 26,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Text(
+                                        l10n.purchaseNow,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w900,
+                                          fontSize: 20,
+                                          color: theme.colorScheme.onPrimary,
+                                          letterSpacing: 0.8,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                  ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 12),
+              // Restore purchases button (iOS primarily, but available on Android too)
+              ...[
+                TextButton(
+                  onPressed: (_isLoading || _isRestoring)
+                      ? null
+                      : _handleRestorePurchases,
+                  style: TextButton.styleFrom(
+                    foregroundColor: theme.colorScheme.primary,
+                  ),
+                  child: _isRestoring
+                      ? Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SizedBox(
+                              height: 16,
+                              width: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  theme.colorScheme.primary,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              l10n.restoring,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        )
+                      : Text(
+                          l10n.restorePurchases,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                ),
+                const SizedBox(height: 8),
+              ],
+              // Cancel button
+              TextButton(
+                onPressed: (_isLoading || _isRestoring)
+                    ? null
+                    : () => Navigator.of(context).pop(),
+                style: TextButton.styleFrom(
+                  foregroundColor: theme.colorScheme.onSurface.withOpacity(0.7),
+                ),
+                child: Text(
+                  l10n.cancel,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PurchaseFeatureCard extends StatefulWidget {
+  const _PurchaseFeatureCard({
+    required this.icon,
+    required this.text,
+    this.subtitle,
+    this.iconColor,
+  });
+
+  final IconData icon;
+  final String text;
+  final String? subtitle;
+  final Color? iconColor;
+
+  @override
+  State<_PurchaseFeatureCard> createState() => _PurchaseFeatureCardState();
+}
+
+class _PurchaseFeatureCardState extends State<_PurchaseFeatureCard>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _fadeController;
+  late Animation<double> _fadeAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _fadeController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+    _fadeAnimation = CurvedAnimation(
+      parent: _fadeController,
+      curve: Curves.easeOut,
+    );
+    _fadeController.forward();
+  }
+
+  @override
+  void dispose() {
+    _fadeController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final color = widget.iconColor ?? theme.colorScheme.primary;
+    
+    return FadeTransition(
+      opacity: _fadeAnimation,
+      child: SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(0.2, 0),
+          end: Offset.zero,
+        ).animate(_fadeAnimation),
+        child: Container(
+          width: 160,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                theme.colorScheme.surface.withOpacity(0.9),
+                theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: color.withOpacity(0.2),
+              width: 2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: color.withOpacity(0.15),
+                blurRadius: 15,
+                spreadRadius: 1,
+                offset: const Offset(0, 4),
+              ),
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                spreadRadius: 0,
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      color.withOpacity(0.25),
+                      color.withOpacity(0.15),
+                    ],
+                  ),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: color.withOpacity(0.4),
+                    width: 2.5,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: color.withOpacity(0.25),
+                      blurRadius: 12,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  widget.icon,
+                  size: 28,
+                  color: color,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                widget.text,
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 15,
+                  color: theme.colorScheme.onSurface,
+                  height: 1.2,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              if (widget.subtitle != null) ...[
+                const SizedBox(height: 6),
+                Text(
+                  widget.subtitle!,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 11,
+                    color: theme.colorScheme.onSurface.withOpacity(0.6),
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.check_circle_rounded,
+                  size: 20,
+                  color: color,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

@@ -125,7 +125,11 @@ class AppLocalizationsTr extends AppLocalizations {
   String get historyAndQueue => 'İstatistikler';
 
   @override
-  String get noHistoryYet => 'Henüz geçmiş yok.';
+  String get noHistoryYet => 'Henüz İstatistik Yok';
+
+  @override
+  String get noHistoryYetDescription =>
+      'Fotoğraflarınızı gözden geçirmeye ve düzenlemeye başlayın, aktivitelerinizi ve istatistiklerinizi burada görün.';
 
   @override
   String get keep => 'TUT';
@@ -311,6 +315,56 @@ class AppLocalizationsTr extends AppLocalizations {
   String get earnDeletionRights => '+20 Silme';
 
   @override
+  String get watchAdAndEarnDeletionRights => '+20 Silme';
+
+  @override
+  String get galleryPermissionDescription =>
+      'Galeri temizleme işlemlerini yapabilmek için fotoğraf ve videolarınıza erişim iznine ihtiyacımız var.';
+
+  @override
+  String get quickCleanupTitle => 'Hızlı Temizlik';
+
+  @override
+  String get quickCleanupDescription =>
+      'Fotoğraflarınızı hızlıca gözden geçirin';
+
+  @override
+  String get organizeTitle => 'Organize Et';
+
+  @override
+  String get organizeDescription => 'Albümlerinize taşıyın ve düzenleyin';
+
+  @override
+  String get safeDeleteTitle => 'Güvenli Silme';
+
+  @override
+  String get safeDeleteDescription => 'Gereksiz fotoğrafları temizleyin';
+
+  @override
+  String get increaseDeletionRights => 'Silme Haklarını Artır';
+
+  @override
+  String get increaseScanRights => 'Tarama Haklarını Artır';
+
+  @override
+  String earnDeleteRights(int amount) {
+    final intl.NumberFormat amountNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String amountString = amountNumberFormat.format(amount);
+
+    return '+$amountString Silme';
+  }
+
+  @override
+  String earnScanRights(int amount) {
+    final intl.NumberFormat amountNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String amountString = amountNumberFormat.format(amount);
+
+    return '+$amountString Tarama';
+  }
+
+  @override
   String get adNotReady =>
       'Reklam henüz hazır değil. Lütfen birkaç saniye sonra tekrar deneyin.';
 
@@ -322,6 +376,9 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get premiumTitle => 'Premium\'a Geç';
+
+  @override
+  String get unlockPremiumFeatures => 'Premium Özelliklerin Kilidini Aç';
 
   @override
   String get premiumDescription =>
@@ -349,6 +406,19 @@ class AppLocalizationsTr extends AppLocalizations {
   String get buyUnlimitedRights => 'Sınırsız Silme Satın Al';
 
   @override
+  String get buyUnlimitedBlurRights => 'Sınırsız Blur Satın Al';
+
+  @override
+  String get buyUnlimitedDuplicateRights => 'Sınırsız Duplicate Satın Al';
+
+  @override
+  String get unlimitedBlurScans => 'Sınırsız Blur Taraması • Ömür Boyu Erişim';
+
+  @override
+  String get unlimitedDuplicateScans =>
+      'Sınırsız Duplicate Taraması • Ömür Boyu Erişim';
+
+  @override
   String get oneTimePayment => 'Tek Seferlik Ödeme';
 
   @override
@@ -359,4 +429,426 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get purchaseNow => 'Şimdi Satın Al';
+
+  @override
+  String get limitedTimeOffer => 'Sınırlı Süre';
+
+  @override
+  String get discount25 => '%25 İndirim';
+
+  @override
+  String get originalPrice => 'Orijinal Fiyat';
+
+  @override
+  String get saveNow => 'Şimdi Kazan';
+
+  @override
+  String get bestValue => 'En İyi Değer';
+
+  @override
+  String get purchaseSuccessful =>
+      'Satın alma başarılı! Premium özelliklere erişebilirsiniz.';
+
+  @override
+  String get lifetimeAccessMessage => 'Artık ömür boyu bu haklara sahipsiniz!';
+
+  @override
+  String get youArePremium => 'Premium\'sunuz';
+
+  @override
+  String get active => 'AKTİF';
+
+  @override
+  String get premiumAccessDescription =>
+      'Tüm premium özelliklere erişiminiz var. Sınırsız silme, tarama ve daha fazlası!';
+
+  @override
+  String get unlimited => 'Sınırsız';
+
+  @override
+  String get adFree => 'Reklamsız';
+
+  @override
+  String get priority => 'Öncelikli';
+
+  @override
+  String get storeNotAvailable => 'Mağaza kullanılamıyor';
+
+  @override
+  String get purchaseFailed => 'Satın alma başarısız. Lütfen tekrar deneyin.';
+
+  @override
+  String get failedToInitiatePurchase => 'Satın alma başlatılamadı';
+
+  @override
+  String get purchaseError => 'Satın alma hatası';
+
+  @override
+  String get purchasesRestoredSuccessfully =>
+      'Satın alımlar başarıyla geri yüklendi!';
+
+  @override
+  String get noPreviousPurchases =>
+      'Geri yüklenecek önceki satın alma bulunamadı.';
+
+  @override
+  String get restoreError => 'Geri yükleme hatası';
+
+  @override
+  String get restoring => 'Geri yükleniyor...';
+
+  @override
+  String get restorePurchases => 'Satın Alımları Geri Yükle';
+
+  @override
+  String get duplicatePhotos => 'Yinelenen Fotoğraflar';
+
+  @override
+  String get scanForDuplicates => 'Yinelenen Fotoğrafları Tara';
+
+  @override
+  String get scanningDuplicates => 'Yinelenen fotoğraflar taranıyor...';
+
+  @override
+  String get noDuplicatesFound => 'Yinelenen fotoğraf bulunamadı';
+
+  @override
+  String duplicatesFound(int count) {
+    return '$count yinelenen grup bulundu';
+  }
+
+  @override
+  String get totalDuplicates => 'Toplam Yinelenen';
+
+  @override
+  String get spaceToSave => 'Kazanılacak Alan';
+
+  @override
+  String get deleteDuplicates => 'Yinelenenleri Sil';
+
+  @override
+  String get selectAlbumsToScan => 'Taranacak Albümleri Seç';
+
+  @override
+  String get scanSelectedAlbums => 'Seçili Albümleri Tara';
+
+  @override
+  String get deleteAllDuplicates => 'Tüm Yinelenenleri Sil';
+
+  @override
+  String deleteAllDuplicatesMessage(int count) {
+    return '$count yinelenen fotoğraf silinecek. Emin misiniz?';
+  }
+
+  @override
+  String get deleteAllBlurryPhotos => 'Tüm Blurlu Fotoğrafları Sil';
+
+  @override
+  String deleteAllBlurryPhotosMessage(int count) {
+    return '$count blurlu fotoğraf silinecek. Emin misiniz?';
+  }
+
+  @override
+  String get startNewScan => 'Yeni Tarama Başlat';
+
+  @override
+  String get scanCompleted => 'Tarama Tamamlandı';
+
+  @override
+  String scanCompletedBlurMessage(int count) {
+    return '$count blurlu fotoğraf bulundu';
+  }
+
+  @override
+  String scanCompletedDuplicateMessage(int count) {
+    return '$count duplicate grup bulundu';
+  }
+
+  @override
+  String get noBlurryPhotosFound =>
+      'Galerinizde blurlu veya pixelleşmiş fotoğraf bulunamadı.';
+
+  @override
+  String get noDuplicatePhotosFound =>
+      'Galerinizde duplicate fotoğraf bulunamadı.';
+
+  @override
+  String get duplicateGroup => 'Yinelenen Grup';
+
+  @override
+  String photosInGroup(int count) {
+    return '$count fotoğraf';
+  }
+
+  @override
+  String get keepOldest => 'En Eski Korunacak';
+
+  @override
+  String scanningAlbum(String album) {
+    return '$album taranıyor...';
+  }
+
+  @override
+  String get noDeleteRightsLeft => 'Silme Hakkınız Kalmadı';
+
+  @override
+  String get noDeleteRightsLeftMessage =>
+      'Silme hakkınız kalmadı. Galerinizi temizlemeye devam etmek için sınırsız silme hakkı satın alın.';
+
+  @override
+  String get galleryStatsTitle => 'Galeri İstatistikleri';
+
+  @override
+  String get stop => 'Durdur';
+
+  @override
+  String get spaceSaved => 'Kazanılan';
+
+  @override
+  String get lastAnalysis => 'Son analiz:';
+
+  @override
+  String get previousAnalysis => 'Önceki analiz:';
+
+  @override
+  String get mediaLabel => 'Medya';
+
+  @override
+  String get sizeLabel => 'Boyut';
+
+  @override
+  String get albumDetails => 'Albüm Detayları';
+
+  @override
+  String get mediaUnit => 'medya';
+
+  @override
+  String get reAnalyze => 'Tekrardan Analiz Et';
+
+  @override
+  String progressFormat(String albums, int media) {
+    return '$albums albüm • $media medya';
+  }
+
+  @override
+  String errorMessage(String error) {
+    return 'Hata: $error';
+  }
+
+  @override
+  String get deleteOperationFailed =>
+      'Silme işlemi başarısız oldu. Lütfen tekrar deneyin.';
+
+  @override
+  String get blurPhotosTitle => 'Blurlu Fotoğraflar';
+
+  @override
+  String get blurDetectionTitle => 'Blur ve Pixelation Tespiti';
+
+  @override
+  String get blurPhotoDetection => 'Blurlu Fotoğraf Tespiti';
+
+  @override
+  String get blurDetectionDescription =>
+      'Seçtiğiniz albümlerde blurlu ve pixelleşmiş fotoğrafları tespit edin';
+
+  @override
+  String get sensitivity => 'Hassasiyet';
+
+  @override
+  String thresholdLabel(String value) {
+    return 'Threshold: $value';
+  }
+
+  @override
+  String get thresholdDescription =>
+      'Düşük değer = Daha fazla blur tespiti\nYüksek değer = Sadece çok blurlu fotoğraflar';
+
+  @override
+  String get sensitivityLow => 'Düşük';
+
+  @override
+  String get sensitivityMedium => 'Orta';
+
+  @override
+  String get sensitivityHigh => 'Yüksek';
+
+  @override
+  String get sensitivityDescription =>
+      'Hassasiyet seviyesi, bulanık fotoğrafların tespit edilme oranını belirler. Düşük hassasiyet daha fazla fotoğraf tespit eder, yüksek hassasiyet sadece çok bulanık fotoğrafları bulur.';
+
+  @override
+  String get sensitivityLevelsDescription =>
+      '• Düşük: Hafif bulanık fotoğrafları da tespit eder (daha fazla sonuç)\n• Orta: Orta seviye bulanık fotoğrafları tespit eder (dengeli)\n• Yüksek: Sadece çok bulanık fotoğrafları tespit eder (daha az sonuç)';
+
+  @override
+  String get currentSensitivity => 'Mevcut Hassasiyet';
+
+  @override
+  String get noScanRightsLeft => 'Tarama Hakkınız Kalmadı';
+
+  @override
+  String get albumSelection => 'Albüm Seçimi';
+
+  @override
+  String get startScan => 'Tarama Başlat';
+
+  @override
+  String get scanningBlurPhotos =>
+      'Blurlu ve pixelleşmiş fotoğraflar taranıyor...';
+
+  @override
+  String get premiumScan => 'Premium Tarama';
+
+  @override
+  String get remainingScanRights => 'Kalan Tarama';
+
+  @override
+  String get scanLimit => 'Tarama Limiti';
+
+  @override
+  String get scanLimitLow => 'Tarama hakkınız azaldı! Premium\'a yükseltin.';
+
+  @override
+  String watchAdToGetScanLimit(int amount) {
+    final intl.NumberFormat amountNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String amountString = amountNumberFormat.format(amount);
+
+    return 'Reklam İzle +$amountString Tarama Hakkı';
+  }
+
+  @override
+  String get photoUnit => 'fotoğraf';
+
+  @override
+  String get selectAlbumsAndScan => 'Albümleri seçip tarama yapın';
+
+  @override
+  String get noDuplicateGroupsFound => 'Duplicate grup bulunamadı';
+
+  @override
+  String stateInfo(int albums, int groups) {
+    return '$albums albüm, $groups grup';
+  }
+
+  @override
+  String get blurDetectionDescriptionFromAppBar =>
+      'Yapay zeka destekli bulanık ve pixelleşmiş fotoğraf tespiti. Depolama alanınızı temizleyin ve kaliteli fotoğraflarınızı koruyun.';
+
+  @override
+  String get duplicateDetectionDescriptionFromAppBar =>
+      'Yapay zeka destekli yinelenen fotoğraf tespiti. Gereksiz kopyaları temizleyerek depolama alanınızı optimize edin.';
+
+  @override
+  String get aiPowered => 'Yapay Zeka Destekli';
+
+  @override
+  String get listView => 'Liste görünümü';
+
+  @override
+  String get gridView => 'Grid görünümü';
+
+  @override
+  String get unknown => 'Bilinmeyen';
+
+  @override
+  String blurScoreLabel(String score) {
+    return 'Blur: $score';
+  }
+
+  @override
+  String pixelationScoreLabel(String score) {
+    return 'Pixel: $score';
+  }
+
+  @override
+  String get deletePhoto => 'Fotoğrafı Sil';
+
+  @override
+  String deletePhotoMessage(String type) {
+    return 'Bu $type fotoğraf silinecek.';
+  }
+
+  @override
+  String get close => 'Kapat';
+
+  @override
+  String deleteDuplicatesMessage(int count) {
+    return '$count duplicate fotoğraf silinecek.';
+  }
+
+  @override
+  String get noResultsFound => 'Sonuç bulunamadı';
+
+  @override
+  String get group => 'Grup';
+
+  @override
+  String get photo => 'Fotoğraf';
+
+  @override
+  String get blurry => 'Blurlu';
+
+  @override
+  String get pixelated => 'Pixelleşmiş';
+
+  @override
+  String get blurryAndPixelated => 'Blurlu ve Pixelleşmiş';
+
+  @override
+  String get sharp => 'Keskin';
+
+  @override
+  String get scanningDuplicatePhotos => 'Duplicate Fotoğraflar Taranıyor...';
+
+  @override
+  String get duplicatePhotoDetection => 'Duplicate Fotoğraf Tespiti';
+
+  @override
+  String get blurDetectionOnboardingTitle => 'Bulanık Fotoğrafları Tespit Et';
+
+  @override
+  String get blurDetectionOnboardingDescription =>
+      'Galerinizdeki bulanık ve pixelleşmiş fotoğrafları otomatik olarak tespit edin. Bu fotoğrafları kolayca bulup silebilirsiniz.';
+
+  @override
+  String get duplicateDetectionOnboardingTitle => 'Aynı Fotoğrafları Bul';
+
+  @override
+  String get duplicateDetectionOnboardingDescription =>
+      'Galerinizdeki tekrarlanan fotoğrafları akıllı algoritma ile tespit edin. Gereksiz kopyaları temizleyerek alan kazanın.';
+
+  @override
+  String get weNeedYourAccessTitle => 'Erişiminize\nİhtiyacımız Var';
+
+  @override
+  String get resetToStart => 'Galeri Başına Dön';
+
+  @override
+  String get swipeTab => 'Kaydır';
+
+  @override
+  String get blurTab => 'Bulanık';
+
+  @override
+  String get duplicateTab => 'Yinelenen';
+
+  @override
+  String get cleanupComplete => 'Temizlik Tamamlandı!';
+
+  @override
+  String get cleanupCompleteMessage =>
+      'Seçilen tüm fotoğraflar başarıyla silindi. Galeriniz artık daha temiz ve hafif.';
+
+  @override
+  String cleanupCompleteMessageWithCount(int count) {
+    return '$count fotoğraf başarıyla silindi. Galeriniz artık daha temiz ve hafif.';
+  }
+
+  @override
+  String get done => 'Tamam';
+
+  @override
+  String get viewGallery => 'Galeriyi Görüntüle';
 }

@@ -40,7 +40,14 @@
     "description": "Daily delete limit message"
   },
   "historyAndQueue": "İstatistikler",
-  "noHistoryYet": "Henüz geçmiş yok.",
+  "noHistoryYet": "Henüz İstatistik Yok",
+  "@noHistoryYet": {
+    "description": "Title when there is no history"
+  },
+  "noHistoryYetDescription": "Fotoğraflarınızı gözden geçirmeye ve düzenlemeye başlayın, aktivitelerinizi ve istatistiklerinizi burada görün.",
+  "@noHistoryYetDescription": {
+    "description": "Description when there is no history"
+  },
   "keep": "TUT",
   "delete": "SİL",
   "move": "TAŞI",
@@ -105,6 +112,66 @@
   "@earnDeletionRights": {
     "description": "Text showing deletion rights earned from watching ad"
   },
+  "watchAdAndEarnDeletionRights": "+20 Silme",
+  "@watchAdAndEarnDeletionRights": {
+    "description": "Button text to watch ad and earn deletion rights"
+  },
+  "galleryPermissionDescription": "Galeri temizleme işlemlerini yapabilmek için fotoğraf ve videolarınıza erişim iznine ihtiyacımız var.",
+  "@galleryPermissionDescription": {
+    "description": "Description for gallery permission request"
+  },
+  "quickCleanupTitle": "Hızlı Temizlik",
+  "@quickCleanupTitle": {
+    "description": "Quick cleanup feature title"
+  },
+  "quickCleanupDescription": "Fotoğraflarınızı hızlıca gözden geçirin",
+  "@quickCleanupDescription": {
+    "description": "Quick cleanup feature description"
+  },
+  "organizeTitle": "Organize Et",
+  "@organizeTitle": {
+    "description": "Organize feature title"
+  },
+  "organizeDescription": "Albümlerinize taşıyın ve düzenleyin",
+  "@organizeDescription": {
+    "description": "Organize feature description"
+  },
+  "safeDeleteTitle": "Güvenli Silme",
+  "@safeDeleteTitle": {
+    "description": "Safe delete feature title"
+  },
+  "safeDeleteDescription": "Gereksiz fotoğrafları temizleyin",
+  "@safeDeleteDescription": {
+    "description": "Safe delete feature description"
+  },
+  "increaseDeletionRights": "Silme Haklarını Artır",
+  "@increaseDeletionRights": {
+    "description": "Title for increasing deletion rights dialog"
+  },
+  "increaseScanRights": "Tarama Haklarını Artır",
+  "@increaseScanRights": {
+    "description": "Title for increasing scan rights dialog"
+  },
+  "earnDeleteRights": "+{amount} Silme",
+  "@earnDeleteRights": {
+    "description": "Text showing deletion rights earned from watching ad with amount",
+    "placeholders": {
+      "amount": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "earnScanRights": "+{amount} Tarama",
+  "@earnScanRights": {
+    "description": "Text showing scan rights earned from watching ad with amount",
+    "placeholders": {
+      "amount": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
   "adNotReady": "Reklam henüz hazır değil. Lütfen birkaç saniye sonra tekrar deneyin.",
   "@adNotReady": {
     "description": "Message when ad is not ready"
@@ -120,6 +187,10 @@
   "premiumTitle": "Premium'a Geç",
   "@premiumTitle": {
     "description": "Premium dialog title"
+  },
+  "unlockPremiumFeatures": "Premium Özelliklerin Kilidini Aç",
+  "@unlockPremiumFeatures": {
+    "description": "Title for premium paywall dialog"
   },
   "premiumDescription": "Premium üyelik ile sınırsız silme hakkı kazanın ve tüm özelliklere erişin!",
   "@premiumDescription": {
@@ -153,6 +224,22 @@
   "@buyUnlimitedRights": {
     "description": "Button text to buy unlimited deletion rights"
   },
+  "buyUnlimitedBlurRights": "Sınırsız Blur Satın Al",
+  "@buyUnlimitedBlurRights": {
+    "description": "Button text to buy unlimited blur scan rights"
+  },
+  "buyUnlimitedDuplicateRights": "Sınırsız Duplicate Satın Al",
+  "@buyUnlimitedDuplicateRights": {
+    "description": "Button text to buy unlimited duplicate scan rights"
+  },
+  "unlimitedBlurScans": "Sınırsız Blur Taraması • Ömür Boyu Erişim",
+  "@unlimitedBlurScans": {
+    "description": "Unlimited blur scans feature text"
+  },
+  "unlimitedDuplicateScans": "Sınırsız Duplicate Taraması • Ömür Boyu Erişim",
+  "@unlimitedDuplicateScans": {
+    "description": "Unlimited duplicate scans feature text"
+  },
   "oneTimePayment": "Tek Seferlik Ödeme",
   "@oneTimePayment": {
     "description": "One time payment label"
@@ -172,6 +259,590 @@
   "purchaseNow": "Şimdi Satın Al",
   "@purchaseNow": {
     "description": "Purchase now button text"
+  },
+  "limitedTimeOffer": "Sınırlı Süre",
+  "@limitedTimeOffer": {
+    "description": "Limited time offer label"
+  },
+  "discount25": "%25 İndirim",
+  "@discount25": {
+    "description": "25% discount label"
+  },
+  "originalPrice": "Orijinal Fiyat",
+  "@originalPrice": {
+    "description": "Original price label"
+  },
+  "saveNow": "Şimdi Kazan",
+  "@saveNow": {
+    "description": "Save now text"
+  },
+  "bestValue": "En İyi Değer",
+  "@bestValue": {
+    "description": "Best value badge"
+  },
+  "purchaseSuccessful": "Satın alma başarılı! Premium özelliklere erişebilirsiniz.",
+  "@purchaseSuccessful": {
+    "description": "Message when purchase is successful"
+  },
+  "lifetimeAccessMessage": "Artık ömür boyu bu haklara sahipsiniz!",
+  "@lifetimeAccessMessage": {
+    "description": "Message shown when user becomes premium - lifetime access confirmation"
+  },
+  "youArePremium": "Premium'sunuz",
+  "@youArePremium": {
+    "description": "Title shown when user is premium"
+  },
+  "active": "AKTİF",
+  "@active": {
+    "description": "Active status badge text"
+  },
+  "premiumAccessDescription": "Tüm premium özelliklere erişiminiz var. Sınırsız silme, tarama ve daha fazlası!",
+  "@premiumAccessDescription": {
+    "description": "Description text for premium users explaining their access"
+  },
+  "unlimited": "Sınırsız",
+  "@unlimited": {
+    "description": "Short label for unlimited feature"
+  },
+  "adFree": "Reklamsız",
+  "@adFree": {
+    "description": "Short label for ad-free feature"
+  },
+  "priority": "Öncelikli",
+  "@priority": {
+    "description": "Short label for priority support feature"
+  },
+  "storeNotAvailable": "Mağaza kullanılamıyor",
+  "@storeNotAvailable": {
+    "description": "Message when store is not available"
+  },
+  "purchaseFailed": "Satın alma başarısız. Lütfen tekrar deneyin.",
+  "@purchaseFailed": {
+    "description": "Message when purchase fails"
+  },
+  "failedToInitiatePurchase": "Satın alma başlatılamadı",
+  "@failedToInitiatePurchase": {
+    "description": "Message when purchase initiation fails"
+  },
+  "purchaseError": "Satın alma hatası",
+  "@purchaseError": {
+    "description": "Message when purchase error occurs"
+  },
+  "purchasesRestoredSuccessfully": "Satın alımlar başarıyla geri yüklendi!",
+  "@purchasesRestoredSuccessfully": {
+    "description": "Message when purchases are restored successfully"
+  },
+  "noPreviousPurchases": "Geri yüklenecek önceki satın alma bulunamadı.",
+  "@noPreviousPurchases": {
+    "description": "Message when no previous purchases are found"
+  },
+  "restoreError": "Geri yükleme hatası",
+  "@restoreError": {
+    "description": "Message when restore error occurs"
+  },
+  "restoring": "Geri yükleniyor...",
+  "@restoring": {
+    "description": "Message when restoring purchases"
+  },
+  "restorePurchases": "Satın Alımları Geri Yükle",
+  "@restorePurchases": {
+    "description": "Button text to restore purchases"
+  },
+  "duplicatePhotos": "Yinelenen Fotoğraflar",
+  "@duplicatePhotos": {
+    "description": "Duplicate photos page title"
+  },
+  "scanForDuplicates": "Yinelenen Fotoğrafları Tara",
+  "@scanForDuplicates": {
+    "description": "Button to scan for duplicate photos"
+  },
+  "scanningDuplicates": "Yinelenen fotoğraflar taranıyor...",
+  "@scanningDuplicates": {
+    "description": "Message when scanning for duplicates"
+  },
+  "noDuplicatesFound": "Yinelenen fotoğraf bulunamadı",
+  "@noDuplicatesFound": {
+    "description": "Message when no duplicates are found"
+  },
+  "duplicatesFound": "{count} yinelenen grup bulundu",
+  "@duplicatesFound": {
+    "description": "Message showing duplicate groups count",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "totalDuplicates": "Toplam Yinelenen",
+  "@totalDuplicates": {
+    "description": "Label for total duplicate photos count"
+  },
+  "spaceToSave": "Kazanılacak Alan",
+  "@spaceToSave": {
+    "description": "Label for space that can be saved"
+  },
+  "deleteDuplicates": "Yinelenenleri Sil",
+  "@deleteDuplicates": {
+    "description": "Button to delete duplicate photos"
+  },
+  "selectAlbumsToScan": "Taranacak Albümleri Seç",
+  "@selectAlbumsToScan": {
+    "description": "Title for album selection dialog for scanning"
+  },
+  "scanSelectedAlbums": "Seçili Albümleri Tara",
+  "@scanSelectedAlbums": {
+    "description": "Button to scan selected albums"
+  },
+  "deleteAllDuplicates": "Tüm Yinelenenleri Sil",
+  "@deleteAllDuplicates": {
+    "description": "Button to delete all duplicate photos"
+  },
+  "deleteAllDuplicatesMessage": "{count} yinelenen fotoğraf silinecek. Emin misiniz?",
+  "@deleteAllDuplicatesMessage": {
+    "description": "Message for deleting all duplicate photos",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "deleteAllBlurryPhotos": "Tüm Blurlu Fotoğrafları Sil",
+  "@deleteAllBlurryPhotos": {
+    "description": "Button to delete all blurry photos"
+  },
+  "deleteAllBlurryPhotosMessage": "{count} blurlu fotoğraf silinecek. Emin misiniz?",
+  "@deleteAllBlurryPhotosMessage": {
+    "description": "Message for deleting all blurry photos",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "startNewScan": "Yeni Tarama Başlat",
+  "@startNewScan": {
+    "description": "Button to start a new scan"
+  },
+  "scanCompleted": "Tarama Tamamlandı",
+  "@scanCompleted": {
+    "description": "Scan completed title"
+  },
+  "scanCompletedBlurMessage": "{count} blurlu fotoğraf bulundu",
+  "@scanCompletedBlurMessage": {
+    "description": "Scan completed message for blur photos",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "scanCompletedDuplicateMessage": "{count} duplicate grup bulundu",
+  "@scanCompletedDuplicateMessage": {
+    "description": "Scan completed message for duplicate photos",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noBlurryPhotosFound": "Galerinizde blurlu veya pixelleşmiş fotoğraf bulunamadı.",
+  "@noBlurryPhotosFound": {
+    "description": "No blurry photos found message"
+  },
+  "noDuplicatePhotosFound": "Galerinizde duplicate fotoğraf bulunamadı.",
+  "@noDuplicatePhotosFound": {
+    "description": "No duplicate photos found message"
+  },
+  "duplicateGroup": "Yinelenen Grup",
+  "@duplicateGroup": {
+    "description": "Label for duplicate photo group"
+  },
+  "photosInGroup": "{count} fotoğraf",
+  "@photosInGroup": {
+    "description": "Number of photos in duplicate group",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "keepOldest": "En Eski Korunacak",
+  "@keepOldest": {
+    "description": "Label indicating oldest photo will be kept"
+  },
+  "scanningAlbum": "{album} taranıyor...",
+  "@scanningAlbum": {
+    "description": "Message when scanning a specific album",
+    "placeholders": {
+      "album": {
+        "type": "String"
+      }
+    }
+  },
+  "noDeleteRightsLeft": "Silme Hakkınız Kalmadı",
+  "@noDeleteRightsLeft": {
+    "description": "Title when deletion rights are exhausted"
+  },
+  "noDeleteRightsLeftMessage": "Silme hakkınız kalmadı. Galerinizi temizlemeye devam etmek için sınırsız silme hakkı satın alın.",
+  "@noDeleteRightsLeftMessage": {
+    "description": "Message when deletion rights are exhausted"
+  },
+  "galleryStatsTitle": "Galeri İstatistikleri",
+  "@galleryStatsTitle": {
+    "description": "Gallery statistics page title"
+  },
+  "stop": "Durdur",
+  "@stop": {
+    "description": "Stop button text"
+  },
+  "spaceSaved": "Kazanılan",
+  "@spaceSaved": {
+    "description": "Space saved label"
+  },
+  "lastAnalysis": "Son analiz:",
+  "@lastAnalysis": {
+    "description": "Last analysis label"
+  },
+  "previousAnalysis": "Önceki analiz:",
+  "@previousAnalysis": {
+    "description": "Previous analysis label"
+  },
+  "mediaLabel": "Medya",
+  "@mediaLabel": {
+    "description": "Media label for change chip"
+  },
+  "sizeLabel": "Boyut",
+  "@sizeLabel": {
+    "description": "Size label for change chip"
+  },
+  "albumDetails": "Albüm Detayları",
+  "@albumDetails": {
+    "description": "Album details section title"
+  },
+  "mediaUnit": "medya",
+  "@mediaUnit": {
+    "description": "Media unit text (singular/plural)"
+  },
+  "reAnalyze": "Tekrardan Analiz Et",
+  "@reAnalyze": {
+    "description": "Re-analyze button text"
+  },
+  "progressFormat": "{albums} albüm • {media} medya",
+  "@progressFormat": {
+    "description": "Progress text format showing albums and media count",
+    "placeholders": {
+      "albums": {
+        "type": "String"
+      },
+      "media": {
+        "type": "int"
+      }
+    }
+  },
+  "errorMessage": "Hata: {error}",
+  "@errorMessage": {
+    "description": "Error message with error text",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteOperationFailed": "Silme işlemi başarısız oldu. Lütfen tekrar deneyin.",
+  "@deleteOperationFailed": {
+    "description": "Message shown when delete operation fails"
+  },
+  "blurPhotosTitle": "Blurlu Fotoğraflar",
+  "@blurPhotosTitle": {
+    "description": "Blur photos page title"
+  },
+  "blurDetectionTitle": "Blur ve Pixelation Tespiti",
+  "@blurDetectionTitle": {
+    "description": "Blur detection page title"
+  },
+  "blurPhotoDetection": "Blurlu Fotoğraf Tespiti",
+  "@blurPhotoDetection": {
+    "description": "Blur photo detection title"
+  },
+  "blurDetectionDescription": "Seçtiğiniz albümlerde blurlu ve pixelleşmiş fotoğrafları tespit edin",
+  "@blurDetectionDescription": {
+    "description": "Blur detection description"
+  },
+  "sensitivity": "Hassasiyet",
+  "@sensitivity": {
+    "description": "Sensitivity label"
+  },
+  "thresholdLabel": "Threshold: {value}",
+  "@thresholdLabel": {
+    "description": "Threshold label with value",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "thresholdDescription": "Düşük değer = Daha fazla blur tespiti\nYüksek değer = Sadece çok blurlu fotoğraflar",
+  "@thresholdDescription": {
+    "description": "Threshold description"
+  },
+  "sensitivityLow": "Düşük",
+  "@sensitivityLow": {
+    "description": "Low sensitivity label"
+  },
+  "sensitivityMedium": "Orta",
+  "@sensitivityMedium": {
+    "description": "Medium sensitivity label"
+  },
+  "sensitivityHigh": "Yüksek",
+  "@sensitivityHigh": {
+    "description": "High sensitivity label"
+  },
+  "sensitivityDescription": "Hassasiyet seviyesi, bulanık fotoğrafların tespit edilme oranını belirler. Düşük hassasiyet daha fazla fotoğraf tespit eder, yüksek hassasiyet sadece çok bulanık fotoğrafları bulur.",
+  "@sensitivityDescription": {
+    "description": "Sensitivity description"
+  },
+  "sensitivityLevelsDescription": "• Düşük: Hafif bulanık fotoğrafları da tespit eder (daha fazla sonuç)\n• Orta: Orta seviye bulanık fotoğrafları tespit eder (dengeli)\n• Yüksek: Sadece çok bulanık fotoğrafları tespit eder (daha az sonuç)",
+  "@sensitivityLevelsDescription": {
+    "description": "Detailed description of sensitivity levels"
+  },
+  "currentSensitivity": "Mevcut Hassasiyet",
+  "@currentSensitivity": {
+    "description": "Current sensitivity label"
+  },
+  "noScanRightsLeft": "Tarama Hakkınız Kalmadı",
+  "@noScanRightsLeft": {
+    "description": "No scan rights left message"
+  },
+  "albumSelection": "Albüm Seçimi",
+  "@albumSelection": {
+    "description": "Album selection label"
+  },
+  "startScan": "Tarama Başlat",
+  "@startScan": {
+    "description": "Start scan button text"
+  },
+  "scanningBlurPhotos": "Blurlu ve pixelleşmiş fotoğraflar taranıyor...",
+  "@scanningBlurPhotos": {
+    "description": "Scanning blur photos message"
+  },
+  "premiumScan": "Premium Tarama",
+  "@premiumScan": {
+    "description": "Premium scan label"
+  },
+  "remainingScanRights": "Kalan Tarama",
+  "@remainingScanRights": {
+    "description": "Remaining scan rights label"
+  },
+  "scanLimit": "Tarama Limiti",
+  "@scanLimit": {
+    "description": "Scan limit label"
+  },
+  "scanLimitLow": "Tarama hakkınız azaldı! Premium'a yükseltin.",
+  "@scanLimitLow": {
+    "description": "Scan limit low warning message"
+  },
+  "watchAdToGetScanLimit": "Reklam İzle +{amount} Tarama Hakkı",
+  "@watchAdToGetScanLimit": {
+    "description": "Watch ad to get scan limit button text",
+    "placeholders": {
+      "amount": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "loading": "Yükleniyor...",
+  "@loading": {
+    "description": "Loading text"
+  },
+  "photoUnit": "fotoğraf",
+  "@photoUnit": {
+    "description": "Photo unit text"
+  },
+  "selectAlbumsAndScan": "Albümleri seçip tarama yapın",
+  "@selectAlbumsAndScan": {
+    "description": "Select albums and scan message"
+  },
+  "noDuplicateGroupsFound": "Duplicate grup bulunamadı",
+  "@noDuplicateGroupsFound": {
+    "description": "No duplicate groups found message"
+  },
+  "stateInfo": "{albums} albüm, {groups} grup",
+  "@stateInfo": {
+    "description": "State information with albums and groups count",
+    "placeholders": {
+      "albums": {
+        "type": "int"
+      },
+      "groups": {
+        "type": "int"
+      }
+    }
+  },
+  "blurDetectionDescriptionFromAppBar": "Yapay zeka destekli bulanık ve pixelleşmiş fotoğraf tespiti. Depolama alanınızı temizleyin ve kaliteli fotoğraflarınızı koruyun.",
+  "@blurDetectionDescriptionFromAppBar": {
+    "description": "Blur detection description from app bar"
+  },
+  "duplicateDetectionDescriptionFromAppBar": "Yapay zeka destekli yinelenen fotoğraf tespiti. Gereksiz kopyaları temizleyerek depolama alanınızı optimize edin.",
+  "@duplicateDetectionDescriptionFromAppBar": {
+    "description": "Duplicate detection description from app bar"
+  },
+  "aiPowered": "Yapay Zeka Destekli",
+  "@aiPowered": {
+    "description": "AI powered label"
+  },
+  "listView": "Liste görünümü",
+  "@listView": {
+    "description": "List view tooltip"
+  },
+  "gridView": "Grid görünümü",
+  "@gridView": {
+    "description": "Grid view tooltip"
+  },
+  "unknown": "Bilinmeyen",
+  "@unknown": {
+    "description": "Unknown album name"
+  },
+  "blurScoreLabel": "Blur: {score}",
+  "@blurScoreLabel": {
+    "description": "Blur score label",
+    "placeholders": {
+      "score": {
+        "type": "String"
+      }
+    }
+  },
+  "pixelationScoreLabel": "Pixel: {score}",
+  "@pixelationScoreLabel": {
+    "description": "Pixelation score label",
+    "placeholders": {
+      "score": {
+        "type": "String"
+      }
+    }
+  },
+  "deletePhoto": "Fotoğrafı Sil",
+  "@deletePhoto": {
+    "description": "Delete photo dialog title"
+  },
+  "deletePhotoMessage": "Bu {type} fotoğraf silinecek.",
+  "@deletePhotoMessage": {
+    "description": "Delete photo confirmation message",
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
+  "close": "Kapat",
+  "@close": {
+    "description": "Close button text"
+  },
+  "deleteDuplicatesMessage": "{count} duplicate fotoğraf silinecek.",
+  "@deleteDuplicatesMessage": {
+    "description": "Delete duplicates confirmation message",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noResultsFound": "Sonuç bulunamadı",
+  "@noResultsFound": {
+    "description": "No results found message"
+  },
+  "group": "Grup",
+  "@group": {
+    "description": "Group label"
+  },
+  "photo": "Fotoğraf",
+  "@photo": {
+    "description": "Photo label"
+  },
+  "blurry": "Blurlu",
+  "@blurry": {
+    "description": "Blurry photo type"
+  },
+  "pixelated": "Pixelleşmiş",
+  "@pixelated": {
+    "description": "Pixelated photo type"
+  },
+  "blurryAndPixelated": "Blurlu ve Pixelleşmiş",
+  "@blurryAndPixelated": {
+    "description": "Blurry and pixelated photo type"
+  },
+  "sharp": "Keskin",
+  "@sharp": {
+    "description": "Sharp photo type"
+  },
+  "scanningDuplicatePhotos": "Duplicate Fotoğraflar Taranıyor...",
+  "@scanningDuplicatePhotos": {
+    "description": "Scanning duplicate photos message"
+  },
+  "duplicatePhotoDetection": "Duplicate Fotoğraf Tespiti",
+  "@duplicatePhotoDetection": {
+    "description": "Duplicate photo detection title"
+  },
+  "blurDetectionOnboardingTitle": "Bulanık Fotoğrafları Tespit Et",
+  "@blurDetectionOnboardingTitle": {
+    "description": "Onboarding page 4 title for blur detection"
+  },
+  "blurDetectionOnboardingDescription": "Galerinizdeki bulanık ve pixelleşmiş fotoğrafları otomatik olarak tespit edin. Bu fotoğrafları kolayca bulup silebilirsiniz.",
+  "@blurDetectionOnboardingDescription": {
+    "description": "Onboarding page 4 description for blur detection"
+  },
+  "duplicateDetectionOnboardingTitle": "Aynı Fotoğrafları Bul",
+  "@duplicateDetectionOnboardingTitle": {
+    "description": "Onboarding page 5 title for duplicate detection"
+  },
+  "duplicateDetectionOnboardingDescription": "Galerinizdeki tekrarlanan fotoğrafları akıllı algoritma ile tespit edin. Gereksiz kopyaları temizleyerek alan kazanın.",
+  "@duplicateDetectionOnboardingDescription": {
+    "description": "Onboarding page 5 description for duplicate detection"
+  },
+  "weNeedYourAccessTitle": "Erişiminize\nİhtiyacımız Var",
+  "@weNeedYourAccessTitle": {
+    "description": "Permission request page title with line break"
+  },
+  "resetToStart": "Galeri Başına Dön",
+  "@resetToStart": {
+    "description": "Button text to reset gallery to start"
+  },
+  "swipeTab": "Kaydır",
+  "@swipeTab": {
+    "description": "Swipe tab name"
+  },
+  "blurTab": "Bulanık",
+  "@blurTab": {
+    "description": "Blur tab name"
+  },
+  "duplicateTab": "Yinelenen",
+  "@duplicateTab": {
+    "description": "Duplicate tab name"
+  },
+  "cleanupComplete": "Temizlik Tamamlandı!",
+  "@cleanupComplete": {
+    "description": "Title for cleanup complete dialog"
+  },
+  "cleanupCompleteMessage": "Seçilen tüm fotoğraflar başarıyla silindi. Galeriniz artık daha temiz ve hafif.",
+  "@cleanupCompleteMessage": {
+    "description": "Message for cleanup complete dialog"
+  },
+  "cleanupCompleteMessageWithCount": "{count} fotoğraf başarıyla silindi. Galeriniz artık daha temiz ve hafif.",
+  "@cleanupCompleteMessageWithCount": {
+    "description": "Message for cleanup complete dialog with deleted count",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "done": "Tamam",
+  "@done": {
+    "description": "Done button text"
+  },
+  "viewGallery": "Galeriyi Görüntüle",
+  "@viewGallery": {
+    "description": "View gallery link text"
   }
 }
 

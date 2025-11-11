@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lottie/lottie.dart';
 
 import '../application/permissions_controller.dart';
 import '../../gallery/application/gallery_stats_provider.dart';
-import '../../../core/services/preferences_service.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class PermissionRequestPage extends ConsumerStatefulWidget {
   const PermissionRequestPage({super.key});
@@ -20,21 +21,38 @@ class _PermissionRequestPageState extends ConsumerState<PermissionRequestPage> {
   @override
   void initState() {
     super.initState();
-    // 1 saniye sonra otomatik olarak izin iste
-    Future.delayed(const Duration(seconds: 1), () {
-      if (mounted && !_hasRequestedPermission) {
-        _requestPermission();
+    // İzin durumunu kontrol et ve eğer izin verilmemişse otomatik olarak izin iste
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final permission = ref.read(permissionsControllerProvider);
+      if (permission != GalleryPermissionStatus.authorized) {
+        // Onboarding bittikten sonra 500ms sonra otomatik olarak izin iste
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (mounted && !_hasRequestedPermission) {
+            _requestPermission();
+          }
+        });
       }
     });
   }
 
   Future<void> _requestPermission() async {
     if (_hasRequestedPermission) return;
+
+    // İzin durumunu tekrar kontrol et
+    final currentPermission = ref.read(permissionsControllerProvider);
+    if (currentPermission == GalleryPermissionStatus.authorized) {
+      // İzin zaten verilmişse işlem yapma
+      return;
+    }
+
     _hasRequestedPermission = true;
 
+    // OS'un native izin dialog'unu göster
     final ok = await ref.read(permissionsControllerProvider.notifier).request();
-    if (ok && mounted) {
-      ref.read(galleryStatsProvider.notifier).refresh();
+
+    if (!ok && mounted) {
+      // İzin reddedildiyse tekrar deneme için flag'i sıfırla
+      _hasRequestedPermission = false;
     }
   }
 
@@ -50,12 +68,12 @@ class _PermissionRequestPageState extends ConsumerState<PermissionRequestPage> {
       if (next == GalleryPermissionStatus.authorized &&
           context.mounted &&
           prev != next) {
-        // İzin yeni verildiyse istatistikleri yükle ve start clean page'e yönlendir
+        // İzin yeni verildiyse swipe page'e yönlendir
+        // Analiz başlatma işlemi _requestPermission() içinde yapılıyor (sadece ilk defa)
         Future.microtask(() {
           if (mounted) {
-            ref.read(galleryStatsProvider.notifier).refresh();
-            // Start clean page'e yönlendir
-            context.go('/start');
+            // Swipe page'e yönlendir
+            context.go('/swipe');
           }
         });
       }
@@ -70,7 +88,12 @@ class _PermissionRequestPageState extends ConsumerState<PermissionRequestPage> {
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
-          title: const Text('Gallery Cleaner'),
+          title: Builder(
+            builder: (ctx) {
+              final l10n = AppLocalizations.of(ctx)!;
+              return Text(l10n.appTitle);
+            },
+          ),
           centerTitle: true,
         ),
         body: Stack(
@@ -98,34 +121,54 @@ class _PermissionRequestPageState extends ConsumerState<PermissionRequestPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const SizedBox(height: 16),
-                    Text(
-                      'Galerini\ntemizlemeye başla',
-                      style: theme.textTheme.displaySmall?.copyWith(
-                        fontWeight: FontWeight.w800,
-                        height: 1.05,
-                      ),
+                    Builder(
+                      builder: (ctx) {
+                        final l10n = AppLocalizations.of(ctx)!;
+                        return Text(
+                          l10n.startCleaning,
+                          style: theme.textTheme.displaySmall?.copyWith(
+                            fontWeight: FontWeight.w800,
+                            height: 1.05,
+                          ),
+                        );
+                      },
                     ),
                     const SizedBox(height: 12),
-                    Text(
-                      'Kartları sağa kaydır: Tut • sola kaydır: Sil. Üst hedeflere sürükleyerek klasörlere taşı.',
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        color: theme.textTheme.bodyMedium?.color?.withOpacity(
-                          0.9,
-                        ),
-                      ),
+                    Builder(
+                      builder: (ctx) {
+                        final l10n = AppLocalizations.of(ctx)!;
+                        return Text(
+                          l10n.swipeCardsDescription,
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            color: theme.textTheme.bodyMedium?.color
+                                ?.withOpacity(0.9),
+                          ),
+                        );
+                      },
                     ),
                     const SizedBox(height: 20),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: const [
-                        _FeatureChip(icon: Icons.swipe, label: 'Hızlı swipe'),
-                        _FeatureChip(
-                          icon: Icons.folder_open,
-                          label: 'Klasöre sürükle',
-                        ),
-                        _FeatureChip(icon: Icons.undo, label: 'Undo güvenliği'),
-                      ],
+                    Builder(
+                      builder: (ctx) {
+                        final l10n = AppLocalizations.of(ctx)!;
+                        return Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            _FeatureChip(
+                              icon: Icons.swipe,
+                              label: l10n.quickSwipe,
+                            ),
+                            _FeatureChip(
+                              icon: Icons.folder_open,
+                              label: l10n.dragToFolder,
+                            ),
+                            _FeatureChip(
+                              icon: Icons.undo,
+                              label: l10n.undoSafety,
+                            ),
+                          ],
+                        );
+                      },
                     ),
                     const Spacer(),
                     Center(
@@ -152,12 +195,21 @@ class _PermissionRequestPageState extends ConsumerState<PermissionRequestPage> {
                                 statsState.error != null && stats == null;
 
                             if (isLoading) {
-                              return const Center(
-                                child: CircularProgressIndicator(),
+                              return Center(
+                                child: SizedBox(
+                                  width: 100,
+                                  height: 100,
+                                  child: Lottie.asset(
+                                    'assets/lottie/loading.json',
+                                    fit: BoxFit.contain,
+                                    repeat: true,
+                                  ),
+                                ),
                               );
                             }
 
                             if (hasError) {
+                              final l10n = AppLocalizations.of(context)!;
                               return Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
@@ -168,7 +220,9 @@ class _PermissionRequestPageState extends ConsumerState<PermissionRequestPage> {
                                   ),
                                   const SizedBox(height: 12),
                                   Text(
-                                    'Hata: ${statsState.error}',
+                                    l10n.errorMessage(
+                                      statsState.error?.toString() ?? '',
+                                    ),
                                     style: theme.textTheme.bodyMedium,
                                     textAlign: TextAlign.center,
                                   ),
@@ -179,18 +233,27 @@ class _PermissionRequestPageState extends ConsumerState<PermissionRequestPage> {
                                           .read(galleryStatsProvider.notifier)
                                           .refresh();
                                     },
-                                    child: const Text('Tekrar Dene'),
+                                    child: Text(l10n.tryAgain),
                                   ),
                                 ],
                               );
                             }
 
                             if (stats == null) {
-                              return const Center(
-                                child: CircularProgressIndicator(),
+                              return Center(
+                                child: SizedBox(
+                                  width: 100,
+                                  height: 100,
+                                  child: Lottie.asset(
+                                    'assets/lottie/loading.json',
+                                    fit: BoxFit.contain,
+                                    repeat: true,
+                                  ),
+                                ),
                               );
                             }
 
+                            final l10n = AppLocalizations.of(context)!;
                             return Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
@@ -201,7 +264,7 @@ class _PermissionRequestPageState extends ConsumerState<PermissionRequestPage> {
                                 ),
                                 const SizedBox(height: 16),
                                 Text(
-                                  'Galeri Bilgileri',
+                                  l10n.galleryInfo,
                                   style: theme.textTheme.titleLarge?.copyWith(
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -209,43 +272,35 @@ class _PermissionRequestPageState extends ConsumerState<PermissionRequestPage> {
                                 const SizedBox(height: 24),
                                 _StatRow(
                                   icon: Icons.folder,
-                                  label: 'Albüm',
+                                  label: l10n.album,
                                   value: '${stats.albumCount}',
                                 ),
                                 const SizedBox(height: 12),
                                 _StatRow(
                                   icon: Icons.photo,
-                                  label: 'Fotoğraf & Video',
+                                  label: l10n.photoVideo,
                                   value: '${stats.mediaCount}',
                                 ),
                                 const SizedBox(height: 12),
                                 _StatRow(
                                   icon: Icons.storage,
-                                  label: 'Toplam Boyut',
+                                  label: l10n.totalSize,
                                   value:
                                       '${stats.totalSizeMB.toStringAsFixed(1)} MB',
                                 ),
                                 const SizedBox(height: 24),
                                 FilledButton.icon(
                                   icon: const Icon(Icons.play_arrow),
-                                  label: const Text('Temizlemeye Başla'),
+                                  label: Text(l10n.startCleaningButton),
                                   style: FilledButton.styleFrom(
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 32,
                                       vertical: 16,
                                     ),
                                   ),
-                                  onPressed: () async {
+                                  onPressed: () {
                                     if (context.mounted) {
-                                      // Temizlemeye başlandığını işaretle
-                                      final prefsService = PreferencesService();
-                                      await prefsService.setCleaningStarted(
-                                        true,
-                                      );
-
-                                      if (context.mounted) {
-                                        context.go('/swipe');
-                                      }
+                                      context.go('/swipe');
                                     }
                                   },
                                 ),
@@ -320,24 +375,34 @@ class _PermissionRequestPageState extends ConsumerState<PermissionRequestPage> {
                     color: theme.colorScheme.primary,
                   ),
                   const SizedBox(height: 32),
-                  Text(
-                    'Erişiminize\nİhtiyacımız Var',
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.headlineLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                  Builder(
+                    builder: (ctx) {
+                      final l10n = AppLocalizations.of(ctx)!;
+                      return Text(
+                        l10n.weNeedYourAccessTitle,
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.headlineLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      );
+                    },
                   ),
                   const SizedBox(height: 16),
-                  Text(
-                    'Galeri temizleme işlemlerini yapabilmek için fotoğraf ve videolarınıza erişim iznine ihtiyacımız var.',
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.bodyLarge?.copyWith(
-                      color: theme.textTheme.bodyMedium?.color?.withOpacity(
-                        0.8,
-                      ),
-                    ),
+                  Builder(
+                    builder: (ctx) {
+                      final l10n = AppLocalizations.of(ctx)!;
+                      return Text(
+                        l10n.galleryPermissionDescription,
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          color: theme.textTheme.bodyMedium?.color?.withOpacity(
+                            0.8,
+                          ),
+                        ),
+                      );
+                    },
                   ),
-                  const SizedBox(height: 48),
+                  const SizedBox(height: 24),
                   Container(
                     constraints: const BoxConstraints(maxWidth: 400),
                     padding: const EdgeInsets.all(24),
@@ -352,66 +417,75 @@ class _PermissionRequestPageState extends ConsumerState<PermissionRequestPage> {
                         ),
                       ],
                     ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _PermissionFeature(
-                          icon: Icons.swipe,
-                          title: 'Hızlı Temizlik',
-                          description:
-                              'Fotoğraflarınızı hızlıca gözden geçirin',
-                        ),
-                        const SizedBox(height: 16),
-                        _PermissionFeature(
-                          icon: Icons.folder,
-                          title: 'Organize Et',
-                          description: 'Albümlerinize taşıyın ve düzenleyin',
-                        ),
-                        const SizedBox(height: 16),
-                        _PermissionFeature(
-                          icon: Icons.delete_outline,
-                          title: 'Güvenli Silme',
-                          description: 'Gereksiz fotoğrafları temizleyin',
-                        ),
-                      ],
+                    child: Builder(
+                      builder: (context) {
+                        final l10n = AppLocalizations.of(context)!;
+                        return Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            _PermissionFeature(
+                              icon: Icons.swipe,
+                              title: l10n.quickCleanupTitle,
+                              description: l10n.quickCleanupDescription,
+                            ),
+
+                            const SizedBox(height: 16),
+                            _PermissionFeature(
+                              icon: Icons.blur_on,
+                              title:
+                                  '${l10n.blurPhotoDetection} - ${l10n.aiPowered}',
+                              description: l10n.blurDetectionDescription,
+                            ),
+                            const SizedBox(height: 16),
+                            _PermissionFeature(
+                              icon: Icons.content_copy,
+                              title:
+                                  '${l10n.duplicatePhotoDetection} - ${l10n.aiPowered}',
+                              description:
+                                  l10n.duplicateDetectionDescriptionFromAppBar,
+                            ),
+                          ],
+                        );
+                      },
                     ),
                   ),
                   const SizedBox(height: 32),
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 400),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: FilledButton.icon(
-                        icon: const Icon(Icons.lock_open),
-                        label: const Text('İzin Ver'),
-                        style: FilledButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
+                  Builder(
+                    builder: (ctx) {
+                      final l10n = AppLocalizations.of(ctx)!;
+                      return ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 400),
+                        child: SizedBox(
+                          width: double.infinity,
+                          child: FilledButton.icon(
+                            icon: const Icon(Icons.lock_open),
+                            label: Text(l10n.allowAccess),
+                            style: FilledButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                            ),
+                            onPressed: _requestPermission,
+                          ),
                         ),
-                        onPressed: _requestPermission,
-                      ),
-                    ),
+                      );
+                    },
                   ),
                   const SizedBox(height: 12),
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 400),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: TextButton(
-                        onPressed: () => ref
-                            .read(permissionsControllerProvider.notifier)
-                            .openSettings(),
-                        child: const Text('Ayarlarda Yönet'),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Opacity(
-                    opacity: 0.7,
-                    child: Text(
-                      "iOS'ta silmeler \"Recently Deleted\"e taşınır ve 30 gün içinde geri alınabilir.",
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.bodySmall,
-                    ),
+                  Builder(
+                    builder: (ctx) {
+                      final l10n = AppLocalizations.of(ctx)!;
+                      return ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 400),
+                        child: SizedBox(
+                          width: double.infinity,
+                          child: TextButton(
+                            onPressed: () => ref
+                                .read(permissionsControllerProvider.notifier)
+                                .openSettings(),
+                            child: Text(l10n.openSettings),
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),

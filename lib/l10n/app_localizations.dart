@@ -304,11 +304,17 @@ abstract class AppLocalizations {
   /// **'Statistics'**
   String get historyAndQueue;
 
-  /// Message when there is no history
+  /// Title when there is no history
   ///
   /// In en, this message translates to:
-  /// **'No history yet.'**
+  /// **'No Statistics Yet'**
   String get noHistoryYet;
+
+  /// Description when there is no history
+  ///
+  /// In en, this message translates to:
+  /// **'Start reviewing and organizing your photos to see your activity and statistics here.'**
+  String get noHistoryYetDescription;
 
   /// Keep action type
   ///
@@ -640,10 +646,82 @@ abstract class AppLocalizations {
   /// **'+20 Deletions'**
   String get earnDeletionRights;
 
-  /// Message when ad is not ready
+  /// Button text to watch ad and earn deletion rights
   ///
   /// In en, this message translates to:
-  /// **'Ad is not ready yet. Please try again in a few seconds.'**
+  /// **'+20 Deletions'**
+  String get watchAdAndEarnDeletionRights;
+
+  /// Description for gallery permission request
+  ///
+  /// In en, this message translates to:
+  /// **'We need access to your photos and videos to perform gallery cleaning operations.'**
+  String get galleryPermissionDescription;
+
+  /// Quick cleanup feature title
+  ///
+  /// In en, this message translates to:
+  /// **'Quick Cleanup'**
+  String get quickCleanupTitle;
+
+  /// Quick cleanup feature description
+  ///
+  /// In en, this message translates to:
+  /// **'Quickly review your photos'**
+  String get quickCleanupDescription;
+
+  /// Organize feature title
+  ///
+  /// In en, this message translates to:
+  /// **'Organize'**
+  String get organizeTitle;
+
+  /// Organize feature description
+  ///
+  /// In en, this message translates to:
+  /// **'Move and organize to your albums'**
+  String get organizeDescription;
+
+  /// Safe delete feature title
+  ///
+  /// In en, this message translates to:
+  /// **'Safe Delete'**
+  String get safeDeleteTitle;
+
+  /// Safe delete feature description
+  ///
+  /// In en, this message translates to:
+  /// **'Clean up unnecessary photos'**
+  String get safeDeleteDescription;
+
+  /// Title for increasing deletion rights dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Increase Deletion Rights'**
+  String get increaseDeletionRights;
+
+  /// Title for increasing scan rights dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Increase Scan Rights'**
+  String get increaseScanRights;
+
+  /// Text showing deletion rights earned from watching ad with amount
+  ///
+  /// In en, this message translates to:
+  /// **'+{amount} Deletions'**
+  String earnDeleteRights(int amount);
+
+  /// Text showing scan rights earned from watching ad with amount
+  ///
+  /// In en, this message translates to:
+  /// **'+{amount} Scans'**
+  String earnScanRights(int amount);
+
+  /// Ad not ready message
+  ///
+  /// In en, this message translates to:
+  /// **'Ad Loading...'**
   String get adNotReady;
 
   /// Success message when user earns deletion rights from ad
@@ -663,6 +741,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Go Premium'**
   String get premiumTitle;
+
+  /// Title for premium paywall dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock Premium Features'**
+  String get unlockPremiumFeatures;
 
   /// Premium dialog description
   ///
@@ -712,6 +796,30 @@ abstract class AppLocalizations {
   /// **'Buy Unlimited Deletion'**
   String get buyUnlimitedRights;
 
+  /// Button text to buy unlimited blur scan rights
+  ///
+  /// In en, this message translates to:
+  /// **'Buy Unlimited Blur'**
+  String get buyUnlimitedBlurRights;
+
+  /// Button text to buy unlimited duplicate scan rights
+  ///
+  /// In en, this message translates to:
+  /// **'Buy Unlimited Duplicate'**
+  String get buyUnlimitedDuplicateRights;
+
+  /// Unlimited blur scans feature text
+  ///
+  /// In en, this message translates to:
+  /// **'Unlimited Blur Scans • Lifetime Access'**
+  String get unlimitedBlurScans;
+
+  /// Unlimited duplicate scans feature text
+  ///
+  /// In en, this message translates to:
+  /// **'Unlimited Duplicate Scans • Lifetime Access'**
+  String get unlimitedDuplicateScans;
+
   /// One time payment label
   ///
   /// In en, this message translates to:
@@ -735,6 +843,738 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Purchase Now'**
   String get purchaseNow;
+
+  /// Limited time offer label
+  ///
+  /// In en, this message translates to:
+  /// **'Limited Time'**
+  String get limitedTimeOffer;
+
+  /// 25% discount label
+  ///
+  /// In en, this message translates to:
+  /// **'25% Off'**
+  String get discount25;
+
+  /// Original price label
+  ///
+  /// In en, this message translates to:
+  /// **'Original Price'**
+  String get originalPrice;
+
+  /// Save now text
+  ///
+  /// In en, this message translates to:
+  /// **'Save Now'**
+  String get saveNow;
+
+  /// Best value badge
+  ///
+  /// In en, this message translates to:
+  /// **'Best Value'**
+  String get bestValue;
+
+  /// Message when purchase is successful
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase successful! You now have access to premium features.'**
+  String get purchaseSuccessful;
+
+  /// Message shown when user becomes premium - lifetime access confirmation
+  ///
+  /// In en, this message translates to:
+  /// **'You now have lifetime access to these benefits!'**
+  String get lifetimeAccessMessage;
+
+  /// Title shown when user is premium
+  ///
+  /// In en, this message translates to:
+  /// **'You are Premium'**
+  String get youArePremium;
+
+  /// Active status badge text
+  ///
+  /// In en, this message translates to:
+  /// **'ACTIVE'**
+  String get active;
+
+  /// Description text for premium users explaining their access
+  ///
+  /// In en, this message translates to:
+  /// **'You have access to all premium features. Unlimited deletion, scanning, and more!'**
+  String get premiumAccessDescription;
+
+  /// Short label for unlimited feature
+  ///
+  /// In en, this message translates to:
+  /// **'Unlimited'**
+  String get unlimited;
+
+  /// Short label for ad-free feature
+  ///
+  /// In en, this message translates to:
+  /// **'Ad-free'**
+  String get adFree;
+
+  /// Short label for priority support feature
+  ///
+  /// In en, this message translates to:
+  /// **'Priority'**
+  String get priority;
+
+  /// Message when store is not available
+  ///
+  /// In en, this message translates to:
+  /// **'Store is not available'**
+  String get storeNotAvailable;
+
+  /// Message when purchase fails
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase failed. Please try again.'**
+  String get purchaseFailed;
+
+  /// Message when purchase initiation fails
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to initiate purchase'**
+  String get failedToInitiatePurchase;
+
+  /// Message when purchase error occurs
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase error'**
+  String get purchaseError;
+
+  /// Message when purchases are restored successfully
+  ///
+  /// In en, this message translates to:
+  /// **'Purchases restored successfully!'**
+  String get purchasesRestoredSuccessfully;
+
+  /// Message when no previous purchases are found
+  ///
+  /// In en, this message translates to:
+  /// **'No previous purchases found to restore.'**
+  String get noPreviousPurchases;
+
+  /// Message when restore error occurs
+  ///
+  /// In en, this message translates to:
+  /// **'Restore error'**
+  String get restoreError;
+
+  /// Message when restoring purchases
+  ///
+  /// In en, this message translates to:
+  /// **'Restoring...'**
+  String get restoring;
+
+  /// Button text to restore purchases
+  ///
+  /// In en, this message translates to:
+  /// **'Restore Purchases'**
+  String get restorePurchases;
+
+  /// Duplicate photos page title
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate Photos'**
+  String get duplicatePhotos;
+
+  /// Button to scan for duplicate photos
+  ///
+  /// In en, this message translates to:
+  /// **'Scan for Duplicates'**
+  String get scanForDuplicates;
+
+  /// Message when scanning for duplicates
+  ///
+  /// In en, this message translates to:
+  /// **'Scanning for duplicates...'**
+  String get scanningDuplicates;
+
+  /// Message when no duplicates are found
+  ///
+  /// In en, this message translates to:
+  /// **'No duplicate photos found'**
+  String get noDuplicatesFound;
+
+  /// Message showing duplicate groups count
+  ///
+  /// In en, this message translates to:
+  /// **'{count} duplicate groups found'**
+  String duplicatesFound(int count);
+
+  /// Label for total duplicate photos count
+  ///
+  /// In en, this message translates to:
+  /// **'Total Duplicates'**
+  String get totalDuplicates;
+
+  /// Label for space that can be saved
+  ///
+  /// In en, this message translates to:
+  /// **'Space to Save'**
+  String get spaceToSave;
+
+  /// Button to delete duplicate photos
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Duplicates'**
+  String get deleteDuplicates;
+
+  /// Title for album selection dialog for scanning
+  ///
+  /// In en, this message translates to:
+  /// **'Select Albums to Scan'**
+  String get selectAlbumsToScan;
+
+  /// Button to scan selected albums
+  ///
+  /// In en, this message translates to:
+  /// **'Scan Selected Albums'**
+  String get scanSelectedAlbums;
+
+  /// Button to delete all duplicate photos
+  ///
+  /// In en, this message translates to:
+  /// **'Delete All Duplicates'**
+  String get deleteAllDuplicates;
+
+  /// Message for deleting all duplicate photos
+  ///
+  /// In en, this message translates to:
+  /// **'{count} duplicate photos will be deleted. Are you sure?'**
+  String deleteAllDuplicatesMessage(int count);
+
+  /// Button to delete all blurry photos
+  ///
+  /// In en, this message translates to:
+  /// **'Delete All Blurry Photos'**
+  String get deleteAllBlurryPhotos;
+
+  /// Message for deleting all blurry photos
+  ///
+  /// In en, this message translates to:
+  /// **'{count} blurry photos will be deleted. Are you sure?'**
+  String deleteAllBlurryPhotosMessage(int count);
+
+  /// Button to start a new scan
+  ///
+  /// In en, this message translates to:
+  /// **'Start New Scan'**
+  String get startNewScan;
+
+  /// Scan completed title
+  ///
+  /// In en, this message translates to:
+  /// **'Scan Completed'**
+  String get scanCompleted;
+
+  /// Scan completed message for blur photos
+  ///
+  /// In en, this message translates to:
+  /// **'{count} blurry photos found'**
+  String scanCompletedBlurMessage(int count);
+
+  /// Scan completed message for duplicate photos
+  ///
+  /// In en, this message translates to:
+  /// **'{count} duplicate groups found'**
+  String scanCompletedDuplicateMessage(int count);
+
+  /// No blurry photos found message
+  ///
+  /// In en, this message translates to:
+  /// **'No blurry or pixelated photos found in your gallery.'**
+  String get noBlurryPhotosFound;
+
+  /// No duplicate photos found message
+  ///
+  /// In en, this message translates to:
+  /// **'No duplicate photos found in your gallery.'**
+  String get noDuplicatePhotosFound;
+
+  /// Label for duplicate photo group
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate Group'**
+  String get duplicateGroup;
+
+  /// Number of photos in duplicate group
+  ///
+  /// In en, this message translates to:
+  /// **'{count} photos'**
+  String photosInGroup(int count);
+
+  /// Label indicating oldest photo will be kept
+  ///
+  /// In en, this message translates to:
+  /// **'Keep Oldest'**
+  String get keepOldest;
+
+  /// Message when scanning a specific album
+  ///
+  /// In en, this message translates to:
+  /// **'Scanning {album}...'**
+  String scanningAlbum(String album);
+
+  /// Title when deletion rights are exhausted
+  ///
+  /// In en, this message translates to:
+  /// **'No Deletion Rights Left'**
+  String get noDeleteRightsLeft;
+
+  /// Message when deletion rights are exhausted
+  ///
+  /// In en, this message translates to:
+  /// **'You have no deletion rights left. Get unlimited deletion rights to continue cleaning your gallery.'**
+  String get noDeleteRightsLeftMessage;
+
+  /// Gallery statistics page title
+  ///
+  /// In en, this message translates to:
+  /// **'Gallery Statistics'**
+  String get galleryStatsTitle;
+
+  /// Stop button text
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get stop;
+
+  /// Space saved label
+  ///
+  /// In en, this message translates to:
+  /// **'Space Saved'**
+  String get spaceSaved;
+
+  /// Last analysis label
+  ///
+  /// In en, this message translates to:
+  /// **'Last analysis:'**
+  String get lastAnalysis;
+
+  /// Previous analysis label
+  ///
+  /// In en, this message translates to:
+  /// **'Previous analysis:'**
+  String get previousAnalysis;
+
+  /// Media label for change chip
+  ///
+  /// In en, this message translates to:
+  /// **'Media'**
+  String get mediaLabel;
+
+  /// Size label for change chip
+  ///
+  /// In en, this message translates to:
+  /// **'Size'**
+  String get sizeLabel;
+
+  /// Album details section title
+  ///
+  /// In en, this message translates to:
+  /// **'Album Details'**
+  String get albumDetails;
+
+  /// Media unit text (singular/plural)
+  ///
+  /// In en, this message translates to:
+  /// **'media'**
+  String get mediaUnit;
+
+  /// Re-analyze button text
+  ///
+  /// In en, this message translates to:
+  /// **'Re-analyze'**
+  String get reAnalyze;
+
+  /// Progress text format showing albums and media count
+  ///
+  /// In en, this message translates to:
+  /// **'{albums} albums • {media} media'**
+  String progressFormat(String albums, int media);
+
+  /// Error message with error text
+  ///
+  /// In en, this message translates to:
+  /// **'Error: {error}'**
+  String errorMessage(String error);
+
+  /// Message shown when delete operation fails
+  ///
+  /// In en, this message translates to:
+  /// **'Delete operation failed. Please try again.'**
+  String get deleteOperationFailed;
+
+  /// Blur photos page title
+  ///
+  /// In en, this message translates to:
+  /// **'Blurry Photos'**
+  String get blurPhotosTitle;
+
+  /// Blur detection page title
+  ///
+  /// In en, this message translates to:
+  /// **'Blur and Pixelation Detection'**
+  String get blurDetectionTitle;
+
+  /// Blur photo detection title
+  ///
+  /// In en, this message translates to:
+  /// **'Blurry Photo Detection'**
+  String get blurPhotoDetection;
+
+  /// Blur detection description
+  ///
+  /// In en, this message translates to:
+  /// **'Detect blurry and pixelated photos in selected albums'**
+  String get blurDetectionDescription;
+
+  /// Sensitivity label
+  ///
+  /// In en, this message translates to:
+  /// **'Sensitivity'**
+  String get sensitivity;
+
+  /// Threshold label with value
+  ///
+  /// In en, this message translates to:
+  /// **'Threshold: {value}'**
+  String thresholdLabel(String value);
+
+  /// Threshold description
+  ///
+  /// In en, this message translates to:
+  /// **'Low value = More blur detection\nHigh value = Only very blurry photos'**
+  String get thresholdDescription;
+
+  /// Low sensitivity label
+  ///
+  /// In en, this message translates to:
+  /// **'Low'**
+  String get sensitivityLow;
+
+  /// Medium sensitivity label
+  ///
+  /// In en, this message translates to:
+  /// **'Medium'**
+  String get sensitivityMedium;
+
+  /// High sensitivity label
+  ///
+  /// In en, this message translates to:
+  /// **'High'**
+  String get sensitivityHigh;
+
+  /// Sensitivity description
+  ///
+  /// In en, this message translates to:
+  /// **'Sensitivity level determines how many blurry photos are detected. Low sensitivity detects more photos, high sensitivity only finds very blurry photos.'**
+  String get sensitivityDescription;
+
+  /// Detailed description of sensitivity levels
+  ///
+  /// In en, this message translates to:
+  /// **'• Low: Detects slightly blurry photos as well (more results)\n• Medium: Detects moderately blurry photos (balanced)\n• High: Only detects very blurry photos (fewer results)'**
+  String get sensitivityLevelsDescription;
+
+  /// Current sensitivity label
+  ///
+  /// In en, this message translates to:
+  /// **'Current Sensitivity'**
+  String get currentSensitivity;
+
+  /// No scan rights left message
+  ///
+  /// In en, this message translates to:
+  /// **'No Scan Rights Left'**
+  String get noScanRightsLeft;
+
+  /// Album selection label
+  ///
+  /// In en, this message translates to:
+  /// **'Album Selection'**
+  String get albumSelection;
+
+  /// Start scan button text
+  ///
+  /// In en, this message translates to:
+  /// **'Start Scan'**
+  String get startScan;
+
+  /// Scanning blur photos message
+  ///
+  /// In en, this message translates to:
+  /// **'Scanning blurry and pixelated photos...'**
+  String get scanningBlurPhotos;
+
+  /// Premium scan label
+  ///
+  /// In en, this message translates to:
+  /// **'Premium Scan'**
+  String get premiumScan;
+
+  /// Remaining scan rights label
+  ///
+  /// In en, this message translates to:
+  /// **'Remaining Scan'**
+  String get remainingScanRights;
+
+  /// Scan limit label
+  ///
+  /// In en, this message translates to:
+  /// **'Scan Limit'**
+  String get scanLimit;
+
+  /// Scan limit low warning message
+  ///
+  /// In en, this message translates to:
+  /// **'Your scan limit is running low! Upgrade to Premium.'**
+  String get scanLimitLow;
+
+  /// Watch ad to get scan limit button text
+  ///
+  /// In en, this message translates to:
+  /// **'Watch Ad +{amount} Scan Limit'**
+  String watchAdToGetScanLimit(int amount);
+
+  /// Photo unit text
+  ///
+  /// In en, this message translates to:
+  /// **'photos'**
+  String get photoUnit;
+
+  /// Select albums and scan message
+  ///
+  /// In en, this message translates to:
+  /// **'Select albums and scan'**
+  String get selectAlbumsAndScan;
+
+  /// No duplicate groups found message
+  ///
+  /// In en, this message translates to:
+  /// **'No duplicate groups found'**
+  String get noDuplicateGroupsFound;
+
+  /// State information with albums and groups count
+  ///
+  /// In en, this message translates to:
+  /// **'{albums} albums, {groups} groups'**
+  String stateInfo(int albums, int groups);
+
+  /// Blur detection description from app bar
+  ///
+  /// In en, this message translates to:
+  /// **'AI-powered blurry and pixelated photo detection. Clean up your storage and keep only quality images.'**
+  String get blurDetectionDescriptionFromAppBar;
+
+  /// Duplicate detection description from app bar
+  ///
+  /// In en, this message translates to:
+  /// **'AI-powered duplicate photo detection. Clean up unnecessary copies and optimize your storage space.'**
+  String get duplicateDetectionDescriptionFromAppBar;
+
+  /// AI powered label
+  ///
+  /// In en, this message translates to:
+  /// **'AI-Powered'**
+  String get aiPowered;
+
+  /// List view tooltip
+  ///
+  /// In en, this message translates to:
+  /// **'List view'**
+  String get listView;
+
+  /// Grid view tooltip
+  ///
+  /// In en, this message translates to:
+  /// **'Grid view'**
+  String get gridView;
+
+  /// Unknown album name
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown'**
+  String get unknown;
+
+  /// Blur score label
+  ///
+  /// In en, this message translates to:
+  /// **'Blur: {score}'**
+  String blurScoreLabel(String score);
+
+  /// Pixelation score label
+  ///
+  /// In en, this message translates to:
+  /// **'Pixel: {score}'**
+  String pixelationScoreLabel(String score);
+
+  /// Delete photo dialog title
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Photo'**
+  String get deletePhoto;
+
+  /// Delete photo confirmation message
+  ///
+  /// In en, this message translates to:
+  /// **'This {type} photo will be deleted.'**
+  String deletePhotoMessage(String type);
+
+  /// Close button text
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get close;
+
+  /// Delete duplicates confirmation message
+  ///
+  /// In en, this message translates to:
+  /// **'{count} duplicate photos will be deleted.'**
+  String deleteDuplicatesMessage(int count);
+
+  /// No results found message
+  ///
+  /// In en, this message translates to:
+  /// **'No results found'**
+  String get noResultsFound;
+
+  /// Group label
+  ///
+  /// In en, this message translates to:
+  /// **'Group'**
+  String get group;
+
+  /// Photo label
+  ///
+  /// In en, this message translates to:
+  /// **'Photo'**
+  String get photo;
+
+  /// Blurry photo type
+  ///
+  /// In en, this message translates to:
+  /// **'Blurry'**
+  String get blurry;
+
+  /// Pixelated photo type
+  ///
+  /// In en, this message translates to:
+  /// **'Pixelated'**
+  String get pixelated;
+
+  /// Blurry and pixelated photo type
+  ///
+  /// In en, this message translates to:
+  /// **'Blurry and Pixelated'**
+  String get blurryAndPixelated;
+
+  /// Sharp photo type
+  ///
+  /// In en, this message translates to:
+  /// **'Sharp'**
+  String get sharp;
+
+  /// Scanning duplicate photos message
+  ///
+  /// In en, this message translates to:
+  /// **'Scanning duplicate photos...'**
+  String get scanningDuplicatePhotos;
+
+  /// Duplicate photo detection title
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate Photo Detection'**
+  String get duplicatePhotoDetection;
+
+  /// Onboarding page 4 title for blur detection
+  ///
+  /// In en, this message translates to:
+  /// **'Detect Blurry Photos'**
+  String get blurDetectionOnboardingTitle;
+
+  /// Onboarding page 4 description for blur detection
+  ///
+  /// In en, this message translates to:
+  /// **'Automatically detect blurry and pixelated photos in your gallery. You can easily find and delete these photos.'**
+  String get blurDetectionOnboardingDescription;
+
+  /// Onboarding page 5 title for duplicate detection
+  ///
+  /// In en, this message translates to:
+  /// **'Find Duplicate Photos'**
+  String get duplicateDetectionOnboardingTitle;
+
+  /// Onboarding page 5 description for duplicate detection
+  ///
+  /// In en, this message translates to:
+  /// **'Detect duplicate photos in your gallery with smart algorithm. Free up space by cleaning unnecessary copies.'**
+  String get duplicateDetectionOnboardingDescription;
+
+  /// Permission request page title with line break
+  ///
+  /// In en, this message translates to:
+  /// **'We Need Your\nAccess'**
+  String get weNeedYourAccessTitle;
+
+  /// Button text to reset gallery to start
+  ///
+  /// In en, this message translates to:
+  /// **'Reset to Start'**
+  String get resetToStart;
+
+  /// Swipe tab name
+  ///
+  /// In en, this message translates to:
+  /// **'Swipe'**
+  String get swipeTab;
+
+  /// Blur tab name
+  ///
+  /// In en, this message translates to:
+  /// **'Blur'**
+  String get blurTab;
+
+  /// Duplicate tab name
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate'**
+  String get duplicateTab;
+
+  /// Title for cleanup complete dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Cleanup Complete!'**
+  String get cleanupComplete;
+
+  /// Message for cleanup complete dialog
+  ///
+  /// In en, this message translates to:
+  /// **'All selected photos have been successfully deleted. Your gallery is now cleaner and lighter.'**
+  String get cleanupCompleteMessage;
+
+  /// Message for cleanup complete dialog with deleted count
+  ///
+  /// In en, this message translates to:
+  /// **'{count} photo(s) have been successfully deleted. Your gallery is now cleaner and lighter.'**
+  String cleanupCompleteMessageWithCount(int count);
+
+  /// Done button text
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get done;
+
+  /// View gallery link text
+  ///
+  /// In en, this message translates to:
+  /// **'View Gallery'**
+  String get viewGallery;
 }
 
 class _AppLocalizationsDelegate

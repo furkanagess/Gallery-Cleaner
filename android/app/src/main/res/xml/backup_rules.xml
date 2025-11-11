@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    <!-- Secure storage (Keychain/Keystore) için backup izni -->
+    <!-- flutter_secure_storage verileri EncryptedSharedPreferences kullanarak saklar -->
+    <!-- Bu veriler Google backup açıksa otomatik olarak yedeklenir -->
+</full-backup-content>
+

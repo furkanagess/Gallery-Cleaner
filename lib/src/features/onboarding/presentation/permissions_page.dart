@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lottie/lottie.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../application/permissions_controller.dart';
 
@@ -43,7 +44,17 @@ class PermissionsPage extends ConsumerWidget {
                 child: Text(l10n.openSettings),
               ),
             ] else ...[
-              const Center(child: CircularProgressIndicator()),
+              Center(
+                child: SizedBox(
+                  width: 100,
+                  height: 100,
+                  child: Lottie.asset(
+                    'assets/lottie/loading.json',
+                    fit: BoxFit.contain,
+                    repeat: true,
+                  ),
+                ),
+              ),
             ],
             const SizedBox(height: 8),
             TextButton(

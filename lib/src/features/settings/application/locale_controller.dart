@@ -11,7 +11,7 @@ final localeProvider = StateNotifierProvider<LocaleController, Locale>((ref) {
 class LocaleController extends StateNotifier<Locale> {
   final _prefsService = PreferencesService();
 
-  LocaleController() : super(const Locale('tr')) {
+  LocaleController() : super(const Locale('en')) {
     _loadLocale();
   }
 
@@ -36,7 +36,7 @@ class LocaleController extends StateNotifier<Locale> {
       case 'es':
         return AppLocale.es;
       default:
-        return AppLocale.tr;
+        return AppLocale.en;
     }
   }
 

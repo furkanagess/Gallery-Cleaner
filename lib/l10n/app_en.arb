@@ -154,9 +154,13 @@
   "@historyAndQueue": {
     "description": "Statistics page title"
   },
-  "noHistoryYet": "No history yet.",
+  "noHistoryYet": "No Statistics Yet",
   "@noHistoryYet": {
-    "description": "Message when there is no history"
+    "description": "Title when there is no history"
+  },
+  "noHistoryYetDescription": "Start reviewing and organizing your photos to see your activity and statistics here.",
+  "@noHistoryYetDescription": {
+    "description": "Description when there is no history"
   },
   "keep": "KEEP",
   "@keep": {
@@ -384,6 +388,66 @@
   "@earnDeletionRights": {
     "description": "Text showing deletion rights earned from watching ad"
   },
+  "watchAdAndEarnDeletionRights": "+20 Deletions",
+  "@watchAdAndEarnDeletionRights": {
+    "description": "Button text to watch ad and earn deletion rights"
+  },
+  "galleryPermissionDescription": "We need access to your photos and videos to perform gallery cleaning operations.",
+  "@galleryPermissionDescription": {
+    "description": "Description for gallery permission request"
+  },
+  "quickCleanupTitle": "Quick Cleanup",
+  "@quickCleanupTitle": {
+    "description": "Quick cleanup feature title"
+  },
+  "quickCleanupDescription": "Quickly review your photos",
+  "@quickCleanupDescription": {
+    "description": "Quick cleanup feature description"
+  },
+  "organizeTitle": "Organize",
+  "@organizeTitle": {
+    "description": "Organize feature title"
+  },
+  "organizeDescription": "Move and organize to your albums",
+  "@organizeDescription": {
+    "description": "Organize feature description"
+  },
+  "safeDeleteTitle": "Safe Delete",
+  "@safeDeleteTitle": {
+    "description": "Safe delete feature title"
+  },
+  "safeDeleteDescription": "Clean up unnecessary photos",
+  "@safeDeleteDescription": {
+    "description": "Safe delete feature description"
+  },
+  "increaseDeletionRights": "Increase Deletion Rights",
+  "@increaseDeletionRights": {
+    "description": "Title for increasing deletion rights dialog"
+  },
+  "increaseScanRights": "Increase Scan Rights",
+  "@increaseScanRights": {
+    "description": "Title for increasing scan rights dialog"
+  },
+  "earnDeleteRights": "+{amount} Deletions",
+  "@earnDeleteRights": {
+    "description": "Text showing deletion rights earned from watching ad with amount",
+    "placeholders": {
+      "amount": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "earnScanRights": "+{amount} Scans",
+  "@earnScanRights": {
+    "description": "Text showing scan rights earned from watching ad with amount",
+    "placeholders": {
+      "amount": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
   "adNotReady": "Ad is not ready yet. Please try again in a few seconds.",
   "@adNotReady": {
     "description": "Message when ad is not ready"
@@ -399,6 +463,10 @@
   "premiumTitle": "Go Premium",
   "@premiumTitle": {
     "description": "Premium dialog title"
+  },
+  "unlockPremiumFeatures": "Unlock Premium Features",
+  "@unlockPremiumFeatures": {
+    "description": "Title for premium paywall dialog"
   },
   "premiumDescription": "Get unlimited deletion rights and access to all features with Premium membership!",
   "@premiumDescription": {
@@ -432,6 +500,22 @@
   "@buyUnlimitedRights": {
     "description": "Button text to buy unlimited deletion rights"
   },
+  "buyUnlimitedBlurRights": "Buy Unlimited Blur",
+  "@buyUnlimitedBlurRights": {
+    "description": "Button text to buy unlimited blur scan rights"
+  },
+  "buyUnlimitedDuplicateRights": "Buy Unlimited Duplicate",
+  "@buyUnlimitedDuplicateRights": {
+    "description": "Button text to buy unlimited duplicate scan rights"
+  },
+  "unlimitedBlurScans": "Unlimited Blur Scans • Lifetime Access",
+  "@unlimitedBlurScans": {
+    "description": "Unlimited blur scans feature text"
+  },
+  "unlimitedDuplicateScans": "Unlimited Duplicate Scans • Lifetime Access",
+  "@unlimitedDuplicateScans": {
+    "description": "Unlimited duplicate scans feature text"
+  },
   "oneTimePayment": "One-Time Payment",
   "@oneTimePayment": {
     "description": "One time payment label"
@@ -451,6 +535,594 @@
   "purchaseNow": "Purchase Now",
   "@purchaseNow": {
     "description": "Purchase now button text"
+  },
+  "limitedTimeOffer": "Limited Time",
+  "@limitedTimeOffer": {
+    "description": "Limited time offer label"
+  },
+  "discount25": "25% Off",
+  "@discount25": {
+    "description": "25% discount label"
+  },
+  "originalPrice": "Original Price",
+  "@originalPrice": {
+    "description": "Original price label"
+  },
+  "saveNow": "Save Now",
+  "@saveNow": {
+    "description": "Save now text"
+  },
+  "bestValue": "Best Value",
+  "@bestValue": {
+    "description": "Best value badge"
+  },
+  "purchaseSuccessful": "Purchase successful! You now have access to premium features.",
+  "@purchaseSuccessful": {
+    "description": "Message when purchase is successful"
+  },
+  "lifetimeAccessMessage": "You now have lifetime access to these benefits!",
+  "@lifetimeAccessMessage": {
+    "description": "Message shown when user becomes premium - lifetime access confirmation"
+  },
+  "youArePremium": "You are Premium",
+  "@youArePremium": {
+    "description": "Title shown when user is premium"
+  },
+  "active": "ACTIVE",
+  "@active": {
+    "description": "Active status badge text"
+  },
+  "premiumAccessDescription": "You have access to all premium features. Unlimited deletion, scanning, and more!",
+  "@premiumAccessDescription": {
+    "description": "Description text for premium users explaining their access"
+  },
+  "unlimited": "Unlimited",
+  "@unlimited": {
+    "description": "Short label for unlimited feature"
+  },
+  "adFree": "Ad-free",
+  "@adFree": {
+    "description": "Short label for ad-free feature"
+  },
+  "priority": "Priority",
+  "@priority": {
+    "description": "Short label for priority support feature"
+  },
+  "storeNotAvailable": "Store is not available",
+  "@storeNotAvailable": {
+    "description": "Message when store is not available"
+  },
+  "purchaseFailed": "Purchase failed. Please try again.",
+  "@purchaseFailed": {
+    "description": "Message when purchase fails"
+  },
+  "failedToInitiatePurchase": "Failed to initiate purchase",
+  "@failedToInitiatePurchase": {
+    "description": "Message when purchase initiation fails"
+  },
+  "purchaseError": "Purchase error",
+  "@purchaseError": {
+    "description": "Message when purchase error occurs"
+  },
+  "purchasesRestoredSuccessfully": "Purchases restored successfully!",
+  "@purchasesRestoredSuccessfully": {
+    "description": "Message when purchases are restored successfully"
+  },
+  "noPreviousPurchases": "No previous purchases found to restore.",
+  "@noPreviousPurchases": {
+    "description": "Message when no previous purchases are found"
+  },
+  "restoreError": "Restore error",
+  "@restoreError": {
+    "description": "Message when restore error occurs"
+  },
+  "restoring": "Restoring...",
+  "@restoring": {
+    "description": "Message when restoring purchases"
+  },
+  "restorePurchases": "Restore Purchases",
+  "@restorePurchases": {
+    "description": "Button text to restore purchases"
+  },
+  "duplicatePhotos": "Duplicate Photos",
+  "@duplicatePhotos": {
+    "description": "Duplicate photos page title"
+  },
+  "scanForDuplicates": "Scan for Duplicates",
+  "@scanForDuplicates": {
+    "description": "Button to scan for duplicate photos"
+  },
+  "scanningDuplicates": "Scanning for duplicates...",
+  "@scanningDuplicates": {
+    "description": "Message when scanning for duplicates"
+  },
+  "noDuplicatesFound": "No duplicate photos found",
+  "@noDuplicatesFound": {
+    "description": "Message when no duplicates are found"
+  },
+  "duplicatesFound": "{count} duplicate groups found",
+  "@duplicatesFound": {
+    "description": "Message showing duplicate groups count",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "totalDuplicates": "Total Duplicates",
+  "@totalDuplicates": {
+    "description": "Label for total duplicate photos count"
+  },
+  "spaceToSave": "Space to Save",
+  "@spaceToSave": {
+    "description": "Label for space that can be saved"
+  },
+  "deleteDuplicates": "Delete Duplicates",
+  "@deleteDuplicates": {
+    "description": "Button to delete duplicate photos"
+  },
+  "selectAlbumsToScan": "Select Albums to Scan",
+  "@selectAlbumsToScan": {
+    "description": "Title for album selection dialog for scanning"
+  },
+  "scanSelectedAlbums": "Scan Selected Albums",
+  "@scanSelectedAlbums": {
+    "description": "Button to scan selected albums"
+  },
+  "deleteAllDuplicates": "Delete All Duplicates",
+  "@deleteAllDuplicates": {
+    "description": "Button to delete all duplicate photos"
+  },
+  "deleteAllDuplicatesMessage": "{count} duplicate photos will be deleted. Are you sure?",
+  "@deleteAllDuplicatesMessage": {
+    "description": "Message for deleting all duplicate photos",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "deleteAllBlurryPhotos": "Delete All Blurry Photos",
+  "@deleteAllBlurryPhotos": {
+    "description": "Button to delete all blurry photos"
+  },
+  "deleteAllBlurryPhotosMessage": "{count} blurry photos will be deleted. Are you sure?",
+  "@deleteAllBlurryPhotosMessage": {
+    "description": "Message for deleting all blurry photos",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "startNewScan": "Start New Scan",
+  "@startNewScan": {
+    "description": "Button to start a new scan"
+  },
+  "scanCompleted": "Scan Completed",
+  "@scanCompleted": {
+    "description": "Scan completed title"
+  },
+  "scanCompletedBlurMessage": "{count} blurry photos found",
+  "@scanCompletedBlurMessage": {
+    "description": "Scan completed message for blur photos",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "scanCompletedDuplicateMessage": "{count} duplicate groups found",
+  "@scanCompletedDuplicateMessage": {
+    "description": "Scan completed message for duplicate photos",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noBlurryPhotosFound": "No blurry or pixelated photos found in your gallery.",
+  "@noBlurryPhotosFound": {
+    "description": "No blurry photos found message"
+  },
+  "noDuplicatePhotosFound": "No duplicate photos found in your gallery.",
+  "@noDuplicatePhotosFound": {
+    "description": "No duplicate photos found message"
+  },
+  "duplicateGroup": "Duplicate Group",
+  "@duplicateGroup": {
+    "description": "Label for duplicate photo group"
+  },
+  "photosInGroup": "{count} photos",
+  "@photosInGroup": {
+    "description": "Number of photos in duplicate group",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "keepOldest": "Keep Oldest",
+  "@keepOldest": {
+    "description": "Label indicating oldest photo will be kept"
+  },
+  "scanningAlbum": "Scanning {album}...",
+  "@scanningAlbum": {
+    "description": "Message when scanning a specific album",
+    "placeholders": {
+      "album": {
+        "type": "String"
+      }
+    }
+  },
+  "noDeleteRightsLeft": "No Deletion Rights Left",
+  "@noDeleteRightsLeft": {
+    "description": "Title when deletion rights are exhausted"
+  },
+  "noDeleteRightsLeftMessage": "You have no deletion rights left. Get unlimited deletion rights to continue cleaning your gallery.",
+  "@noDeleteRightsLeftMessage": {
+    "description": "Message when deletion rights are exhausted"
+  },
+  "galleryStatsTitle": "Gallery Statistics",
+  "@galleryStatsTitle": {
+    "description": "Gallery statistics page title"
+  },
+  "stop": "Stop",
+  "@stop": {
+    "description": "Stop button text"
+  },
+  "spaceSaved": "Space Saved",
+  "@spaceSaved": {
+    "description": "Space saved label"
+  },
+  "lastAnalysis": "Last analysis:",
+  "@lastAnalysis": {
+    "description": "Last analysis label"
+  },
+  "previousAnalysis": "Previous analysis:",
+  "@previousAnalysis": {
+    "description": "Previous analysis label"
+  },
+  "mediaLabel": "Media",
+  "@mediaLabel": {
+    "description": "Media label for change chip"
+  },
+  "sizeLabel": "Size",
+  "@sizeLabel": {
+    "description": "Size label for change chip"
+  },
+  "albumDetails": "Album Details",
+  "@albumDetails": {
+    "description": "Album details section title"
+  },
+  "mediaUnit": "media",
+  "@mediaUnit": {
+    "description": "Media unit text (singular/plural)"
+  },
+  "reAnalyze": "Re-analyze",
+  "@reAnalyze": {
+    "description": "Re-analyze button text"
+  },
+  "progressFormat": "{albums} albums • {media} media",
+  "@progressFormat": {
+    "description": "Progress text format showing albums and media count",
+    "placeholders": {
+      "albums": {
+        "type": "String"
+      },
+      "media": {
+        "type": "int"
+      }
+    }
+  },
+  "errorMessage": "Error: {error}",
+  "@errorMessage": {
+    "description": "Error message with error text",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteOperationFailed": "Delete operation failed. Please try again.",
+  "@deleteOperationFailed": {
+    "description": "Message shown when delete operation fails"
+  },
+  "blurPhotosTitle": "Blurry Photos",
+  "@blurPhotosTitle": {
+    "description": "Blur photos page title"
+  },
+  "blurDetectionTitle": "Blur and Pixelation Detection",
+  "@blurDetectionTitle": {
+    "description": "Blur detection page title"
+  },
+  "blurPhotoDetection": "Blurry Photo Detection",
+  "@blurPhotoDetection": {
+    "description": "Blur photo detection title"
+  },
+  "blurDetectionDescription": "Detect blurry and pixelated photos in selected albums",
+  "@blurDetectionDescription": {
+    "description": "Blur detection description"
+  },
+  "sensitivity": "Sensitivity",
+  "@sensitivity": {
+    "description": "Sensitivity label"
+  },
+  "thresholdLabel": "Threshold: {value}",
+  "@thresholdLabel": {
+    "description": "Threshold label with value",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "thresholdDescription": "Low value = More blur detection\nHigh value = Only very blurry photos",
+  "@thresholdDescription": {
+    "description": "Threshold description"
+  },
+  "sensitivityLow": "Low",
+  "@sensitivityLow": {
+    "description": "Low sensitivity label"
+  },
+  "sensitivityMedium": "Medium",
+  "@sensitivityMedium": {
+    "description": "Medium sensitivity label"
+  },
+  "sensitivityHigh": "High",
+  "@sensitivityHigh": {
+    "description": "High sensitivity label"
+  },
+  "sensitivityDescription": "Sensitivity level determines how many blurry photos are detected. Low sensitivity detects more photos, high sensitivity only finds very blurry photos.",
+  "@sensitivityDescription": {
+    "description": "Sensitivity description"
+  },
+  "sensitivityLevelsDescription": "• Low: Detects slightly blurry photos as well (more results)\n• Medium: Detects moderately blurry photos (balanced)\n• High: Only detects very blurry photos (fewer results)",
+  "@sensitivityLevelsDescription": {
+    "description": "Detailed description of sensitivity levels"
+  },
+  "currentSensitivity": "Current Sensitivity",
+  "@currentSensitivity": {
+    "description": "Current sensitivity label"
+  },
+  "noScanRightsLeft": "No Scan Rights Left",
+  "@noScanRightsLeft": {
+    "description": "No scan rights left message"
+  },
+  "albumSelection": "Album Selection",
+  "@albumSelection": {
+    "description": "Album selection label"
+  },
+  "startScan": "Start Scan",
+  "@startScan": {
+    "description": "Start scan button text"
+  },
+  "scanningBlurPhotos": "Scanning blurry and pixelated photos...",
+  "@scanningBlurPhotos": {
+    "description": "Scanning blur photos message"
+  },
+  "premiumScan": "Premium Scan",
+  "@premiumScan": {
+    "description": "Premium scan label"
+  },
+  "remainingScanRights": "Remaining Scan",
+  "@remainingScanRights": {
+    "description": "Remaining scan rights label"
+  },
+  "scanLimit": "Scan Limit",
+  "@scanLimit": {
+    "description": "Scan limit label"
+  },
+  "scanLimitLow": "Your scan limit is running low! Upgrade to Premium.",
+  "@scanLimitLow": {
+    "description": "Scan limit low warning message"
+  },
+  "watchAdToGetScanLimit": "Watch Ad +{amount} Scan Limit",
+  "@watchAdToGetScanLimit": {
+    "description": "Watch ad to get scan limit button text",
+    "placeholders": {
+      "amount": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "adNotReady": "Ad Loading...",
+  "@adNotReady": {
+    "description": "Ad not ready message"
+  },
+  "loading": "Loading...",
+  "@loading": {
+    "description": "Loading text"
+  },
+  "photoUnit": "photos",
+  "@photoUnit": {
+    "description": "Photo unit text"
+  },
+  "selectAlbumsAndScan": "Select albums and scan",
+  "@selectAlbumsAndScan": {
+    "description": "Select albums and scan message"
+  },
+  "noDuplicateGroupsFound": "No duplicate groups found",
+  "@noDuplicateGroupsFound": {
+    "description": "No duplicate groups found message"
+  },
+  "stateInfo": "{albums} albums, {groups} groups",
+  "@stateInfo": {
+    "description": "State information with albums and groups count",
+    "placeholders": {
+      "albums": {
+        "type": "int"
+      },
+      "groups": {
+        "type": "int"
+      }
+    }
+  },
+  "blurDetectionDescriptionFromAppBar": "AI-powered blurry and pixelated photo detection. Clean up your storage and keep only quality images.",
+  "@blurDetectionDescriptionFromAppBar": {
+    "description": "Blur detection description from app bar"
+  },
+  "duplicateDetectionDescriptionFromAppBar": "AI-powered duplicate photo detection. Clean up unnecessary copies and optimize your storage space.",
+  "@duplicateDetectionDescriptionFromAppBar": {
+    "description": "Duplicate detection description from app bar"
+  },
+  "aiPowered": "AI-Powered",
+  "@aiPowered": {
+    "description": "AI powered label"
+  },
+  "listView": "List view",
+  "@listView": {
+    "description": "List view tooltip"
+  },
+  "gridView": "Grid view",
+  "@gridView": {
+    "description": "Grid view tooltip"
+  },
+  "unknown": "Unknown",
+  "@unknown": {
+    "description": "Unknown album name"
+  },
+  "blurScoreLabel": "Blur: {score}",
+  "@blurScoreLabel": {
+    "description": "Blur score label",
+    "placeholders": {
+      "score": {
+        "type": "String"
+      }
+    }
+  },
+  "pixelationScoreLabel": "Pixel: {score}",
+  "@pixelationScoreLabel": {
+    "description": "Pixelation score label",
+    "placeholders": {
+      "score": {
+        "type": "String"
+      }
+    }
+  },
+  "deletePhoto": "Delete Photo",
+  "@deletePhoto": {
+    "description": "Delete photo dialog title"
+  },
+  "deletePhotoMessage": "This {type} photo will be deleted.",
+  "@deletePhotoMessage": {
+    "description": "Delete photo confirmation message",
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
+  "close": "Close",
+  "@close": {
+    "description": "Close button text"
+  },
+  "deleteDuplicatesMessage": "{count} duplicate photos will be deleted.",
+  "@deleteDuplicatesMessage": {
+    "description": "Delete duplicates confirmation message",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noResultsFound": "No results found",
+  "@noResultsFound": {
+    "description": "No results found message"
+  },
+  "group": "Group",
+  "@group": {
+    "description": "Group label"
+  },
+  "photo": "Photo",
+  "@photo": {
+    "description": "Photo label"
+  },
+  "blurry": "Blurry",
+  "@blurry": {
+    "description": "Blurry photo type"
+  },
+  "pixelated": "Pixelated",
+  "@pixelated": {
+    "description": "Pixelated photo type"
+  },
+  "blurryAndPixelated": "Blurry and Pixelated",
+  "@blurryAndPixelated": {
+    "description": "Blurry and pixelated photo type"
+  },
+  "sharp": "Sharp",
+  "@sharp": {
+    "description": "Sharp photo type"
+  },
+  "scanningDuplicatePhotos": "Scanning duplicate photos...",
+  "@scanningDuplicatePhotos": {
+    "description": "Scanning duplicate photos message"
+  },
+  "duplicatePhotoDetection": "Duplicate Photo Detection",
+  "@duplicatePhotoDetection": {
+    "description": "Duplicate photo detection title"
+  },
+  "blurDetectionOnboardingTitle": "Detect Blurry Photos",
+  "@blurDetectionOnboardingTitle": {
+    "description": "Onboarding page 4 title for blur detection"
+  },
+  "blurDetectionOnboardingDescription": "Automatically detect blurry and pixelated photos in your gallery. You can easily find and delete these photos.",
+  "@blurDetectionOnboardingDescription": {
+    "description": "Onboarding page 4 description for blur detection"
+  },
+  "duplicateDetectionOnboardingTitle": "Find Duplicate Photos",
+  "@duplicateDetectionOnboardingTitle": {
+    "description": "Onboarding page 5 title for duplicate detection"
+  },
+  "duplicateDetectionOnboardingDescription": "Detect duplicate photos in your gallery with smart algorithm. Free up space by cleaning unnecessary copies.",
+  "@duplicateDetectionOnboardingDescription": {
+    "description": "Onboarding page 5 description for duplicate detection"
+  },
+  "weNeedYourAccessTitle": "We Need Your\nAccess",
+  "@weNeedYourAccessTitle": {
+    "description": "Permission request page title with line break"
+  },
+  "resetToStart": "Reset to Start",
+  "@resetToStart": {
+    "description": "Button text to reset gallery to start"
+  },
+  "swipeTab": "Swipe",
+  "@swipeTab": {
+    "description": "Swipe tab name"
+  },
+  "blurTab": "Blur",
+  "@blurTab": {
+    "description": "Blur tab name"
+  },
+  "duplicateTab": "Duplicate",
+  "@duplicateTab": {
+    "description": "Duplicate tab name"
+  },
+  "cleanupComplete": "Cleanup Complete!",
+  "@cleanupComplete": {
+    "description": "Title for cleanup complete dialog"
+  },
+  "cleanupCompleteMessage": "All selected photos have been successfully deleted. Your gallery is now cleaner and lighter.",
+  "@cleanupCompleteMessage": {
+    "description": "Message for cleanup complete dialog"
+  },
+  "cleanupCompleteMessageWithCount": "{count} photo(s) have been successfully deleted. Your gallery is now cleaner and lighter.",
+  "@cleanupCompleteMessageWithCount": {
+    "description": "Message for cleanup complete dialog with deleted count",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "done": "Done",
+  "@done": {
+    "description": "Done button text"
+  },
+  "viewGallery": "View Gallery",
+  "@viewGallery": {
+    "description": "View gallery link text"
   }
 }
 
