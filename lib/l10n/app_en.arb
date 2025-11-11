@@ -384,6 +384,10 @@
   "@watchAdToEarn": {
     "description": "Button text to watch ad"
   },
+  "adNotReady": "Ad is loading...",
+  "@adNotReady": {
+    "description": "Message shown when ad is not ready yet"
+  },
   "earnDeletionRights": "+20 Deletions",
   "@earnDeletionRights": {
     "description": "Text showing deletion rights earned from watching ad"
@@ -587,6 +591,74 @@
   "priority": "Priority",
   "@priority": {
     "description": "Short label for priority support feature"
+  },
+  "paywallTitle": "Unlock a Smarter, Cleaner Gallery",
+  "@paywallTitle": {
+    "description": "Paywall main title"
+  },
+  "paywallSubtitle": "AI-powered photo cleanup. One-time payment. Lifetime access.",
+  "@paywallSubtitle": {
+    "description": "Paywall subtitle"
+  },
+  "oneTimeOffer": "ONE-TIME OFFER",
+  "@oneTimeOffer": {
+    "description": "Badge text for one-time offer"
+  },
+  "payOnceOwnForever": "Pay once. Own it forever.",
+  "@payOnceOwnForever": {
+    "description": "One-time purchase catchy text"
+  },
+  "discount25Short": "25% OFF",
+  "@discount25Short": {
+    "description": "Short discount label"
+  },
+  "upgradeToPremium": "Upgrade to Premium",
+  "@upgradeToPremium": {
+    "description": "Upgrade button label"
+  },
+  "continueWithFree": "Continue with Free Version",
+  "@continueWithFree": {
+    "description": "Continue without purchase"
+  },
+  "noSubscriptionsNoFees": "No subscriptions. No hidden fees.",
+  "@noSubscriptionsNoFees": {
+    "description": "Footer text with no subscription message"
+  },
+  "featureUnlimitedDeletions": "Unlimited Deletions",
+  "@featureUnlimitedDeletions": {
+    "description": "Feature title - unlimited deletions"
+  },
+  "featureUnlimitedDeletionsDesc": "Clean your gallery without any limits.",
+  "@featureUnlimitedDeletionsDesc": {
+    "description": "Feature description - unlimited deletions"
+  },
+  "featureAIDetection": "AI Blur & Duplicate Detection",
+  "@featureAIDetection": {
+    "description": "Feature title - AI detection"
+  },
+  "featureAIDetectionDesc": "Find and remove unwanted photos.",
+  "@featureAIDetectionDesc": {
+    "description": "Feature description - AI detection"
+  },
+  "featureAutoClean": "Smart Auto-Clean Suggestions",
+  "@featureAutoClean": {
+    "description": "Feature title - auto clean"
+  },
+  "featureAutoCleanDesc": "Let our AI find photos to delete for you.",
+  "@featureAutoCleanDesc": {
+    "description": "Feature description - auto clean"
+  },
+  "featureAdFree": "Ad-Free Experience",
+  "@featureAdFree": {
+    "description": "Feature title - ad free"
+  },
+  "featureAdFreeDesc": "Enjoy a seamless, ad-free interface.",
+  "@featureAdFreeDesc": {
+    "description": "Feature description - ad free"
+  },
+  "processing": "Processing...",
+  "@processing": {
+    "description": "Loading text for purchase in progress"
   },
   "storeNotAvailable": "Store is not available",
   "@storeNotAvailable": {
@@ -798,6 +870,10 @@
   "mediaUnit": "media",
   "@mediaUnit": {
     "description": "Media unit text (singular/plural)"
+  },
+  "ofGallery": "of gallery",
+  "@ofGallery": {
+    "description": "Percentage of total gallery text"
   },
   "reAnalyze": "Re-analyze",
   "@reAnalyze": {

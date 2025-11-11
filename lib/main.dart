@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'src/app/app.dart';
 import 'src/core/services/rewarded_ads_service.dart';
-import 'src/core/services/in_app_purchase_service.dart';
+import 'src/core/services/revenuecat_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -15,12 +15,12 @@ void main() async {
     // Continue app startup even if ads fail to initialize
   }
 
-  // Initialize In-App Purchase service
+  // Initialize RevenueCat
   try {
-    await InAppPurchaseService.instance.initialize();
+    await RevenueCatService.instance.initialize();
   } catch (e) {
-    debugPrint('⚠️ [main] Failed to initialize in-app purchase service: $e');
-    // Continue app startup even if in-app purchase fails to initialize
+    debugPrint('⚠️ [main] Failed to initialize RevenueCat: $e');
+    // Continue app startup even if purchases fail to initialize
   }
 
   runApp(const ProviderScope(child: App()));

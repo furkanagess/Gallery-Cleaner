@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../l10n/app_localizations.dart';
-import '../../../core/services/in_app_purchase_service.dart';
+import '../../../core/services/revenuecat_service.dart';
+import 'package:purchases_flutter/purchases_flutter.dart';
 import '../../gallery/application/gallery_providers.dart';
 import 'premium_success_dialog.dart';
 
@@ -57,22 +58,67 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog>
   }
 
   Future<void> _loadProductPrice() async {
-    final iapService = InAppPurchaseService.instance;
-    await iapService.loadProducts();
-    final product = iapService.getPremiumProduct();
-    if (product != null && mounted) {
-      // Calculate 25% discount
-      final priceValue = _parsePrice(product.price);
+    try {
+      // Load RevenueCat offerings and read lifetime package price
+      final rc = RevenueCatService.instance;
+      await rc.initialize();
+      final offerings = await rc.getOfferings();
+      if (offerings == null || offerings.current == null) {
+        debugPrint('⚠️ [PurchaseDialog] Offerings not available');
+        if (mounted) {
+          setState(() {
+            _productPrice = 'N/A';
+            _originalPrice = null;
+          });
+        }
+        return;
+      }
+      final current = offerings.current!;
+      final target = (current.identifier == RevenueCatService.offeringId)
+          ? current
+          : offerings.all[RevenueCatService.offeringId] ?? current;
+      final base = target;
+      Package? package = base.lifetime;
+      if (package == null) {
+        final list = base.availablePackages;
+        final byType = list.where((p) => p.packageType == PackageType.lifetime);
+        package = byType.isNotEmpty ? byType.first : (list.isNotEmpty ? list.first : null);
+      }
+      final product = package?.storeProduct;
+      if (product == null || !mounted) {
+        if (mounted) {
+          setState(() {
+            _productPrice = 'N/A';
+            _originalPrice = null;
+          });
+        }
+        return;
+      }
+      // Optional promo calc (25%)
+      final priceString = product.priceString;
+      final priceValue = _parsePrice(priceString);
       if (priceValue != null) {
         final discountedPrice = priceValue * 0.75;
-        final currencySymbol = _extractCurrencySymbol(product.price);
-        setState(() {
-          _originalPrice = product.price;
-          _productPrice = '$currencySymbol${discountedPrice.toStringAsFixed(2)}';
-        });
+        final currencySymbol = _extractCurrencySymbol(priceString);
+        if (mounted) {
+          setState(() {
+            _originalPrice = priceString;
+            _productPrice = '$currencySymbol${discountedPrice.toStringAsFixed(2)}';
+          });
+        }
       } else {
+        if (mounted) {
+          setState(() {
+            _productPrice = priceString;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ [PurchaseDialog] Error loading product price: $e');
+      if (mounted) {
         setState(() {
-          _productPrice = product.price;
+          _productPrice = 'N/A';
+          _originalPrice = null;
         });
       }
     }
@@ -102,42 +148,9 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog>
     });
 
     try {
-      final iapService = InAppPurchaseService.instance;
-      
-      if (!iapService.isAvailable) {
-        if (!mounted) return;
-        setState(() {
-          _errorMessage = l10n.storeNotAvailable;
-          _isLoading = false;
-        });
-        return;
-      }
-
-      final success = await iapService.purchasePremium(
-        onComplete: (purchaseSuccess) async {
-          if (!mounted) return;
-          final contextL10n = AppLocalizations.of(context)!;
-          
-          if (purchaseSuccess) {
-            // Invalidate premium provider to refresh UI
-            ref.invalidate(isPremiumProvider);
-            ref.invalidate(scanLimitProvider);
-            await ref.read(deleteLimitProvider.notifier).refresh();
-            
-            if (mounted) {
-              Navigator.of(context).pop();
-              // Show premium success dialog
-              await PremiumSuccessDialog.show(context);
-            }
-          } else {
-            if (!mounted) return;
-            setState(() {
-              _errorMessage = contextL10n.purchaseFailed;
-              _isLoading = false;
-            });
-          }
-        },
-      );
+      final rc = RevenueCatService.instance;
+      await rc.initialize();
+      final success = await rc.purchaseLifetime();
       
       if (!mounted) return;
 
@@ -146,8 +159,16 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog>
           _errorMessage = l10n.failedToInitiatePurchase;
           _isLoading = false;
         });
+      } else {
+        // Refresh and show success
+        ref.invalidate(isPremiumProvider);
+        ref.invalidate(scanLimitProvider);
+        await ref.read(deleteLimitProvider.notifier).refresh();
+        if (mounted) {
+          Navigator.of(context).pop();
+          await PremiumSuccessDialog.show(context);
+        }
       }
-      // If success, wait for callback
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -170,49 +191,28 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog>
     });
 
     try {
-      final iapService = InAppPurchaseService.instance;
-      
-      if (!iapService.isAvailable) {
-        if (!mounted) return;
+      final rc = RevenueCatService.instance;
+      await rc.initialize();
+      final ok = await rc.restore();
+      if (!mounted) return;
+      final contextL10n = AppLocalizations.of(context)!;
+      if (ok) {
+        ref.invalidate(isPremiumProvider);
+        ref.invalidate(scanLimitProvider);
+        await ref.read(deleteLimitProvider.notifier).refresh();
         setState(() {
-          _errorMessage = l10n.storeNotAvailable;
+          _successMessage = contextL10n.purchasesRestoredSuccessfully;
           _isRestoring = false;
         });
-        return;
+        Future.delayed(const Duration(seconds: 2), () {
+          if (mounted) Navigator.of(context).pop();
+        });
+      } else {
+        setState(() {
+          _errorMessage = contextL10n.noPreviousPurchases;
+          _isRestoring = false;
+        });
       }
-
-      await iapService.restorePurchases(
-        onComplete: (success, hasRestored) async {
-          if (!mounted) return;
-          final contextL10n = AppLocalizations.of(context)!;
-          
-          if (success && hasRestored) {
-            // Invalidate premium provider to refresh UI
-            ref.invalidate(isPremiumProvider);
-            ref.invalidate(scanLimitProvider);
-            await ref.read(deleteLimitProvider.notifier).refresh();
-            
-            if (!mounted) return;
-            setState(() {
-              _successMessage = contextL10n.purchasesRestoredSuccessfully;
-              _isRestoring = false;
-            });
-            
-            // Close dialog after a short delay
-            Future.delayed(const Duration(seconds: 2), () {
-              if (mounted) {
-                Navigator.of(context).pop();
-              }
-            });
-          } else {
-            if (!mounted) return;
-            setState(() {
-              _errorMessage = contextL10n.noPreviousPurchases;
-              _isRestoring = false;
-            });
-          }
-        },
-      );
     } catch (e) {
       if (!mounted) return;
       setState(() {

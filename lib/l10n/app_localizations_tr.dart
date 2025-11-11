@@ -312,6 +312,10 @@ class AppLocalizationsTr extends AppLocalizations {
   String get watchAdToEarn => 'Reklam İzle';
 
   @override
+  String get adNotReady =>
+      'Reklam henüz hazır değil. Lütfen birkaç saniye sonra tekrar deneyin.';
+
+  @override
   String get earnDeletionRights => '+20 Silme';
 
   @override
@@ -363,10 +367,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
     return '+$amountString Tarama';
   }
-
-  @override
-  String get adNotReady =>
-      'Reklam henüz hazır değil. Lütfen birkaç saniye sonra tekrar deneyin.';
 
   @override
   String get earnedDeletionRights => '20 silme hakkı kazandınız!';
@@ -470,6 +470,61 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get priority => 'Öncelikli';
+
+  @override
+  String get paywallTitle =>
+      'Daha Akıllı, Daha Temiz Bir Galerinin Kilidini Aç';
+
+  @override
+  String get paywallSubtitle =>
+      'Yapay zekâ destekli temizlik. Tek seferlik ödeme. Ömür boyu erişim.';
+
+  @override
+  String get oneTimeOffer => 'TEK SEFERLİK TEKLİF';
+
+  @override
+  String get payOnceOwnForever => 'Bir kez öde. Sonsuza dek senin olsun.';
+
+  @override
+  String get discount25Short => '%25 İNDİRİM';
+
+  @override
+  String get upgradeToPremium => 'Premium’a Yükselt';
+
+  @override
+  String get continueWithFree => 'Ücretsiz sürüm ile devam et';
+
+  @override
+  String get noSubscriptionsNoFees => 'Abonelik yok. Gizli ücret yok.';
+
+  @override
+  String get featureUnlimitedDeletions => 'Sınırsız Silme';
+
+  @override
+  String get featureUnlimitedDeletionsDesc => 'Galerini limitsizce temizle.';
+
+  @override
+  String get featureAIDetection => 'YZ Blur ve Çift Tespit';
+
+  @override
+  String get featureAIDetectionDesc =>
+      'İstemediğin fotoğrafları bul ve kaldır.';
+
+  @override
+  String get featureAutoClean => 'Akıllı Otomatik Temizlik Önerileri';
+
+  @override
+  String get featureAutoCleanDesc =>
+      'YZ, silinmesi gerekenleri senin için önerir.';
+
+  @override
+  String get featureAdFree => 'Reklamsız Deneyim';
+
+  @override
+  String get featureAdFreeDesc => 'Kesintisiz, sade bir arayüzün tadını çıkar.';
+
+  @override
+  String get processing => 'İşleniyor...';
 
   @override
   String get storeNotAvailable => 'Mağaza kullanılamıyor';
@@ -621,6 +676,9 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get mediaUnit => 'medya';
+
+  @override
+  String get ofGallery => 'galerinin';
 
   @override
   String get reAnalyze => 'Tekrardan Analiz Et';

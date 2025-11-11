@@ -108,6 +108,10 @@
   "@watchAdToEarn": {
     "description": "Button text to watch ad"
   },
+  "adNotReady": "Reklam yükleniyor...",
+  "@adNotReady": {
+    "description": "Message shown when ad is not ready yet"
+  },
   "earnDeletionRights": "+20 Silme",
   "@earnDeletionRights": {
     "description": "Text showing deletion rights earned from watching ad"
@@ -311,6 +315,74 @@
   "priority": "Öncelikli",
   "@priority": {
     "description": "Short label for priority support feature"
+  },
+  "paywallTitle": "Daha Akıllı, Daha Temiz Bir Galerinin Kilidini Aç",
+  "@paywallTitle": {
+    "description": "Paywall ana başlık"
+  },
+  "paywallSubtitle": "Yapay zekâ destekli temizlik. Tek seferlik ödeme. Ömür boyu erişim.",
+  "@paywallSubtitle": {
+    "description": "Paywall alt başlık"
+  },
+  "oneTimeOffer": "TEK SEFERLİK TEKLİF",
+  "@oneTimeOffer": {
+    "description": "Tek seferlik teklif rozeti"
+  },
+  "payOnceOwnForever": "Bir kez öde. Sonsuza dek senin olsun.",
+  "@payOnceOwnForever": {
+    "description": "Tek seferlik satın alma kalıbı"
+  },
+  "discount25Short": "%25 İNDİRİM",
+  "@discount25Short": {
+    "description": "Kısa indirim etiketi"
+  },
+  "upgradeToPremium": "Premium’a Yükselt",
+  "@upgradeToPremium": {
+    "description": "Yükseltme buton metni"
+  },
+  "continueWithFree": "Ücretsiz sürüm ile devam et",
+  "@continueWithFree": {
+    "description": "Satın almadan devam et"
+  },
+  "noSubscriptionsNoFees": "Abonelik yok. Gizli ücret yok.",
+  "@noSubscriptionsNoFees": {
+    "description": "Abonelik yok mesajı"
+  },
+  "featureUnlimitedDeletions": "Sınırsız Silme",
+  "@featureUnlimitedDeletions": {
+    "description": "Özellik başlığı - sınırsız silme"
+  },
+  "featureUnlimitedDeletionsDesc": "Galerini limitsizce temizle.",
+  "@featureUnlimitedDeletionsDesc": {
+    "description": "Özellik açıklaması - sınırsız silme"
+  },
+  "featureAIDetection": "YZ Blur ve Çift Tespit",
+  "@featureAIDetection": {
+    "description": "Özellik başlığı - yapay zekâ tespit"
+  },
+  "featureAIDetectionDesc": "İstemediğin fotoğrafları bul ve kaldır.",
+  "@featureAIDetectionDesc": {
+    "description": "Özellik açıklaması - yapay zekâ tespit"
+  },
+  "featureAutoClean": "Akıllı Otomatik Temizlik Önerileri",
+  "@featureAutoClean": {
+    "description": "Özellik başlığı - otomatik temizlik"
+  },
+  "featureAutoCleanDesc": "YZ, silinmesi gerekenleri senin için önerir.",
+  "@featureAutoCleanDesc": {
+    "description": "Özellik açıklaması - otomatik temizlik"
+  },
+  "featureAdFree": "Reklamsız Deneyim",
+  "@featureAdFree": {
+    "description": "Özellik başlığı - reklamsız"
+  },
+  "featureAdFreeDesc": "Kesintisiz, sade bir arayüzün tadını çıkar.",
+  "@featureAdFreeDesc": {
+    "description": "Özellik açıklaması - reklamsız"
+  },
+  "processing": "İşleniyor...",
+  "@processing": {
+    "description": "Satın alma devam ederken gösterilen metin"
   },
   "storeNotAvailable": "Mağaza kullanılamıyor",
   "@storeNotAvailable": {
@@ -522,6 +594,10 @@
   "mediaUnit": "medya",
   "@mediaUnit": {
     "description": "Media unit text (singular/plural)"
+  },
+  "ofGallery": "galerinin",
+  "@ofGallery": {
+    "description": "Percentage of total gallery text"
   },
   "reAnalyze": "Tekrardan Analiz Et",
   "@reAnalyze": {

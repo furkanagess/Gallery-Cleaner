@@ -6,7 +6,6 @@ import '../features/onboarding/presentation/splash_page.dart';
 import '../features/onboarding/presentation/onboarding_page.dart';
 import '../features/onboarding/presentation/permission_request_page.dart';
 import '../features/gallery/presentation/pages/swipe_page.dart';
-import '../features/gallery/presentation/pages/history_page.dart';
 import '../features/gallery/presentation/pages/gallery_stats_page.dart';
 import '../features/settings/presentation/settings_page.dart';
 import '../features/settings/presentation/paywall_page.dart';
@@ -77,11 +76,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/paywall',
         name: 'paywall',
         builder: (context, state) => const PaywallPage(),
-      ),
-      GoRoute(
-        path: '/history/full',
-        name: 'fullHistory',
-        builder: (context, state) => const FullHistoryPage(),
       ),
 
       GoRoute(

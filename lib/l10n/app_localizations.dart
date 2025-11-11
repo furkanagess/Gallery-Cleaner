@@ -640,6 +640,12 @@ abstract class AppLocalizations {
   /// **'Watch Ad'**
   String get watchAdToEarn;
 
+  /// Ad not ready message
+  ///
+  /// In en, this message translates to:
+  /// **'Ad Loading...'**
+  String get adNotReady;
+
   /// Text showing deletion rights earned from watching ad
   ///
   /// In en, this message translates to:
@@ -717,12 +723,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'+{amount} Scans'**
   String earnScanRights(int amount);
-
-  /// Ad not ready message
-  ///
-  /// In en, this message translates to:
-  /// **'Ad Loading...'**
-  String get adNotReady;
 
   /// Success message when user earns deletion rights from ad
   ///
@@ -921,6 +921,108 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Priority'**
   String get priority;
+
+  /// Paywall main title
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock a Smarter, Cleaner Gallery'**
+  String get paywallTitle;
+
+  /// Paywall subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'AI-powered photo cleanup. One-time payment. Lifetime access.'**
+  String get paywallSubtitle;
+
+  /// Badge text for one-time offer
+  ///
+  /// In en, this message translates to:
+  /// **'ONE-TIME OFFER'**
+  String get oneTimeOffer;
+
+  /// One-time purchase catchy text
+  ///
+  /// In en, this message translates to:
+  /// **'Pay once. Own it forever.'**
+  String get payOnceOwnForever;
+
+  /// Short discount label
+  ///
+  /// In en, this message translates to:
+  /// **'25% OFF'**
+  String get discount25Short;
+
+  /// Upgrade button label
+  ///
+  /// In en, this message translates to:
+  /// **'Upgrade to Premium'**
+  String get upgradeToPremium;
+
+  /// Continue without purchase
+  ///
+  /// In en, this message translates to:
+  /// **'Continue with Free Version'**
+  String get continueWithFree;
+
+  /// Footer text with no subscription message
+  ///
+  /// In en, this message translates to:
+  /// **'No subscriptions. No hidden fees.'**
+  String get noSubscriptionsNoFees;
+
+  /// Feature title - unlimited deletions
+  ///
+  /// In en, this message translates to:
+  /// **'Unlimited Deletions'**
+  String get featureUnlimitedDeletions;
+
+  /// Feature description - unlimited deletions
+  ///
+  /// In en, this message translates to:
+  /// **'Clean your gallery without any limits.'**
+  String get featureUnlimitedDeletionsDesc;
+
+  /// Feature title - AI detection
+  ///
+  /// In en, this message translates to:
+  /// **'AI Blur & Duplicate Detection'**
+  String get featureAIDetection;
+
+  /// Feature description - AI detection
+  ///
+  /// In en, this message translates to:
+  /// **'Find and remove unwanted photos.'**
+  String get featureAIDetectionDesc;
+
+  /// Feature title - auto clean
+  ///
+  /// In en, this message translates to:
+  /// **'Smart Auto-Clean Suggestions'**
+  String get featureAutoClean;
+
+  /// Feature description - auto clean
+  ///
+  /// In en, this message translates to:
+  /// **'Let our AI find photos to delete for you.'**
+  String get featureAutoCleanDesc;
+
+  /// Feature title - ad free
+  ///
+  /// In en, this message translates to:
+  /// **'Ad-Free Experience'**
+  String get featureAdFree;
+
+  /// Feature description - ad free
+  ///
+  /// In en, this message translates to:
+  /// **'Enjoy a seamless, ad-free interface.'**
+  String get featureAdFreeDesc;
+
+  /// Loading text for purchase in progress
+  ///
+  /// In en, this message translates to:
+  /// **'Processing...'**
+  String get processing;
 
   /// Message when store is not available
   ///
@@ -1185,6 +1287,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'media'**
   String get mediaUnit;
+
+  /// Percentage of total gallery text
+  ///
+  /// In en, this message translates to:
+  /// **'of gallery'**
+  String get ofGallery;
 
   /// Re-analyze button text
   ///

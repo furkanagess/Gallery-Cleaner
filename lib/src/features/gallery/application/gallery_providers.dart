@@ -4,6 +4,7 @@ import 'package:photo_manager/photo_manager.dart' as pm;
 
 import '../../../core/services/media_library_service.dart';
 import '../../../core/services/preferences_service.dart';
+import '../../../core/services/revenuecat_service.dart';
 import '../../onboarding/application/permissions_controller.dart';
 
 final mediaLibraryServiceProvider = Provider<MediaLibraryService>((ref) {
@@ -159,6 +160,12 @@ final deleteLimitProvider =
 
 /// Premium durumu provider'ı
 final isPremiumProvider = FutureProvider<bool>((ref) async {
+  // Prefer RevenueCat entitlement; fallback to local pref if RC not active
+  final rc = RevenueCatService.instance;
+  await rc.initialize();
+  final rcPremium = await rc.isPremium();
+  if (rcPremium) return true;
+  // backward compatibility
   final prefsService = PreferencesService();
   return await prefsService.isPremium();
 });

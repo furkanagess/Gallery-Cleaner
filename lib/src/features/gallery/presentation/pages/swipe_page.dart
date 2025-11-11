@@ -4115,132 +4115,133 @@ class _DuplicateTabState extends ConsumerState<_DuplicateTab> {
     }
 
     return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Kompakt Success Banner
-        Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                theme.colorScheme.primaryContainer,
-                theme.colorScheme.primaryContainer.withValues(alpha: 0.7),
+          children: [
+            // Kompakt Success Banner
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    theme.colorScheme.primaryContainer,
+                    theme.colorScheme.primaryContainer.withValues(alpha: 0.7),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: [
+                  BoxShadow(
+                    color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.check_circle,
+                    color: theme.colorScheme.primary,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          l10n.scanCompleted,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.onPrimaryContainer,
+                            fontSize: 13,
+                          ),
+                        ),
+                        Text(
+                          l10n.scanCompletedDuplicateMessage(state.totalGroups),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onPrimaryContainer.withValues(
+                              alpha: 0.8,
+                            ),
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  OutlinedButton(
+                    onPressed: () {
+                      ref.read(duplicateDetectionProvider.notifier).clear();
+                    },
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      minimumSize: const Size(0, 32),
+                      side: BorderSide(
+                        color: theme.colorScheme.primary.withValues(alpha: 0.3),
+                      ),
+                      foregroundColor: theme.colorScheme.onPrimaryContainer,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.refresh, size: 14),
+                        const SizedBox(width: 4),
+                        Text(
+                          l10n.startNewScan,
+                          style: const TextStyle(fontSize: 11),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            // Kompakt Stats Cards
+            Row(
+              children: [
+                Expanded(
+                  child: _BlurTabState._buildModernStatCard(
+                    theme,
+                    Icons.collections,
+                    '${state.totalGroups}',
+                    l10n.group,
+                    theme.colorScheme.secondaryContainer,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _BlurTabState._buildModernStatCard(
+                    theme,
+                    Icons.photo_library,
+                    '${state.totalDuplicatePhotos}',
+                    l10n.photo,
+                    theme.colorScheme.tertiaryContainer,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _BlurTabState._buildModernStatCard(
+                    theme,
+                    Icons.storage,
+                    '${state.totalSpaceToSaveMB.toStringAsFixed(1)} MB',
+                    l10n.spaceToSave,
+                    theme.colorScheme.errorContainer.withValues(alpha: 0.3),
+                  ),
+                ),
               ],
             ),
-            borderRadius: BorderRadius.circular(14),
-            boxShadow: [
-              BoxShadow(
-                color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Icon(
-                Icons.check_circle,
-                color: theme.colorScheme.primary,
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      l10n.scanCompleted,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.onPrimaryContainer,
-                        fontSize: 13,
-                      ),
-                    ),
-                    Text(
-                      l10n.scanCompletedDuplicateMessage(state.totalGroups),
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onPrimaryContainer.withValues(
-                          alpha: 0.8,
-                        ),
-                        fontSize: 11,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              OutlinedButton(
-                onPressed: () {
-                  ref.read(duplicateDetectionProvider.notifier).clear();
-                },
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  minimumSize: const Size(0, 32),
-                  side: BorderSide(
-                    color: theme.colorScheme.primary.withValues(alpha: 0.3),
-                  ),
-                  foregroundColor: theme.colorScheme.onPrimaryContainer,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.refresh, size: 14),
-                    const SizedBox(width: 4),
-                    Text(
-                      l10n.startNewScan,
-                      style: const TextStyle(fontSize: 11),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 8),
-        // Kompakt Stats Cards
-        Row(
-          children: [
+            const SizedBox(height: 8),
+            // Kompakt Results grid - Kaydırılabilir yapıldı
             Expanded(
-              child: _BlurTabState._buildModernStatCard(
-                theme,
-                Icons.collections,
-                '${state.totalGroups}',
-                l10n.group,
-                theme.colorScheme.secondaryContainer,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _BlurTabState._buildModernStatCard(
-                theme,
-                Icons.photo_library,
-                '${state.totalDuplicatePhotos}',
-                l10n.photo,
-                theme.colorScheme.tertiaryContainer,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _BlurTabState._buildModernStatCard(
-                theme,
-                Icons.storage,
-                '${state.totalSpaceToSaveMB.toStringAsFixed(1)} MB',
-                l10n.spaceToSave,
-                theme.colorScheme.errorContainer.withValues(alpha: 0.3),
-              ),
+              child: _buildDuplicateGrid(context, state, theme, l10n),
             ),
           ],
-        ),
-        const SizedBox(height: 8),
-        // Kompakt Results grid - Flexible ile sınırlandır
-        Flexible(child: _buildDuplicateGrid(context, state, theme, l10n)),
-      ],
-    );
+        );
   }
 
   Widget _buildDuplicateGrid(
@@ -4259,9 +4260,8 @@ class _DuplicateTabState extends ConsumerState<_DuplicateTab> {
     }
 
     return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
       padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
+      physics: const BouncingScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         crossAxisSpacing: 8,
@@ -4598,7 +4598,10 @@ class _ScanLimitInfoState extends ConsumerState<_ScanLimitInfo>
   }
 
   void _loadAd() {
-    _adsService.loadRewardedAd(widget.adUnitType);
+    // Reklam zaten yüklenmişse veya yükleniyorsa, tekrar yükleme isteği yapma
+    if (!_adsService.isAdReadyOrLoading(widget.adUnitType)) {
+      _adsService.loadRewardedAd(widget.adUnitType);
+    }
     _checkAdReady();
   }
 
@@ -4735,51 +4738,58 @@ class _ScanLimitInfoState extends ConsumerState<_ScanLimitInfo>
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 24),
-                // Watch Ad button
+                // Watch Ad button - sadece reklam hazırsa tıklanabilir
                 Material(
                   color: Colors.transparent,
                   child: InkWell(
-                    onTap: () async {
-                      Navigator.of(dialogContext).pop();
-                      await _watchAd();
-                    },
+                    onTap: _isAdReady && !_isLoadingAd
+                        ? () async {
+                            Navigator.of(dialogContext).pop();
+                            await _watchAd();
+                          }
+                        : null,
                     borderRadius: BorderRadius.circular(16),
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            theme.colorScheme.primaryContainer,
-                            theme.colorScheme.secondaryContainer,
+                    child: Opacity(
+                      opacity: _isAdReady && !_isLoadingAd ? 1.0 : 0.5,
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              theme.colorScheme.primaryContainer,
+                              theme.colorScheme.secondaryContainer,
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: theme.colorScheme.primary.withOpacity(0.3),
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.play_circle_outline,
+                              color: theme.colorScheme.onPrimaryContainer,
+                              size: 24,
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              _isAdReady && !_isLoadingAd
+                                  ? l10n.watchAdToGetScanLimit(100)
+                                  : l10n.adNotReady,
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: theme.colorScheme.onPrimaryContainer,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
                           ],
                         ),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: theme.colorScheme.primary.withOpacity(0.3),
-                          width: 1.5,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.play_circle_outline,
-                            color: theme.colorScheme.onPrimaryContainer,
-                            size: 24,
-                          ),
-                          const SizedBox(width: 12),
-                          Text(
-                            l10n.watchAdToGetScanLimit(100),
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w700,
-                              color: theme.colorScheme.onPrimaryContainer,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
                       ),
                     ),
                   ),
@@ -5291,7 +5301,7 @@ class _ScanLimitInfoState extends ConsumerState<_ScanLimitInfo>
                                     ],
                                   ),
                                 ),
-                                // + Button
+                                // + Button - her zaman tıklanabilir
                                 Material(
                                   color: Colors.transparent,
                                   child: InkWell(
@@ -6398,7 +6408,10 @@ class _DeleteLimitInfoState extends ConsumerState<_DeleteLimitInfo>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         try {
-          _adsService.loadRewardedAd(AdUnitType.deleteLimit);
+          // Reklam zaten yüklenmişse veya yükleniyorsa, tekrar yükleme isteği yapma
+          if (!_adsService.isAdReadyOrLoading(AdUnitType.deleteLimit)) {
+            _adsService.loadRewardedAd(AdUnitType.deleteLimit);
+          }
           // Check ad readiness periodically
           _checkAdReady();
         } catch (e) {
@@ -6558,51 +6571,58 @@ class _DeleteLimitInfoState extends ConsumerState<_DeleteLimitInfo>
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 24),
-                // Watch Ad button
+                // Watch Ad button - sadece reklam hazırsa tıklanabilir
                 Material(
                   color: Colors.transparent,
                   child: InkWell(
-                    onTap: () async {
-                      Navigator.of(dialogContext).pop();
-                      await _watchAd();
-                    },
+                    onTap: _isAdReady && !_isLoadingAd
+                        ? () async {
+                            Navigator.of(dialogContext).pop();
+                            await _watchAd();
+                          }
+                        : null,
                     borderRadius: BorderRadius.circular(16),
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            theme.colorScheme.primaryContainer,
-                            theme.colorScheme.secondaryContainer,
+                    child: Opacity(
+                      opacity: _isAdReady && !_isLoadingAd ? 1.0 : 0.5,
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              theme.colorScheme.primaryContainer,
+                              theme.colorScheme.secondaryContainer,
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: theme.colorScheme.primary.withOpacity(0.3),
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.play_circle_outline,
+                              color: theme.colorScheme.onPrimaryContainer,
+                              size: 24,
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              _isAdReady && !_isLoadingAd
+                                  ? '${l10n.watchAdToEarn} +20'
+                                  : l10n.adNotReady,
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: theme.colorScheme.onPrimaryContainer,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
                           ],
                         ),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: theme.colorScheme.primary.withOpacity(0.3),
-                          width: 1.5,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.play_circle_outline,
-                            color: theme.colorScheme.onPrimaryContainer,
-                            size: 24,
-                          ),
-                          const SizedBox(width: 12),
-                          Text(
-                            '${l10n.watchAdToEarn} +20',
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w700,
-                              color: theme.colorScheme.onPrimaryContainer,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
                       ),
                     ),
                   ),
@@ -6914,8 +6934,7 @@ class _DeleteLimitInfoState extends ConsumerState<_DeleteLimitInfo>
                                   Material(
                                     color: Colors.transparent,
                                     child: InkWell(
-                                      onTap: () =>
-                                          _showAddRightsDialog(context),
+                                      onTap: () => _showAddRightsDialog(context),
                                       borderRadius: BorderRadius.circular(20),
                                       child: Container(
                                         width: 32,

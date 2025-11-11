@@ -21,10 +21,144 @@ class GalleryStatsPage extends ConsumerStatefulWidget {
   ConsumerState<GalleryStatsPage> createState() => _GalleryStatsPageState();
 }
 
+// Album Stat Item Widget
+class _AlbumStatItem extends StatelessWidget {
+  const _AlbumStatItem({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.theme,
+    required this.color,
+    this.isCompact = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+  final ThemeData theme;
+  final Color color;
+  final bool isCompact;
+
+  @override
+  Widget build(BuildContext context) {
+    if (isCompact) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: color.withOpacity(0.2),
+            width: 1,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  icon,
+                  size: 12,
+                  color: color,
+                ),
+                const SizedBox(width: 3),
+                Flexible(
+                  child: Text(
+                    label,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 8,
+                      color: theme.colorScheme.onSurface.withOpacity(0.6),
+                      height: 1.0,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 3),
+            Text(
+              value,
+              style: theme.textTheme.labelLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+                fontSize: 12,
+                color: color,
+                letterSpacing: -0.1,
+                height: 1.0,
+              ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
+          ],
+        ),
+      );
+    }
+    
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: color.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Icon(
+                icon,
+                size: 18,
+                color: color,
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  label,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 11,
+                    color: theme.colorScheme.onSurface.withOpacity(0.6),
+                    letterSpacing: 0.2,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w800,
+              fontSize: 16,
+              color: color,
+              letterSpacing: -0.3,
+              height: 1.2,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _GalleryStatsPageState extends ConsumerState<GalleryStatsPage> {
   final SoundService _soundService = SoundService();
   bool _isScannerPlaying = false;
   bool _hasCheckedFirstAnalysis = false;
+  final ScrollController _albumScrollController = ScrollController();
+  bool _showLeftArrow = false;
+  bool _showRightArrow = false;
 
   @override
   void initState() {
@@ -32,7 +166,58 @@ class _GalleryStatsPageState extends ConsumerState<GalleryStatsPage> {
     // Sayfa açıldığında ilk analiz kontrolü yap
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkAndStartFirstAnalysis();
+      // GridView render edildikten sonra okları kontrol et
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (mounted) {
+          _updateArrowVisibility();
+        }
+      });
     });
+
+    // Scroll controller listener
+    _albumScrollController.addListener(_updateArrowVisibility);
+  }
+
+  void _updateArrowVisibility() {
+    if (!mounted) return;
+
+    if (!_albumScrollController.hasClients) {
+      if (mounted) {
+        setState(() {
+          _showLeftArrow = false;
+          _showRightArrow = false;
+        });
+      }
+      return;
+    }
+
+    final position = _albumScrollController.position;
+    if (mounted) {
+      setState(() {
+        _showLeftArrow = position.pixels > 0;
+        _showRightArrow = position.pixels < position.maxScrollExtent - 1;
+      });
+    }
+  }
+
+  void _scrollLeft() {
+    if (_albumScrollController.hasClients) {
+      _albumScrollController.animateTo(
+        _albumScrollController.offset - 220,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
+  }
+
+  void _scrollRight() {
+    if (_albumScrollController.hasClients) {
+      _albumScrollController.animateTo(
+        _albumScrollController.offset + 220,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
   }
 
   /// İlk analiz kontrolü yap ve gerekirse başlat
@@ -47,11 +232,14 @@ class _GalleryStatsPageState extends ConsumerState<GalleryStatsPage> {
 
     final statsState = ref.read(galleryStatsProvider);
     final prefsService = ref.read(preferencesServiceProvider);
-    final isFirstAnalysisCompleted = await prefsService.isFirstAnalysisCompleted();
+    final isFirstAnalysisCompleted = await prefsService
+        .isFirstAnalysisCompleted();
     final hasCachedStats = statsState.stats != null;
 
     // Cache yoksa ve ilk analiz tamamlanmamışsa otomatik analiz başlat
-    if (!hasCachedStats && !isFirstAnalysisCompleted && !statsState.isScanning) {
+    if (!hasCachedStats &&
+        !isFirstAnalysisCompleted &&
+        !statsState.isScanning) {
       debugPrint('📊 [GalleryStatsPage] İlk analiz başlatılıyor...');
       // Kısa bir gecikme ile başlat (UI'nin yüklenmesi için)
       Future.delayed(const Duration(milliseconds: 300), () {
@@ -67,6 +255,8 @@ class _GalleryStatsPageState extends ConsumerState<GalleryStatsPage> {
     if (_isScannerPlaying) {
       _soundService.stopScannerSound();
     }
+    _albumScrollController.removeListener(_updateArrowVisibility);
+    _albumScrollController.dispose();
     super.dispose();
   }
 
@@ -105,18 +295,15 @@ class _GalleryStatsPageState extends ConsumerState<GalleryStatsPage> {
     final color = isPositive
         ? Colors.green.shade700
         : isNegative
-            ? Colors.red.shade700
-            : theme.colorScheme.onSurface.withOpacity(0.7);
+        ? Colors.red.shade700
+        : theme.colorScheme.onSurface.withOpacity(0.7);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: color.withOpacity(0.3),
-          width: 1,
-        ),
+        border: Border.all(color: color.withOpacity(0.3), width: 1),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -125,18 +312,26 @@ class _GalleryStatsPageState extends ConsumerState<GalleryStatsPage> {
             isPositive
                 ? Icons.trending_up
                 : isNegative
-                    ? Icons.trending_down
-                    : Icons.remove,
+                ? Icons.trending_down
+                : Icons.remove,
             size: 12,
             color: color,
           ),
           const SizedBox(width: 4),
           Text(
             absoluteDiff != null
-                ? '$label: ${absoluteDiff > 0 ? '+' : absoluteDiff < 0 ? '-' : ''}${absoluteDiff.abs()} (${change > 0 ? '+' : ''}${change.toStringAsFixed(1)}%)'
+                ? '$label: ${absoluteDiff > 0
+                      ? '+'
+                      : absoluteDiff < 0
+                      ? '-'
+                      : ''}${absoluteDiff.abs()} (${change > 0 ? '+' : ''}${change.toStringAsFixed(1)}%)'
                 : absoluteDiffDouble != null
-                    ? '$label: ${absoluteDiffDouble > 0 ? '+' : absoluteDiffDouble < 0 ? '-' : ''}${absoluteDiffDouble.abs().toStringAsFixed(1)} MB (${change > 0 ? '+' : ''}${change.toStringAsFixed(1)}%)'
-                    : '$label: ${change > 0 ? '+' : ''}${change.toStringAsFixed(1)}%',
+                ? '$label: ${absoluteDiffDouble > 0
+                      ? '+'
+                      : absoluteDiffDouble < 0
+                      ? '-'
+                      : ''}${absoluteDiffDouble.abs().toStringAsFixed(1)} MB (${change > 0 ? '+' : ''}${change.toStringAsFixed(1)}%)'
+                : '$label: ${change > 0 ? '+' : ''}${change.toStringAsFixed(1)}%',
             style: theme.textTheme.labelSmall?.copyWith(
               fontSize: 10,
               color: color,
@@ -157,10 +352,7 @@ class _GalleryStatsPageState extends ConsumerState<GalleryStatsPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          l10n.galleryStatsTitle,
-          overflow: TextOverflow.ellipsis,
-        ),
+        title: Text(l10n.galleryStatsTitle, overflow: TextOverflow.ellipsis),
         leading: Platform.isIOS
             ? IconButton(
                 icon: const Icon(CupertinoIcons.chevron_left),
@@ -255,11 +447,24 @@ class _GalleryStatsPageState extends ConsumerState<GalleryStatsPage> {
                 }
 
                 // Stats null ise 0 değerleriyle göster
-                final displayStats = stats ?? GalleryStats(
-                  albumCount: 0,
-                  mediaCount: 0,
-                  totalSizeMB: 0.0,
-                );
+                final displayStats =
+                    stats ??
+                    GalleryStats(
+                      albumCount: 0,
+                      mediaCount: 0,
+                      totalSizeMB: 0.0,
+                    );
+
+                // Stats değiştiğinde scroll oklarını güncelle
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted && displayStats.albumDetails.isNotEmpty) {
+                    Future.delayed(const Duration(milliseconds: 150), () {
+                      if (mounted) {
+                        _updateArrowVisibility();
+                      }
+                    });
+                  }
+                });
 
                 // Yüzdelik farkları hesapla
                 final albumChange = _calculatePercentageChange(
@@ -270,14 +475,13 @@ class _GalleryStatsPageState extends ConsumerState<GalleryStatsPage> {
                   displayStats.mediaCount,
                   previousStats?.mediaCount,
                 );
-                final sizeChange = previousStats != null &&
-                        previousStats.totalSizeMB > 0
-                    ? ((displayStats.totalSizeMB -
-                            previousStats.totalSizeMB) /
-                        previousStats.totalSizeMB) *
-                        100
+                final sizeChange =
+                    previousStats != null && previousStats.totalSizeMB > 0
+                    ? ((displayStats.totalSizeMB - previousStats.totalSizeMB) /
+                              previousStats.totalSizeMB) *
+                          100
                     : null;
-                
+
                 // Mutlak değer farkları hesapla
                 final albumDiff = previousStats != null
                     ? displayStats.albumCount - previousStats.albumCount
@@ -291,7 +495,9 @@ class _GalleryStatsPageState extends ConsumerState<GalleryStatsPage> {
 
                 // History'den sil/tut istatistiklerini al
                 final history = ref.watch(reviewHistoryControllerProvider);
-                final semanticColors = Theme.of(context).extension<AppSemanticColors>();
+                final semanticColors = Theme.of(
+                  context,
+                ).extension<AppSemanticColors>();
                 final keepCount = history
                     .where((e) => e.type == ReviewActionType.keep)
                     .length;
@@ -341,8 +547,9 @@ class _GalleryStatsPageState extends ConsumerState<GalleryStatsPage> {
                           Text(
                             l10n.loadingMayTakeFewSeconds,
                             style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.onSurface
-                                  .withOpacity(0.7),
+                              color: theme.colorScheme.onSurface.withOpacity(
+                                0.7,
+                              ),
                             ),
                             textAlign: TextAlign.center,
                           ),
@@ -397,7 +604,7 @@ class _GalleryStatsPageState extends ConsumerState<GalleryStatsPage> {
                   );
                 }
 
-                return SingleChildScrollView(
+                return Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -431,8 +638,9 @@ class _GalleryStatsPageState extends ConsumerState<GalleryStatsPage> {
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: (semanticColors?.keep ?? Colors.green)
-                                        .withOpacity(0.1),
+                                    color:
+                                        (semanticColors?.keep ?? Colors.green)
+                                            .withOpacity(0.1),
                                     blurRadius: 8,
                                     offset: const Offset(0, 3),
                                     spreadRadius: 0,
@@ -449,7 +657,9 @@ class _GalleryStatsPageState extends ConsumerState<GalleryStatsPage> {
                                       Icon(
                                         Icons.check_circle_outline,
                                         size: 13,
-                                        color: semanticColors?.keep ?? Colors.green,
+                                        color:
+                                            semanticColors?.keep ??
+                                            Colors.green,
                                       ),
                                       const SizedBox(width: 5),
                                       Flexible(
@@ -457,12 +667,14 @@ class _GalleryStatsPageState extends ConsumerState<GalleryStatsPage> {
                                           l10n.keep,
                                           style: theme.textTheme.labelSmall
                                               ?.copyWith(
-                                            fontWeight: FontWeight.w600,
-                                            fontSize: 10,
-                                            color: theme.colorScheme.onSurface
-                                                .withOpacity(0.8),
-                                            letterSpacing: 0.3,
-                                          ),
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 10,
+                                                color: theme
+                                                    .colorScheme
+                                                    .onSurface
+                                                    .withOpacity(0.8),
+                                                letterSpacing: 0.3,
+                                              ),
                                           overflow: TextOverflow.ellipsis,
                                         ),
                                       ),
@@ -471,13 +683,14 @@ class _GalleryStatsPageState extends ConsumerState<GalleryStatsPage> {
                                   const SizedBox(height: 2),
                                   Text(
                                     '$keepCount',
-                                    style: theme.textTheme.headlineSmall?.copyWith(
-                                      fontWeight: FontWeight.w900,
-                                      fontSize: 20,
-                                      color: theme.colorScheme.onSurface,
-                                      letterSpacing: -1.2,
-                                      height: 1,
-                                    ),
+                                    style: theme.textTheme.headlineSmall
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.w900,
+                                          fontSize: 20,
+                                          color: theme.colorScheme.onSurface,
+                                          letterSpacing: -1.2,
+                                          height: 1,
+                                        ),
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ],
@@ -511,8 +724,9 @@ class _GalleryStatsPageState extends ConsumerState<GalleryStatsPage> {
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: (semanticColors?.delete ?? Colors.red)
-                                        .withOpacity(0.1),
+                                    color:
+                                        (semanticColors?.delete ?? Colors.red)
+                                            .withOpacity(0.1),
                                     blurRadius: 8,
                                     offset: const Offset(0, 3),
                                     spreadRadius: 0,
@@ -529,7 +743,9 @@ class _GalleryStatsPageState extends ConsumerState<GalleryStatsPage> {
                                       Icon(
                                         Icons.delete_outline,
                                         size: 13,
-                                        color: semanticColors?.delete ?? Colors.red,
+                                        color:
+                                            semanticColors?.delete ??
+                                            Colors.red,
                                       ),
                                       const SizedBox(width: 5),
                                       Flexible(
@@ -537,12 +753,14 @@ class _GalleryStatsPageState extends ConsumerState<GalleryStatsPage> {
                                           l10n.delete,
                                           style: theme.textTheme.labelSmall
                                               ?.copyWith(
-                                            fontWeight: FontWeight.w600,
-                                            fontSize: 10,
-                                            color: theme.colorScheme.onSurface
-                                                .withOpacity(0.8),
-                                            letterSpacing: 0.3,
-                                          ),
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 10,
+                                                color: theme
+                                                    .colorScheme
+                                                    .onSurface
+                                                    .withOpacity(0.8),
+                                                letterSpacing: 0.3,
+                                              ),
                                           overflow: TextOverflow.ellipsis,
                                         ),
                                       ),
@@ -551,13 +769,14 @@ class _GalleryStatsPageState extends ConsumerState<GalleryStatsPage> {
                                   const SizedBox(height: 2),
                                   Text(
                                     '$deleteCount',
-                                    style: theme.textTheme.headlineSmall?.copyWith(
-                                      fontWeight: FontWeight.w900,
-                                      fontSize: 20,
-                                      color: theme.colorScheme.onSurface,
-                                      letterSpacing: -1.2,
-                                      height: 1,
-                                    ),
+                                    style: theme.textTheme.headlineSmall
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.w900,
+                                          fontSize: 20,
+                                          color: theme.colorScheme.onSurface,
+                                          letterSpacing: -1.2,
+                                          height: 1,
+                                        ),
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ],
@@ -613,12 +832,14 @@ class _GalleryStatsPageState extends ConsumerState<GalleryStatsPage> {
                                           l10n.spaceSaved,
                                           style: theme.textTheme.labelSmall
                                               ?.copyWith(
-                                            fontWeight: FontWeight.w600,
-                                            fontSize: 10,
-                                            color: theme.colorScheme.onSurface
-                                                .withOpacity(0.8),
-                                            letterSpacing: 0.3,
-                                          ),
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 10,
+                                                color: theme
+                                                    .colorScheme
+                                                    .onSurface
+                                                    .withOpacity(0.8),
+                                                letterSpacing: 0.3,
+                                              ),
                                           overflow: TextOverflow.ellipsis,
                                         ),
                                       ),
@@ -627,13 +848,14 @@ class _GalleryStatsPageState extends ConsumerState<GalleryStatsPage> {
                                   const SizedBox(height: 2),
                                   Text(
                                     _formatBytes(totalBytesFreed),
-                                    style: theme.textTheme.headlineSmall?.copyWith(
-                                      fontWeight: FontWeight.w900,
-                                      fontSize: 16,
-                                      color: theme.colorScheme.onSurface,
-                                      letterSpacing: -1.0,
-                                      height: 1,
-                                    ),
+                                    style: theme.textTheme.headlineSmall
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.w900,
+                                          fontSize: 16,
+                                          color: theme.colorScheme.onSurface,
+                                          letterSpacing: -1.0,
+                                          height: 1,
+                                        ),
                                     overflow: TextOverflow.ellipsis,
                                     maxLines: 1,
                                   ),
@@ -645,7 +867,8 @@ class _GalleryStatsPageState extends ConsumerState<GalleryStatsPage> {
                       ),
                       const SizedBox(height: 16),
                       // Analiz tarihi ve önceki analiz bilgisi
-                      if (displayStats.cachedAt != null || previousStats?.cachedAt != null)
+                      if (displayStats.cachedAt != null ||
+                          previousStats?.cachedAt != null)
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
@@ -668,37 +891,45 @@ class _GalleryStatsPageState extends ConsumerState<GalleryStatsPage> {
                                     const SizedBox(width: 6),
                                     Text(
                                       '${l10n.lastAnalysis} ${_formatDate(context, displayStats.cachedAt!)}',
-                                      style: theme.textTheme.bodySmall?.copyWith(
-                                        color: theme.colorScheme.onSurface,
-                                        fontWeight: FontWeight.w500,
-                                      ),
+                                      style: theme.textTheme.bodySmall
+                                          ?.copyWith(
+                                            color: theme.colorScheme.onSurface,
+                                            fontWeight: FontWeight.w500,
+                                          ),
                                     ),
                                   ],
                                 ),
                               // Önceki analiz tarihi ve yüzdelik farklar özeti
-                              if (previousStats != null && previousStats.cachedAt != null) ...[
-                                if (displayStats.cachedAt != null) const SizedBox(height: 8),
+                              if (previousStats != null &&
+                                  previousStats.cachedAt != null) ...[
+                                if (displayStats.cachedAt != null)
+                                  const SizedBox(height: 8),
                                 Row(
                                   children: [
                                     Icon(
                                       Icons.history,
                                       size: 14,
-                                      color: theme.colorScheme.onSurface.withOpacity(0.7),
+                                      color: theme.colorScheme.onSurface
+                                          .withOpacity(0.7),
                                     ),
                                     const SizedBox(width: 6),
-                                      Expanded(
-                                        child: Text(
-                                          '${l10n.previousAnalysis} ${_formatDate(context, previousStats.cachedAt!)}',
-                                          style: theme.textTheme.bodySmall?.copyWith(
-                                            color: theme.colorScheme.onSurface.withOpacity(0.7),
-                                            fontSize: 11,
-                                          ),
-                                        ),
+                                    Expanded(
+                                      child: Text(
+                                        '${l10n.previousAnalysis} ${_formatDate(context, previousStats.cachedAt!)}',
+                                        style: theme.textTheme.bodySmall
+                                            ?.copyWith(
+                                              color: theme.colorScheme.onSurface
+                                                  .withOpacity(0.7),
+                                              fontSize: 11,
+                                            ),
                                       ),
+                                    ),
                                   ],
                                 ),
                                 // Yüzdelik farklar özeti
-                                if (albumChange != null || mediaChange != null || sizeChange != null) ...[
+                                if (albumChange != null ||
+                                    mediaChange != null ||
+                                    sizeChange != null) ...[
                                   const SizedBox(height: 8),
                                   Builder(
                                     builder: (context) {
@@ -742,7 +973,8 @@ class _GalleryStatsPageState extends ConsumerState<GalleryStatsPage> {
                             ],
                           ),
                         ),
-                      if (displayStats.cachedAt != null || previousStats?.cachedAt != null)
+                      if (displayStats.cachedAt != null ||
+                          previousStats?.cachedAt != null)
                         const SizedBox(height: 16),
                       // İstatistik badge'leri - yan yana
                       Row(
@@ -766,8 +998,9 @@ class _GalleryStatsPageState extends ConsumerState<GalleryStatsPage> {
                                 ),
                                 borderRadius: BorderRadius.circular(16),
                                 border: Border.all(
-                                  color: theme.colorScheme.primary
-                                      .withOpacity(0.2),
+                                  color: theme.colorScheme.primary.withOpacity(
+                                    0.2,
+                                  ),
                                   width: 1,
                                 ),
                                 boxShadow: [
@@ -790,7 +1023,8 @@ class _GalleryStatsPageState extends ConsumerState<GalleryStatsPage> {
                                       Icon(
                                         Icons.folder,
                                         size: 13,
-                                        color: theme.colorScheme
+                                        color: theme
+                                            .colorScheme
                                             .onPrimaryContainer
                                             .withOpacity(0.9),
                                       ),
@@ -800,13 +1034,14 @@ class _GalleryStatsPageState extends ConsumerState<GalleryStatsPage> {
                                           l10n.album,
                                           style: theme.textTheme.labelSmall
                                               ?.copyWith(
-                                            fontWeight: FontWeight.w600,
-                                            fontSize: 10,
-                                            color: theme.colorScheme
-                                                .onPrimaryContainer
-                                                .withOpacity(0.9),
-                                            letterSpacing: 0.3,
-                                          ),
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 10,
+                                                color: theme
+                                                    .colorScheme
+                                                    .onPrimaryContainer
+                                                    .withOpacity(0.9),
+                                                letterSpacing: 0.3,
+                                              ),
                                           overflow: TextOverflow.ellipsis,
                                         ),
                                       ),
@@ -817,65 +1052,73 @@ class _GalleryStatsPageState extends ConsumerState<GalleryStatsPage> {
                                     '${displayStats.albumCount}',
                                     style: theme.textTheme.headlineSmall
                                         ?.copyWith(
-                                      fontWeight: FontWeight.w900,
-                                      fontSize: 20,
-                                      color: theme
-                                          .colorScheme.onPrimaryContainer,
-                                      letterSpacing: -1.2,
-                                      height: 1,
-                                    ),
+                                          fontWeight: FontWeight.w900,
+                                          fontSize: 20,
+                                          color: theme
+                                              .colorScheme
+                                              .onPrimaryContainer,
+                                          letterSpacing: -1.2,
+                                          height: 1,
+                                        ),
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                   // Önceki analizle fark (mutlak değer + yüzde)
-                                  if (previousStats != null && albumChange != null && albumDiff != null) ...[
+                                  if (previousStats != null &&
+                                      albumChange != null &&
+                                      albumDiff != null) ...[
                                     const SizedBox(height: 2),
                                     Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         Text(
-                                          albumDiff != 0 ? (albumDiff > 0 ? '+' : '-') : '',
+                                          albumDiff != 0
+                                              ? (albumDiff > 0 ? '+' : '-')
+                                              : '',
                                           style: theme.textTheme.labelSmall
                                               ?.copyWith(
-                                            fontSize: 9,
-                                            color: albumChange > 0
-                                                ? Colors.green.shade700
-                                                : albumChange < 0
+                                                fontSize: 9,
+                                                color: albumChange > 0
+                                                    ? Colors.green.shade700
+                                                    : albumChange < 0
                                                     ? Colors.red.shade700
-                                                    : theme.colorScheme
-                                                        .onPrimaryContainer
-                                                        .withOpacity(0.7),
-                                            fontWeight: FontWeight.w600,
-                                          ),
+                                                    : theme
+                                                          .colorScheme
+                                                          .onPrimaryContainer
+                                                          .withOpacity(0.7),
+                                                fontWeight: FontWeight.w600,
+                                              ),
                                         ),
                                         Text(
                                           albumDiff.abs().toString(),
                                           style: theme.textTheme.labelSmall
                                               ?.copyWith(
-                                            fontSize: 9,
-                                            color: albumChange > 0
-                                                ? Colors.green.shade700
-                                                : albumChange < 0
+                                                fontSize: 9,
+                                                color: albumChange > 0
+                                                    ? Colors.green.shade700
+                                                    : albumChange < 0
                                                     ? Colors.red.shade700
-                                                    : theme.colorScheme
-                                                        .onPrimaryContainer
-                                                        .withOpacity(0.7),
-                                            fontWeight: FontWeight.w600,
-                                          ),
+                                                    : theme
+                                                          .colorScheme
+                                                          .onPrimaryContainer
+                                                          .withOpacity(0.7),
+                                                fontWeight: FontWeight.w600,
+                                              ),
                                         ),
                                         Text(
                                           ' (${albumChange > 0 ? '+' : ''}${albumChange.toStringAsFixed(1)}%)',
                                           style: theme.textTheme.labelSmall
                                               ?.copyWith(
-                                            fontSize: 8,
-                                            color: albumChange > 0
-                                                ? Colors.green.shade700
-                                                : albumChange < 0
+                                                fontSize: 8,
+                                                color: albumChange > 0
+                                                    ? Colors.green.shade700
+                                                    : albumChange < 0
                                                     ? Colors.red.shade700
-                                                    : theme.colorScheme
-                                                        .onPrimaryContainer
-                                                        .withOpacity(0.7),
-                                            fontWeight: FontWeight.w500,
-                                          ),
+                                                    : theme
+                                                          .colorScheme
+                                                          .onPrimaryContainer
+                                                          .withOpacity(0.7),
+                                                fontWeight: FontWeight.w500,
+                                              ),
                                         ),
                                       ],
                                     ),
@@ -928,7 +1171,8 @@ class _GalleryStatsPageState extends ConsumerState<GalleryStatsPage> {
                                       Icon(
                                         Icons.photo,
                                         size: 13,
-                                        color: theme.colorScheme
+                                        color: theme
+                                            .colorScheme
                                             .onSecondaryContainer
                                             .withOpacity(0.9),
                                       ),
@@ -938,13 +1182,14 @@ class _GalleryStatsPageState extends ConsumerState<GalleryStatsPage> {
                                           l10n.photoVideo,
                                           style: theme.textTheme.labelSmall
                                               ?.copyWith(
-                                            fontWeight: FontWeight.w600,
-                                            fontSize: 10,
-                                            color: theme.colorScheme
-                                                .onSecondaryContainer
-                                                .withOpacity(0.9),
-                                            letterSpacing: 0.3,
-                                          ),
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 10,
+                                                color: theme
+                                                    .colorScheme
+                                                    .onSecondaryContainer
+                                                    .withOpacity(0.9),
+                                                letterSpacing: 0.3,
+                                              ),
                                           overflow: TextOverflow.ellipsis,
                                         ),
                                       ),
@@ -955,65 +1200,73 @@ class _GalleryStatsPageState extends ConsumerState<GalleryStatsPage> {
                                     '${displayStats.mediaCount}',
                                     style: theme.textTheme.headlineSmall
                                         ?.copyWith(
-                                      fontWeight: FontWeight.w900,
-                                      fontSize: 20,
-                                      color: theme
-                                          .colorScheme.onSecondaryContainer,
-                                      letterSpacing: -1.2,
-                                      height: 1,
-                                    ),
+                                          fontWeight: FontWeight.w900,
+                                          fontSize: 20,
+                                          color: theme
+                                              .colorScheme
+                                              .onSecondaryContainer,
+                                          letterSpacing: -1.2,
+                                          height: 1,
+                                        ),
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                   // Önceki analizle fark (mutlak değer + yüzde)
-                                  if (previousStats != null && mediaChange != null && mediaDiff != null) ...[
+                                  if (previousStats != null &&
+                                      mediaChange != null &&
+                                      mediaDiff != null) ...[
                                     const SizedBox(height: 2),
                                     Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         Text(
-                                          mediaDiff != 0 ? (mediaDiff > 0 ? '+' : '-') : '',
+                                          mediaDiff != 0
+                                              ? (mediaDiff > 0 ? '+' : '-')
+                                              : '',
                                           style: theme.textTheme.labelSmall
                                               ?.copyWith(
-                                            fontSize: 9,
-                                            color: mediaChange > 0
-                                                ? Colors.green.shade700
-                                                : mediaChange < 0
+                                                fontSize: 9,
+                                                color: mediaChange > 0
+                                                    ? Colors.green.shade700
+                                                    : mediaChange < 0
                                                     ? Colors.red.shade700
-                                                    : theme.colorScheme
-                                                        .onSecondaryContainer
-                                                        .withOpacity(0.7),
-                                            fontWeight: FontWeight.w600,
-                                          ),
+                                                    : theme
+                                                          .colorScheme
+                                                          .onSecondaryContainer
+                                                          .withOpacity(0.7),
+                                                fontWeight: FontWeight.w600,
+                                              ),
                                         ),
                                         Text(
                                           mediaDiff.abs().toString(),
                                           style: theme.textTheme.labelSmall
                                               ?.copyWith(
-                                            fontSize: 9,
-                                            color: mediaChange > 0
-                                                ? Colors.green.shade700
-                                                : mediaChange < 0
+                                                fontSize: 9,
+                                                color: mediaChange > 0
+                                                    ? Colors.green.shade700
+                                                    : mediaChange < 0
                                                     ? Colors.red.shade700
-                                                    : theme.colorScheme
-                                                        .onSecondaryContainer
-                                                        .withOpacity(0.7),
-                                            fontWeight: FontWeight.w600,
-                                          ),
+                                                    : theme
+                                                          .colorScheme
+                                                          .onSecondaryContainer
+                                                          .withOpacity(0.7),
+                                                fontWeight: FontWeight.w600,
+                                              ),
                                         ),
                                         Text(
                                           ' (${mediaChange > 0 ? '+' : ''}${mediaChange.toStringAsFixed(1)}%)',
                                           style: theme.textTheme.labelSmall
                                               ?.copyWith(
-                                            fontSize: 8,
-                                            color: mediaChange > 0
-                                                ? Colors.green.shade700
-                                                : mediaChange < 0
+                                                fontSize: 8,
+                                                color: mediaChange > 0
+                                                    ? Colors.green.shade700
+                                                    : mediaChange < 0
                                                     ? Colors.red.shade700
-                                                    : theme.colorScheme
-                                                        .onSecondaryContainer
-                                                        .withOpacity(0.7),
-                                            fontWeight: FontWeight.w500,
-                                          ),
+                                                    : theme
+                                                          .colorScheme
+                                                          .onSecondaryContainer
+                                                          .withOpacity(0.7),
+                                                fontWeight: FontWeight.w500,
+                                              ),
                                         ),
                                       ],
                                     ),
@@ -1042,8 +1295,9 @@ class _GalleryStatsPageState extends ConsumerState<GalleryStatsPage> {
                                 ),
                                 borderRadius: BorderRadius.circular(16),
                                 border: Border.all(
-                                  color: theme.colorScheme.tertiary
-                                      .withOpacity(0.2),
+                                  color: theme.colorScheme.tertiary.withOpacity(
+                                    0.2,
+                                  ),
                                   width: 1,
                                 ),
                                 boxShadow: [
@@ -1066,7 +1320,8 @@ class _GalleryStatsPageState extends ConsumerState<GalleryStatsPage> {
                                       Icon(
                                         Icons.storage,
                                         size: 13,
-                                        color: theme.colorScheme
+                                        color: theme
+                                            .colorScheme
                                             .onTertiaryContainer
                                             .withOpacity(0.9),
                                       ),
@@ -1076,13 +1331,14 @@ class _GalleryStatsPageState extends ConsumerState<GalleryStatsPage> {
                                           l10n.totalSize,
                                           style: theme.textTheme.labelSmall
                                               ?.copyWith(
-                                            fontWeight: FontWeight.w600,
-                                            fontSize: 10,
-                                            color: theme.colorScheme
-                                                .onTertiaryContainer
-                                                .withOpacity(0.9),
-                                            letterSpacing: 0.3,
-                                          ),
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 10,
+                                                color: theme
+                                                    .colorScheme
+                                                    .onTertiaryContainer
+                                                    .withOpacity(0.9),
+                                                letterSpacing: 0.3,
+                                              ),
                                           overflow: TextOverflow.ellipsis,
                                         ),
                                       ),
@@ -1093,13 +1349,14 @@ class _GalleryStatsPageState extends ConsumerState<GalleryStatsPage> {
                                     '${displayStats.totalSizeMB.toStringAsFixed(1)}',
                                     style: theme.textTheme.headlineSmall
                                         ?.copyWith(
-                                      fontWeight: FontWeight.w900,
-                                      fontSize: 20,
-                                      color: theme
-                                          .colorScheme.onTertiaryContainer,
-                                      letterSpacing: -1.2,
-                                      height: 1,
-                                    ),
+                                          fontWeight: FontWeight.w900,
+                                          fontSize: 20,
+                                          color: theme
+                                              .colorScheme
+                                              .onTertiaryContainer,
+                                          letterSpacing: -1.2,
+                                          height: 1,
+                                        ),
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                   Row(
@@ -1108,62 +1365,70 @@ class _GalleryStatsPageState extends ConsumerState<GalleryStatsPage> {
                                         'MB',
                                         style: theme.textTheme.labelSmall
                                             ?.copyWith(
-                                          fontSize: 8,
-                                          color: theme.colorScheme
-                                              .onTertiaryContainer
-                                              .withOpacity(0.7),
-                                        ),
+                                              fontSize: 8,
+                                              color: theme
+                                                  .colorScheme
+                                                  .onTertiaryContainer
+                                                  .withOpacity(0.7),
+                                            ),
                                       ),
                                       // Önceki analizle fark (mutlak değer + yüzde)
-                                      if (previousStats != null && sizeChange != null && sizeDiff != null) ...[
+                                      if (previousStats != null &&
+                                          sizeChange != null &&
+                                          sizeDiff != null) ...[
                                         const SizedBox(width: 4),
                                         Row(
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
                                             Text(
-                                              sizeDiff != 0 ? (sizeDiff > 0 ? '+' : '-') : '',
+                                              sizeDiff != 0
+                                                  ? (sizeDiff > 0 ? '+' : '-')
+                                                  : '',
                                               style: theme.textTheme.labelSmall
                                                   ?.copyWith(
-                                                fontSize: 9,
-                                                color: sizeChange > 0
-                                                    ? Colors.green.shade700
-                                                    : sizeChange < 0
+                                                    fontSize: 9,
+                                                    color: sizeChange > 0
+                                                        ? Colors.green.shade700
+                                                        : sizeChange < 0
                                                         ? Colors.red.shade700
-                                                        : theme.colorScheme
-                                                            .onTertiaryContainer
-                                                            .withOpacity(0.7),
-                                                fontWeight: FontWeight.w600,
-                                              ),
+                                                        : theme
+                                                              .colorScheme
+                                                              .onTertiaryContainer
+                                                              .withOpacity(0.7),
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
                                             ),
                                             Text(
                                               '${sizeDiff.abs().toStringAsFixed(1)} MB',
                                               style: theme.textTheme.labelSmall
                                                   ?.copyWith(
-                                                fontSize: 9,
-                                                color: sizeChange > 0
-                                                    ? Colors.green.shade700
-                                                    : sizeChange < 0
+                                                    fontSize: 9,
+                                                    color: sizeChange > 0
+                                                        ? Colors.green.shade700
+                                                        : sizeChange < 0
                                                         ? Colors.red.shade700
-                                                        : theme.colorScheme
-                                                            .onTertiaryContainer
-                                                            .withOpacity(0.7),
-                                                fontWeight: FontWeight.w600,
-                                              ),
+                                                        : theme
+                                                              .colorScheme
+                                                              .onTertiaryContainer
+                                                              .withOpacity(0.7),
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
                                             ),
                                             Text(
                                               ' (${sizeChange > 0 ? '+' : ''}${sizeChange.toStringAsFixed(1)}%)',
                                               style: theme.textTheme.labelSmall
                                                   ?.copyWith(
-                                                fontSize: 8,
-                                                color: sizeChange > 0
-                                                    ? Colors.green.shade700
-                                                    : sizeChange < 0
+                                                    fontSize: 8,
+                                                    color: sizeChange > 0
+                                                        ? Colors.green.shade700
+                                                        : sizeChange < 0
                                                         ? Colors.red.shade700
-                                                        : theme.colorScheme
-                                                            .onTertiaryContainer
-                                                            .withOpacity(0.7),
-                                                fontWeight: FontWeight.w500,
-                                              ),
+                                                        : theme
+                                                              .colorScheme
+                                                              .onTertiaryContainer
+                                                              .withOpacity(0.7),
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
                                             ),
                                           ],
                                         ),
@@ -1178,7 +1443,7 @@ class _GalleryStatsPageState extends ConsumerState<GalleryStatsPage> {
                       ),
                       // Albüm detayları - varsa göster
                       if (displayStats.albumDetails.isNotEmpty) ...[
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 12),
                         Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
@@ -1199,81 +1464,389 @@ class _GalleryStatsPageState extends ConsumerState<GalleryStatsPage> {
                                   const SizedBox(width: 8),
                                   Text(
                                     l10n.albumDetails,
-                                    style: theme.textTheme.titleMedium?.copyWith(
-                                      fontWeight: FontWeight.w600,
-                                      color: theme.colorScheme.primary,
-                                    ),
+                                    style: theme.textTheme.titleMedium
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.w600,
+                                          color: theme.colorScheme.primary,
+                                        ),
                                   ),
                                 ],
                               ),
                               const SizedBox(height: 12),
-                              // İlk 10 albümü göster
-                              ...displayStats.albumDetails.take(10).map((detail) {
-                                return Padding(
-                                  padding: const EdgeInsets.only(bottom: 12),
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        Icons.folder,
-                                        size: 16,
-                                        color: theme.colorScheme.primary
-                                            .withOpacity(0.7),
+                              // Yatay scroll edilebilir grid yapısı + scroll okları
+                              Stack(
+                                children: [
+                                  SizedBox(
+                                    height:
+                                        320, // 2 satır * kart yüksekliği + spacing
+                                    child: GridView.builder(
+                                      controller: _albumScrollController,
+                                      scrollDirection: Axis.horizontal,
+                                      physics: const BouncingScrollPhysics(),
+                                      padding: const EdgeInsets.only(right: 16),
+                                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount:
+                                            2, // 2 satır (yatay scroll'da satır sayısı)
+                                        mainAxisSpacing:
+                                            14, // Yatay spacing (kartlar arası)
+                                        crossAxisSpacing:
+                                            14, // Dikey spacing (satırlar arası)
+                                        mainAxisExtent:
+                                            300, // Kart genişliği (yatay scroll'da) - daha geniş
                                       ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              detail.albumName,
-                                              style: theme.textTheme.bodyMedium
-                                                  ?.copyWith(
-                                                fontWeight: FontWeight.w500,
+                                      itemCount:
+                                          displayStats.albumDetails.length,
+                                      itemBuilder: (context, index) {
+                                        final detail =
+                                            displayStats.albumDetails[index];
+                                        final double sizeMb = detail.sizeMB;
+                                        // Toplam galeri boyutuna göre yüzde hesapla
+                                        final double totalSizeMb =
+                                            displayStats.totalSizeMB > 0
+                                                ? displayStats.totalSizeMB
+                                                : 1;
+                                        final double percentage =
+                                            (sizeMb / totalSizeMb * 100)
+                                                .clamp(0.0, 100.0);
+                                        return Container(
+                                          constraints: const BoxConstraints(
+                                            maxHeight: double.infinity,
+                                          ),
+                                          padding: const EdgeInsets.all(10),
+                                          decoration: BoxDecoration(
+                                            color: theme.colorScheme.surface,
+                                            borderRadius: BorderRadius.circular(12),
+                                            border: Border.all(
+                                              color: theme.colorScheme.outline
+                                                  .withOpacity(0.08),
+                                              width: 1,
+                                            ),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.black.withOpacity(0.04),
+                                                blurRadius: 8,
+                                                offset: const Offset(0, 2),
+                                                spreadRadius: 0,
                                               ),
-                                              overflow: TextOverflow.ellipsis,
+                                            ],
+                                          ),
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              // Album Name - Header (ultra compact)
+                                              Row(
+                                                children: [
+                                                  Container(
+                                                    width: 32,
+                                                    height: 32,
+                                                    decoration: BoxDecoration(
+                                                      color: theme
+                                                          .colorScheme
+                                                          .primaryContainer
+                                                          .withOpacity(0.6),
+                                                      borderRadius:
+                                                          BorderRadius.circular(8),
+                                                      border: Border.all(
+                                                        color: theme
+                                                            .colorScheme
+                                                            .primary
+                                                            .withOpacity(0.15),
+                                                        width: 1,
+                                                      ),
+                                                    ),
+                                                    child: Icon(
+                                                      Icons.folder_rounded,
+                                                      size: 16,
+                                                      color: theme
+                                                          .colorScheme
+                                                          .primary,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  Expanded(
+                                                    child: Column(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment.start,
+                                                      mainAxisSize:
+                                                          MainAxisSize.min,
+                                                      children: [
+                                                        Text(
+                                                          detail.albumName,
+                                                          style: theme
+                                                              .textTheme
+                                                              .titleSmall
+                                                              ?.copyWith(
+                                                                fontWeight:
+                                                                    FontWeight.w700,
+                                                                fontSize: 13,
+                                                                color: theme
+                                                                    .colorScheme
+                                                                    .onSurface,
+                                                                letterSpacing: -0.2,
+                                                                height: 1.1,
+                                                              ),
+                                                          maxLines: 1,
+                                                          overflow:
+                                                              TextOverflow.ellipsis,
+                                                        ),
+                                                        const SizedBox(height: 2),
+                                                        // Percentage badge (inline)
+                                                        Text(
+                                                          '${percentage.toStringAsFixed(1)}%',
+                                                          style: theme
+                                                              .textTheme
+                                                              .labelSmall
+                                                              ?.copyWith(
+                                                                fontWeight:
+                                                                    FontWeight.w600,
+                                                                fontSize: 8,
+                                                                color: theme
+                                                                    .colorScheme
+                                                                    .secondary,
+                                                                letterSpacing: 0.1,
+                                                                height: 1.0,
+                                                              ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              const SizedBox(height: 8),
+                                              // Stats Grid (ultra compact)
+                                              Row(
+                                                children: [
+                                                  // Media Count
+                                                  Expanded(
+                                                    child: _AlbumStatItem(
+                                                      icon: Icons.photo_library_rounded,
+                                                      label: l10n.mediaUnit,
+                                                      value: '${detail.mediaCount}',
+                                                      theme: theme,
+                                                      color: theme.colorScheme.primary,
+                                                      isCompact: true,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 6),
+                                                  // Size
+                                                  Expanded(
+                                                    child: _AlbumStatItem(
+                                                      icon: Icons.storage_rounded,
+                                                      label: 'MB',
+                                                      value:
+                                                          sizeMb.toStringAsFixed(1),
+                                                      theme: theme,
+                                                      color: theme.colorScheme.secondary,
+                                                      isCompact: true,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              const SizedBox(height: 8),
+                                              // Progress Bar (ultra compact)
+                                              Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Row(
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .spaceBetween,
+                                                    children: [
+                                                      Flexible(
+                                                        child: Text(
+                                                          l10n.ofGallery,
+                                                          style: theme
+                                                              .textTheme
+                                                              .labelSmall
+                                                              ?.copyWith(
+                                                                fontWeight:
+                                                                    FontWeight.w500,
+                                                                fontSize: 8,
+                                                                color: theme
+                                                                    .colorScheme
+                                                                    .onSurface
+                                                                    .withOpacity(0.6),
+                                                                height: 1.0,
+                                                              ),
+                                                          overflow: TextOverflow.ellipsis,
+                                                        ),
+                                                      ),
+                                                      Text(
+                                                        '${percentage.toStringAsFixed(1)}%',
+                                                        style: theme
+                                                            .textTheme
+                                                            .labelSmall
+                                                            ?.copyWith(
+                                                              fontWeight:
+                                                                  FontWeight.w700,
+                                                              fontSize: 9,
+                                                              color: theme
+                                                                  .colorScheme
+                                                                  .primary,
+                                                              height: 1.0,
+                                                            ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  const SizedBox(height: 4),
+                                                  ClipRRect(
+                                                    borderRadius:
+                                                        BorderRadius.circular(4),
+                                                    child: SizedBox(
+                                                      height: 5,
+                                                      child: Stack(
+                                                        children: [
+                                                          Container(
+                                                            decoration: BoxDecoration(
+                                                              color: theme
+                                                                  .colorScheme
+                                                                  .surfaceContainerHighest
+                                                                  .withOpacity(0.4),
+                                                            ),
+                                                          ),
+                                                          FractionallySizedBox(
+                                                            widthFactor: (percentage / 100)
+                                                                .clamp(0.0, 1.0),
+                                                            alignment: Alignment
+                                                                .centerLeft,
+                                                            child: Container(
+                                                              decoration: BoxDecoration(
+                                                                color: theme
+                                                                    .colorScheme
+                                                                    .primary,
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                  // Sol ok (scroll left)
+                                  if (_showLeftArrow)
+                                    Positioned(
+                                      left: 8,
+                                      top: 0,
+                                      bottom: 0,
+                                      child: Center(
+                                        child: Material(
+                                          color: Colors.transparent,
+                                          child: InkWell(
+                                            onTap: _scrollLeft,
+                                            borderRadius: BorderRadius.circular(
+                                              20,
                                             ),
-                                            const SizedBox(height: 4),
-                                            Row(
-                                              children: [
-                                                Text(
-                                                  '${detail.mediaCount} ${l10n.mediaUnit}',
-                                                  style: theme.textTheme
-                                                      .bodySmall?.copyWith(
-                                                    color: theme.colorScheme
-                                                        .onSurface
+                                            child: Container(
+                                              width: 40,
+                                              height: 40,
+                                              decoration: BoxDecoration(
+                                                gradient: LinearGradient(
+                                                  begin: Alignment.centerLeft,
+                                                  end: Alignment.centerRight,
+                                                  colors: [
+                                                    theme.colorScheme.surface
+                                                        .withOpacity(0.9),
+                                                    theme.colorScheme.surface
                                                         .withOpacity(0.7),
-                                                  ),
+                                                  ],
                                                 ),
-                                                const SizedBox(width: 8),
-                                                Text(
-                                                  '•',
-                                                  style: theme.textTheme
-                                                      .bodySmall?.copyWith(
-                                                    color: theme.colorScheme
-                                                        .onSurface
-                                                        .withOpacity(0.4),
-                                                  ),
+                                                shape: BoxShape.circle,
+                                                border: Border.all(
+                                                  color: theme
+                                                      .colorScheme
+                                                      .outline
+                                                      .withOpacity(0.2),
+                                                  width: 1,
                                                 ),
-                                                const SizedBox(width: 8),
-                                                Text(
-                                                  '${detail.sizeMB.toStringAsFixed(1)} MB',
-                                                  style: theme.textTheme
-                                                      .bodySmall?.copyWith(
-                                                    fontWeight: FontWeight.w600,
-                                                    color: theme
-                                                        .colorScheme.primary,
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: Colors.black
+                                                        .withOpacity(0.1),
+                                                    blurRadius: 8,
+                                                    offset: const Offset(0, 2),
                                                   ),
-                                                ),
-                                              ],
+                                                ],
+                                              ),
+                                              child: Icon(
+                                                Icons.chevron_left_rounded,
+                                                color:
+                                                    theme.colorScheme.primary,
+                                                size: 24,
+                                              ),
                                             ),
-                                          ],
+                                          ),
                                         ),
                                       ),
-                                    ],
-                                  ),
-                                );
-                              }),
+                                    ),
+                                  // Sağ ok (scroll right)
+                                  if (_showRightArrow)
+                                    Positioned(
+                                      right: 8,
+                                      top: 0,
+                                      bottom: 0,
+                                      child: Center(
+                                        child: Material(
+                                          color: Colors.transparent,
+                                          child: InkWell(
+                                            onTap: _scrollRight,
+                                            borderRadius: BorderRadius.circular(
+                                              20,
+                                            ),
+                                            child: Container(
+                                              width: 40,
+                                              height: 40,
+                                              decoration: BoxDecoration(
+                                                gradient: LinearGradient(
+                                                  begin: Alignment.centerLeft,
+                                                  end: Alignment.centerRight,
+                                                  colors: [
+                                                    theme.colorScheme.surface
+                                                        .withOpacity(0.9),
+                                                    theme.colorScheme.surface
+                                                        .withOpacity(0.7),
+                                                  ],
+                                                ),
+                                                shape: BoxShape.circle,
+                                                border: Border.all(
+                                                  color: theme
+                                                      .colorScheme
+                                                      .outline
+                                                      .withOpacity(0.2),
+                                                  width: 1,
+                                                ),
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: Colors.black
+                                                        .withOpacity(0.1),
+                                                    blurRadius: 8,
+                                                    offset: const Offset(0, 2),
+                                                  ),
+                                                ],
+                                              ),
+                                              child: Icon(
+                                                Icons.chevron_right_rounded,
+                                                color:
+                                                    theme.colorScheme.primary,
+                                                size: 24,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
                             ],
                           ),
                         ),
@@ -1315,5 +1888,3 @@ class _GalleryStatsPageState extends ConsumerState<GalleryStatsPage> {
     return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(2)} GB';
   }
 }
-
-

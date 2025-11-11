@@ -108,6 +108,10 @@
   "@watchAdToEarn": {
     "description": "Button text to watch ad"
   },
+  "adNotReady": "El anuncio se está cargando...",
+  "@adNotReady": {
+    "description": "Message shown when ad is not ready yet"
+  },
   "earnDeletionRights": "+20 Eliminaciones",
   "@earnDeletionRights": {
     "description": "Text showing deletion rights earned from watching ad"
@@ -312,6 +316,74 @@
   "@priority": {
     "description": "Short label for priority support feature"
   },
+  "paywallTitle": "Desbloquea una galería más inteligente y limpia",
+  "@paywallTitle": {
+    "description": "Título principal del paywall"
+  },
+  "paywallSubtitle": "Limpieza con IA en el dispositivo. Pago único. Acceso de por vida.",
+  "@paywallSubtitle": {
+    "description": "Subtítulo del paywall"
+  },
+  "oneTimeOffer": "OFERTA ÚNICA",
+  "@oneTimeOffer": {
+    "description": "Distintivo de oferta única"
+  },
+  "payOnceOwnForever": "Paga una vez. Disfrútalo para siempre.",
+  "@payOnceOwnForever": {
+    "description": "Texto atractivo de compra única"
+  },
+  "discount25Short": "25% DTO.",
+  "@discount25Short": {
+    "description": "Etiqueta corta de descuento"
+  },
+  "upgradeToPremium": "Actualizar a Premium",
+  "@upgradeToPremium": {
+    "description": "Botón de actualización"
+  },
+  "continueWithFree": "Continuar con la versión gratuita",
+  "@continueWithFree": {
+    "description": "Seguir sin comprar"
+  },
+  "noSubscriptionsNoFees": "Sin suscripciones. Sin costes ocultos.",
+  "@noSubscriptionsNoFees": {
+    "description": "Texto de pie de página sin suscripción"
+  },
+  "featureUnlimitedDeletions": "Eliminaciones ilimitadas",
+  "@featureUnlimitedDeletions": {
+    "description": "Título de función - eliminaciones ilimitadas"
+  },
+  "featureUnlimitedDeletionsDesc": "Limpia tu galería sin límites.",
+  "@featureUnlimitedDeletionsDesc": {
+    "description": "Descripción - eliminaciones ilimitadas"
+  },
+  "featureAIDetection": "Detección de Blur y Duplicados con IA",
+  "@featureAIDetection": {
+    "description": "Título de función - detección IA"
+  },
+  "featureAIDetectionDesc": "Encuentra y elimina fotos no deseadas.",
+  "@featureAIDetectionDesc": {
+    "description": "Descripción - detección IA"
+  },
+  "featureAutoClean": "Sugerencias inteligentes de autolimpieza",
+  "@featureAutoClean": {
+    "description": "Título - autolimpieza"
+  },
+  "featureAutoCleanDesc": "Deja que la IA encuentre qué fotos borrar.",
+  "@featureAutoCleanDesc": {
+    "description": "Descripción - autolimpieza"
+  },
+  "featureAdFree": "Experiencia sin anuncios",
+  "@featureAdFree": {
+    "description": "Título - sin anuncios"
+  },
+  "featureAdFreeDesc": "Disfruta de una interfaz fluida y sin anuncios.",
+  "@featureAdFreeDesc": {
+    "description": "Descripción - sin anuncios"
+  },
+  "processing": "Procesando...",
+  "@processing": {
+    "description": "Texto de carga durante la compra"
+  },
   "storeNotAvailable": "La tienda no está disponible",
   "@storeNotAvailable": {
     "description": "Message when store is not available"
@@ -391,6 +463,10 @@
   "mediaUnit": "medios",
   "@mediaUnit": {
     "description": "Media unit text (singular/plural)"
+  },
+  "ofGallery": "de la galería",
+  "@ofGallery": {
+    "description": "Percentage of total gallery text"
   },
   "reAnalyze": "Re-analizar",
   "@reAnalyze": {

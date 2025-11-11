@@ -38,7 +38,8 @@ class RewardedAdsService {
   static const String _duplicateScanLimitIosAdUnitId = 'ca-app-pub-3499593115543692/1924148305'; // iOS Duplicate Ad Unit ID
   
   // Use test ads in debug mode
-  static const bool _useTestAds = true; // Set to false for production
+  // Set to false for production to use real ad units
+  static const bool _useTestAds = false; // Production: false, Development: true
   
   // Map to store ads for each type
   final Map<AdUnitType, RewardedInterstitialAd?> _ads = {};
@@ -67,20 +68,29 @@ class RewardedAdsService {
 
   /// Get ad unit ID for a specific type and platform
   String _getAdUnitId(AdUnitType type) {
-    // Use test ads in debug mode
+    final isAndroid = Platform.isAndroid;
+    String adUnitId;
+    
+    // Use test ads in debug mode or if _useTestAds is true
     if (_useTestAds || kDebugMode) {
-      debugPrint('📱 [RewardedAdsService] Using test ad unit ID');
+      debugPrint('📱 [RewardedAdsService] Using test ad unit ID for type: $type');
       return _testAdUnitId;
     }
     
-    final isAndroid = Platform.isAndroid;
+    // Use production ad unit IDs
     switch (type) {
       case AdUnitType.deleteLimit:
-        return isAndroid ? _deleteLimitAndroidAdUnitId : _deleteLimitIosAdUnitId;
+        adUnitId = isAndroid ? _deleteLimitAndroidAdUnitId : _deleteLimitIosAdUnitId;
+        debugPrint('📱 [RewardedAdsService] Using DELETE LIMIT ad unit: $adUnitId (Swipe Tab)');
+        return adUnitId;
       case AdUnitType.blurScanLimit:
-        return isAndroid ? _blurScanLimitAndroidAdUnitId : _blurScanLimitIosAdUnitId;
+        adUnitId = isAndroid ? _blurScanLimitAndroidAdUnitId : _blurScanLimitIosAdUnitId;
+        debugPrint('📱 [RewardedAdsService] Using BLUR SCAN LIMIT ad unit: $adUnitId (Blur Tab)');
+        return adUnitId;
       case AdUnitType.duplicateScanLimit:
-        return isAndroid ? _duplicateScanLimitAndroidAdUnitId : _duplicateScanLimitIosAdUnitId;
+        adUnitId = isAndroid ? _duplicateScanLimitAndroidAdUnitId : _duplicateScanLimitIosAdUnitId;
+        debugPrint('📱 [RewardedAdsService] Using DUPLICATE SCAN LIMIT ad unit: $adUnitId (Duplicate Tab)');
+        return adUnitId;
     }
   }
 
@@ -285,6 +295,13 @@ class RewardedAdsService {
 
   /// Check if ad is ready for a specific type
   bool isAdReady(AdUnitType type) => _ads[type] != null && !_isDisposed;
+
+  /// Check if ad is currently loading for a specific type
+  bool isAdLoading(AdUnitType type) => _isLoading[type] == true && !_isDisposed;
+
+  /// Check if ad is ready or loading for a specific type
+  bool isAdReadyOrLoading(AdUnitType type) => 
+      (isAdReady(type) || isAdLoading(type));
 
   /// Dispose resources
   void dispose() {

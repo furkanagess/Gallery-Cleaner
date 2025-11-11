@@ -309,6 +309,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get watchAdToEarn => 'Watch Ad';
 
   @override
+  String get adNotReady => 'Ad Loading...';
+
+  @override
   String get earnDeletionRights => '+20 Deletions';
 
   @override
@@ -359,9 +362,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
     return '+$amountString Scans';
   }
-
-  @override
-  String get adNotReady => 'Ad Loading...';
 
   @override
   String get earnedDeletionRights => 'You earned 20 deletion rights!';
@@ -466,6 +466,60 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get priority => 'Priority';
+
+  @override
+  String get paywallTitle => 'Unlock a Smarter, Cleaner Gallery';
+
+  @override
+  String get paywallSubtitle =>
+      'AI-powered photo cleanup. One-time payment. Lifetime access.';
+
+  @override
+  String get oneTimeOffer => 'ONE-TIME OFFER';
+
+  @override
+  String get payOnceOwnForever => 'Pay once. Own it forever.';
+
+  @override
+  String get discount25Short => '25% OFF';
+
+  @override
+  String get upgradeToPremium => 'Upgrade to Premium';
+
+  @override
+  String get continueWithFree => 'Continue with Free Version';
+
+  @override
+  String get noSubscriptionsNoFees => 'No subscriptions. No hidden fees.';
+
+  @override
+  String get featureUnlimitedDeletions => 'Unlimited Deletions';
+
+  @override
+  String get featureUnlimitedDeletionsDesc =>
+      'Clean your gallery without any limits.';
+
+  @override
+  String get featureAIDetection => 'AI Blur & Duplicate Detection';
+
+  @override
+  String get featureAIDetectionDesc => 'Find and remove unwanted photos.';
+
+  @override
+  String get featureAutoClean => 'Smart Auto-Clean Suggestions';
+
+  @override
+  String get featureAutoCleanDesc =>
+      'Let our AI find photos to delete for you.';
+
+  @override
+  String get featureAdFree => 'Ad-Free Experience';
+
+  @override
+  String get featureAdFreeDesc => 'Enjoy a seamless, ad-free interface.';
+
+  @override
+  String get processing => 'Processing...';
 
   @override
   String get storeNotAvailable => 'Store is not available';
@@ -616,6 +670,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get mediaUnit => 'media';
+
+  @override
+  String get ofGallery => 'of gallery';
 
   @override
   String get reAnalyze => 'Re-analyze';

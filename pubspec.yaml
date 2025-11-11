@@ -2,7 +2,7 @@ name: gallery_cleaner
 description: "Gallery Cleaner - Clean your gallery with ease"
 publish_to: 'none'
 
-version: 1.0.0+5
+version: 1.0.0+6
 
 environment:
   sdk: ^3.11.0-57.0.dev
@@ -24,6 +24,7 @@ dependencies:
   audioplayers: ^6.0.0
   google_mobile_ads: ^5.1.0
   in_app_purchase: ^3.2.0
+  purchases_flutter: ^9.0.0
   crypto: ^3.0.5
   image: ^4.3.0
   flutter_localizations:

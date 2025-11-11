@@ -314,6 +314,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get watchAdToEarn => 'Ver Anuncio';
 
   @override
+  String get adNotReady => 'Cargando Anuncio...';
+
+  @override
   String get earnDeletionRights => '+20 Eliminaciones';
 
   @override
@@ -364,9 +367,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
     return '+$amountString Escaneos';
   }
-
-  @override
-  String get adNotReady => 'Cargando Anuncio...';
 
   @override
   String get earnedDeletionRights => '¡Ganaste 20 derechos de eliminación!';
@@ -472,6 +472,60 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get priority => 'Prioritario';
+
+  @override
+  String get paywallTitle => 'Desbloquea una galería más inteligente y limpia';
+
+  @override
+  String get paywallSubtitle =>
+      'Limpieza con IA en el dispositivo. Pago único. Acceso de por vida.';
+
+  @override
+  String get oneTimeOffer => 'OFERTA ÚNICA';
+
+  @override
+  String get payOnceOwnForever => 'Paga una vez. Disfrútalo para siempre.';
+
+  @override
+  String get discount25Short => '25% DTO.';
+
+  @override
+  String get upgradeToPremium => 'Actualizar a Premium';
+
+  @override
+  String get continueWithFree => 'Continuar con la versión gratuita';
+
+  @override
+  String get noSubscriptionsNoFees => 'Sin suscripciones. Sin costes ocultos.';
+
+  @override
+  String get featureUnlimitedDeletions => 'Eliminaciones ilimitadas';
+
+  @override
+  String get featureUnlimitedDeletionsDesc => 'Limpia tu galería sin límites.';
+
+  @override
+  String get featureAIDetection => 'Detección de Blur y Duplicados con IA';
+
+  @override
+  String get featureAIDetectionDesc => 'Encuentra y elimina fotos no deseadas.';
+
+  @override
+  String get featureAutoClean => 'Sugerencias inteligentes de autolimpieza';
+
+  @override
+  String get featureAutoCleanDesc =>
+      'Deja que la IA encuentre qué fotos borrar.';
+
+  @override
+  String get featureAdFree => 'Experiencia sin anuncios';
+
+  @override
+  String get featureAdFreeDesc =>
+      'Disfruta de una interfaz fluida y sin anuncios.';
+
+  @override
+  String get processing => 'Procesando...';
 
   @override
   String get storeNotAvailable => 'La tienda no está disponible';
@@ -624,6 +678,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get mediaUnit => 'medios';
+
+  @override
+  String get ofGallery => 'de la galería';
 
   @override
   String get reAnalyze => 'Re-analizar';

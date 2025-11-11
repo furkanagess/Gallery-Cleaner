@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../l10n/app_localizations.dart';
-import '../../../core/services/in_app_purchase_service.dart';
+import '../../../core/services/revenuecat_service.dart';
+import 'package:purchases_flutter/purchases_flutter.dart';
 import '../../gallery/application/gallery_providers.dart';
 import 'premium_success_dialog.dart';
 
@@ -58,22 +59,69 @@ class _PaywallPageState extends ConsumerState<PaywallPage>
   }
 
   Future<void> _loadProductPrice() async {
-    final iapService = InAppPurchaseService.instance;
-    await iapService.loadProducts();
-    final product = iapService.getPremiumProduct();
-    if (product != null && mounted) {
-      // Calculate 25% discount
-      final priceValue = _parsePrice(product.price);
+    try {
+      final rc = RevenueCatService.instance;
+      await rc.initialize();
+      final offerings = await rc.getOfferings();
+      if (offerings == null || offerings.current == null) {
+        debugPrint('⚠️ [Paywall] Offerings not available');
+        if (mounted) {
+          setState(() {
+            _productPrice = 'N/A';
+            _originalPrice = null;
+          });
+        }
+        return;
+      }
+      final current = offerings.current!;
+      final target = (current.identifier == RevenueCatService.offeringId)
+          ? current
+          : offerings.all[RevenueCatService.offeringId] ?? current;
+      final base = target;
+      Package? package = base.lifetime;
+      if (package == null) {
+        final list = base.availablePackages;
+        final byType = list.where((p) => p.packageType == PackageType.lifetime);
+        package = byType.isNotEmpty ? byType.first : (list.isNotEmpty ? list.first : null);
+      }
+      final product = package?.storeProduct;
+      if (product == null || !mounted) {
+        if (mounted) {
+          setState(() {
+            _productPrice = 'N/A';
+            _originalPrice = null;
+          });
+        }
+        return;
+      }
+      final priceString = product.priceString;
+      final priceValue = _parsePrice(priceString);
       if (priceValue != null) {
-        final discountedPrice = priceValue * 0.75;
-        final currencySymbol = _extractCurrencySymbol(product.price);
-        setState(() {
-          _originalPrice = product.price;
-          _productPrice = '$currencySymbol${discountedPrice.toStringAsFixed(2)}';
-        });
+        // Show as if there is a 25% discount: original price = +25% of current,
+        // displayed price = current RevenueCat price.
+        final increasedPrice = priceValue * 1.25;
+        final currencySymbol = _extractCurrencySymbol(priceString);
+        if (mounted) {
+          setState(() {
+            _originalPrice = '$currencySymbol${increasedPrice.toStringAsFixed(2)}';
+            _productPrice = priceString;
+          });
+        }
       } else {
+        // Fallback: show only current price without strikethrough section
+        if (mounted) {
+          setState(() {
+            _originalPrice = null;
+            _productPrice = priceString;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ [Paywall] Error loading product price: $e');
+      if (mounted) {
         setState(() {
-          _productPrice = product.price;
+          _productPrice = 'N/A';
+          _originalPrice = null;
         });
       }
     }
@@ -103,42 +151,9 @@ class _PaywallPageState extends ConsumerState<PaywallPage>
     });
 
     try {
-      final iapService = InAppPurchaseService.instance;
-      
-      if (!iapService.isAvailable) {
-        if (!mounted) return;
-        setState(() {
-          _errorMessage = l10n.storeNotAvailable;
-          _isLoading = false;
-        });
-        return;
-      }
-
-      final success = await iapService.purchasePremium(
-        onComplete: (purchaseSuccess) async {
-          if (!mounted) return;
-          final contextL10n = AppLocalizations.of(context)!;
-          
-          if (purchaseSuccess) {
-            // Invalidate premium provider to refresh UI
-            ref.invalidate(isPremiumProvider);
-            ref.invalidate(scanLimitProvider);
-            await ref.read(deleteLimitProvider.notifier).refresh();
-            
-            if (mounted) {
-              context.pop();
-              // Show premium success dialog
-              await PremiumSuccessDialog.show(context);
-            }
-          } else {
-            if (!mounted) return;
-            setState(() {
-              _errorMessage = contextL10n.purchaseFailed;
-              _isLoading = false;
-            });
-          }
-        },
-      );
+      final rc = RevenueCatService.instance;
+      await rc.initialize();
+      final success = await rc.purchaseLifetime();
       
       if (!mounted) return;
 
@@ -147,8 +162,15 @@ class _PaywallPageState extends ConsumerState<PaywallPage>
           _errorMessage = l10n.failedToInitiatePurchase;
           _isLoading = false;
         });
+      } else {
+        ref.invalidate(isPremiumProvider);
+        ref.invalidate(scanLimitProvider);
+        await ref.read(deleteLimitProvider.notifier).refresh();
+        if (mounted) {
+          context.pop();
+          await PremiumSuccessDialog.show(context);
+        }
       }
-      // If success, wait for callback
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -171,49 +193,28 @@ class _PaywallPageState extends ConsumerState<PaywallPage>
     });
 
     try {
-      final iapService = InAppPurchaseService.instance;
-      
-      if (!iapService.isAvailable) {
-        if (!mounted) return;
+      final rc = RevenueCatService.instance;
+      await rc.initialize();
+      final ok = await rc.restore();
+      if (!mounted) return;
+      final contextL10n = AppLocalizations.of(context)!;
+      if (ok) {
+        ref.invalidate(isPremiumProvider);
+        ref.invalidate(scanLimitProvider);
+        await ref.read(deleteLimitProvider.notifier).refresh();
         setState(() {
-          _errorMessage = l10n.storeNotAvailable;
+          _successMessage = contextL10n.purchasesRestoredSuccessfully;
           _isRestoring = false;
         });
-        return;
+        Future.delayed(const Duration(seconds: 2), () {
+          if (mounted) context.pop();
+        });
+      } else {
+        setState(() {
+          _errorMessage = contextL10n.noPreviousPurchases;
+          _isRestoring = false;
+        });
       }
-
-      await iapService.restorePurchases(
-        onComplete: (success, hasRestored) async {
-          if (!mounted) return;
-          final contextL10n = AppLocalizations.of(context)!;
-          
-          if (success && hasRestored) {
-            // Invalidate premium provider to refresh UI
-            ref.invalidate(isPremiumProvider);
-            ref.invalidate(scanLimitProvider);
-            await ref.read(deleteLimitProvider.notifier).refresh();
-            
-            if (!mounted) return;
-            setState(() {
-              _successMessage = contextL10n.purchasesRestoredSuccessfully;
-              _isRestoring = false;
-            });
-            
-            // Close page after a short delay
-            Future.delayed(const Duration(seconds: 2), () {
-              if (mounted) {
-                context.pop();
-              }
-            });
-          } else {
-            if (!mounted) return;
-            setState(() {
-              _errorMessage = contextL10n.noPreviousPurchases;
-              _isRestoring = false;
-            });
-          }
-        },
-      );
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -302,7 +303,7 @@ class _PaywallPageState extends ConsumerState<PaywallPage>
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Text(
-                    'Unlock a Smarter, Cleaner Gallery',
+                    l10n.paywallTitle,
                     style: theme.textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.w900,
                       fontSize: 24,
@@ -320,7 +321,7 @@ class _PaywallPageState extends ConsumerState<PaywallPage>
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Text(
-                    'AI-powered photo cleanup. One-time payment. Lifetime access.',
+                    l10n.paywallSubtitle,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       fontWeight: FontWeight.w500,
                       fontSize: 13,
@@ -345,8 +346,8 @@ class _PaywallPageState extends ConsumerState<PaywallPage>
                           child: _PaywallFeatureItem(
                             icon: Icons.all_inclusive_rounded,
                             iconColor: Colors.blue,
-                            title: 'Unlimited Deletions',
-                            description: 'Clean your gallery without any limits.',
+                            title: l10n.featureUnlimitedDeletions,
+                            description: l10n.featureUnlimitedDeletionsDesc,
                             isCompact: true,
                           ),
                         ),
@@ -356,8 +357,8 @@ class _PaywallPageState extends ConsumerState<PaywallPage>
                           child: _PaywallFeatureItem(
                             icon: Icons.grid_view_rounded,
                             iconColor: Colors.blue,
-                            title: 'AI Blur & Duplicate Detection',
-                            description: 'Find and remove unwanted photos.',
+                            title: l10n.featureAIDetection,
+                            description: l10n.featureAIDetectionDesc,
                             isCompact: true,
                           ),
                         ),
@@ -367,8 +368,8 @@ class _PaywallPageState extends ConsumerState<PaywallPage>
                           child: _PaywallFeatureItem(
                             icon: Icons.auto_awesome_rounded,
                             iconColor: Colors.blue,
-                            title: 'Smart Auto-Clean Suggestions',
-                            description: 'Let our AI find photos to delete for you.',
+                            title: l10n.featureAutoClean,
+                            description: l10n.featureAutoCleanDesc,
                             isCompact: true,
                           ),
                         ),
@@ -378,8 +379,8 @@ class _PaywallPageState extends ConsumerState<PaywallPage>
                           child: _PaywallFeatureItem(
                             icon: Icons.block_rounded,
                             iconColor: Colors.blue,
-                            title: 'Ad-Free Experience',
-                            description: 'Enjoy a seamless, ad-free interface.',
+                            title: l10n.featureAdFree,
+                            description: l10n.featureAdFreeDesc,
                             isCompact: true,
                           ),
                         ),
@@ -388,15 +389,15 @@ class _PaywallPageState extends ConsumerState<PaywallPage>
                   ),
                 ),
                 const SizedBox(height: 8),
-                // Most Popular Badge
+                // One-time Offer Badge
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Colors.amber.shade600,
+                    color: Colors.greenAccent.shade400,
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Text(
-                    'MOST POPULAR',
+                    l10n.oneTimeOffer,
                     style: theme.textTheme.labelSmall?.copyWith(
                       fontWeight: FontWeight.w900,
                       fontSize: 10,
@@ -428,76 +429,99 @@ class _PaywallPageState extends ConsumerState<PaywallPage>
                       ],
                     ),
                     child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              'One-time purchase',
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 13,
-                                color: theme.colorScheme.onPrimaryContainer,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                Text(
-                                  _originalPrice!,
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    decoration: TextDecoration.lineThrough,
-                                    decorationThickness: 2,
-                                    decorationColor: theme.colorScheme.onPrimaryContainer.withOpacity(0.6),
-                                    color: theme.colorScheme.onPrimaryContainer.withOpacity(0.5),
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: Colors.green.withOpacity(0.2),
-                                    borderRadius: BorderRadius.circular(6),
-                                    border: Border.all(
-                                      color: Colors.green.withOpacity(0.4),
-                                      width: 1,
-                                    ),
-                                  ),
-                                  child: Text(
-                                    '25% OFF',
-                                    style: theme.textTheme.labelSmall?.copyWith(
-                                      fontWeight: FontWeight.w800,
-                                      fontSize: 9,
-                                      color: Colors.green.shade700,
-                                      letterSpacing: 0.3,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                        AnimatedBuilder(
-                          animation: _pulseAnimation,
-                          builder: (context, child) {
-                            return Transform.scale(
-                              scale: 0.98 + (_pulseAnimation.value - 1) * 0.02,
-                              child: Text(
-                                _productPrice!,
-                                style: theme.textTheme.headlineMedium?.copyWith(
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 32,
+                        Expanded(
+                          flex: 2,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                l10n.payOnceOwnForever,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 13,
                                   color: theme.colorScheme.onPrimaryContainer,
-                                  letterSpacing: -0.8,
                                 ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                            );
-                          },
+                              const SizedBox(height: 4),
+                              Wrap(
+                                spacing: 6,
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                children: [
+                                  ConstrainedBox(
+                                    constraints: const BoxConstraints(maxWidth: 120),
+                                    child: Text(
+                                      _originalPrice!,
+                                      style: theme.textTheme.bodySmall?.copyWith(
+                                        decoration: TextDecoration.lineThrough,
+                                        decorationThickness: 2,
+                                        decorationColor: theme.colorScheme.onPrimaryContainer.withOpacity(0.6),
+                                        color: theme.colorScheme.onPrimaryContainer.withOpacity(0.5),
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: Colors.green.withOpacity(0.2),
+                                      borderRadius: BorderRadius.circular(6),
+                                      border: Border.all(
+                                        color: Colors.green.withOpacity(0.4),
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      l10n.discount25Short,
+                                      style: theme.textTheme.labelSmall?.copyWith(
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 9,
+                                        color: Colors.green.shade700,
+                                        letterSpacing: 0.3,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Flexible(
+                          flex: 1,
+                          fit: FlexFit.loose,
+                          child: AnimatedBuilder(
+                            animation: _pulseAnimation,
+                            builder: (context, child) {
+                              return Transform.scale(
+                                scale: 0.98 + (_pulseAnimation.value - 1) * 0.02,
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  alignment: Alignment.centerRight,
+                                  child: Text(
+                                    _productPrice!,
+                                    style: theme.textTheme.headlineMedium?.copyWith(
+                                      fontWeight: FontWeight.w900,
+                                      fontSize: 32,
+                                      color: theme.colorScheme.onPrimaryContainer,
+                                      letterSpacing: -0.8,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
                         ),
                       ],
                     ),
@@ -541,18 +565,34 @@ class _PaywallPageState extends ConsumerState<PaywallPage>
                               child: Container(
                                 padding: const EdgeInsets.symmetric(vertical: 14),
                                 child: _isLoading
-                                    ? SizedBox(
-                                        height: 20,
-                                        width: 20,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2.5,
-                                          valueColor: AlwaysStoppedAnimation<Color>(
-                                            theme.colorScheme.onPrimary,
+                                    ? Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          SizedBox(
+                                            height: 18,
+                                            width: 18,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              valueColor: AlwaysStoppedAnimation<Color>(
+                                                theme.colorScheme.onPrimary,
+                                              ),
+                                            ),
                                           ),
-                                        ),
+                                          const SizedBox(width: 10),
+                                          Text(
+                                            l10n.processing,
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w800,
+                                              fontSize: 14,
+                                              color: theme.colorScheme.onPrimary,
+                                              letterSpacing: 0.3,
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ],
                                       )
                                     : Text(
-                                        'Upgrade to Premium',
+                                        l10n.upgradeToPremium,
                                         style: TextStyle(
                                           fontWeight: FontWeight.w900,
                                           fontSize: 16,
@@ -579,7 +619,7 @@ class _PaywallPageState extends ConsumerState<PaywallPage>
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
                   child: Text(
-                    'Continue with Free Version',
+                    l10n.continueWithFree,
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 13,
@@ -601,7 +641,7 @@ class _PaywallPageState extends ConsumerState<PaywallPage>
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        'No subscriptions. No hidden fees.',
+                        l10n.noSubscriptionsNoFees,
                         style: theme.textTheme.bodySmall?.copyWith(
                           fontSize: 10,
                           color: theme.colorScheme.onSurface.withOpacity(0.5),
@@ -710,69 +750,124 @@ class _PaywallFeatureItem extends StatelessWidget {
     final color = iconColor ?? theme.colorScheme.primary;
     
     return Container(
-      padding: EdgeInsets.all(isCompact ? 12 : 20),
+      padding: EdgeInsets.all(isCompact ? 12 : 16),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.6),
-        borderRadius: BorderRadius.circular(isCompact ? 12 : 16),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            theme.colorScheme.surface.withOpacity(0.95),
+            theme.colorScheme.surfaceContainerHighest.withOpacity(0.6),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(isCompact ? 14 : 18),
         border: Border.all(
-          color: color.withOpacity(0.15),
+          color: color.withOpacity(0.18),
           width: isCompact ? 1 : 1.5,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.12),
+            blurRadius: 14,
+            spreadRadius: 0,
+            offset: const Offset(0, 6),
+          ),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            spreadRadius: 0,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Container(
-            width: isCompact ? 40 : 56,
-            height: isCompact ? 40 : 56,
+            width: isCompact ? 42 : 52,
+            height: isCompact ? 42 : 52,
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  color.withOpacity(0.2),
-                  color.withOpacity(0.1),
+                  color.withOpacity(0.25),
+                  color.withOpacity(0.12),
                 ],
               ),
               shape: BoxShape.circle,
               border: Border.all(
-                color: color.withOpacity(0.3),
+                color: color.withOpacity(0.35),
                 width: isCompact ? 1.5 : 2,
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: color.withOpacity(0.2),
+                  blurRadius: 10,
+                  spreadRadius: 1,
+                  offset: const Offset(0, 3),
+                ),
+              ],
             ),
             child: Icon(
               icon,
-              size: isCompact ? 20 : 28,
+              size: isCompact ? 22 : 26,
               color: color,
             ),
           ),
-          SizedBox(width: isCompact ? 12 : 20),
+          SizedBox(width: isCompact ? 12 : 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(
-                  title,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    fontSize: isCompact ? 14 : 18,
-                    color: theme.colorScheme.onSurface,
-                    height: 1.2,
-                  ),
-                  maxLines: isCompact ? 1 : 2,
-                  overflow: TextOverflow.ellipsis,
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w900,
+                          fontSize: isCompact ? 14 : 16,
+                          color: theme.colorScheme.onSurface,
+                          letterSpacing: -0.2,
+                          height: 1.2,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isCompact ? 6 : 8,
+                        vertical: isCompact ? 2 : 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: color.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(
+                          color: color.withOpacity(0.25),
+                          width: 1,
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.check_rounded,
+                        size: isCompact ? 12 : 14,
+                        color: color,
+                      ),
+                    ),
+                  ],
                 ),
-                SizedBox(height: isCompact ? 4 : 8),
+                SizedBox(height: isCompact ? 4 : 6),
                 Text(
                   description,
                   style: theme.textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w500,
-                    fontSize: isCompact ? 11 : 14,
-                    color: theme.colorScheme.onSurface.withOpacity(0.7),
-                    height: 1.3,
+                    fontWeight: FontWeight.w600,
+                    fontSize: isCompact ? 11 : 12.5,
+                    color: theme.colorScheme.onSurface.withOpacity(0.72),
+                    height: 1.25,
                   ),
-                  maxLines: isCompact ? 1 : 2,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
               ],
