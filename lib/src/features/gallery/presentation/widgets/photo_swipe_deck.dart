@@ -142,10 +142,9 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck> with TickerProviderStat
     if (widget.initialIndex == 0 && indexChanged && !assetsChanged) {
       resetToStart();
     } else if (indexChanged || assetsChanged) {
-      final clampedIndex = widget.assets.isEmpty
+      final safeIndex = widget.assets.isEmpty
           ? 0
           : widget.initialIndex.clamp(0, widget.assets.length - 1);
-      final safeIndex = clampedIndex is int ? clampedIndex : clampedIndex.toInt();
       if (_topIndex != safeIndex || _dragOffset != Offset.zero || _dragRotation != 0) {
         setState(() {
           _topIndex = safeIndex;
@@ -303,23 +302,30 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck> with TickerProviderStat
         ? 1.0 
         : baseScale; // Background cards maintain fixed scale
 
-    // Silme hakkı yoksa hiçbir badge gösterme
-    final decisionStrength = widget.canDelete 
+    // Border ve badge hesaplamaları sadece top kart için yapılacak
+    final decisionStrength = isTop && widget.canDelete
         ? (_dragOffset.dx / _swipeThreshold).clamp(-1.0, 1.0)
         : 0.0;
-    final keepOpacity = widget.canDelete && decisionStrength > 0 
+    final keepOpacity = isTop && widget.canDelete && decisionStrength > 0 
         ? decisionStrength.abs().clamp(0.0, 1.0) 
         : 0.0;
-    final deleteOpacity = widget.canDelete && decisionStrength < 0
+    final deleteOpacity = isTop && widget.canDelete && decisionStrength < 0
         ? decisionStrength.abs().clamp(0.0, 1.0)
         : 0.0;
     final sem = Theme.of(context).extension<AppSemanticColors>()!;
-    final borderColor = (decisionStrength >= 0
+    final borderColor = isTop
+        ? (decisionStrength >= 0
             ? sem.keep.withOpacity(keepOpacity * 0.8)
-            : sem.delete.withOpacity(deleteOpacity * 0.8));
+            : sem.delete.withOpacity(deleteOpacity * 0.8))
+        : Colors.transparent;
+    final borderWidth = isTop
+        ? ((keepOpacity > deleteOpacity ? keepOpacity : deleteOpacity) * 3.5 + 1.5)
+        : 0.0;
     final l10n = AppLocalizations.of(context)!;
 
     // Karartı overlay'i kaldırıldı - tüm kartlar tam görünür, animasyon yok
+    // Border'ı Container'a ekleyerek fotoğrafın çevresinde net görünmesini sağlıyoruz
+    // Border sadece top kartta ve swipe yapıldığında görünür
     Widget card = Transform.translate(
       offset: offset,
       child: Transform.rotate(
@@ -327,21 +333,30 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck> with TickerProviderStat
         child: Transform.scale(
           scale: cardScale,
           child: RepaintBoundary(
-            child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              curve: Curves.easeOut,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
                 // Şeffaf arka plan - siyah alan sorununu önlemek için
                 color: Colors.transparent,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.3 - (indexFromTop * 0.06)),
-                        blurRadius: 24 - (indexFromTop * 4),
-                        offset: Offset(0, 10 + (indexFromTop * 2.5)),
-                        spreadRadius: -2,
-                      ),
-                    ],
+                // Border sadece top kartta ve swipe yapıldığında gösterilir
+                border: isTop && borderWidth > 0
+                    ? Border.all(
+                        color: borderColor,
+                        width: borderWidth,
+                      )
+                    : null,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.3 - (indexFromTop * 0.06)),
+                    blurRadius: 24 - (indexFromTop * 4),
+                    offset: Offset(0, 10 + (indexFromTop * 2.5)),
+                    spreadRadius: -2,
                   ),
-                  child: _PhotoCard(asset: asset),
+                ],
+              ),
+              child: _PhotoCard(asset: asset),
             ),
           ),
         ),
@@ -452,94 +467,94 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck> with TickerProviderStat
         child: Stack(
           children: [
             card,
-            // Underlay: gradient + dynamic border (keep this BELOW badges so badges stay bright)
+            // Underlay: gradient overlay (border artık kartın üzerinde)
             Positioned.fill(
               child: IgnorePointer(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    gradient: LinearGradient(
-                      begin: Alignment.bottomCenter,
-                      end: Alignment.topCenter,
-                      colors: [
-                        Colors.black.withOpacity(0.22),
-                        Colors.transparent,
-                      ],
-                    ),
-                    border: Border.all(
-                      color: borderColor,
-                      width: (keepOpacity > deleteOpacity ? keepOpacity : deleteOpacity) * 3.5 + 1.5,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.bottomCenter,
+                        end: Alignment.topCenter,
+                        colors: [
+                          Colors.black.withOpacity(0.22),
+                          Colors.transparent,
+                        ],
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
-            // Overlays (TOP): Modern badges: delete (top-left) and keep/gallery (bottom-right)
-            Positioned.fill(
-              child: RepaintBoundary(
-                child: IgnorePointer(
-                  ignoring: true,
-                  child: Stack(children: [
-                  // Delete badge (top-left)
-                  Positioned(
-                    left: 16,
-                    top: 16,
-                    child: AnimatedOpacity(
-                      opacity: deleteOpacity > 0.08 ? deleteOpacity.clamp(0.5, 1.0) : 0.0,
-                      duration: const Duration(milliseconds: 200),
-                      curve: Curves.easeOut,
-                      child: AnimatedScale(
-                        scale: deleteOpacity > 0.08 ? (0.92 + deleteOpacity * 0.08).clamp(0.92, 1.0) : 0.88,
+            // Overlays (TOP): Modern badges: delete (bottom-left) and keep/gallery (bottom-right)
+            // Badge'ler sadece top kartta gösterilir ve sabit konumda kalır
+            if (isTop)
+              Positioned.fill(
+                child: RepaintBoundary(
+                  child: IgnorePointer(
+                    ignoring: true,
+                    child: Stack(children: [
+                    // Delete badge (bottom-left) - sol alt köşede sabit
+                    Positioned(
+                      left: 16,
+                      bottom: 16,
+                      child: AnimatedOpacity(
+                        opacity: deleteOpacity > 0.08 ? deleteOpacity.clamp(0.5, 1.0) : 0.0,
                         duration: const Duration(milliseconds: 200),
-                        curve: Curves.easeOutCubic,
-                        child: AnimatedRotation(
-                          turns: deleteOpacity > 0.5 ? 0.0 : 0.025,
+                        curve: Curves.easeOut,
+                        child: AnimatedScale(
+                          scale: deleteOpacity > 0.08 ? (0.92 + deleteOpacity * 0.08).clamp(0.92, 1.0) : 0.88,
                           duration: const Duration(milliseconds: 200),
                           curve: Curves.easeOutCubic,
-                          child: _BadgeWithArrow(
-                            color: sem.delete,
-                            icon: Icons.delete,
-                            label: l10n.delete,
-                            arrowDirection: _ArrowDirection.bottomRight,
-                            isDelete: true,
-                            shouldAnimate: deleteOpacity > 0.3,
+                          child: AnimatedRotation(
+                            turns: deleteOpacity > 0.5 ? 0.0 : 0.025,
+                            duration: const Duration(milliseconds: 200),
+                            curve: Curves.easeOutCubic,
+                            child: _BadgeWithArrow(
+                              color: sem.delete,
+                              icon: Icons.delete,
+                              label: l10n.delete,
+                              arrowDirection: _ArrowDirection.topRight,
+                              isDelete: true,
+                              shouldAnimate: deleteOpacity > 0.3,
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                  // Keep/Library badge (bottom-right)
-                  Positioned(
-                    right: 16,
-                    bottom: 16,
-                    child: AnimatedOpacity(
-                      opacity: keepOpacity > 0.08 ? keepOpacity.clamp(0.5, 1.0) : 0.0,
-                      duration: const Duration(milliseconds: 200),
-                      curve: Curves.easeOut,
-                      child: AnimatedScale(
-                        scale: keepOpacity > 0.08 ? (0.92 + keepOpacity * 0.08).clamp(0.92, 1.0) : 0.88,
+                    // Keep/Library badge (bottom-right) - sağ alt köşede sabit
+                    Positioned(
+                      right: 16,
+                      bottom: 16,
+                      child: AnimatedOpacity(
+                        opacity: keepOpacity > 0.08 ? keepOpacity.clamp(0.5, 1.0) : 0.0,
                         duration: const Duration(milliseconds: 200),
-                        curve: Curves.easeOutCubic,
-                        child: AnimatedRotation(
-                          turns: keepOpacity > 0.5 ? 0.0 : -0.025,
+                        curve: Curves.easeOut,
+                        child: AnimatedScale(
+                          scale: keepOpacity > 0.08 ? (0.92 + keepOpacity * 0.08).clamp(0.92, 1.0) : 0.88,
                           duration: const Duration(milliseconds: 200),
                           curve: Curves.easeOutCubic,
-                          child: _BadgeWithArrow(
-                            color: sem.keep,
-                            icon: Icons.photo_library_outlined,
-                            label: l10n.keep,
-                            arrowDirection: _ArrowDirection.topLeft,
-                            isKeep: true,
-                            shouldAnimate: keepOpacity > 0.3,
+                          child: AnimatedRotation(
+                            turns: keepOpacity > 0.5 ? 0.0 : -0.025,
+                            duration: const Duration(milliseconds: 200),
+                            curve: Curves.easeOutCubic,
+                            child: _BadgeWithArrow(
+                              color: sem.keep,
+                              icon: Icons.photo_library_outlined,
+                              label: l10n.keep,
+                              arrowDirection: _ArrowDirection.topLeft,
+                              isKeep: true,
+                              shouldAnimate: keepOpacity > 0.3,
+                            ),
                           ),
                         ),
                       ),
                     ),
+                  ]),
                   ),
-                ]),
                 ),
               ),
-            ),
           ],
         ),
       );

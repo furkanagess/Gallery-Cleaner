@@ -4115,133 +4115,131 @@ class _DuplicateTabState extends ConsumerState<_DuplicateTab> {
     }
 
     return Column(
-          children: [
-            // Kompakt Success Banner
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    theme.colorScheme.primaryContainer,
-                    theme.colorScheme.primaryContainer.withValues(alpha: 0.7),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(14),
-                boxShadow: [
-                  BoxShadow(
-                    color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.check_circle,
-                    color: theme.colorScheme.primary,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          l10n.scanCompleted,
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: theme.colorScheme.onPrimaryContainer,
-                            fontSize: 13,
-                          ),
-                        ),
-                        Text(
-                          l10n.scanCompletedDuplicateMessage(state.totalGroups),
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onPrimaryContainer.withValues(
-                              alpha: 0.8,
-                            ),
-                            fontSize: 11,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  OutlinedButton(
-                    onPressed: () {
-                      ref.read(duplicateDetectionProvider.notifier).clear();
-                    },
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      minimumSize: const Size(0, 32),
-                      side: BorderSide(
-                        color: theme.colorScheme.primary.withValues(alpha: 0.3),
-                      ),
-                      foregroundColor: theme.colorScheme.onPrimaryContainer,
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.refresh, size: 14),
-                        const SizedBox(width: 4),
-                        Text(
-                          l10n.startNewScan,
-                          style: const TextStyle(fontSize: 11),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 8),
-            // Kompakt Stats Cards
-            Row(
-              children: [
-                Expanded(
-                  child: _BlurTabState._buildModernStatCard(
-                    theme,
-                    Icons.collections,
-                    '${state.totalGroups}',
-                    l10n.group,
-                    theme.colorScheme.secondaryContainer,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _BlurTabState._buildModernStatCard(
-                    theme,
-                    Icons.photo_library,
-                    '${state.totalDuplicatePhotos}',
-                    l10n.photo,
-                    theme.colorScheme.tertiaryContainer,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _BlurTabState._buildModernStatCard(
-                    theme,
-                    Icons.storage,
-                    '${state.totalSpaceToSaveMB.toStringAsFixed(1)} MB',
-                    l10n.spaceToSave,
-                    theme.colorScheme.errorContainer.withValues(alpha: 0.3),
-                  ),
-                ),
+      children: [
+        // Kompakt Success Banner
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                theme.colorScheme.primaryContainer,
+                theme.colorScheme.primaryContainer.withValues(alpha: 0.7),
               ],
             ),
-            const SizedBox(height: 8),
-            // Kompakt Results grid - Kaydırılabilir yapıldı
+            borderRadius: BorderRadius.circular(14),
+            boxShadow: [
+              BoxShadow(
+                color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.check_circle,
+                color: theme.colorScheme.primary,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      l10n.scanCompleted,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onPrimaryContainer,
+                        fontSize: 13,
+                      ),
+                    ),
+                    Text(
+                      l10n.scanCompletedDuplicateMessage(state.totalGroups),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onPrimaryContainer.withValues(
+                          alpha: 0.8,
+                        ),
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              OutlinedButton(
+                onPressed: () {
+                  ref.read(duplicateDetectionProvider.notifier).clear();
+                },
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  minimumSize: const Size(0, 32),
+                  side: BorderSide(
+                    color: theme.colorScheme.primary.withValues(alpha: 0.3),
+                  ),
+                  foregroundColor: theme.colorScheme.onPrimaryContainer,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.refresh, size: 14),
+                    const SizedBox(width: 4),
+                    Text(
+                      l10n.startNewScan,
+                      style: const TextStyle(fontSize: 11),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        // Kompakt Stats Cards
+        Row(
+          children: [
             Expanded(
-              child: _buildDuplicateGrid(context, state, theme, l10n),
+              child: _BlurTabState._buildModernStatCard(
+                theme,
+                Icons.collections,
+                '${state.totalGroups}',
+                l10n.group,
+                theme.colorScheme.secondaryContainer,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _BlurTabState._buildModernStatCard(
+                theme,
+                Icons.photo_library,
+                '${state.totalDuplicatePhotos}',
+                l10n.photo,
+                theme.colorScheme.tertiaryContainer,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _BlurTabState._buildModernStatCard(
+                theme,
+                Icons.storage,
+                '${state.totalSpaceToSaveMB.toStringAsFixed(1)} MB',
+                l10n.spaceToSave,
+                theme.colorScheme.errorContainer.withValues(alpha: 0.3),
+              ),
             ),
           ],
-        );
+        ),
+        const SizedBox(height: 8),
+        // Kompakt Results grid - Kaydırılabilir yapıldı
+        Expanded(child: _buildDuplicateGrid(context, state, theme, l10n)),
+      ],
+    );
   }
 
   Widget _buildDuplicateGrid(
@@ -6934,7 +6932,8 @@ class _DeleteLimitInfoState extends ConsumerState<_DeleteLimitInfo>
                                   Material(
                                     color: Colors.transparent,
                                     child: InkWell(
-                                      onTap: () => _showAddRightsDialog(context),
+                                      onTap: () =>
+                                          _showAddRightsDialog(context),
                                       borderRadius: BorderRadius.circular(20),
                                       child: Container(
                                         width: 32,
