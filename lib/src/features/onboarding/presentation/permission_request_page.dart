@@ -6,6 +6,7 @@ import 'package:lottie/lottie.dart';
 import '../application/permissions_controller.dart';
 import '../../gallery/application/gallery_stats_provider.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../app/theme/app_colors.dart';
 
 class PermissionRequestPage extends ConsumerStatefulWidget {
   const PermissionRequestPage({super.key});
@@ -84,9 +85,10 @@ class _PermissionRequestPageState extends ConsumerState<PermissionRequestPage> {
     // İzin verilmişse istatistikleri göster
     if (permission == GalleryPermissionStatus.authorized) {
       return Scaffold(
+        backgroundColor: Theme.of(context).colorScheme.background,
         extendBodyBehindAppBar: true,
         appBar: AppBar(
-          backgroundColor: Colors.transparent,
+          backgroundColor: AppColors.transparent,
           elevation: 0,
           title: Builder(
             builder: (ctx) {
@@ -98,22 +100,6 @@ class _PermissionRequestPageState extends ConsumerState<PermissionRequestPage> {
         ),
         body: Stack(
           children: [
-            // Background gradient
-            Positioned.fill(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      theme.colorScheme.primary.withOpacity(0.08),
-                      theme.colorScheme.secondary.withOpacity(0.04),
-                      Colors.transparent,
-                    ],
-                  ),
-                ),
-              ),
-            ),
             SafeArea(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
@@ -180,7 +166,7 @@ class _PermissionRequestPageState extends ConsumerState<PermissionRequestPage> {
                           borderRadius: BorderRadius.circular(28),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.06),
+                              color: AppColors.black.withOpacity(0.06),
                               blurRadius: 22,
                               offset: const Offset(0, 12),
                             ),
@@ -321,24 +307,9 @@ class _PermissionRequestPageState extends ConsumerState<PermissionRequestPage> {
 
     // İzin isteniyor
     return Scaffold(
+      backgroundColor: theme.colorScheme.background,
       body: Stack(
         children: [
-          // Background gradient
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    theme.colorScheme.primary.withOpacity(0.1),
-                    theme.colorScheme.secondary.withOpacity(0.05),
-                    Colors.transparent,
-                  ],
-                ),
-              ),
-            ),
-          ),
           Positioned(
             top: -60,
             right: -40,
@@ -411,7 +382,7 @@ class _PermissionRequestPageState extends ConsumerState<PermissionRequestPage> {
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.06),
+                          color: AppColors.black.withOpacity(0.06),
                           blurRadius: 16,
                           offset: const Offset(0, 8),
                         ),

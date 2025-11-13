@@ -607,6 +607,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get startNewScan => 'Yeni Tarama Başlat';
 
   @override
+  String get scanResults => 'Tarama Sonuçları';
+
+  @override
   String get scanCompleted => 'Tarama Tamamlandı';
 
   @override
@@ -682,6 +685,13 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get reAnalyze => 'Tekrardan Analiz Et';
+
+  @override
+  String get autoAnalyzeOnLaunch => 'Uygulama açılışında otomatik analiz';
+
+  @override
+  String get autoAnalyzeOnLaunchDescription =>
+      'Uygulama açıldığında galeriyi otomatik olarak analiz et';
 
   @override
   String progressFormat(String albums, int media) {
@@ -909,4 +919,31 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get viewGallery => 'Galeriyi Görüntüle';
+
+  @override
+  String get scanRightNotUsed => 'Tarama hakkınız kullanılmadı';
+
+  @override
+  String get noBlurryPhotosFoundTitle => 'Blurlu Fotoğraf Bulunamadı';
+
+  @override
+  String get noDuplicatesFoundTitle => 'Duplicate Fotoğraf Bulunamadı';
+
+  @override
+  String get scanCompletedSuccessfully =>
+      'Harika haber! Galeri taramanız başarıyla tamamlandı.';
+
+  @override
+  String get scanCompletedSuccessfullyDuplicate =>
+      'Mükemmel! Galeri taramanız başarıyla tamamlandı.';
+
+  @override
+  String get rateApp => 'Uygulamayı Değerlendir';
+
+  @override
+  String get rateAppDescription =>
+      'Uygulamayı beğendiniz mi? Lütfen mağazada bizi değerlendirin!';
+
+  @override
+  String get couldNotOpenStore => 'Mağaza açılamadı';
 }

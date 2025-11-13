@@ -58,22 +58,36 @@ class GalleryStatsNotifier extends StateNotifier<GalleryStatsState> {
     // İlk yüklemede cache'den oku ve hemen göster
     await _loadFromCache();
     
-    // İlk defa uygulama indirildiğinde ve izin verilmişse otomatik analiz başlat
+    // İzin verilmişse otomatik analiz kontrolü yap
     final permission = ref.read(permissionsControllerProvider);
     if (permission == GalleryPermissionStatus.authorized) {
       final prefsService = ref.read(preferencesServiceProvider);
-      final isFirstAnalysisCompleted = await prefsService.isFirstAnalysisCompleted();
-      final hasCachedStats = state.stats != null;
+      final isAutoAnalyzeEnabled = await prefsService.isAutoAnalyzeOnLaunchEnabled();
       
-      // Cache yoksa ve ilk analiz tamamlanmamışsa otomatik analiz başlat
-      if (!hasCachedStats && !isFirstAnalysisCompleted) {
-        debugPrint('📊 [GalleryStats] İlk analiz başlatılıyor...');
+      // Otomatik analiz açıksa her girişte analiz yap
+      if (isAutoAnalyzeEnabled) {
+        debugPrint('📊 [GalleryStats] Otomatik analiz açık, analiz başlatılıyor...');
         // Kısa bir gecikme ile başlat (UI'nin yüklenmesi için)
-        Future.delayed(const Duration(milliseconds: 500), () {
+        Future.delayed(const Duration(milliseconds: 1000), () {
           if (!_isCancelled) {
             refresh();
           }
         });
+      } else {
+        // Otomatik analiz kapalıysa, sadece ilk analiz kontrolü yap
+        final isFirstAnalysisCompleted = await prefsService.isFirstAnalysisCompleted();
+        final hasCachedStats = state.stats != null;
+        
+        // Cache yoksa ve ilk analiz tamamlanmamışsa otomatik analiz başlat
+        if (!hasCachedStats && !isFirstAnalysisCompleted) {
+          debugPrint('📊 [GalleryStats] İlk analiz başlatılıyor...');
+          // Kısa bir gecikme ile başlat (UI'nin yüklenmesi için)
+          Future.delayed(const Duration(milliseconds: 500), () {
+            if (!_isCancelled) {
+              refresh();
+            }
+          });
+        }
       }
     }
     

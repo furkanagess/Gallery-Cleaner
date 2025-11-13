@@ -601,6 +601,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get startNewScan => 'Start New Scan';
 
   @override
+  String get scanResults => 'Scan Results';
+
+  @override
   String get scanCompleted => 'Scan Completed';
 
   @override
@@ -676,6 +679,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get reAnalyze => 'Re-analyze';
+
+  @override
+  String get autoAnalyzeOnLaunch => 'Auto-analyze on launch';
+
+  @override
+  String get autoAnalyzeOnLaunchDescription =>
+      'Automatically analyze gallery when app opens';
 
   @override
   String progressFormat(String albums, int media) {
@@ -903,4 +913,31 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get viewGallery => 'View Gallery';
+
+  @override
+  String get scanRightNotUsed => 'Your scan right was not used';
+
+  @override
+  String get noBlurryPhotosFoundTitle => 'No Blurry Photos Found';
+
+  @override
+  String get noDuplicatesFoundTitle => 'No Duplicates Found';
+
+  @override
+  String get scanCompletedSuccessfully =>
+      'Great news! Your gallery scan completed successfully.';
+
+  @override
+  String get scanCompletedSuccessfullyDuplicate =>
+      'Excellent! Your gallery scan completed successfully.';
+
+  @override
+  String get rateApp => 'Rate App';
+
+  @override
+  String get rateAppDescription =>
+      'Enjoying the app? Please rate us on the store!';
+
+  @override
+  String get couldNotOpenStore => 'Could not open store';
 }

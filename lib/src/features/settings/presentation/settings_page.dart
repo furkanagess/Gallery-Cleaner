@@ -3,10 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../application/theme_controller.dart';
 import '../application/locale_controller.dart';
 import '../../gallery/application/gallery_providers.dart';
+import '../../../app/theme/app_colors.dart';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
@@ -18,6 +20,7 @@ class SettingsPage extends ConsumerWidget {
     final locale = ref.watch(localeProvider);
 
     return Scaffold(
+      backgroundColor: Theme.of(context).colorScheme.background,
       appBar: AppBar(
         title: Text(l10n.settings, overflow: TextOverflow.ellipsis),
         centerTitle: true,
@@ -40,81 +43,95 @@ class SettingsPage extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Tema Seçimi
-            _SettingsSection(
-              title: l10n.theme,
-              children: [
-                _ThemeOption(
-                  icon: Icons.light_mode,
-                  title: l10n.light,
-                  isSelected: themeMode == AppThemeMode.light,
-                  onTap: () {
-                    ref
-                        .read(themeModeProvider.notifier)
-                        .setThemeMode(AppThemeMode.light);
-                  },
+            // Compact Theme and Language Section
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Theme.of(
+                  context,
+                ).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
+                  width: 1,
                 ),
-                _ThemeOption(
-                  icon: Icons.dark_mode,
-                  title: l10n.dark,
-                  isSelected: themeMode == AppThemeMode.dark,
-                  onTap: () {
-                    ref
-                        .read(themeModeProvider.notifier)
-                        .setThemeMode(AppThemeMode.dark);
-                  },
-                ),
-                _ThemeOption(
-                  icon: Icons.brightness_auto,
-                  title: l10n.system,
-                  isSelected: themeMode == AppThemeMode.system,
-                  onTap: () {
-                    ref
-                        .read(themeModeProvider.notifier)
-                        .setThemeMode(AppThemeMode.system);
-                  },
-                ),
-              ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Theme Selection - Compact
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.palette_outlined,
+                        size: 18,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        l10n.theme,
+                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withOpacity(0.8),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  _CompactThemeSelector(
+                    themeMode: themeMode,
+                    onThemeChanged: (mode) {
+                      ref.read(themeModeProvider.notifier).setThemeMode(mode);
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  Divider(
+                    height: 1,
+                    thickness: 1,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.outline.withOpacity(0.08),
+                  ),
+                  const SizedBox(height: 16),
+                  // Language Selection - Compact
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.language_outlined,
+                        size: 18,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        l10n.language,
+                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withOpacity(0.8),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  _CompactLanguageSelector(
+                    locale: locale,
+                    onLocaleChanged: (loc) {
+                      ref.read(localeProvider.notifier).setAppLocale(loc);
+                    },
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 24),
-            // Dil Seçimi
-            _SettingsSection(
-              title: l10n.language,
-              children: [
-                _LocaleOption(
-                  flag: '🇹🇷',
-                  title: l10n.turkish,
-                  isSelected: locale.languageCode == 'tr',
-                  onTap: () {
-                    ref
-                        .read(localeProvider.notifier)
-                        .setAppLocale(AppLocale.tr);
-                  },
-                ),
-                _LocaleOption(
-                  flag: '🇬🇧',
-                  title: l10n.english,
-                  isSelected: locale.languageCode == 'en',
-                  onTap: () {
-                    ref
-                        .read(localeProvider.notifier)
-                        .setAppLocale(AppLocale.en);
-                  },
-                ),
-                _LocaleOption(
-                  flag: '🇪🇸',
-                  title: l10n.spanish,
-                  isSelected: locale.languageCode == 'es',
-                  onTap: () {
-                    ref
-                        .read(localeProvider.notifier)
-                        .setAppLocale(AppLocale.es);
-                  },
-                ),
-              ],
-            ),
+            // Rate App Section
+            _RateAppSection(),
             const SizedBox(height: 24),
-            // Premium Section - Dil seçiminin altında
+            // Premium Section - Rate section'ın altında
             _PremiumSection(),
             const SizedBox(height: 32),
             // Version info
@@ -148,35 +165,7 @@ class _PremiumSection extends ConsumerStatefulWidget {
   ConsumerState<_PremiumSection> createState() => _PremiumSectionState();
 }
 
-class _PremiumSectionState extends ConsumerState<_PremiumSection>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _animationController;
-  late Animation<double> _scaleAnimation;
-  late Animation<double> _glowAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 2000),
-    )..repeat(reverse: true);
-
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
-    );
-
-    _glowAnimation = Tween<double>(begin: 0.3, end: 0.7).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _animationController.dispose();
-    super.dispose();
-  }
-
+class _PremiumSectionState extends ConsumerState<_PremiumSection> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -206,7 +195,7 @@ class _PremiumSectionState extends ConsumerState<_PremiumSection>
                   spreadRadius: 0,
                 ),
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
+                  color: AppColors.black.withOpacity(0.04),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                   spreadRadius: 0,
@@ -270,7 +259,7 @@ class _PremiumSectionState extends ConsumerState<_PremiumSection>
                               Icon(
                                 Icons.check_circle_rounded,
                                 size: 14,
-                                color: Colors.green.shade600,
+                                color: AppColors.success,
                               ),
                               const SizedBox(width: 4),
                               Text(
@@ -278,7 +267,7 @@ class _PremiumSectionState extends ConsumerState<_PremiumSection>
                                 style: theme.textTheme.labelSmall?.copyWith(
                                   fontWeight: FontWeight.w700,
                                   fontSize: 11,
-                                  color: Colors.green.shade700,
+                                  color: AppColors.success,
                                   letterSpacing: 0.5,
                                 ),
                               ),
@@ -359,179 +348,167 @@ class _PremiumSectionState extends ConsumerState<_PremiumSection>
           );
         }
 
-        // Premium olmayan kullanıcı için "Premium Ol" butonu
-        return AnimatedBuilder(
-          animation: _animationController,
-          builder: (context, child) {
-            return Transform.scale(
-              scale: _scaleAnimation.value,
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      theme.colorScheme.surfaceBright,
-                      theme.colorScheme.primaryContainer.withOpacity(0.65),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(28),
-                  border: Border.all(
-                    color: theme.colorScheme.primary.withOpacity(0.18),
-                    width: 1.6,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: theme.colorScheme.primary.withOpacity(
-                        _glowAnimation.value * 0.6,
-                      ),
-                      blurRadius: 22,
-                      spreadRadius: 1,
-                      offset: const Offset(0, 10),
+        // Premium olmayan kullanıcı için modern "Premium Ol" butonu
+        return Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                theme.colorScheme.surfaceContainerHighest.withOpacity(0.6),
+                theme.colorScheme.primaryContainer.withOpacity(0.4),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: theme.colorScheme.primary.withOpacity(0.2),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: theme.colorScheme.primary.withOpacity(0.15),
+                blurRadius: 20,
+                spreadRadius: 0,
+                offset: const Offset(0, 8),
+              ),
+              BoxShadow(
+                color: AppColors.black.withOpacity(0.06),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Material(
+            color: AppColors.transparent,
+            child: InkWell(
+              onTap: () => SettingsPage.showPurchaseDialog(context),
+              borderRadius: BorderRadius.circular(24),
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 56,
+                          height: 56,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [AppColors.primary, AppColors.accent],
+                            ),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: AppColors.primary.withOpacity(0.3),
+                              width: 2,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.primary.withOpacity(0.3),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            Icons.workspace_premium_rounded,
+                            color: AppColors.white,
+                            size: 28,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                l10n.goPremium,
+                                style: theme.textTheme.headlineSmall?.copyWith(
+                                  fontWeight: FontWeight.w900,
+                                  color: theme.colorScheme.onSurface,
+                                  letterSpacing: -0.5,
+                                  fontSize: 22,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                l10n.premiumDescription,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  fontSize: 13,
+                                  color: theme.colorScheme.onSurface
+                                      .withOpacity(0.65),
+                                  height: 1.4,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.08),
-                      blurRadius: 18,
-                      offset: const Offset(0, 6),
+                    const SizedBox(height: 20),
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: [
+                        _FeaturePill(
+                          icon: Icons.all_inclusive_rounded,
+                          label: l10n.unlimited,
+                          theme: theme,
+                        ),
+                        _FeaturePill(
+                          icon: Icons.block_rounded,
+                          label: l10n.adFree,
+                          theme: theme,
+                        ),
+                        _FeaturePill(
+                          icon: Icons.verified_rounded,
+                          label: l10n.priority,
+                          theme: theme,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 18),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton(
+                        onPressed: () =>
+                            SettingsPage.showPurchaseDialog(context),
+                        style: FilledButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          backgroundColor: AppColors.primary.withOpacity(0.85),
+                          foregroundColor: AppColors.white,
+                          side: BorderSide(
+                            color: AppColors.primary.withOpacity(0.9),
+                            width: 1.5,
+                          ),
+                          elevation: 0,
+                        ),
+                        child: Text(
+                          l10n.upgradeToPremium,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 15,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                      ),
                     ),
                   ],
                 ),
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: () => SettingsPage.showPurchaseDialog(context),
-                    borderRadius: BorderRadius.circular(28),
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                width: 58,
-                                height: 58,
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                    colors: [
-                                      theme.colorScheme.primary,
-                                      theme.colorScheme.primary.withOpacity(
-                                        0.75,
-                                      ),
-                                    ],
-                                  ),
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: theme.colorScheme.primary
-                                          .withOpacity(0.35),
-                                      blurRadius: 16,
-                                      offset: const Offset(0, 6),
-                                    ),
-                                  ],
-                                ),
-                                child: Icon(
-                                  Icons.workspace_premium_rounded,
-                                  color: theme.colorScheme.onPrimary,
-                                  size: 30,
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      l10n.goPremium,
-                                      style: theme.textTheme.headlineSmall
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.w900,
-                                            color: theme.colorScheme.onSurface,
-                                            letterSpacing: -0.6,
-                                          ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      l10n.premiumDescription,
-                                      style: theme.textTheme.bodyMedium
-                                          ?.copyWith(
-                                            fontSize: 13.5,
-                                            color: theme.colorScheme.onSurface
-                                                .withOpacity(0.7),
-                                            height: 1.4,
-                                          ),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 18),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: [
-                              _FeaturePill(
-                                icon: Icons.all_inclusive_rounded,
-                                label: l10n.unlimited,
-                                theme: theme,
-                              ),
-                              _FeaturePill(
-                                icon: Icons.block_rounded,
-                                label: l10n.adFree,
-                                theme: theme,
-                              ),
-                              _FeaturePill(
-                                icon: Icons.verified_rounded,
-                                label: l10n.priority,
-                                theme: theme,
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 20),
-                          SizedBox(
-                            width: double.infinity,
-                            child: FilledButton.icon(
-                              onPressed: () =>
-                                  SettingsPage.showPurchaseDialog(context),
-                              style: FilledButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 14,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                backgroundColor: theme.colorScheme.primary,
-                                foregroundColor: theme.colorScheme.onPrimary,
-                                elevation: 0,
-                              ),
-
-                              label: Text(
-                                l10n.upgradeToPremium,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 16,
-                                  letterSpacing: 0.3,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
               ),
-            );
-          },
+            ),
+          ),
         );
       },
     );
@@ -578,11 +555,7 @@ class _PremiumFeatureRow extends StatelessWidget {
             ),
           ),
         ),
-        Icon(
-          Icons.check_circle_rounded,
-          size: 18,
-          color: Colors.green.shade600,
-        ),
+        Icon(Icons.check_circle_rounded, size: 18, color: AppColors.success),
       ],
     );
   }
@@ -630,134 +603,113 @@ class _FeaturePill extends StatelessWidget {
   }
 }
 
-class _SettingsSection extends StatelessWidget {
-  const _SettingsSection({required this.title, required this.children});
+class _CompactThemeSelector extends StatelessWidget {
+  const _CompactThemeSelector({
+    required this.themeMode,
+    required this.onThemeChanged,
+  });
 
-  final String title;
-  final List<Widget> children;
+  final AppThemeMode themeMode;
+  final ValueChanged<AppThemeMode> onThemeChanged;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 12),
-          child: Text(
-            title,
-            style: theme.textTheme.titleMedium?.copyWith(
-              color: theme.colorScheme.primary,
-              fontWeight: FontWeight.w700,
-              fontSize: 13,
-              letterSpacing: 0.3,
-            ),
-            overflow: TextOverflow.ellipsis,
-          ),
+    final l10n = AppLocalizations.of(context)!;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: theme.colorScheme.outline.withOpacity(0.1),
+          width: 1,
         ),
-        Container(
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: theme.colorScheme.outline.withOpacity(0.1),
-              width: 1,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.04),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-                spreadRadius: 0,
-              ),
-            ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _CompactThemeChip(
+            icon: Icons.light_mode,
+            label: l10n.light,
+            isSelected: themeMode == AppThemeMode.light,
+            onTap: () => onThemeChanged(AppThemeMode.light),
           ),
-          child: Column(children: children),
-        ),
-      ],
+          _CompactThemeChip(
+            icon: Icons.dark_mode,
+            label: l10n.dark,
+            isSelected: themeMode == AppThemeMode.dark,
+            onTap: () => onThemeChanged(AppThemeMode.dark),
+          ),
+          _CompactThemeChip(
+            icon: Icons.brightness_auto,
+            label: l10n.system,
+            isSelected: themeMode == AppThemeMode.system,
+            onTap: () => onThemeChanged(AppThemeMode.system),
+          ),
+        ],
+      ),
     );
   }
 }
 
-class _ThemeOption extends StatelessWidget {
-  const _ThemeOption({
+class _CompactThemeChip extends StatelessWidget {
+  const _CompactThemeChip({
     required this.icon,
-    required this.title,
+    required this.label,
     required this.isSelected,
     required this.onTap,
   });
 
   final IconData icon;
-  final String title;
+  final String label;
   final bool isSelected;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
     return Material(
-      color: Colors.transparent,
+      color: AppColors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(12),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           decoration: BoxDecoration(
-            border: Border(
-              bottom: BorderSide(
-                color: theme.colorScheme.outline.withOpacity(0.08),
-                width: 1,
-              ),
-            ),
+            color: isSelected
+                ? theme.colorScheme.primary.withOpacity(0.15)
+                : AppColors.transparent,
+            borderRadius: BorderRadius.circular(12),
+            border: isSelected
+                ? Border.all(
+                    color: theme.colorScheme.primary.withOpacity(0.3),
+                    width: 1,
+                  )
+                : null,
           ),
           child: Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? theme.colorScheme.primaryContainer
-                      : theme.colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  icon,
-                  size: 20,
+              Icon(
+                icon,
+                size: 16,
+                color: isSelected
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.onSurface.withOpacity(0.6),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  fontSize: 11,
                   color: isSelected
                       ? theme.colorScheme.primary
                       : theme.colorScheme.onSurface.withOpacity(0.7),
                 ),
               ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Text(
-                  title,
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                    fontSize: 15,
-                    color: isSelected
-                        ? theme.colorScheme.primary
-                        : theme.colorScheme.onSurface,
-                    letterSpacing: -0.2,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              if (isSelected)
-                Container(
-                  width: 24,
-                  height: 24,
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primary,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.check,
-                    size: 16,
-                    color: theme.colorScheme.onPrimary,
-                  ),
-                ),
             ],
           ),
         ),
@@ -766,82 +718,257 @@ class _ThemeOption extends StatelessWidget {
   }
 }
 
-class _LocaleOption extends StatelessWidget {
-  const _LocaleOption({
+class _CompactLanguageSelector extends StatelessWidget {
+  const _CompactLanguageSelector({
+    required this.locale,
+    required this.onLocaleChanged,
+  });
+
+  final Locale locale;
+  final ValueChanged<AppLocale> onLocaleChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: theme.colorScheme.outline.withOpacity(0.1),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _CompactLanguageChip(
+            flag: '🇹🇷',
+            label: l10n.turkish,
+            isSelected: locale.languageCode == 'tr',
+            onTap: () => onLocaleChanged(AppLocale.tr),
+          ),
+          _CompactLanguageChip(
+            flag: '🇬🇧',
+            label: l10n.english,
+            isSelected: locale.languageCode == 'en',
+            onTap: () => onLocaleChanged(AppLocale.en),
+          ),
+          _CompactLanguageChip(
+            flag: '🇪🇸',
+            label: l10n.spanish,
+            isSelected: locale.languageCode == 'es',
+            onTap: () => onLocaleChanged(AppLocale.es),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CompactLanguageChip extends StatelessWidget {
+  const _CompactLanguageChip({
     required this.flag,
-    required this.title,
+    required this.label,
     required this.isSelected,
     required this.onTap,
   });
 
   final String flag;
-  final String title;
+  final String label;
   final bool isSelected;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
     return Material(
-      color: Colors.transparent,
+      color: AppColors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(12),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           decoration: BoxDecoration(
-            border: Border(
-              bottom: BorderSide(
-                color: theme.colorScheme.outline.withOpacity(0.08),
-                width: 1,
-              ),
-            ),
+            color: isSelected
+                ? theme.colorScheme.primary.withOpacity(0.15)
+                : AppColors.transparent,
+            borderRadius: BorderRadius.circular(12),
+            border: isSelected
+                ? Border.all(
+                    color: theme.colorScheme.primary.withOpacity(0.3),
+                    width: 1,
+                  )
+                : null,
           ),
           child: Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
+              Text(flag, style: const TextStyle(fontSize: 16)),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  fontSize: 11,
                   color: isSelected
-                      ? theme.colorScheme.primaryContainer
-                      : theme.colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Center(
-                  child: Text(flag, style: const TextStyle(fontSize: 24)),
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.onSurface.withOpacity(0.7),
                 ),
               ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Text(
-                  title,
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                    fontSize: 15,
-                    color: isSelected
-                        ? theme.colorScheme.primary
-                        : theme.colorScheme.onSurface,
-                    letterSpacing: -0.2,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              if (isSelected)
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RateAppSection extends StatelessWidget {
+  const _RateAppSection();
+
+  // Store URLs
+  static const String _playStoreUrl =
+      'https://play.google.com/store/apps/details?id=com.furkanages.gallerycleaner';
+  static const String _appStoreUrl =
+      'https://apps.apple.com/us/app/gallery-cleaner-swipe-photo/id6754893118';
+
+  Future<void> _openStore(BuildContext context) async {
+    final url = Platform.isAndroid ? _playStoreUrl : _appStoreUrl;
+    final uri = Uri.parse(url);
+
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(AppLocalizations.of(context)!.couldNotOpenStore),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ [RateApp] Error opening store: $e');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.couldNotOpenStore),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            theme.colorScheme.primaryContainer.withOpacity(0.3),
+            theme.colorScheme.secondaryContainer.withOpacity(0.2),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: theme.colorScheme.primary.withOpacity(0.15),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: theme.colorScheme.primary.withOpacity(0.1),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: AppColors.transparent,
+        child: InkWell(
+          onTap: () => _openStore(context),
+          borderRadius: BorderRadius.circular(20),
+          child: Padding(
+            padding: const EdgeInsets.all(4),
+            child: Row(
+              children: [
                 Container(
-                  width: 24,
-                  height: 24,
+                  width: 48,
+                  height: 48,
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.primary,
-                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        theme.colorScheme.primary,
+                        theme.colorScheme.secondary,
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: theme.colorScheme.primary.withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
                   child: Icon(
-                    Icons.check,
-                    size: 16,
-                    color: theme.colorScheme.onPrimary,
+                    Platform.isAndroid
+                        ? Icons.star_rounded
+                        : CupertinoIcons.star_fill,
+                    color: AppColors.white,
+                    size: 24,
                   ),
                 ),
-            ],
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        l10n.rateApp,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 16,
+                          color: theme.colorScheme.onSurface,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        l10n.rateAppDescription,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontSize: 12,
+                          color: theme.colorScheme.onSurface.withOpacity(0.7),
+                          height: 1.3,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 16,
+                  color: theme.colorScheme.primary.withOpacity(0.7),
+                ),
+              ],
+            ),
           ),
         ),
       ),

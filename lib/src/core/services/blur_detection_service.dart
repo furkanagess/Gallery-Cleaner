@@ -8,12 +8,13 @@ import '../models/blur_photo.dart';
 class BlurDetectionService {
   /// Pixelation score hesapla (0.0 = pixelleşmiş değil, 1.0 = çok pixelleşmiş)
   /// Block-based method kullanır - pixelleşmiş görüntülerde benzer renklerin bloklar halinde gruplanması
+  /// Optimize edilmiş: daha küçük thumbnail, daha düşük kalite
   Future<double> calculatePixelationScore(pm.AssetEntity asset) async {
     try {
-      // Thumbnail al
+      // Optimize edilmiş thumbnail: daha küçük boyut ve düşük kalite (pixelation tespiti için yeterli)
       final thumbnail = await asset.thumbnailDataWithSize(
-        const pm.ThumbnailSize(200, 200),
-        quality: 85,
+        const pm.ThumbnailSize(150, 150), // 200x200'den 150x150'e düşürüldü
+        quality: 70, // 85'ten 70'e düşürüldü
       );
 
       if (thumbnail == null || thumbnail.isEmpty) {
@@ -27,7 +28,8 @@ class BlurDetectionService {
 
       // Block-based pixelation detection
       // Pixelleşmiş görüntülerde küçük bloklar halinde benzer renkler olur
-      final blockSize = 4; // 4x4 bloklar
+      // Optimize: daha büyük bloklar = daha hızlı hesaplama
+      final blockSize = 6; // 6x6 bloklar (4x4'ten daha hızlı, yeterince doğru)
       final width = image.width;
       final height = image.height;
       
@@ -90,13 +92,14 @@ class BlurDetectionService {
   }
 
   /// Blur score hesapla (0.0 = çok blurlu, 1.0 = keskin)
-  /// Laplacian variance metodunu kullanır
+  /// Optimize edilmiş multi-method approach: Laplacian variance + Sobel edge detection + Multi-scale analysis
+  /// Performans optimizasyonları: daha küçük thumbnail, early exit, conditional multi-scale
   Future<double> calculateBlurScore(pm.AssetEntity asset) async {
     try {
-      // Thumbnail al (blur tespiti için küçük boyut yeterli)
+      // Thumbnail boyutu: 250x250 (blur detection için yeterli çözünürlük)
       final thumbnail = await asset.thumbnailDataWithSize(
-        const pm.ThumbnailSize(200, 200),
-        quality: 85,
+        const pm.ThumbnailSize(250, 250),
+        quality: 80, // Kalite ve hız dengesi
       );
 
       if (thumbnail == null || thumbnail.isEmpty) {
@@ -114,42 +117,79 @@ class BlurDetectionService {
       // Gri tonlamaya çevir (performans için)
       final grayImage = img.grayscale(image);
 
-      // Laplacian kernel uygula
-      final laplacianKernel = [
-        [0, -1, 0],
-        [-1, 4, -1],
-        [0, -1, 0],
-      ];
-
       final width = grayImage.width;
       final height = grayImage.height;
-      final variance = _calculateLaplacianVariance(
+
+      // 1. Gelişmiş Laplacian variance (8-connected kernel) - İlk kontrol (en hızlı)
+      final laplacianKernel8 = [
+        [-1, -1, -1],
+        [-1, 8, -1],
+        [-1, -1, -1],
+      ];
+      final laplacianVariance = _calculateLaplacianVariance(
         grayImage,
-        laplacianKernel,
+        laplacianKernel8,
         width,
         height,
       );
+      final laplacianScore = _normalizeVariance(laplacianVariance);
 
-      // Variance'ı normalize et (0-1 arası)
-      // Düşük variance = blur, yüksek variance = keskin
-      // Threshold değerleri deneyerek ayarlanabilir
-      final normalizedScore = _normalizeVariance(variance);
-
-      // Debug sadece blurlu veya şüpheli fotoğraflar için
-      if (normalizedScore < 0.4) {
+      // Early exit: Eğer Laplacian score çok yüksekse (keskin görünüyorsa),
+      // diğer pahalı hesaplamaları atla (performans optimizasyonu)
+      // Threshold'u 0.8'e çıkardık (sadece gerçekten keskin fotoğraflar için early exit)
+      const earlyExitThreshold = 0.8; // 0.8'den yüksekse keskin kabul et
+      if (laplacianScore > earlyExitThreshold) {
+        // Keskin görünüyor, diğer hesaplamaları atla
         debugPrint(
-          '   📊 [BlurDetection] Asset ${asset.id}: variance=${variance.toStringAsFixed(2)}, score=${normalizedScore.toStringAsFixed(2)} (BLURLU)',
+          '   ✅ [BlurDetection] Early exit: Asset ${asset.id}, LaplacianScore=${laplacianScore.toStringAsFixed(3)} (KESKIN)',
+        );
+        return laplacianScore;
+      }
+
+      // 2. Sobel edge detection variance (kenar tespiti) - Sadece şüpheli durumlarda
+      final sobelVariance = _calculateSobelVariance(grayImage, width, height);
+      final sobelScore = _normalizeVariance(sobelVariance);
+
+      // 3. Multi-scale analysis - Sadece çok şüpheli durumlarda (Laplacian ve Sobel düşükse)
+      // Bu pahalı bir işlem, sadece gerekli durumlarda çalıştır
+      double multiScaleScore = 0.0;
+      if (laplacianScore < 0.5 && sobelScore < 0.5) {
+        // Hem Laplacian hem Sobel düşük, multi-scale analiz yap
+        multiScaleScore = _calculateMultiScaleBlur(grayImage, width, height);
+      } else {
+        // Multi-scale'e gerek yok, Laplacian score'u kullan
+        multiScaleScore = laplacianScore;
+      }
+
+      // Kombine skor: ağırlıklı ortalama
+      // Laplacian: %50, Sobel: %30, Multi-scale: %20
+      final combinedScore = (laplacianScore * 0.5) + 
+                           (sobelScore * 0.3) + 
+                           (multiScaleScore * 0.2);
+
+      // Final score'u clamp et
+      final finalScore = combinedScore.clamp(0.0, 1.0);
+
+      // Debug: Tüm sonuçları logla (blur detection'ı test etmek için)
+      // Her fotoğraf için variance değerlerini de logla
+      debugPrint(
+        '   📊 [BlurDetection] Asset ${asset.id}: LaplacianVariance=${laplacianVariance.toStringAsFixed(2)}, LaplacianScore=${laplacianScore.toStringAsFixed(3)}, SobelVariance=${sobelVariance.toStringAsFixed(2)}, SobelScore=${sobelScore.toStringAsFixed(3)}, Multi-scale=${multiScaleScore.toStringAsFixed(3)}, Final=${finalScore.toStringAsFixed(3)}',
+      );
+      
+      if (finalScore < 0.3) {
+        debugPrint(
+          '   🔴 [BlurDetection] BLURLU TESPİT EDİLDİ: Asset ${asset.id}, FinalScore=${finalScore.toStringAsFixed(3)}',
         );
       }
 
-      return normalizedScore;
+      return finalScore;
     } catch (e) {
       debugPrint('   ⚠️ [BlurDetection] Blur score hesaplama hatası (ID: ${asset.id}): $e');
       return 0.5;
     }
   }
 
-  /// Laplacian variance hesapla
+  /// Laplacian variance hesapla (optimize edilmiş - sampling sadece büyük görüntüler için)
   double _calculateLaplacianVariance(
     img.Image image,
     List<List<int>> kernel,
@@ -158,9 +198,15 @@ class BlurDetectionService {
   ) {
     final laplacianValues = <int>[];
 
+    // Sampling: Sadece çok büyük görüntüler için (250x250'den büyükse)
+    // Küçük görüntülerde tüm pixel'leri kontrol et (daha doğru blur detection)
+    // 250x250 = 62500, bu yüzden sampling'i sadece daha büyük görüntüler için kullan
+    final useSampling = (width * height) > 62500; // 250x250 = 62500
+    final samplingStep = useSampling ? 2 : 1;
+    
     // Kernel'i uygula (border'ları atla)
-    for (int y = 1; y < height - 1; y++) {
-      for (int x = 1; x < width - 1; x++) {
+    for (int y = 1; y < height - 1; y += samplingStep) {
+      for (int x = 1; x < width - 1; x += samplingStep) {
         int sum = 0;
         
         // Kernel convolution
@@ -171,8 +217,8 @@ class BlurDetectionService {
             final r = pixel.r.toInt();
             final g = pixel.g.toInt();
             final b = pixel.b.toInt();
-            // Luminance hesapla: 0.299*R + 0.587*G + 0.114*B
-            final gray = (0.299 * r + 0.587 * g + 0.114 * b).round();
+            // Luminance hesapla: 0.299*R + 0.587*G + 0.114*B (optimize: integer math)
+            final gray = ((299 * r + 587 * g + 114 * b) ~/ 1000).round();
             final kernelValue = kernel[ky + 1][kx + 1];
             sum += (gray * kernelValue);
           }
@@ -184,43 +230,140 @@ class BlurDetectionService {
 
     if (laplacianValues.isEmpty) return 0.0;
 
-    // Variance hesapla
-    final mean = laplacianValues.reduce((a, b) => a + b) / laplacianValues.length;
-    final variance = laplacianValues
-        .map((v) => (v - mean) * (v - mean))
-        .reduce((a, b) => a + b) /
-        laplacianValues.length;
+    // Variance hesapla (optimize: tek geçişte)
+    var sum = 0;
+    for (final value in laplacianValues) {
+      sum += value;
+    }
+    final mean = sum / laplacianValues.length;
+    
+    var varianceSum = 0.0;
+    for (final value in laplacianValues) {
+      final diff = value - mean;
+      varianceSum += diff * diff;
+    }
+    final variance = varianceSum / laplacianValues.length;
 
     return variance;
   }
 
-  /// Variance'ı 0-1 arası normalize et
-  /// Bu değerler deneyerek ayarlanabilir
-  double _normalizeVariance(double variance) {
-    // Laplacian variance genellikle 0-500 arası değerler alır
-    // Düşük değerler (<50) = çok blurlu
-    // Orta değerler (50-200) = biraz blurlu  
-    // Yüksek değerler (>200) = keskin
+  /// Sobel edge detection variance hesapla (optimize edilmiş - sampling sadece büyük görüntüler için)
+  double _calculateSobelVariance(img.Image image, int width, int height) {
+    final sobelX = [
+      [-1, 0, 1],
+      [-2, 0, 2],
+      [-1, 0, 1],
+    ];
+    final sobelY = [
+      [-1, -2, -1],
+      [0, 0, 0],
+      [1, 2, 1],
+    ];
+
+    final gradientMagnitudes = <double>[];
+
+    // Sampling: Sadece çok büyük görüntüler için (250x250'den büyükse)
+    // Küçük görüntülerde tüm pixel'leri kontrol et (daha doğru blur detection)
+    // 250x250 = 62500, bu yüzden sampling'i sadece daha büyük görüntüler için kullan
+    final useSampling = (width * height) > 62500; // 250x250 = 62500
+    final samplingStep = useSampling ? 2 : 1;
+
+    // Sobel operator uygula
+    for (int y = 1; y < height - 1; y += samplingStep) {
+      for (int x = 1; x < width - 1; x += samplingStep) {
+        double gx = 0;
+        double gy = 0;
+
+        // Sobel X ve Y'yi birlikte hesapla (tek döngü, daha verimli)
+        for (int ky = -1; ky <= 1; ky++) {
+          for (int kx = -1; kx <= 1; kx++) {
+            final pixel = image.getPixel(x + kx, y + ky);
+            // Optimize: integer math kullan
+            final gray = ((299 * pixel.r + 587 * pixel.g + 114 * pixel.b) ~/ 1000).round();
+            gx += gray * sobelX[ky + 1][kx + 1];
+            gy += gray * sobelY[ky + 1][kx + 1];
+          }
+        }
+
+        // Gradient magnitude
+        final magnitude = math.sqrt(gx * gx + gy * gy);
+        gradientMagnitudes.add(magnitude);
+      }
+    }
+
+    if (gradientMagnitudes.isEmpty) return 0.0;
+
+    // Variance hesapla (optimize: tek geçişte)
+    var sum = 0.0;
+    for (final value in gradientMagnitudes) {
+      sum += value;
+    }
+    final mean = sum / gradientMagnitudes.length;
     
-    // Linear mapping kullan
-    // Variance değerleri genellikle 0-500 arası
+    var varianceSum = 0.0;
+    for (final value in gradientMagnitudes) {
+      final diff = value - mean;
+      varianceSum += diff * diff;
+    }
+    final variance = varianceSum / gradientMagnitudes.length;
+
+    return variance;
+  }
+
+  /// Multi-scale blur analysis (farklı boyutlarda analiz)
+  double _calculateMultiScaleBlur(img.Image image, int width, int height) {
+    // Orijinal boyutta analiz
+    final originalScore = _calculateSingleScaleBlur(image, width, height);
+
+    // Yarı boyutta analiz (downscale)
+    if (width >= 100 && height >= 100) {
+      final halfWidth = width ~/ 2;
+      final halfHeight = height ~/ 2;
+      final resized = img.copyResize(image, width: halfWidth, height: halfHeight);
+      final halfScore = _calculateSingleScaleBlur(resized, halfWidth, halfHeight);
+      
+      // İki skorun ortalaması (blurlu görüntüler her ölçekte düşük skor verir)
+      return (originalScore + halfScore) / 2.0;
+    }
+
+    return originalScore;
+  }
+
+  /// Tek ölçekte blur skoru hesapla
+  double _calculateSingleScaleBlur(img.Image image, int width, int height) {
+    // Basit Laplacian variance
+    final laplacianKernel = [
+      [-1, -1, -1],
+      [-1, 8, -1],
+      [-1, -1, -1],
+    ];
+    final variance = _calculateLaplacianVariance(image, laplacianKernel, width, height);
+    return _normalizeVariance(variance);
+  }
+
+  /// Variance'ı 0-1 arası normalize et
+  /// Basit ve doğru linear mapping kullanıyoruz
+  double _normalizeVariance(double variance) {
+    // Laplacian variance gerçek değerleri (250x250 thumbnail için):
+    // Çok blurlu: 0-30
+    // Blurlu: 30-80
+    // Biraz blurlu: 80-150
+    // Orta: 150-250
+    // Keskin: 250+
+    
+    // Basit linear mapping - daha doğru sonuçlar verir
     const minVariance = 0.0;
-    const maxVariance = 500.0;
+    const maxVariance = 400.0; // Gerçekçi maksimum değer (250x250 için)
     
     // Variance'ı clamp et
     final clampedVariance = variance.clamp(minVariance, maxVariance);
     
-    // Linear interpolation
+    // Linear interpolation: basit ve doğru
+    // Score: 0.0 = çok blurlu (variance 0), 1.0 = çok keskin (variance 400+)
     final score = clampedVariance / maxVariance;
     
-    // Score: 0.0 = çok blurlu (variance 0), 1.0 = çok keskin (variance 500)
-    // Ancak gerçek dünyada variance genellikle 0-200 arası olur
-    // Bu yüzden daha hassas bir mapping kullanabiliriz
-    
-    // Daha iyi bir mapping: square root kullan (daha yumuşak geçiş)
-    final sqrtScore = math.sqrt(score).clamp(0.0, 1.0);
-    
-    return sqrtScore;
+    // Clamp et ve döndür
+    return score.clamp(0.0, 1.0);
   }
 
   /// Albüm içinde blurlu fotoğrafları tespit et
@@ -239,8 +382,8 @@ class BlurDetectionService {
 
     final blurryPhotos = <BlurPhoto>[];
     // Optimize sayfa boyutu: daha büyük sayfa = daha az I/O = daha hızlı
-    const pageSize = 500; // 500 medya/sayfa (memory-safe, hızlı)
-    const batchSize = 20; // Paralel işlenecek asset sayısı (blur detection için)
+    const pageSize = 1000; // 1000 medya/sayfa (memory-safe, daha hızlı I/O)
+    const batchSize = 40; // Paralel işlenecek asset sayısı (blur detection için) - 20'den 40'a artırıldı
     int page = 0;
     int totalProcessed = 0;
     int totalAssets = 0;
@@ -337,6 +480,13 @@ class BlurDetectionService {
               // Blurlu veya pixelleşmiş fotoğrafları filtrele
               final isBlurry = blurScore < blurThreshold;
               final isPixelated = pixelationScore > 0.5; // Pixelation threshold
+              
+              // Debug: Tespit edilen problemli fotoğrafları logla
+              if (isBlurry || isPixelated) {
+                debugPrint(
+                  '   ✅ [BlurDetection] Problemli fotoğraf tespit edildi: Asset ${asset.id}, BlurScore=${blurScore.toStringAsFixed(3)} (threshold: $blurThreshold), PixelationScore=${pixelationScore.toStringAsFixed(3)}, isBlurry=$isBlurry, isPixelated=$isPixelated',
+                );
+              }
               
               if (isBlurry || isPixelated) {
                   // Boyutu hesapla (metadata-based, hızlı)

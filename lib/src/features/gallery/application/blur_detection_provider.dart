@@ -4,7 +4,6 @@ import 'package:photo_manager/photo_manager.dart' as pm;
 
 import '../../../core/services/blur_detection_service.dart';
 import '../../../core/models/blur_photo.dart';
-import '../../../core/services/preferences_service.dart';
 import '../../onboarding/application/permissions_controller.dart';
 import '../../onboarding/application/onboarding_controller.dart';
 import 'gallery_providers.dart';
@@ -136,11 +135,11 @@ class BlurDetectionNotifier extends StateNotifier<BlurDetectionState> {
       final isPremium = await prefsService.isPremium();
       debugPrint('💎 [BlurDetection] Premium durumu: $isPremium');
 
-      // Kalan scan hakkını al (premium değilse)
+      // Kalan blur scan hakkını al (premium değilse)
       int remainingScanLimit = 999999999; // Premium için sınırsız
       if (!isPremium) {
-        remainingScanLimit = await prefsService.getScanLimit();
-        debugPrint('📊 [BlurDetection] Kalan scan hakkı: $remainingScanLimit');
+        remainingScanLimit = await prefsService.getBlurScanLimit();
+        debugPrint('📊 [BlurDetection] Kalan blur scan hakkı: $remainingScanLimit');
       }
 
       debugPrint(
@@ -187,18 +186,6 @@ class BlurDetectionNotifier extends StateNotifier<BlurDetectionState> {
         '✅ [BlurDetection] Tarama tamamlandı! Bulunan albüm sayısı: ${results.length}, Scan edilen fotoğraf: $scannedPhotoCount',
       );
 
-      // Scan limit'i düşür
-      if (!isPremium && scannedPhotoCount > 0) {
-        try {
-          final prefsService = PreferencesService();
-          await prefsService.decreaseScanLimit(scannedPhotoCount);
-          ref.invalidate(scanLimitProvider);
-          debugPrint('💾 [BlurDetection] Scan limit düşürüldü: $scannedPhotoCount fotoğraf');
-        } catch (e) {
-          debugPrint('⚠️ [BlurDetection] Scan limit düşürülemedi: $e');
-        }
-      }
-
       // Boş olmayan sonuçları filtrele
       final filteredResults = <String, List<BlurPhoto>>{};
       int totalPhotos = 0;
@@ -223,6 +210,20 @@ class BlurDetectionNotifier extends StateNotifier<BlurDetectionState> {
       debugPrint('   - Orijinal albüm sayısı: ${results.length}');
       debugPrint('   - Filtrelenmiş albüm sayısı: ${filteredResults.length}');
       debugPrint('   - Toplam blurlu fotoğraf: $totalPhotos');
+
+      // Blur scan limit'i düşür - SADECE sonuç bulunduysa
+      final hasResults = filteredResults.isNotEmpty && totalPhotos > 0;
+      if (!isPremium && scannedPhotoCount > 0 && hasResults) {
+        try {
+          await prefsService.decreaseBlurScanLimit(scannedPhotoCount);
+          ref.invalidate(blurScanLimitProvider);
+          debugPrint('💾 [BlurDetection] Blur scan limit düşürüldü: $scannedPhotoCount fotoğraf (sonuç bulundu)');
+        } catch (e) {
+          debugPrint('⚠️ [BlurDetection] Blur scan limit düşürülemedi: $e');
+        }
+      } else if (!hasResults) {
+        debugPrint('✅ [BlurDetection] Sonuç bulunamadı, blur scan limit azaltılmadı');
+      }
 
       // State'i güncelle - YENİ Map oluştur (Riverpod için önemli)
       final newResultsMap = <String, List<BlurPhoto>>{};

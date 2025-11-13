@@ -10,6 +10,9 @@ void main() async {
   // Initialize Mobile Ads SDK with error handling
   try {
     await RewardedAdsService.initialize();
+    // Preload all ad types after initialization
+    await Future.delayed(const Duration(seconds: 2));
+    await RewardedAdsService.preloadAllAds();
   } catch (e) {
     debugPrint('⚠️ [main] Failed to initialize ads service: $e');
     // Continue app startup even if ads fail to initialize

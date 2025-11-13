@@ -171,7 +171,20 @@ final isPremiumProvider = FutureProvider<bool>((ref) async {
 });
 
 /// Tarama limiti provider'ı (Premium olmayan kullanıcılar için 1000)
+/// Backward compatibility için korunuyor
 final scanLimitProvider = FutureProvider<int>((ref) async {
   final prefsService = PreferencesService();
   return await prefsService.getScanLimit();
+});
+
+/// Duplicate tarama limiti provider'ı (azalır)
+final duplicateScanLimitProvider = FutureProvider<int>((ref) async {
+  final prefsService = PreferencesService();
+  return await prefsService.getDuplicateScanLimit();
+});
+
+/// Blur tarama limiti provider'ı (sabit - azalmaz)
+final blurScanLimitProvider = FutureProvider<int>((ref) async {
+  final prefsService = PreferencesService();
+  return await prefsService.getBlurScanLimit();
 });

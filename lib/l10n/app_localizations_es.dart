@@ -609,6 +609,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get startNewScan => 'Iniciar Nuevo Escaneo';
 
   @override
+  String get scanResults => 'Resultados del Escaneo';
+
+  @override
   String get scanCompleted => 'Escaneo Completado';
 
   @override
@@ -684,6 +687,13 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get reAnalyze => 'Re-analizar';
+
+  @override
+  String get autoAnalyzeOnLaunch => 'Auto-analizar al abrir';
+
+  @override
+  String get autoAnalyzeOnLaunchDescription =>
+      'Analizar galería automáticamente al abrir la aplicación';
 
   @override
   String progressFormat(String albums, int media) {
@@ -911,4 +921,31 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get viewGallery => 'Ver Galería';
+
+  @override
+  String get scanRightNotUsed => 'Tu derecho de escaneo no se utilizó';
+
+  @override
+  String get noBlurryPhotosFoundTitle => 'No se encontraron fotos borrosas';
+
+  @override
+  String get noDuplicatesFoundTitle => 'No se encontraron duplicados';
+
+  @override
+  String get scanCompletedSuccessfully =>
+      '¡Buenas noticias! El escaneo de tu galería se completó exitosamente.';
+
+  @override
+  String get scanCompletedSuccessfullyDuplicate =>
+      '¡Excelente! El escaneo de tu galería se completó exitosamente.';
+
+  @override
+  String get rateApp => 'Calificar App';
+
+  @override
+  String get rateAppDescription =>
+      '¿Te gusta la app? ¡Por favor califícanos en la tienda!';
+
+  @override
+  String get couldNotOpenStore => 'No se pudo abrir la tienda';
 }

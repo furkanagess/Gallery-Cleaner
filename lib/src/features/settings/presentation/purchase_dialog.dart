@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../core/services/revenuecat_service.dart';
-import 'package:purchases_flutter/purchases_flutter.dart';
 import '../../gallery/application/gallery_providers.dart';
 import 'premium_success_dialog.dart';
+import '../../../app/theme/app_colors.dart';
+import '../../../app/theme/app_decorations.dart';
+import 'package:purchases_flutter/purchases_flutter.dart';
 
 /// Purchase dialog widget for in-app purchases
 class PurchaseDialog extends ConsumerStatefulWidget {
@@ -228,7 +230,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog>
     final theme = Theme.of(context);
 
     return Dialog(
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppColors.transparent,
       elevation: 0,
       insetPadding: const EdgeInsets.symmetric(horizontal: 24),
       child: TweenAnimationBuilder<double>(
@@ -256,7 +258,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog>
             borderRadius: BorderRadius.circular(28),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.25),
+                color: AppColors.black.withOpacity(0.25),
                 blurRadius: 32,
                 spreadRadius: 2,
                 offset: const Offset(0, 16),
@@ -314,28 +316,16 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog>
                         horizontal: 20,
                         vertical: 10,
                       ),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            Colors.red.shade400,
-                            Colors.orange.shade400,
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(25),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.red.withOpacity(0.4),
-                            blurRadius: 15,
-                            spreadRadius: 2,
-                          ),
-                        ],
+                      decoration: AppDecorations.pill(
+                        color: AppColors.error,
+                        borderRadius: 28,
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
                             Icons.local_fire_department_rounded,
-                            color: Colors.white,
+                            color: AppColors.white,
                             size: 22,
                           ),
                           const SizedBox(width: 8),
@@ -345,7 +335,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog>
                               fontWeight: FontWeight.w900,
                               fontSize: 16,
                               letterSpacing: 1,
-                              color: Colors.white,
+                              color: AppColors.white,
                             ),
                           ),
                         ],
@@ -358,23 +348,20 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog>
               // Limited Time Badge
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
+                  horizontal: 16,
                   vertical: 6,
                 ),
-                decoration: BoxDecoration(
-                  color: Colors.orange.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: Colors.orange.withOpacity(0.4),
-                    width: 1.5,
-                  ),
+                decoration: AppDecorations.glassSurface(
+                  borderRadius: 18,
+                  tint: AppColors.warningLight,
+                  opacity: 0.35,
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
                       Icons.access_time_rounded,
-                      color: Colors.orange.shade700,
+                      color: AppColors.warningDark,
                       size: 16,
                     ),
                     const SizedBox(width: 6),
@@ -383,7 +370,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog>
                       style: theme.textTheme.labelMedium?.copyWith(
                         fontWeight: FontWeight.w700,
                         fontSize: 12,
-                        color: Colors.orange.shade700,
+                        color: AppColors.warningDark,
                       ),
                     ),
                   ],
@@ -400,26 +387,26 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog>
                     const SizedBox(width: 4),
                     _PurchaseFeatureCard(
                       icon: Icons.delete_outline_rounded,
-                      iconColor: Colors.red,
+                      iconColor: AppColors.error,
                       text: l10n.unlimitedDeletions,
                       subtitle: l10n.lifetimeAccess,
                     ),
                     const SizedBox(width: 12),
                     _PurchaseFeatureCard(
                       icon: Icons.blur_on_rounded,
-                      iconColor: Colors.blue,
+                      iconColor: AppColors.primary,
                       text: l10n.unlimitedBlurScans,
                     ),
                     const SizedBox(width: 12),
                     _PurchaseFeatureCard(
                       icon: Icons.photo_library_outlined,
-                      iconColor: Colors.purple,
+                      iconColor: AppColors.secondary,
                       text: l10n.unlimitedDuplicateScans,
                     ),
                     const SizedBox(width: 12),
                     _PurchaseFeatureCard(
                       icon: Icons.block_rounded,
-                      iconColor: Colors.orange,
+                      iconColor: AppColors.warning,
                       text: l10n.noMoreAds,
                     ),
                     const SizedBox(width: 12),
@@ -466,14 +453,14 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog>
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.15),
+                    color: AppColors.success.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
                     children: [
                       Icon(
                         Icons.check_circle_outline,
-                        color: Colors.green,
+                        color: AppColors.success,
                         size: 20,
                       ),
                       const SizedBox(width: 8),
@@ -481,7 +468,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog>
                         child: Text(
                           _successMessage!,
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: Colors.green,
+                            color: AppColors.success,
                           ),
                         ),
                       ),
@@ -560,7 +547,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog>
                         style: theme.textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.w700,
                           fontSize: 14,
-                          color: Colors.green.shade700,
+                          color: AppColors.success,
                         ),
                       ),
                     ],
@@ -596,7 +583,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog>
                         ],
                       ),
                       child: Material(
-                        color: Colors.transparent,
+                        color: AppColors.transparent,
                         child: InkWell(
                           onTap: _isLoading ? null : _handlePurchase,
                           borderRadius: BorderRadius.circular(20),
@@ -790,7 +777,7 @@ class _PurchaseFeatureCardState extends State<_PurchaseFeatureCard>
                 offset: const Offset(0, 4),
               ),
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: AppColors.black.withOpacity(0.05),
                 blurRadius: 10,
                 spreadRadius: 0,
               ),

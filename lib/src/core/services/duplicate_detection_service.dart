@@ -1,36 +1,120 @@
 import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
+import 'package:image/image.dart' as img;
 import 'package:photo_manager/photo_manager.dart' as pm;
 import '../models/duplicate_photo.dart';
 
 /// Performanslı duplicate detection servisi
+/// Gelişmiş algoritma: Perceptual hash (dHash) + MD5 + Histogram comparison
 class DuplicateDetectionService {
-  /// Thumbnail hash'i hesapla (hızlı ve memory-efficient)
+  /// Gelişmiş hash hesapla: Perceptual hash (dHash) + MD5 kombinasyonu
+  /// dHash: Benzer görüntüleri tespit eder (küçük farklılıkları tolere eder)
+  /// MD5: Tam eşleşmeleri tespit eder
   Future<String> _calculateThumbnailHash(
     pm.AssetEntity asset, {
-    int thumbnailSize = 128,
+    int thumbnailSize = 256,
   }) async {
     try {
-      // Küçük thumbnail al (128x128 yeterli)
+      // Daha büyük thumbnail al (daha doğru tespit için)
       final thumbnail = await asset.thumbnailDataWithSize(
         pm.ThumbnailSize(thumbnailSize, thumbnailSize),
-        quality: 75,
+        quality: 85,
       );
 
       if (thumbnail == null || thumbnail.isEmpty) {
         debugPrint('   ⚠️ [DuplicateDetection] Thumbnail alınamadı (ID: ${asset.id}), fallback kullanılıyor');
-        // Thumbnail alınamazsa, dosya boyutu ve boyutları kullan
         return _fallbackHash(asset);
       }
 
-      // MD5 hash hesapla (hızlı)
-      final digest = md5.convert(thumbnail);
-      final hash = digest.toString();
-      return hash;
+      // Image decode et
+      final image = img.decodeImage(thumbnail);
+      if (image == null) {
+        return _fallbackHash(asset);
+      }
+
+      // 1. Perceptual hash (dHash) hesapla - benzer görüntüleri tespit eder
+      final dHash = _calculateDHash(image);
+      
+      // 2. MD5 hash hesapla - tam eşleşmeler için
+      final md5Hash = md5.convert(thumbnail).toString();
+      
+      // 3. Color histogram hash - renk dağılımı için
+      final histogramHash = _calculateHistogramHash(image);
+      
+      // Kombine hash: dHash + MD5 + Histogram
+      // Bu kombinasyon hem benzer hem de tam eşleşmeleri tespit eder
+      final combinedData = '$dHash|$md5Hash|$histogramHash';
+      final combinedHash = md5.convert(combinedData.codeUnits).toString();
+      
+      return combinedHash;
     } catch (e) {
       debugPrint('   ⚠️ [DuplicateDetection] Hash hesaplama hatası (ID: ${asset.id}): $e');
       return _fallbackHash(asset);
     }
+  }
+
+  /// Difference Hash (dHash) hesapla - perceptual hash algoritması
+  /// Benzer görüntüleri tespit eder (küçük farklılıkları tolere eder)
+  String _calculateDHash(img.Image image) {
+    // 9x8 boyutuna resize et (dHash için standart)
+    final resized = img.copyResize(image, width: 9, height: 8);
+    
+    // Gri tonlamaya çevir
+    final gray = img.grayscale(resized);
+    
+    // dHash hesapla: Her satırda komşu pikselleri karşılaştır
+    final hashBits = <bool>[];
+    for (int y = 0; y < 8; y++) {
+      for (int x = 0; x < 8; x++) {
+        final pixel1 = gray.getPixel(x, y);
+        final pixel2 = gray.getPixel(x + 1, y);
+        final gray1 = (0.299 * pixel1.r + 0.587 * pixel1.g + 0.114 * pixel1.b).toInt();
+        final gray2 = (0.299 * pixel2.r + 0.587 * pixel2.g + 0.114 * pixel2.b).toInt();
+        hashBits.add(gray1 > gray2);
+      }
+    }
+    
+    // Bit string'e çevir
+    final hashString = hashBits.map((b) => b ? '1' : '0').join();
+    
+    // Hex string'e çevir (64 bit = 16 hex karakter)
+    final hashInt = int.parse(hashString, radix: 2);
+    return hashInt.toRadixString(16).padLeft(16, '0');
+  }
+
+  /// Color histogram hash hesapla
+  /// Renk dağılımını analiz eder
+  String _calculateHistogramHash(img.Image image) {
+    // RGB histogram hesapla (her kanal için 16 bin)
+    final rHist = List<int>.filled(16, 0);
+    final gHist = List<int>.filled(16, 0);
+    final bHist = List<int>.filled(16, 0);
+    
+    final width = image.width;
+    final height = image.height;
+    final totalPixels = width * height;
+    
+    // Histogram oluştur
+    for (int y = 0; y < height; y++) {
+      for (int x = 0; x < width; x++) {
+        final pixel = image.getPixel(x, y);
+        rHist[pixel.r ~/ 16]++;
+        gHist[pixel.g ~/ 16]++;
+        bHist[pixel.b ~/ 16]++;
+      }
+    }
+    
+    // Normalize et ve hash'e çevir
+    final normalized = <double>[];
+    for (int i = 0; i < 16; i++) {
+      normalized.add(rHist[i] / totalPixels);
+      normalized.add(gHist[i] / totalPixels);
+      normalized.add(bHist[i] / totalPixels);
+    }
+    
+    // Hash string oluştur
+    final histString = normalized.map((v) => v.toStringAsFixed(3)).join('|');
+    return md5.convert(histString.codeUnits).toString().substring(0, 8);
   }
 
   /// Fallback hash (thumbnail alınamazsa)

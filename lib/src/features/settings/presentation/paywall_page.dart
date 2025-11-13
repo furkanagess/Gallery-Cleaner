@@ -3,9 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../core/services/revenuecat_service.dart';
-import 'package:purchases_flutter/purchases_flutter.dart';
 import '../../gallery/application/gallery_providers.dart';
 import 'premium_success_dialog.dart';
+import '../../../app/theme/app_colors.dart';
 
 /// Full-screen paywall page for in-app purchases
 class PaywallPage extends ConsumerStatefulWidget {
@@ -62,30 +62,9 @@ class _PaywallPageState extends ConsumerState<PaywallPage>
     try {
       final rc = RevenueCatService.instance;
       await rc.initialize();
-      final offerings = await rc.getOfferings();
-      if (offerings == null || offerings.current == null) {
-        debugPrint('⚠️ [Paywall] Offerings not available');
-        if (mounted) {
-          setState(() {
-            _productPrice = 'N/A';
-            _originalPrice = null;
-          });
-        }
-        return;
-      }
-      final current = offerings.current!;
-      final target = (current.identifier == RevenueCatService.offeringId)
-          ? current
-          : offerings.all[RevenueCatService.offeringId] ?? current;
-      final base = target;
-      Package? package = base.lifetime;
-      if (package == null) {
-        final list = base.availablePackages;
-        final byType = list.where((p) => p.packageType == PackageType.lifetime);
-        package = byType.isNotEmpty ? byType.first : (list.isNotEmpty ? list.first : null);
-      }
-      final product = package?.storeProduct;
-      if (product == null || !mounted) {
+      final product = await rc.fetchLifetimeProduct();
+      if (product == null) {
+        debugPrint('⚠️ [Paywall] Lifetime product not available');
         if (mounted) {
           setState(() {
             _productPrice = 'N/A';
@@ -228,30 +207,15 @@ class _PaywallPageState extends ConsumerState<PaywallPage>
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final pricePrimaryTextColor = AppColors.textPrimary(theme.brightness);
+    final priceSecondaryTextColor =
+        AppColors.textSecondary(theme.brightness);
 
     return Scaffold(
-      backgroundColor: theme.colorScheme.surface,
+      backgroundColor: theme.colorScheme.background,
       body: SafeArea(
-        child: Stack(
-          children: [
-            // Background gradient
-            Positioned.fill(
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      theme.colorScheme.primaryContainer.withOpacity(0.3),
-                      theme.colorScheme.secondaryContainer.withOpacity(0.2),
-                      theme.colorScheme.surface,
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            // Content
-            Column(
+        child: Column(
               children: [
                 // Header with close and restore buttons
                 Padding(
@@ -270,11 +234,15 @@ class _PaywallPageState extends ConsumerState<PaywallPage>
                         onPressed: (_isLoading || _isRestoring)
                             ? null
                             : _handleRestorePurchases,
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        side: const BorderSide(color: Colors.transparent),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
                         ),
+                      ),
                         child: _isRestoring
                             ? SizedBox(
                                 height: 14,
@@ -345,7 +313,6 @@ class _PaywallPageState extends ConsumerState<PaywallPage>
                           flex: 1,
                           child: _PaywallFeatureItem(
                             icon: Icons.all_inclusive_rounded,
-                            iconColor: Colors.blue,
                             title: l10n.featureUnlimitedDeletions,
                             description: l10n.featureUnlimitedDeletionsDesc,
                             isCompact: true,
@@ -356,7 +323,6 @@ class _PaywallPageState extends ConsumerState<PaywallPage>
                           flex: 1,
                           child: _PaywallFeatureItem(
                             icon: Icons.grid_view_rounded,
-                            iconColor: Colors.blue,
                             title: l10n.featureAIDetection,
                             description: l10n.featureAIDetectionDesc,
                             isCompact: true,
@@ -367,7 +333,6 @@ class _PaywallPageState extends ConsumerState<PaywallPage>
                           flex: 1,
                           child: _PaywallFeatureItem(
                             icon: Icons.auto_awesome_rounded,
-                            iconColor: Colors.blue,
                             title: l10n.featureAutoClean,
                             description: l10n.featureAutoCleanDesc,
                             isCompact: true,
@@ -378,7 +343,6 @@ class _PaywallPageState extends ConsumerState<PaywallPage>
                           flex: 1,
                           child: _PaywallFeatureItem(
                             icon: Icons.block_rounded,
-                            iconColor: Colors.blue,
                             title: l10n.featureAdFree,
                             description: l10n.featureAdFreeDesc,
                             isCompact: true,
@@ -393,7 +357,7 @@ class _PaywallPageState extends ConsumerState<PaywallPage>
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Colors.greenAccent.shade400,
+                    color: AppColors.accent,
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Text(
@@ -402,7 +366,7 @@ class _PaywallPageState extends ConsumerState<PaywallPage>
                       fontWeight: FontWeight.w900,
                       fontSize: 10,
                       letterSpacing: 1.2,
-                      color: Colors.black,
+                      color: theme.colorScheme.background,
                     ),
                   ),
                 ),
@@ -413,15 +377,21 @@ class _PaywallPageState extends ConsumerState<PaywallPage>
                     margin: const EdgeInsets.symmetric(horizontal: 20),
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.primaryContainer.withOpacity(0.8),
+                      color: isDark
+                          ? theme.colorScheme.primaryContainer.withOpacity(0.3)
+                          : theme.colorScheme.primaryContainer.withOpacity(0.8),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: theme.colorScheme.primary.withOpacity(0.5),
+                        color: theme.colorScheme.primary.withOpacity(
+                          isDark ? 0.3 : 0.5,
+                        ),
                         width: 2,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: theme.colorScheme.primary.withOpacity(0.3),
+                          color: theme.colorScheme.primary.withOpacity(
+                            isDark ? 0.15 : 0.3,
+                          ),
                           blurRadius: 15,
                           spreadRadius: 1,
                           offset: const Offset(0, 6),
@@ -442,7 +412,7 @@ class _PaywallPageState extends ConsumerState<PaywallPage>
                                 style: theme.textTheme.bodyMedium?.copyWith(
                                   fontWeight: FontWeight.w800,
                                   fontSize: 13,
-                                  color: theme.colorScheme.onPrimaryContainer,
+                                  color: pricePrimaryTextColor,
                                 ),
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
@@ -459,8 +429,8 @@ class _PaywallPageState extends ConsumerState<PaywallPage>
                                       style: theme.textTheme.bodySmall?.copyWith(
                                         decoration: TextDecoration.lineThrough,
                                         decorationThickness: 2,
-                                        decorationColor: theme.colorScheme.onPrimaryContainer.withOpacity(0.6),
-                                        color: theme.colorScheme.onPrimaryContainer.withOpacity(0.5),
+                                        decorationColor: priceSecondaryTextColor.withOpacity(isDark ? 0.8 : 0.7),
+                                        color: priceSecondaryTextColor.withOpacity(isDark ? 0.85 : 0.65),
                                         fontSize: 11,
                                         fontWeight: FontWeight.w500,
                                       ),
@@ -471,10 +441,10 @@ class _PaywallPageState extends ConsumerState<PaywallPage>
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                     decoration: BoxDecoration(
-                                      color: Colors.green.withOpacity(0.2),
+                                      color: AppColors.success.withOpacity(0.2),
                                       borderRadius: BorderRadius.circular(6),
                                       border: Border.all(
-                                        color: Colors.green.withOpacity(0.4),
+                                        color: AppColors.success.withOpacity(0.4),
                                         width: 1,
                                       ),
                                     ),
@@ -483,7 +453,7 @@ class _PaywallPageState extends ConsumerState<PaywallPage>
                                       style: theme.textTheme.labelSmall?.copyWith(
                                         fontWeight: FontWeight.w800,
                                         fontSize: 9,
-                                        color: Colors.green.shade700,
+                                        color: AppColors.success,
                                         letterSpacing: 0.3,
                                       ),
                                       maxLines: 1,
@@ -512,7 +482,7 @@ class _PaywallPageState extends ConsumerState<PaywallPage>
                                     style: theme.textTheme.headlineMedium?.copyWith(
                                       fontWeight: FontWeight.w900,
                                       fontSize: 32,
-                                      color: theme.colorScheme.onPrimaryContainer,
+                                      color: pricePrimaryTextColor,
                                       letterSpacing: -0.8,
                                     ),
                                     maxLines: 1,
@@ -540,17 +510,23 @@ class _PaywallPageState extends ConsumerState<PaywallPage>
                           width: double.infinity,
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
+                              begin: Alignment.centerLeft,
+                              end: Alignment.centerRight,
                               colors: [
-                                theme.colorScheme.primary,
-                                theme.colorScheme.primary.withOpacity(0.8),
+                                AppColors.primary,
+                                AppColors.accent,
                               ],
                             ),
                             borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: AppColors.primary.withOpacity(0.9),
+                              width: 1.5,
+                            ),
                             boxShadow: [
                               BoxShadow(
-                                color: theme.colorScheme.primary.withOpacity(0.5 * _pulseAnimation.value),
+                                color: theme.colorScheme.primary.withOpacity(
+                                  (isDark ? 0.3 : 0.5) * _pulseAnimation.value,
+                                ),
                                 blurRadius: 25 * _pulseAnimation.value,
                                 spreadRadius: 2 * _pulseAnimation.value,
                                 offset: Offset(0, 10 * _pulseAnimation.value),
@@ -558,7 +534,7 @@ class _PaywallPageState extends ConsumerState<PaywallPage>
                             ],
                           ),
                           child: Material(
-                            color: Colors.transparent,
+                            color: AppColors.transparent,
                             child: InkWell(
                               onTap: _isLoading ? null : _handlePurchase,
                               borderRadius: BorderRadius.circular(16),
@@ -617,6 +593,10 @@ class _PaywallPageState extends ConsumerState<PaywallPage>
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     minimumSize: Size.zero,
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    side: const BorderSide(color: Colors.transparent),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   child: Text(
                     l10n.continueWithFree,
@@ -692,14 +672,22 @@ class _PaywallPageState extends ConsumerState<PaywallPage>
                     child: Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.green.withOpacity(0.15),
+                        color: isDark
+                            ? AppColors.success.withOpacity(0.2)
+                            : AppColors.success.withOpacity(0.15),
                         borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: AppColors.success.withOpacity(
+                            isDark ? 0.3 : 0.2,
+                          ),
+                          width: 1,
+                        ),
                       ),
                       child: Row(
                         children: [
                           Icon(
                             Icons.check_circle_outline,
-                            color: Colors.green,
+                            color: AppColors.success,
                             size: 18,
                           ),
                           const SizedBox(width: 8),
@@ -707,7 +695,7 @@ class _PaywallPageState extends ConsumerState<PaywallPage>
                             child: Text(
                               _successMessage!,
                               style: theme.textTheme.bodySmall?.copyWith(
-                                color: Colors.green,
+                                color: AppColors.success,
                                 fontSize: 11,
                               ),
                               maxLines: 2,
@@ -720,8 +708,6 @@ class _PaywallPageState extends ConsumerState<PaywallPage>
                   ),
                   const SizedBox(height: 4),
                 ],
-              ],
-            ),
           ],
         ),
       ),
@@ -734,20 +720,20 @@ class _PaywallFeatureItem extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.description,
-    this.iconColor,
     this.isCompact = false,
   });
 
   final IconData icon;
   final String title;
   final String description;
-  final Color? iconColor;
   final bool isCompact;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final color = iconColor ?? theme.colorScheme.primary;
+    final color = theme.colorScheme.primary;
+    
+    final isDark = theme.brightness == Brightness.dark;
     
     return Container(
       padding: EdgeInsets.all(isCompact ? 12 : 16),
@@ -755,25 +741,32 @@ class _PaywallFeatureItem extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
+          colors: isDark
+              ? [
+                  theme.colorScheme.surfaceContainerHighest.withOpacity(0.4),
+                  theme.colorScheme.surfaceContainerHighest.withOpacity(0.2),
+                ]
+              : [
             theme.colorScheme.surface.withOpacity(0.95),
             theme.colorScheme.surfaceContainerHighest.withOpacity(0.6),
           ],
         ),
         borderRadius: BorderRadius.circular(isCompact ? 14 : 18),
         border: Border.all(
-          color: color.withOpacity(0.18),
+          color: color.withOpacity(isDark ? 0.25 : 0.18),
           width: isCompact ? 1 : 1.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.12),
+            color: color.withOpacity(isDark ? 0.15 : 0.12),
             blurRadius: 14,
             spreadRadius: 0,
             offset: const Offset(0, 6),
           ),
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: AppColors.shadow(theme.brightness).withOpacity(
+              isDark ? 0.2 : 0.04,
+            ),
             blurRadius: 8,
             spreadRadius: 0,
             offset: const Offset(0, 2),
@@ -884,13 +877,11 @@ class _PaywallFeatureCard extends StatefulWidget {
     required this.icon,
     required this.title,
     required this.description,
-    this.iconColor,
   });
 
   final IconData icon;
   final String title;
   final String description;
-  final Color? iconColor;
 
   @override
   State<_PaywallFeatureCard> createState() => _PaywallFeatureCardState();
@@ -924,7 +915,8 @@ class _PaywallFeatureCardState extends State<_PaywallFeatureCard>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final color = widget.iconColor ?? theme.colorScheme.primary;
+    final color = theme.colorScheme.primary;
+    final isDark = theme.brightness == Brightness.dark;
     
     return FadeTransition(
       opacity: _fadeAnimation,
@@ -937,15 +929,17 @@ class _PaywallFeatureCardState extends State<_PaywallFeatureCard>
           width: 240,
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.8),
+            color: isDark
+                ? theme.colorScheme.surfaceContainerHighest.withOpacity(0.4)
+                : theme.colorScheme.surfaceContainerHighest.withOpacity(0.8),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: color.withOpacity(0.2),
+              color: color.withOpacity(isDark ? 0.3 : 0.2),
               width: 1.5,
             ),
             boxShadow: [
               BoxShadow(
-                color: color.withOpacity(0.1),
+                color: color.withOpacity(isDark ? 0.15 : 0.1),
                 blurRadius: 15,
                 spreadRadius: 1,
                 offset: const Offset(0, 4),

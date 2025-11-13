@@ -135,11 +135,11 @@ class DuplicateDetectionNotifier extends StateNotifier<DuplicateDetectionState> 
       final isPremium = await prefsService.isPremium();
       debugPrint('💎 [DuplicateDetection] Premium durumu: $isPremium');
       
-      // Kalan scan hakkını al (premium değilse)
+      // Kalan duplicate scan hakkını al (premium değilse)
       int remainingScanLimit = 999999999; // Premium için sınırsız
       if (!isPremium) {
-        remainingScanLimit = await prefsService.getScanLimit();
-        debugPrint('📊 [DuplicateDetection] Kalan scan hakkı: $remainingScanLimit');
+        remainingScanLimit = await prefsService.getDuplicateScanLimit();
+        debugPrint('📊 [DuplicateDetection] Kalan duplicate scan hakkı: $remainingScanLimit');
       }
 
       debugPrint('🔍 [DuplicateDetection] findDuplicatesInAlbums çağrılıyor... (maxScanLimit: $remainingScanLimit)');
@@ -178,18 +178,6 @@ class DuplicateDetectionNotifier extends StateNotifier<DuplicateDetectionState> 
       }
 
       debugPrint('✅ [DuplicateDetection] Tarama tamamlandı! Bulunan albüm sayısı: ${results.length}, Scan edilen fotoğraf: $scannedPhotoCount');
-
-      // Scan limit'i düşür
-      if (!isPremium && scannedPhotoCount > 0) {
-        try {
-          final prefsService = PreferencesService();
-          await prefsService.decreaseScanLimit(scannedPhotoCount);
-          ref.invalidate(scanLimitProvider);
-          debugPrint('💾 [DuplicateDetection] Scan limit düşürüldü: $scannedPhotoCount fotoğraf');
-        } catch (e) {
-          debugPrint('⚠️ [DuplicateDetection] Scan limit düşürülemedi: $e');
-        }
-      }
       
       // Boş olmayan sonuçları filtrele
       final filteredResults = <String, List<DuplicatePhotoGroup>>{};
@@ -221,6 +209,21 @@ class DuplicateDetectionNotifier extends StateNotifier<DuplicateDetectionState> 
       debugPrint('   - Filtrelenmiş albüm sayısı: ${filteredResults.length}');
       debugPrint('   - Duplicate grup sayısı: $totalGroups');
       debugPrint('   - Toplam fotoğraf sayısı: $totalPhotos');
+
+      // Duplicate scan limit'i düşür - SADECE sonuç bulunduysa
+      final hasResults = filteredResults.isNotEmpty && totalGroups > 0;
+      if (!isPremium && scannedPhotoCount > 0 && hasResults) {
+        try {
+          final prefsService = PreferencesService();
+          await prefsService.decreaseDuplicateScanLimit(scannedPhotoCount);
+          ref.invalidate(duplicateScanLimitProvider);
+          debugPrint('💾 [DuplicateDetection] Duplicate scan limit düşürüldü: $scannedPhotoCount fotoğraf (sonuç bulundu)');
+        } catch (e) {
+          debugPrint('⚠️ [DuplicateDetection] Duplicate scan limit düşürülemedi: $e');
+        }
+      } else if (!hasResults) {
+        debugPrint('✅ [DuplicateDetection] Sonuç bulunamadı, duplicate scan limit azaltılmadı');
+      }
 
       // State'i güncelle - YENİ bir Map ve State objesi oluştur
       // Bu, Riverpod'ın state değişikliğini algılaması için önemli

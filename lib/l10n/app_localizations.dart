@@ -1168,6 +1168,12 @@ abstract class AppLocalizations {
   /// **'Start New Scan'**
   String get startNewScan;
 
+  /// Title for scan results page
+  ///
+  /// In en, this message translates to:
+  /// **'Scan Results'**
+  String get scanResults;
+
   /// Scan completed title
   ///
   /// In en, this message translates to:
@@ -1299,6 +1305,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Re-analyze'**
   String get reAnalyze;
+
+  /// Toggle label for auto-analyze on app launch
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-analyze on launch'**
+  String get autoAnalyzeOnLaunch;
+
+  /// Description text for auto-analyze toggle
+  ///
+  /// In en, this message translates to:
+  /// **'Automatically analyze gallery when app opens'**
+  String get autoAnalyzeOnLaunchDescription;
 
   /// Progress text format showing albums and media count
   ///
@@ -1683,6 +1701,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'View Gallery'**
   String get viewGallery;
+
+  /// Message shown when scan completes with no results, indicating scan right was not consumed
+  ///
+  /// In en, this message translates to:
+  /// **'Your scan right was not used'**
+  String get scanRightNotUsed;
+
+  /// Title shown when no blurry photos are found after scan
+  ///
+  /// In en, this message translates to:
+  /// **'No Blurry Photos Found'**
+  String get noBlurryPhotosFoundTitle;
+
+  /// Title shown when no duplicate photos are found after scan
+  ///
+  /// In en, this message translates to:
+  /// **'No Duplicates Found'**
+  String get noDuplicatesFoundTitle;
+
+  /// Success message shown when scan completes with no results
+  ///
+  /// In en, this message translates to:
+  /// **'Great news! Your gallery scan completed successfully.'**
+  String get scanCompletedSuccessfully;
+
+  /// Success message shown when duplicate scan completes with no results
+  ///
+  /// In en, this message translates to:
+  /// **'Excellent! Your gallery scan completed successfully.'**
+  String get scanCompletedSuccessfullyDuplicate;
+
+  /// Title for rate app section
+  ///
+  /// In en, this message translates to:
+  /// **'Rate App'**
+  String get rateApp;
+
+  /// Description for rate app section
+  ///
+  /// In en, this message translates to:
+  /// **'Enjoying the app? Please rate us on the store!'**
+  String get rateAppDescription;
+
+  /// Error message when store cannot be opened
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open store'**
+  String get couldNotOpenStore;
 }
 
 class _AppLocalizationsDelegate

@@ -7,6 +7,7 @@ import '../features/onboarding/presentation/onboarding_page.dart';
 import '../features/onboarding/presentation/permission_request_page.dart';
 import '../features/gallery/presentation/pages/swipe_page.dart';
 import '../features/gallery/presentation/pages/gallery_stats_page.dart';
+import '../features/gallery/presentation/pages/results_page.dart';
 import '../features/settings/presentation/settings_page.dart';
 import '../features/settings/presentation/paywall_page.dart';
 
@@ -26,7 +27,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           location.startsWith('/duplicates') ||
           location.startsWith('/blur') ||
           location.startsWith('/gallery') ||
-          location.startsWith('/history')) {
+          location.startsWith('/history') ||
+          location.startsWith('/results')) {
         return null; // Bu sayfalarda redirect yapma
       }
 
@@ -82,6 +84,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/gallery/stats',
         name: 'galleryStats',
         builder: (context, state) => const GalleryStatsPage(),
+      ),
+      GoRoute(
+        path: '/results/:type',
+        name: 'results',
+        builder: (context, state) {
+          final type = state.pathParameters['type'] ?? 'blur';
+          return ResultsPage(resultType: type);
+        },
+      ),
+      // Fallback route for /results without type parameter
+      GoRoute(
+        path: '/results',
+        redirect: (context, state) => '/results/blur',
       ),
     ],
     errorBuilder: (context, state) => Scaffold(

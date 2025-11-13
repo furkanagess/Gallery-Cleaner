@@ -34,8 +34,13 @@ class PreferencesService {
   static const String _firstAnalysisCompletedKey = 'first_analysis_completed';
   static const String _scanLimitKey = 'scan_limit';
   static const String _scanLimitLastResetKey = 'scan_limit_last_reset';
+  static const String _duplicateScanLimitKey = 'duplicate_scan_limit';
+  static const String _duplicateScanLimitLastResetKey = 'duplicate_scan_limit_last_reset';
+  static const String _blurScanLimitKey = 'blur_scan_limit';
+  static const String _blurScanLimitLastResetKey = 'blur_scan_limit_last_reset';
   static const String _swipeIndexKey = 'swipe_index';
   static const String _swipeAlbumIdKey = 'swipe_album_id';
+  static const String _autoAnalyzeOnLaunchKey = 'auto_analyze_on_launch';
   static const int _defaultDeleteLimit = 100;
   static const int _defaultScanLimit = 1000;
 
@@ -408,6 +413,19 @@ class PreferencesService {
     debugPrint('💾 [PreferencesService] İlk analiz tamamlandı: $completed');
   }
 
+  /// Otomatik analiz açık mı? (varsayılan: true)
+  Future<bool> isAutoAnalyzeOnLaunchEnabled() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_autoAnalyzeOnLaunchKey) ?? true; // Varsayılan olarak açık
+  }
+
+  /// Otomatik analiz ayarını değiştir
+  Future<void> setAutoAnalyzeOnLaunch(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_autoAnalyzeOnLaunchKey, enabled);
+    debugPrint('💾 [PreferencesService] Otomatik analiz: $enabled');
+  }
+
   /// Scan limit'ini al (günlük reset kontrolü ile)
   Future<int> getScanLimit() async {
     // İlk çalıştırmada migration yap
@@ -473,6 +491,127 @@ class PreferencesService {
     final newLimit = currentLimit + amount;
     await setScanLimit(newLimit);
     debugPrint('💾 [PreferencesService] Scan limit artırıldı: $currentLimit -> $newLimit (kazanılan: $amount)');
+    return newLimit;
+  }
+
+  /// Duplicate scan limit'ini al (günlük reset kontrolü ile)
+  Future<int> getDuplicateScanLimit() async {
+    await _migrateToSecureStorage();
+    
+    final premiumStatus = await isPremium();
+    if (premiumStatus) {
+      return 999999999; // Premium için sınırsız
+    }
+    
+    final lastReset = await _getSecureString(_duplicateScanLimitLastResetKey);
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final todayString = today.toIso8601String().split('T')[0];
+    
+    // Eğer bugün reset edilmemişse, limiti kontrol et
+    if (lastReset == null || lastReset != todayString) {
+      final currentLimit = await _getSecureInt(_duplicateScanLimitKey) ?? _defaultScanLimit;
+      final newLimit = currentLimit < _defaultScanLimit ? _defaultScanLimit : currentLimit;
+      await _setSecureInt(_duplicateScanLimitKey, newLimit);
+      await _setSecureString(_duplicateScanLimitLastResetKey, todayString);
+      debugPrint('💾 [PreferencesService] Duplicate scan limit günlük reset: $currentLimit -> $newLimit');
+      return newLimit;
+    }
+    
+    final limit = await _getSecureInt(_duplicateScanLimitKey);
+    return limit ?? _defaultScanLimit;
+  }
+
+  /// Duplicate scan limit'ini kaydet
+  Future<void> setDuplicateScanLimit(int limit) async {
+    await _setSecureInt(_duplicateScanLimitKey, limit);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_duplicateScanLimitKey, limit);
+  }
+
+  /// Duplicate scan limit'ini azalt
+  Future<int> decreaseDuplicateScanLimit(int amount) async {
+    final premiumStatus = await isPremium();
+    if (premiumStatus) {
+      return 999999999;
+    }
+    
+    final currentLimit = await getDuplicateScanLimit();
+    final newLimit = (currentLimit - amount).clamp(0, 999999999);
+    await setDuplicateScanLimit(newLimit);
+    debugPrint('💾 [PreferencesService] Duplicate scan limit azaltıldı: $currentLimit -> $newLimit (kullanılan: $amount)');
+    return newLimit;
+  }
+
+  /// Duplicate scan limit'ini artır (reklam izleyerek)
+  Future<int> increaseDuplicateScanLimit(int amount) async {
+    final premiumStatus = await isPremium();
+    if (premiumStatus) {
+      return 999999999;
+    }
+    
+    final currentLimit = await getDuplicateScanLimit();
+    final newLimit = currentLimit + amount;
+    await setDuplicateScanLimit(newLimit);
+    debugPrint('💾 [PreferencesService] Duplicate scan limit artırıldı: $currentLimit -> $newLimit (kazanılan: $amount)');
+    return newLimit;
+  }
+
+  /// Blur scan limit'ini al
+  Future<int> getBlurScanLimit() async {
+    await _migrateToSecureStorage();
+    
+    final premiumStatus = await isPremium();
+    if (premiumStatus) {
+      return 999999999; // Premium için sınırsız
+    }
+    
+    // Blur scan limit, sadece ilk kurulumda set edilir
+    final limit = await _getSecureInt(_blurScanLimitKey);
+    if (limit == null) {
+      // İlk kurulum: default limit'i set et
+      await _setSecureInt(_blurScanLimitKey, _defaultScanLimit);
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt(_blurScanLimitKey, _defaultScanLimit);
+      debugPrint('💾 [PreferencesService] Blur scan limit ilk kurulum: $_defaultScanLimit');
+      return _defaultScanLimit;
+    }
+    
+    return limit;
+  }
+
+  /// Blur scan limit'ini kaydet (sadece artırma için)
+  Future<void> setBlurScanLimit(int limit) async {
+    await _setSecureInt(_blurScanLimitKey, limit);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_blurScanLimitKey, limit);
+  }
+
+  /// Blur scan limit'ini azalt (tarama yapıldığında)
+  Future<int> decreaseBlurScanLimit(int amount) async {
+    final premiumStatus = await isPremium();
+    if (premiumStatus) {
+      return 999999999;
+    }
+    
+    final currentLimit = await getBlurScanLimit();
+    final newLimit = (currentLimit - amount).clamp(0, 999999999);
+    await setBlurScanLimit(newLimit);
+    debugPrint('💾 [PreferencesService] Blur scan limit azaltıldı: $currentLimit -> $newLimit (kullanılan: $amount)');
+    return newLimit;
+  }
+
+  /// Blur scan limit'ini artır (reklam izleyerek)
+  Future<int> increaseBlurScanLimit(int amount) async {
+    final premiumStatus = await isPremium();
+    if (premiumStatus) {
+      return 999999999;
+    }
+    
+    final currentLimit = await getBlurScanLimit();
+    final newLimit = currentLimit + amount;
+    await setBlurScanLimit(newLimit);
+    debugPrint('💾 [PreferencesService] Blur scan limit artırıldı: $currentLimit -> $newLimit (kazanılan: $amount)');
     return newLimit;
   }
 

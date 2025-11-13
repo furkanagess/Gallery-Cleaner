@@ -492,6 +492,7 @@
     }
   },
   "startNewScan": "Yeni Tarama Başlat",
+  "scanResults": "Tarama Sonuçları",
   "@startNewScan": {
     "description": "Button to start a new scan"
   },
@@ -602,6 +603,14 @@
   "reAnalyze": "Tekrardan Analiz Et",
   "@reAnalyze": {
     "description": "Re-analyze button text"
+  },
+  "autoAnalyzeOnLaunch": "Uygulama açılışında otomatik analiz",
+  "@autoAnalyzeOnLaunch": {
+    "description": "Toggle label for auto-analyze on app launch"
+  },
+  "autoAnalyzeOnLaunchDescription": "Uygulama açıldığında galeriyi otomatik olarak analiz et",
+  "@autoAnalyzeOnLaunchDescription": {
+    "description": "Description text for auto-analyze toggle"
   },
   "progressFormat": "{albums} albüm • {media} medya",
   "@progressFormat": {
@@ -919,6 +928,38 @@
   "viewGallery": "Galeriyi Görüntüle",
   "@viewGallery": {
     "description": "View gallery link text"
+  },
+  "scanRightNotUsed": "Tarama hakkınız kullanılmadı",
+  "@scanRightNotUsed": {
+    "description": "Message shown when scan completes with no results, indicating scan right was not consumed"
+  },
+  "noBlurryPhotosFoundTitle": "Blurlu Fotoğraf Bulunamadı",
+  "@noBlurryPhotosFoundTitle": {
+    "description": "Title shown when no blurry photos are found after scan"
+  },
+  "noDuplicatesFoundTitle": "Duplicate Fotoğraf Bulunamadı",
+  "@noDuplicatesFoundTitle": {
+    "description": "Title shown when no duplicate photos are found after scan"
+  },
+  "scanCompletedSuccessfully": "Harika haber! Galeri taramanız başarıyla tamamlandı.",
+  "@scanCompletedSuccessfully": {
+    "description": "Success message shown when scan completes with no results"
+  },
+  "scanCompletedSuccessfullyDuplicate": "Mükemmel! Galeri taramanız başarıyla tamamlandı.",
+  "@scanCompletedSuccessfullyDuplicate": {
+    "description": "Success message shown when duplicate scan completes with no results"
+  },
+  "rateApp": "Uygulamayı Değerlendir",
+  "@rateApp": {
+    "description": "Title for rate app section"
+  },
+  "rateAppDescription": "Uygulamayı beğendiniz mi? Lütfen mağazada bizi değerlendirin!",
+  "@rateAppDescription": {
+    "description": "Description for rate app section"
+  },
+  "couldNotOpenStore": "Mağaza açılamadı",
+  "@couldNotOpenStore": {
+    "description": "Error message when store cannot be opened"
   }
 }
 

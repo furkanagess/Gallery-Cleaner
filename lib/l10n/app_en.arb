@@ -771,6 +771,10 @@
   "@startNewScan": {
     "description": "Button to start a new scan"
   },
+  "scanResults": "Scan Results",
+  "@scanResults": {
+    "description": "Title for scan results page"
+  },
   "scanCompleted": "Scan Completed",
   "@scanCompleted": {
     "description": "Scan completed title"
@@ -878,6 +882,14 @@
   "reAnalyze": "Re-analyze",
   "@reAnalyze": {
     "description": "Re-analyze button text"
+  },
+  "autoAnalyzeOnLaunch": "Auto-analyze on launch",
+  "@autoAnalyzeOnLaunch": {
+    "description": "Toggle label for auto-analyze on app launch"
+  },
+  "autoAnalyzeOnLaunchDescription": "Automatically analyze gallery when app opens",
+  "@autoAnalyzeOnLaunchDescription": {
+    "description": "Description text for auto-analyze toggle"
   },
   "progressFormat": "{albums} albums • {media} media",
   "@progressFormat": {
@@ -1199,6 +1211,38 @@
   "viewGallery": "View Gallery",
   "@viewGallery": {
     "description": "View gallery link text"
+  },
+  "scanRightNotUsed": "Your scan right was not used",
+  "@scanRightNotUsed": {
+    "description": "Message shown when scan completes with no results, indicating scan right was not consumed"
+  },
+  "noBlurryPhotosFoundTitle": "No Blurry Photos Found",
+  "@noBlurryPhotosFoundTitle": {
+    "description": "Title shown when no blurry photos are found after scan"
+  },
+  "noDuplicatesFoundTitle": "No Duplicates Found",
+  "@noDuplicatesFoundTitle": {
+    "description": "Title shown when no duplicate photos are found after scan"
+  },
+  "scanCompletedSuccessfully": "Great news! Your gallery scan completed successfully.",
+  "@scanCompletedSuccessfully": {
+    "description": "Success message shown when scan completes with no results"
+  },
+  "scanCompletedSuccessfullyDuplicate": "Excellent! Your gallery scan completed successfully.",
+  "@scanCompletedSuccessfullyDuplicate": {
+    "description": "Success message shown when duplicate scan completes with no results"
+  },
+  "rateApp": "Rate App",
+  "@rateApp": {
+    "description": "Title for rate app section"
+  },
+  "rateAppDescription": "Enjoying the app? Please rate us on the store!",
+  "@rateAppDescription": {
+    "description": "Description for rate app section"
+  },
+  "couldNotOpenStore": "Could not open store",
+  "@couldNotOpenStore": {
+    "description": "Error message when store cannot be opened"
   }
 }
 

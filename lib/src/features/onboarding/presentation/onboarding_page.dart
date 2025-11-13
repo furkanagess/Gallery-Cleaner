@@ -5,6 +5,7 @@ import 'dart:math' as math;
 import '../../../../../l10n/app_localizations.dart';
 
 import '../application/onboarding_controller.dart';
+import '../../../app/theme/app_colors.dart';
 
 class OnboardingPage extends ConsumerStatefulWidget {
   const OnboardingPage({super.key});
@@ -46,6 +47,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
     final theme = Theme.of(context);
 
     return Scaffold(
+      backgroundColor: theme.colorScheme.background,
       body: SafeArea(
         child: Column(
           children: [
@@ -164,7 +166,7 @@ class _OnboardingSlide1 extends StatelessWidget {
                     color: theme.colorScheme.surface,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
+                        color: AppColors.black.withOpacity(0.1),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
@@ -182,10 +184,10 @@ class _OnboardingSlide1 extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.9),
+                      color: AppColors.error.withOpacity(0.9),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.close, color: Colors.white, size: 24),
+                    child: const Icon(Icons.close, color: AppColors.white, size: 24),
                   ),
                 ),
                 Positioned(
@@ -193,10 +195,10 @@ class _OnboardingSlide1 extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.green.withOpacity(0.9),
+                      color: AppColors.success.withOpacity(0.9),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.check, color: Colors.white, size: 24),
+                    child: const Icon(Icons.check, color: AppColors.white, size: 24),
                   ),
                 ),
               ],
@@ -364,12 +366,12 @@ class _OnboardingSlide3 extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Colors.orange,
+                      color: AppColors.warning,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Text(
                       '100%',
-                      style: TextStyle(color: Colors.white, fontSize: 12),
+                      style: TextStyle(color: AppColors.white, fontSize: 12),
                     ),
                   ),
                 ),
@@ -378,12 +380,12 @@ class _OnboardingSlide3 extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Colors.green,
+                      color: AppColors.success,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Text(
                       '40%',
-                      style: TextStyle(color: Colors.white, fontSize: 12),
+                      style: TextStyle(color: AppColors.white, fontSize: 12),
                     ),
                   ),
                 ),
@@ -465,7 +467,7 @@ class _ModernSkipButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.transparent,
+      color: AppColors.transparent,
       child: InkWell(
         onTap: onPressed,
         borderRadius: BorderRadius.circular(12),
@@ -480,7 +482,7 @@ class _ModernSkipButton extends StatelessWidget {
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.04),
+                color: AppColors.black.withOpacity(0.04),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -543,7 +545,7 @@ class _OnboardingSlide4 extends StatelessWidget {
                     color: theme.colorScheme.surface,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
+                        color: AppColors.black.withOpacity(0.1),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
@@ -584,7 +586,7 @@ class _OnboardingSlide4 extends StatelessWidget {
                           ),
                           child: const Icon(
                             Icons.warning,
-                            color: Colors.white,
+                            color: AppColors.white,
                             size: 16,
                           ),
                         ),
@@ -663,7 +665,7 @@ class _OnboardingSlide5 extends StatelessWidget {
                       color: theme.colorScheme.surface,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.15),
+                          color: AppColors.black.withOpacity(0.15),
                           blurRadius: 8,
                           offset: const Offset(2, 4),
                         ),
@@ -691,7 +693,7 @@ class _OnboardingSlide5 extends StatelessWidget {
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.15),
+                          color: AppColors.black.withOpacity(0.15),
                           blurRadius: 8,
                           offset: const Offset(2, 4),
                         ),
@@ -716,7 +718,7 @@ class _OnboardingSlide5 extends StatelessWidget {
                     ),
                     child: const Icon(
                       Icons.link,
-                      color: Colors.white,
+                      color: AppColors.white,
                       size: 20,
                     ),
                   ),
@@ -739,14 +741,14 @@ class _OnboardingSlide5 extends StatelessWidget {
                       children: [
                         const Icon(
                           Icons.copy,
-                          color: Colors.white,
+                          color: AppColors.white,
                           size: 14,
                         ),
                         const SizedBox(width: 4),
                         Text(
                           '2x',
                           style: theme.textTheme.labelMedium?.copyWith(
-                            color: Colors.white,
+                            color: AppColors.white,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -812,19 +814,23 @@ class _ModernActionButton extends StatelessWidget {
         gradient: LinearGradient(
           colors: isLastPage
               ? [
-                  theme.colorScheme.primary,
-                  theme.colorScheme.primary.withOpacity(0.8),
+                  theme.colorScheme.primary.withOpacity(0.85), // Soluk iç renk
+                  theme.colorScheme.primary.withOpacity(0.75), // Soluk iç renk
                 ]
               : [
-                  theme.colorScheme.primary,
-                  theme.colorScheme.secondary,
+                  theme.colorScheme.primary.withOpacity(0.85), // Soluk iç renk
+                  theme.colorScheme.secondary.withOpacity(0.75), // Soluk iç renk
                 ],
           begin: Alignment.centerLeft,
           end: Alignment.centerRight,
         ),
+        border: Border.all(
+          color: theme.colorScheme.primary.withOpacity(0.9), // Koyu border
+          width: 1.5,
+        ),
         boxShadow: [
           BoxShadow(
-            color: theme.colorScheme.primary.withOpacity(0.4),
+            color: theme.colorScheme.primary.withOpacity(0.2),
             blurRadius: 16,
             offset: const Offset(0, 8),
             spreadRadius: 0,
@@ -832,7 +838,7 @@ class _ModernActionButton extends StatelessWidget {
         ],
       ),
       child: Material(
-        color: Colors.transparent,
+        color: AppColors.transparent,
         child: InkWell(
           onTap: onPressed,
           borderRadius: BorderRadius.circular(16),

@@ -39,7 +39,7 @@ class RewardedAdsService {
   
   // Use test ads in debug mode
   // Set to false for production to use real ad units
-  static const bool _useTestAds = false; // Production: false, Development: true
+  static const bool _useTestAds = kDebugMode; // Use test ads in debug mode, real ads in production
   
   // Map to store ads for each type
   final Map<AdUnitType, RewardedInterstitialAd?> _ads = {};
@@ -48,6 +48,22 @@ class RewardedAdsService {
   final Map<AdUnitType, Completer<bool>?> _showCompleters = {};
   final Map<AdUnitType, bool> _rewardEarned = {};
   bool _isDisposed = false;
+  
+  /// Preload all ad types when app starts
+  static Future<void> preloadAllAds() async {
+    try {
+      debugPrint('📱 [RewardedAdsService] Preloading all ad types...');
+      final service = instance;
+      await service.loadRewardedAd(AdUnitType.deleteLimit);
+      await Future.delayed(const Duration(milliseconds: 500));
+      await service.loadRewardedAd(AdUnitType.blurScanLimit);
+      await Future.delayed(const Duration(milliseconds: 500));
+      await service.loadRewardedAd(AdUnitType.duplicateScanLimit);
+      debugPrint('✅ [RewardedAdsService] All ad types preload initiated');
+    } catch (e) {
+      debugPrint('❌ [RewardedAdsService] Error preloading ads: $e');
+    }
+  }
 
   /// Initialize Mobile Ads SDK
   static Future<void> initialize() async {
@@ -71,9 +87,9 @@ class RewardedAdsService {
     final isAndroid = Platform.isAndroid;
     String adUnitId;
     
-    // Use test ads in debug mode or if _useTestAds is true
-    if (_useTestAds || kDebugMode) {
-      debugPrint('📱 [RewardedAdsService] Using test ad unit ID for type: $type');
+    // Use test ads if _useTestAds is true (which is true in debug mode)
+    if (_useTestAds) {
+      debugPrint('📱 [RewardedAdsService] Using test ad unit ID for type: $type (Debug mode)');
       return _testAdUnitId;
     }
     
@@ -144,13 +160,17 @@ class RewardedAdsService {
             if (_isDisposed) return;
             debugPrint('❌ [RewardedAdsService] Failed to load rewarded interstitial ad for type: $type');
             debugPrint('❌ [RewardedAdsService] Error code: ${error.code}, message: ${error.message}');
-            debugPrint('❌ [RewardedAdsService] Domain: ${error.domain}, responseInfo: ${error.responseInfo}');
+            debugPrint('❌ [RewardedAdsService] Domain: ${error.domain}');
+            if (error.responseInfo != null) {
+              debugPrint('❌ [RewardedAdsService] Response ID: ${error.responseInfo?.responseId}');
+              debugPrint('❌ [RewardedAdsService] Mediation adapter: ${error.responseInfo?.mediationAdapterClassName}');
+            }
             _isLoading[type] = false;
             _ads[type] = null;
             
-            // Retry loading after a delay if not disposed
+            // Retry loading after a delay if not disposed (max 3 retries)
             if (!_isDisposed) {
-              Future.delayed(const Duration(seconds: 5), () {
+              Future.delayed(const Duration(seconds: 10), () {
                 if (!_isDisposed && _ads[type] == null && _isLoading[type] != true) {
                   debugPrint('🔄 [RewardedAdsService] Retrying to load ad for type: $type');
                   loadRewardedAd(type);
@@ -191,12 +211,25 @@ class RewardedAdsService {
       if (_ads[type] == null) {
         debugPrint('⚠️ [RewardedAdsService] No ad loaded for type: $type, loading now...');
         await loadRewardedAd(type);
-        // Wait a bit for ad to load
-        await Future.delayed(const Duration(seconds: 1));
+        
+        // Wait for ad to load with timeout (max 15 seconds)
+        int waitCount = 0;
+        const maxWaitCount = 30; // 30 * 500ms = 15 seconds
+        while (_ads[type] == null && !_isDisposed && waitCount < maxWaitCount) {
+          await Future.delayed(const Duration(milliseconds: 500));
+          waitCount++;
+          if (_isLoading[type] == false && _ads[type] == null) {
+            // Loading failed, break early
+            break;
+          }
+        }
+        
         if (_ads[type] == null || _isDisposed) {
           onError?.call('Ad is not ready yet. Please try again in a moment.');
+          debugPrint('❌ [RewardedAdsService] Ad failed to load after waiting, type: $type');
           return false;
         }
+        debugPrint('✅ [RewardedAdsService] Ad loaded successfully after waiting, type: $type');
       }
 
       _showCompleters[type] = Completer<bool>();

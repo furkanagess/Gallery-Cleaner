@@ -13,143 +13,13 @@ import '../../../onboarding/application/permissions_controller.dart';
 import '../../../../core/models/gallery_stats.dart';
 import '../../../../core/services/sound_service.dart';
 import '../../../../app/theme/app_theme.dart';
+import '../../../../app/theme/app_colors.dart';
 
 class GalleryStatsPage extends ConsumerStatefulWidget {
   const GalleryStatsPage({super.key});
 
   @override
   ConsumerState<GalleryStatsPage> createState() => _GalleryStatsPageState();
-}
-
-// Album Stat Item Widget
-class _AlbumStatItem extends StatelessWidget {
-  const _AlbumStatItem({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.theme,
-    required this.color,
-    this.isCompact = false,
-  });
-
-  final IconData icon;
-  final String label;
-  final String value;
-  final ThemeData theme;
-  final Color color;
-  final bool isCompact;
-
-  @override
-  Widget build(BuildContext context) {
-    if (isCompact) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.08),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: color.withOpacity(0.2),
-            width: 1,
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  icon,
-                  size: 12,
-                  color: color,
-                ),
-                const SizedBox(width: 3),
-                Flexible(
-                  child: Text(
-                    label,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 8,
-                      color: theme.colorScheme.onSurface.withOpacity(0.6),
-                      height: 1.0,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 3),
-            Text(
-              value,
-              style: theme.textTheme.labelLarge?.copyWith(
-                fontWeight: FontWeight.w700,
-                fontSize: 12,
-                color: color,
-                letterSpacing: -0.1,
-                height: 1.0,
-              ),
-              overflow: TextOverflow.ellipsis,
-              maxLines: 1,
-            ),
-          ],
-        ),
-      );
-    }
-    
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: color.withOpacity(0.2),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            children: [
-              Icon(
-                icon,
-                size: 18,
-                color: color,
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  label,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 11,
-                    color: theme.colorScheme.onSurface.withOpacity(0.6),
-                    letterSpacing: 0.2,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Text(
-            value,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w800,
-              fontSize: 16,
-              color: color,
-              letterSpacing: -0.3,
-              height: 1.2,
-            ),
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 class _GalleryStatsPageState extends ConsumerState<GalleryStatsPage> {
@@ -293,9 +163,9 @@ class _GalleryStatsPageState extends ConsumerState<GalleryStatsPage> {
     final isPositive = change > 0;
     final isNegative = change < 0;
     final color = isPositive
-        ? Colors.green.shade700
+        ? AppColors.success
         : isNegative
-        ? Colors.red.shade700
+        ? AppColors.error
         : theme.colorScheme.onSurface.withOpacity(0.7);
 
     return Container(
@@ -351,8 +221,13 @@ class _GalleryStatsPageState extends ConsumerState<GalleryStatsPage> {
     final statsState = ref.watch(galleryStatsProvider);
 
     return Scaffold(
+      backgroundColor: theme.colorScheme.background,
       appBar: AppBar(
-        title: Text(l10n.galleryStatsTitle, overflow: TextOverflow.ellipsis),
+        title: Text(
+          l10n.galleryStatsTitle,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
         leading: Platform.isIOS
             ? IconButton(
                 icon: const Icon(CupertinoIcons.chevron_left),
@@ -382,6 +257,15 @@ class _GalleryStatsPageState extends ConsumerState<GalleryStatsPage> {
                     const SizedBox(height: 16),
                     FilledButton(
                       onPressed: () => context.go('/permission'),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: theme.colorScheme.primary.withOpacity(
+                          0.85,
+                        ),
+                        side: BorderSide(
+                          color: theme.colorScheme.primary.withOpacity(0.9),
+                          width: 1.5,
+                        ),
+                      ),
                       child: Text(l10n.grantPermission),
                     ),
                   ],
@@ -426,6 +310,16 @@ class _GalleryStatsPageState extends ConsumerState<GalleryStatsPage> {
                             onPressed: () {
                               ref.read(galleryStatsProvider.notifier).refresh();
                             },
+                            style: FilledButton.styleFrom(
+                              backgroundColor: theme.colorScheme.primary
+                                  .withOpacity(0.85),
+                              side: BorderSide(
+                                color: theme.colorScheme.primary.withOpacity(
+                                  0.9,
+                                ),
+                                width: 1.5,
+                              ),
+                            ),
                           ),
                         ],
                       ),
@@ -563,8 +457,14 @@ class _GalleryStatsPageState extends ConsumerState<GalleryStatsPage> {
                               ),
                               decoration: BoxDecoration(
                                 color: theme.colorScheme.primaryContainer
-                                    .withOpacity(0.3),
+                                    .withOpacity(0.4),
                                 borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: theme.colorScheme.primary.withOpacity(
+                                    0.2,
+                                  ),
+                                  width: 1,
+                                ),
                               ),
                               child: Text(
                                 l10n.progressFormat(
@@ -591,8 +491,14 @@ class _GalleryStatsPageState extends ConsumerState<GalleryStatsPage> {
                                 horizontal: 24,
                                 vertical: 16,
                               ),
-                              backgroundColor: theme.colorScheme.error,
+                              backgroundColor: AppColors.error.withOpacity(
+                                0.85,
+                              ),
                               foregroundColor: theme.colorScheme.onError,
+                              side: BorderSide(
+                                color: AppColors.error.withOpacity(0.9),
+                                width: 1.5,
+                              ),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
@@ -604,1275 +510,1475 @@ class _GalleryStatsPageState extends ConsumerState<GalleryStatsPage> {
                   );
                 }
 
-                return Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // Sil/Tut istatistikleri ve Kazanılan Alan (Badge stili)
-                      Row(
-                        children: [
-                          // Tut sayısı badge
-                          Expanded(
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 10,
-                              ),
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: [
-                                    (semanticColors?.keep ?? Colors.green)
-                                        .withOpacity(0.15),
-                                    (semanticColors?.keep ?? Colors.green)
-                                        .withOpacity(0.1),
-                                  ],
-                                ),
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                  color: (semanticColors?.keep ?? Colors.green)
-                                      .withOpacity(0.3),
-                                  width: 1,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color:
-                                        (semanticColors?.keep ?? Colors.green)
-                                            .withOpacity(0.1),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 3),
-                                    spreadRadius: 0,
-                                  ),
-                                ],
-                              ),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.check_circle_outline,
-                                        size: 13,
-                                        color:
-                                            semanticColors?.keep ??
-                                            Colors.green,
-                                      ),
-                                      const SizedBox(width: 5),
-                                      Flexible(
-                                        child: Text(
-                                          l10n.keep,
-                                          style: theme.textTheme.labelSmall
-                                              ?.copyWith(
-                                                fontWeight: FontWeight.w600,
-                                                fontSize: 10,
-                                                color: theme
-                                                    .colorScheme
-                                                    .onSurface
-                                                    .withOpacity(0.8),
-                                                letterSpacing: 0.3,
-                                              ),
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    '$keepCount',
-                                    style: theme.textTheme.headlineSmall
-                                        ?.copyWith(
-                                          fontWeight: FontWeight.w900,
-                                          fontSize: 20,
-                                          color: theme.colorScheme.onSurface,
-                                          letterSpacing: -1.2,
-                                          height: 1,
-                                        ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          // Sil sayısı badge
-                          Expanded(
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 10,
-                              ),
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: [
-                                    (semanticColors?.delete ?? Colors.red)
-                                        .withOpacity(0.15),
-                                    (semanticColors?.delete ?? Colors.red)
-                                        .withOpacity(0.1),
-                                  ],
-                                ),
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                  color: (semanticColors?.delete ?? Colors.red)
-                                      .withOpacity(0.3),
-                                  width: 1,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color:
-                                        (semanticColors?.delete ?? Colors.red)
-                                            .withOpacity(0.1),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 3),
-                                    spreadRadius: 0,
-                                  ),
-                                ],
-                              ),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.delete_outline,
-                                        size: 13,
-                                        color:
-                                            semanticColors?.delete ??
-                                            Colors.red,
-                                      ),
-                                      const SizedBox(width: 5),
-                                      Flexible(
-                                        child: Text(
-                                          l10n.delete,
-                                          style: theme.textTheme.labelSmall
-                                              ?.copyWith(
-                                                fontWeight: FontWeight.w600,
-                                                fontSize: 10,
-                                                color: theme
-                                                    .colorScheme
-                                                    .onSurface
-                                                    .withOpacity(0.8),
-                                                letterSpacing: 0.3,
-                                              ),
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    '$deleteCount',
-                                    style: theme.textTheme.headlineSmall
-                                        ?.copyWith(
-                                          fontWeight: FontWeight.w900,
-                                          fontSize: 20,
-                                          color: theme.colorScheme.onSurface,
-                                          letterSpacing: -1.2,
-                                          height: 1,
-                                        ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          // Kazanılan Alan badge
-                          Expanded(
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 10,
-                              ),
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: [
-                                    Colors.blue.withOpacity(0.15),
-                                    Colors.blue.withOpacity(0.1),
-                                  ],
-                                ),
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                  color: Colors.blue.withOpacity(0.3),
-                                  width: 1,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.blue.withOpacity(0.1),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 3),
-                                    spreadRadius: 0,
-                                  ),
-                                ],
-                              ),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.data_saver_on_outlined,
-                                        size: 13,
-                                        color: Colors.blue.shade700,
-                                      ),
-                                      const SizedBox(width: 5),
-                                      Flexible(
-                                        child: Text(
-                                          l10n.spaceSaved,
-                                          style: theme.textTheme.labelSmall
-                                              ?.copyWith(
-                                                fontWeight: FontWeight.w600,
-                                                fontSize: 10,
-                                                color: theme
-                                                    .colorScheme
-                                                    .onSurface
-                                                    .withOpacity(0.8),
-                                                letterSpacing: 0.3,
-                                              ),
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    _formatBytes(totalBytesFreed),
-                                    style: theme.textTheme.headlineSmall
-                                        ?.copyWith(
-                                          fontWeight: FontWeight.w900,
-                                          fontSize: 16,
-                                          color: theme.colorScheme.onSurface,
-                                          letterSpacing: -1.0,
-                                          height: 1,
-                                        ),
-                                    overflow: TextOverflow.ellipsis,
-                                    maxLines: 1,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
+                return Stack(
+                  children: [
+                    SingleChildScrollView(
+                      padding: EdgeInsets.only(
+                        left: 16,
+                        right: 16,
+                        top: 16,
+                        bottom: !isScanning
+                            ? 180
+                            : 16, // Toggle ve buton için alt padding
                       ),
-                      const SizedBox(height: 16),
-                      // Analiz tarihi ve önceki analiz bilgisi
-                      if (displayStats.cachedAt != null ||
-                          previousStats?.cachedAt != null)
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.surfaceContainerHighest,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // Sil/Tut istatistikleri ve Kazanılan Alan (Badge stili)
+                          Row(
                             children: [
-                              // Mevcut analiz tarihi
-                              if (displayStats.cachedAt != null)
-                                Row(
-                                  children: [
-                                    Icon(
-                                      Icons.calendar_today,
-                                      size: 14,
-                                      color: theme.colorScheme.primary,
+                              // Tut sayısı badge
+                              Expanded(
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 10,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                      colors: [
+                                        (semanticColors?.keep ??
+                                                AppColors.success)
+                                            .withOpacity(0.15),
+                                        (semanticColors?.keep ??
+                                                AppColors.success)
+                                            .withOpacity(0.1),
+                                      ],
                                     ),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      '${l10n.lastAnalysis} ${_formatDate(context, displayStats.cachedAt!)}',
-                                      style: theme.textTheme.bodySmall
-                                          ?.copyWith(
-                                            color: theme.colorScheme.onSurface,
-                                            fontWeight: FontWeight.w500,
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color:
+                                          (semanticColors?.keep ??
+                                                  AppColors.success)
+                                              .withOpacity(0.3),
+                                      width: 1,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color:
+                                            (semanticColors?.keep ??
+                                                    AppColors.success)
+                                                .withOpacity(0.1),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 3),
+                                        spreadRadius: 0,
+                                      ),
+                                    ],
+                                  ),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.check_circle_outline,
+                                            size: 13,
+                                            color:
+                                                semanticColors?.keep ??
+                                                AppColors.success,
                                           ),
-                                    ),
-                                  ],
-                                ),
-                              // Önceki analiz tarihi ve yüzdelik farklar özeti
-                              if (previousStats != null &&
-                                  previousStats.cachedAt != null) ...[
-                                if (displayStats.cachedAt != null)
-                                  const SizedBox(height: 8),
-                                Row(
-                                  children: [
-                                    Icon(
-                                      Icons.history,
-                                      size: 14,
-                                      color: theme.colorScheme.onSurface
-                                          .withOpacity(0.7),
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Expanded(
-                                      child: Text(
-                                        '${l10n.previousAnalysis} ${_formatDate(context, previousStats.cachedAt!)}',
-                                        style: theme.textTheme.bodySmall
+                                          const SizedBox(width: 5),
+                                          Flexible(
+                                            child: Text(
+                                              l10n.keep,
+                                              style: theme.textTheme.labelSmall
+                                                  ?.copyWith(
+                                                    fontWeight: FontWeight.w600,
+                                                    fontSize: 10,
+                                                    color: theme
+                                                        .colorScheme
+                                                        .onSurface
+                                                        .withOpacity(0.8),
+                                                    letterSpacing: 0.3,
+                                                  ),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        '$keepCount',
+                                        style: theme.textTheme.headlineSmall
                                             ?.copyWith(
-                                              color: theme.colorScheme.onSurface
-                                                  .withOpacity(0.7),
-                                              fontSize: 11,
+                                              fontWeight: FontWeight.w900,
+                                              fontSize: 20,
+                                              color:
+                                                  theme.colorScheme.onSurface,
+                                              letterSpacing: -1.2,
+                                              height: 1,
+                                            ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              // Sil sayısı badge
+                              Expanded(
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 10,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                      colors: [
+                                        (semanticColors?.delete ??
+                                                AppColors.error)
+                                            .withOpacity(0.15),
+                                        (semanticColors?.delete ??
+                                                AppColors.error)
+                                            .withOpacity(0.1),
+                                      ],
+                                    ),
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color:
+                                          (semanticColors?.delete ??
+                                                  AppColors.error)
+                                              .withOpacity(0.3),
+                                      width: 1,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color:
+                                            (semanticColors?.delete ??
+                                                    AppColors.error)
+                                                .withOpacity(0.1),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 3),
+                                        spreadRadius: 0,
+                                      ),
+                                    ],
+                                  ),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.delete_outline,
+                                            size: 13,
+                                            color:
+                                                semanticColors?.delete ??
+                                                AppColors.error,
+                                          ),
+                                          const SizedBox(width: 5),
+                                          Flexible(
+                                            child: Text(
+                                              l10n.delete,
+                                              style: theme.textTheme.labelSmall
+                                                  ?.copyWith(
+                                                    fontWeight: FontWeight.w600,
+                                                    fontSize: 10,
+                                                    color: theme
+                                                        .colorScheme
+                                                        .onSurface
+                                                        .withOpacity(0.8),
+                                                    letterSpacing: 0.3,
+                                                  ),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        '$deleteCount',
+                                        style: theme.textTheme.headlineSmall
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.w900,
+                                              fontSize: 20,
+                                              color:
+                                                  theme.colorScheme.onSurface,
+                                              letterSpacing: -1.2,
+                                              height: 1,
+                                            ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              // Kazanılan Alan badge
+                              Expanded(
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 10,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                      colors: [
+                                        AppColors.blurTab.withOpacity(0.15),
+                                        AppColors.blurTab.withOpacity(0.1),
+                                      ],
+                                    ),
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color: AppColors.blurTab.withOpacity(0.3),
+                                      width: 1,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: AppColors.blurTab.withOpacity(
+                                          0.1,
+                                        ),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 3),
+                                        spreadRadius: 0,
+                                      ),
+                                    ],
+                                  ),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.data_saver_on_outlined,
+                                            size: 13,
+                                            color: AppColors.blurTab,
+                                          ),
+                                          const SizedBox(width: 5),
+                                          Flexible(
+                                            child: Text(
+                                              l10n.spaceSaved,
+                                              style: theme.textTheme.labelSmall
+                                                  ?.copyWith(
+                                                    fontWeight: FontWeight.w600,
+                                                    fontSize: 10,
+                                                    color: theme
+                                                        .colorScheme
+                                                        .onSurface
+                                                        .withOpacity(0.8),
+                                                    letterSpacing: 0.3,
+                                                  ),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        _formatBytes(totalBytesFreed),
+                                        style: theme.textTheme.headlineSmall
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.w900,
+                                              fontSize: 16,
+                                              color:
+                                                  theme.colorScheme.onSurface,
+                                              letterSpacing: -1.0,
+                                              height: 1,
+                                            ),
+                                        overflow: TextOverflow.ellipsis,
+                                        maxLines: 1,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          // Analiz tarihi ve önceki analiz bilgisi
+                          if (displayStats.cachedAt != null ||
+                              previousStats?.cachedAt != null)
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.surfaceContainerHighest
+                                    .withOpacity(0.5),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: theme.colorScheme.outline.withOpacity(
+                                    0.1,
+                                  ),
+                                  width: 1,
+                                ),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  // Mevcut analiz tarihi
+                                  if (displayStats.cachedAt != null)
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          Icons.calendar_today,
+                                          size: 14,
+                                          color: theme.colorScheme.primary,
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          '${l10n.lastAnalysis} ${_formatDate(context, displayStats.cachedAt!)}',
+                                          style: theme.textTheme.bodySmall
+                                              ?.copyWith(
+                                                color:
+                                                    theme.colorScheme.onSurface,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                        ),
+                                      ],
+                                    ),
+                                  // Önceki analiz tarihi ve yüzdelik farklar özeti
+                                  if (previousStats != null &&
+                                      previousStats.cachedAt != null) ...[
+                                    if (displayStats.cachedAt != null)
+                                      const SizedBox(height: 8),
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          Icons.history,
+                                          size: 14,
+                                          color: theme.colorScheme.onSurface
+                                              .withOpacity(0.7),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Expanded(
+                                          child: Text(
+                                            '${l10n.previousAnalysis} ${_formatDate(context, previousStats.cachedAt!)}',
+                                            style: theme.textTheme.bodySmall
+                                                ?.copyWith(
+                                                  color: theme
+                                                      .colorScheme
+                                                      .onSurface
+                                                      .withOpacity(0.7),
+                                                  fontSize: 11,
+                                                ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    // Yüzdelik farklar özeti
+                                    if (albumChange != null ||
+                                        mediaChange != null ||
+                                        sizeChange != null) ...[
+                                      const SizedBox(height: 8),
+                                      Builder(
+                                        builder: (context) {
+                                          final album = albumChange;
+                                          final media = mediaChange;
+                                          final size = sizeChange;
+                                          return Wrap(
+                                            spacing: 8,
+                                            runSpacing: 4,
+                                            children: [
+                                              if (album != null)
+                                                _buildChangeChip(
+                                                  context,
+                                                  l10n.album,
+                                                  album,
+                                                  theme,
+                                                  absoluteDiff: albumDiff,
+                                                ),
+                                              if (media != null)
+                                                _buildChangeChip(
+                                                  context,
+                                                  l10n.mediaLabel,
+                                                  media,
+                                                  theme,
+                                                  absoluteDiff: mediaDiff,
+                                                ),
+                                              if (size != null)
+                                                _buildChangeChip(
+                                                  context,
+                                                  l10n.sizeLabel,
+                                                  size,
+                                                  theme,
+                                                  absoluteDiffDouble: sizeDiff,
+                                                ),
+                                            ],
+                                          );
+                                        },
+                                      ),
+                                    ],
+                                  ],
+                                ],
+                              ),
+                            ),
+                          if (displayStats.cachedAt != null ||
+                              previousStats?.cachedAt != null)
+                            const SizedBox(height: 16),
+                          // İstatistik badge'leri - yan yana
+                          Row(
+                            children: [
+                              // Albüm sayısı badge
+                              Expanded(
+                                child: Container(
+                                  height: 75,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                      colors: [
+                                        theme.colorScheme.primaryContainer,
+                                        theme.colorScheme.primaryContainer
+                                            .withOpacity(0.8),
+                                      ],
+                                    ),
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color: theme.colorScheme.primary
+                                          .withOpacity(0.2),
+                                      width: 1,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: theme.colorScheme.primary
+                                            .withOpacity(0.15),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 3),
+                                        spreadRadius: 0,
+                                      ),
+                                    ],
+                                  ),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.folder,
+                                            size: 13,
+                                            color: theme
+                                                .colorScheme
+                                                .onPrimaryContainer
+                                                .withOpacity(0.9),
+                                          ),
+                                          const SizedBox(width: 5),
+                                          Flexible(
+                                            child: FittedBox(
+                                              fit: BoxFit.scaleDown,
+                                              alignment: Alignment.centerLeft,
+                                              child: Text(
+                                                l10n.album,
+                                                style: theme
+                                                    .textTheme
+                                                    .labelSmall
+                                                    ?.copyWith(
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      fontSize: 10,
+                                                      color: theme
+                                                          .colorScheme
+                                                          .onPrimaryContainer
+                                                          .withOpacity(0.9),
+                                                      letterSpacing: 0.3,
+                                                    ),
+                                                maxLines: 1,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const Spacer(),
+                                      FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        alignment: Alignment.centerLeft,
+                                        child: Text(
+                                          '${displayStats.albumCount}',
+                                          style: theme.textTheme.headlineSmall
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.w900,
+                                                fontSize: 20,
+                                                color: theme
+                                                    .colorScheme
+                                                    .onPrimaryContainer,
+                                                letterSpacing: -1.2,
+                                                height: 1,
+                                              ),
+                                          maxLines: 1,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              // Fotoğraf/Video sayısı badge
+                              Expanded(
+                                child: Container(
+                                  height: 75,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                      colors: [
+                                        theme.colorScheme.secondaryContainer,
+                                        theme.colorScheme.secondaryContainer
+                                            .withOpacity(0.8),
+                                      ],
+                                    ),
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color: theme.colorScheme.secondary
+                                          .withOpacity(0.2),
+                                      width: 1,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: theme.colorScheme.secondary
+                                            .withOpacity(0.15),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 3),
+                                        spreadRadius: 0,
+                                      ),
+                                    ],
+                                  ),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.photo,
+                                            size: 13,
+                                            color: theme
+                                                .colorScheme
+                                                .onSecondaryContainer
+                                                .withOpacity(0.9),
+                                          ),
+                                          const SizedBox(width: 5),
+                                          Flexible(
+                                            child: FittedBox(
+                                              fit: BoxFit.scaleDown,
+                                              alignment: Alignment.centerLeft,
+                                              child: Text(
+                                                l10n.photoVideo,
+                                                style: theme
+                                                    .textTheme
+                                                    .labelSmall
+                                                    ?.copyWith(
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      fontSize: 10,
+                                                      color: theme
+                                                          .colorScheme
+                                                          .onSecondaryContainer
+                                                          .withOpacity(0.9),
+                                                      letterSpacing: 0.3,
+                                                    ),
+                                                maxLines: 1,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const Spacer(),
+                                      FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        alignment: Alignment.centerLeft,
+                                        child: Text(
+                                          '${displayStats.mediaCount}',
+                                          style: theme.textTheme.headlineSmall
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.w900,
+                                                fontSize: 20,
+                                                color: theme
+                                                    .colorScheme
+                                                    .onSecondaryContainer,
+                                                letterSpacing: -1.2,
+                                                height: 1,
+                                              ),
+                                          maxLines: 1,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              // Toplam boyut badge
+                              Expanded(
+                                child: Container(
+                                  height: 75,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                      colors: [
+                                        theme.colorScheme.tertiaryContainer,
+                                        theme.colorScheme.tertiaryContainer
+                                            .withOpacity(0.8),
+                                      ],
+                                    ),
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color: theme.colorScheme.tertiary
+                                          .withOpacity(0.2),
+                                      width: 1,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: theme.colorScheme.tertiary
+                                            .withOpacity(0.15),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 3),
+                                        spreadRadius: 0,
+                                      ),
+                                    ],
+                                  ),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.storage,
+                                            size: 13,
+                                            color: theme
+                                                .colorScheme
+                                                .onTertiaryContainer
+                                                .withOpacity(0.9),
+                                          ),
+                                          const SizedBox(width: 5),
+                                          Flexible(
+                                            child: FittedBox(
+                                              fit: BoxFit.scaleDown,
+                                              alignment: Alignment.centerLeft,
+                                              child: Text(
+                                                l10n.totalSize,
+                                                style: theme
+                                                    .textTheme
+                                                    .labelSmall
+                                                    ?.copyWith(
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      fontSize: 10,
+                                                      color: theme
+                                                          .colorScheme
+                                                          .onTertiaryContainer
+                                                          .withOpacity(0.9),
+                                                      letterSpacing: 0.3,
+                                                    ),
+                                                maxLines: 1,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const Spacer(),
+                                      Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.end,
+                                        children: [
+                                          FittedBox(
+                                            fit: BoxFit.scaleDown,
+                                            alignment: Alignment.centerLeft,
+                                            child: Text(
+                                              '${displayStats.totalSizeMB.toStringAsFixed(1)}',
+                                              style: theme
+                                                  .textTheme
+                                                  .headlineSmall
+                                                  ?.copyWith(
+                                                    fontWeight: FontWeight.w900,
+                                                    fontSize: 20,
+                                                    color: theme
+                                                        .colorScheme
+                                                        .onTertiaryContainer,
+                                                    letterSpacing: -1.2,
+                                                    height: 1,
+                                                  ),
+                                              maxLines: 1,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            'MB',
+                                            style: theme.textTheme.labelSmall
+                                                ?.copyWith(
+                                                  fontSize: 8,
+                                                  color: theme
+                                                      .colorScheme
+                                                      .onTertiaryContainer
+                                                      .withOpacity(0.7),
+                                                ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          // Albüm detayları - varsa göster
+                          if (displayStats.albumDetails.isNotEmpty) ...[
+                            const SizedBox(height: 12),
+                            Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.surfaceContainerHighest
+                                    .withOpacity(0.5),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: theme.colorScheme.outline.withOpacity(
+                                    0.1,
+                                  ),
+                                  width: 1,
+                                ),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.folder_open,
+                                        size: 16,
+                                        color: theme.colorScheme.primary,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        l10n.albumDetails,
+                                        style: theme.textTheme.titleMedium
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.w600,
+                                              color: theme.colorScheme.primary,
                                             ),
                                       ),
-                                    ),
-                                  ],
-                                ),
-                                // Yüzdelik farklar özeti
-                                if (albumChange != null ||
-                                    mediaChange != null ||
-                                    sizeChange != null) ...[
-                                  const SizedBox(height: 8),
-                                  Builder(
-                                    builder: (context) {
-                                      final album = albumChange;
-                                      final media = mediaChange;
-                                      final size = sizeChange;
-                                      return Wrap(
-                                        spacing: 8,
-                                        runSpacing: 4,
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  // Yatay scroll edilebilir grid yapısı + scroll okları
+                                  LayoutBuilder(
+                                    builder: (context, constraints) {
+                                      return Stack(
                                         children: [
-                                          if (album != null)
-                                            _buildChangeChip(
-                                              context,
-                                              l10n.album,
-                                              album,
-                                              theme,
-                                              absoluteDiff: albumDiff,
+                                          SingleChildScrollView(
+                                            controller: _albumScrollController,
+                                            scrollDirection: Axis.horizontal,
+                                            physics:
+                                                const BouncingScrollPhysics(),
+                                            padding: const EdgeInsets.only(
+                                              right: 16,
                                             ),
-                                          if (media != null)
-                                            _buildChangeChip(
-                                              context,
-                                              l10n.mediaLabel,
-                                              media,
-                                              theme,
-                                              absoluteDiff: mediaDiff,
+                                            child: IntrinsicHeight(
+                                              child: Row(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.stretch,
+                                                children: List.generate(
+                                                  (displayStats
+                                                              .albumDetails
+                                                              .length /
+                                                          2)
+                                                      .ceil(),
+                                                  (rowIndex) {
+                                                    return Row(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .stretch,
+                                                      children: [
+                                                        for (
+                                                          int colIndex = 0;
+                                                          colIndex < 2;
+                                                          colIndex++
+                                                        )
+                                                          Builder(
+                                                            builder: (context) {
+                                                              final itemIndex =
+                                                                  rowIndex * 2 +
+                                                                  colIndex;
+                                                              if (itemIndex >=
+                                                                  displayStats
+                                                                      .albumDetails
+                                                                      .length) {
+                                                                return const SizedBox.shrink();
+                                                              }
+                                                              final detail =
+                                                                  displayStats
+                                                                      .albumDetails[itemIndex];
+                                                              final double
+                                                              sizeMb =
+                                                                  detail.sizeMB;
+                                                              // Toplam galeri boyutuna göre yüzde hesapla
+                                                              final double
+                                                              totalSizeMb =
+                                                                  displayStats
+                                                                          .totalSizeMB >
+                                                                      0
+                                                                  ? displayStats
+                                                                        .totalSizeMB
+                                                                  : 1;
+                                                              final double
+                                                              percentage =
+                                                                  (sizeMb /
+                                                                          totalSizeMb *
+                                                                          100)
+                                                                      .clamp(
+                                                                        0.0,
+                                                                        100.0,
+                                                                      );
+                                                              return Container(
+                                                                width: 260,
+                                                                margin: EdgeInsets.only(
+                                                                  right: 12,
+                                                                  bottom:
+                                                                      rowIndex <
+                                                                          (displayStats.albumDetails.length /
+                                                                                      2)
+                                                                                  .ceil() -
+                                                                              1
+                                                                      ? 12
+                                                                      : 0,
+                                                                ),
+                                                                padding:
+                                                                    const EdgeInsets.all(
+                                                                      12,
+                                                                    ),
+                                                                decoration: BoxDecoration(
+                                                                  color: theme
+                                                                      .colorScheme
+                                                                      .surfaceContainerHighest
+                                                                      .withOpacity(
+                                                                        0.3,
+                                                                      ),
+                                                                  borderRadius:
+                                                                      BorderRadius.circular(
+                                                                        16,
+                                                                      ),
+                                                                  border: Border.all(
+                                                                    color: theme
+                                                                        .colorScheme
+                                                                        .outline
+                                                                        .withOpacity(
+                                                                          0.1,
+                                                                        ),
+                                                                    width: 1,
+                                                                  ),
+                                                                ),
+                                                                child: Column(
+                                                                  crossAxisAlignment:
+                                                                      CrossAxisAlignment
+                                                                          .start,
+                                                                  mainAxisSize:
+                                                                      MainAxisSize
+                                                                          .min,
+                                                                  children: [
+                                                                    // Album Name - Header (compact)
+                                                                    Row(
+                                                                      children: [
+                                                                        Container(
+                                                                          width:
+                                                                              32,
+                                                                          height:
+                                                                              32,
+                                                                          decoration: BoxDecoration(
+                                                                            color: theme.colorScheme.primaryContainer.withOpacity(
+                                                                              0.3,
+                                                                            ),
+                                                                            borderRadius: BorderRadius.circular(
+                                                                              10,
+                                                                            ),
+                                                                            border: Border.all(
+                                                                              color: theme.colorScheme.primary.withOpacity(
+                                                                                0.15,
+                                                                              ),
+                                                                              width: 1,
+                                                                            ),
+                                                                          ),
+                                                                          child: Icon(
+                                                                            Icons.folder_rounded,
+                                                                            size:
+                                                                                16,
+                                                                            color:
+                                                                                theme.colorScheme.primary,
+                                                                          ),
+                                                                        ),
+                                                                        const SizedBox(
+                                                                          width:
+                                                                              8,
+                                                                        ),
+                                                                        Expanded(
+                                                                          child: Text(
+                                                                            detail.albumName,
+                                                                            style: theme.textTheme.titleSmall?.copyWith(
+                                                                              fontWeight: FontWeight.w700,
+                                                                              fontSize: 13,
+                                                                              color: theme.colorScheme.onSurface,
+                                                                              letterSpacing: -0.2,
+                                                                              height: 1.2,
+                                                                            ),
+                                                                            maxLines:
+                                                                                1,
+                                                                            overflow:
+                                                                                TextOverflow.ellipsis,
+                                                                          ),
+                                                                        ),
+                                                                      ],
+                                                                    ),
+                                                                    const SizedBox(
+                                                                      height: 4,
+                                                                    ),
+                                                                    // Percentage badge
+                                                                    Container(
+                                                                      padding: const EdgeInsets.symmetric(
+                                                                        horizontal:
+                                                                            8,
+                                                                        vertical:
+                                                                            3,
+                                                                      ),
+                                                                      decoration: BoxDecoration(
+                                                                        color: theme
+                                                                            .colorScheme
+                                                                            .primary
+                                                                            .withOpacity(
+                                                                              0.1,
+                                                                            ),
+                                                                        borderRadius:
+                                                                            BorderRadius.circular(
+                                                                              8,
+                                                                            ),
+                                                                      ),
+                                                                      child: Text(
+                                                                        '${percentage.toStringAsFixed(1)}%',
+                                                                        style: theme.textTheme.labelSmall?.copyWith(
+                                                                          fontWeight:
+                                                                              FontWeight.w600,
+                                                                          fontSize:
+                                                                              10,
+                                                                          color: theme
+                                                                              .colorScheme
+                                                                              .primary,
+                                                                          letterSpacing:
+                                                                              0.2,
+                                                                          height:
+                                                                              1.0,
+                                                                        ),
+                                                                      ),
+                                                                    ),
+                                                                    const SizedBox(
+                                                                      height:
+                                                                          12,
+                                                                    ),
+                                                                    // Stats Grid (compact layout)
+                                                                    Row(
+                                                                      children: [
+                                                                        // Media Count
+                                                                        Expanded(
+                                                                          child: Container(
+                                                                            padding: const EdgeInsets.all(
+                                                                              8,
+                                                                            ),
+                                                                            decoration: BoxDecoration(
+                                                                              color: theme.colorScheme.primaryContainer.withOpacity(
+                                                                                0.2,
+                                                                              ),
+                                                                              borderRadius: BorderRadius.circular(
+                                                                                10,
+                                                                              ),
+                                                                              border: Border.all(
+                                                                                color: theme.colorScheme.primary.withOpacity(
+                                                                                  0.1,
+                                                                                ),
+                                                                                width: 1,
+                                                                              ),
+                                                                            ),
+                                                                            child: Column(
+                                                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                                                              mainAxisSize: MainAxisSize.min,
+                                                                              children: [
+                                                                                Row(
+                                                                                  children: [
+                                                                                    Icon(
+                                                                                      Icons.photo_library_rounded,
+                                                                                      size: 12,
+                                                                                      color: theme.colorScheme.primary,
+                                                                                    ),
+                                                                                    const SizedBox(
+                                                                                      width: 4,
+                                                                                    ),
+                                                                                    Expanded(
+                                                                                      child: Text(
+                                                                                        l10n.mediaUnit,
+                                                                                        style: theme.textTheme.labelSmall?.copyWith(
+                                                                                          fontWeight: FontWeight.w500,
+                                                                                          fontSize: 8,
+                                                                                          color: theme.colorScheme.onSurface.withOpacity(
+                                                                                            0.7,
+                                                                                          ),
+                                                                                          height: 1.0,
+                                                                                        ),
+                                                                                        overflow: TextOverflow.ellipsis,
+                                                                                        maxLines: 1,
+                                                                                      ),
+                                                                                    ),
+                                                                                  ],
+                                                                                ),
+                                                                                const SizedBox(
+                                                                                  height: 4,
+                                                                                ),
+                                                                                Text(
+                                                                                  '${detail.mediaCount}',
+                                                                                  style: theme.textTheme.titleSmall?.copyWith(
+                                                                                    fontWeight: FontWeight.w800,
+                                                                                    fontSize: 14,
+                                                                                    color: theme.colorScheme.onSurface,
+                                                                                    letterSpacing: -0.4,
+                                                                                    height: 1.0,
+                                                                                  ),
+                                                                                ),
+                                                                              ],
+                                                                            ),
+                                                                          ),
+                                                                        ),
+                                                                        const SizedBox(
+                                                                          width:
+                                                                              8,
+                                                                        ),
+                                                                        // Size
+                                                                        Expanded(
+                                                                          child: Container(
+                                                                            padding: const EdgeInsets.all(
+                                                                              8,
+                                                                            ),
+                                                                            decoration: BoxDecoration(
+                                                                              color: theme.colorScheme.secondaryContainer.withOpacity(
+                                                                                0.2,
+                                                                              ),
+                                                                              borderRadius: BorderRadius.circular(
+                                                                                10,
+                                                                              ),
+                                                                              border: Border.all(
+                                                                                color: theme.colorScheme.secondary.withOpacity(
+                                                                                  0.1,
+                                                                                ),
+                                                                                width: 1,
+                                                                              ),
+                                                                            ),
+                                                                            child: Column(
+                                                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                                                              mainAxisSize: MainAxisSize.min,
+                                                                              children: [
+                                                                                Row(
+                                                                                  children: [
+                                                                                    Icon(
+                                                                                      Icons.storage_rounded,
+                                                                                      size: 12,
+                                                                                      color: theme.colorScheme.secondary,
+                                                                                    ),
+                                                                                    const SizedBox(
+                                                                                      width: 4,
+                                                                                    ),
+                                                                                    Expanded(
+                                                                                      child: Text(
+                                                                                        'MB',
+                                                                                        style: theme.textTheme.labelSmall?.copyWith(
+                                                                                          fontWeight: FontWeight.w500,
+                                                                                          fontSize: 8,
+                                                                                          color: theme.colorScheme.onSurface.withOpacity(
+                                                                                            0.7,
+                                                                                          ),
+                                                                                          height: 1.0,
+                                                                                        ),
+                                                                                        overflow: TextOverflow.ellipsis,
+                                                                                        maxLines: 1,
+                                                                                      ),
+                                                                                    ),
+                                                                                  ],
+                                                                                ),
+                                                                                const SizedBox(
+                                                                                  height: 4,
+                                                                                ),
+                                                                                Text(
+                                                                                  sizeMb.toStringAsFixed(
+                                                                                    1,
+                                                                                  ),
+                                                                                  style: theme.textTheme.titleSmall?.copyWith(
+                                                                                    fontWeight: FontWeight.w800,
+                                                                                    fontSize: 14,
+                                                                                    color: theme.colorScheme.onSurface,
+                                                                                    letterSpacing: -0.4,
+                                                                                    height: 1.0,
+                                                                                  ),
+                                                                                ),
+                                                                              ],
+                                                                            ),
+                                                                          ),
+                                                                        ),
+                                                                      ],
+                                                                    ),
+                                                                  ],
+                                                                ),
+                                                              );
+                                                            },
+                                                          ),
+                                                      ],
+                                                    );
+                                                  },
+                                                ),
+                                              ),
                                             ),
-                                          if (size != null)
-                                            _buildChangeChip(
-                                              context,
-                                              l10n.sizeLabel,
-                                              size,
-                                              theme,
-                                              absoluteDiffDouble: sizeDiff,
+                                          ),
+                                          // Sol ok (scroll left)
+                                          if (_showLeftArrow)
+                                            Positioned(
+                                              left: 8,
+                                              top: 0,
+                                              bottom: 0,
+                                              child: Center(
+                                                child: Material(
+                                                  color: AppColors.transparent,
+                                                  child: InkWell(
+                                                    onTap: _scrollLeft,
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          20,
+                                                        ),
+                                                    child: Container(
+                                                      width: 40,
+                                                      height: 40,
+                                                      decoration: BoxDecoration(
+                                                        gradient: LinearGradient(
+                                                          begin: Alignment
+                                                              .centerLeft,
+                                                          end: Alignment
+                                                              .centerRight,
+                                                          colors: [
+                                                            theme
+                                                                .colorScheme
+                                                                .surfaceContainerHighest
+                                                                .withOpacity(
+                                                                  0.9,
+                                                                ),
+                                                            theme
+                                                                .colorScheme
+                                                                .surfaceContainerHighest
+                                                                .withOpacity(
+                                                                  0.7,
+                                                                ),
+                                                          ],
+                                                        ),
+                                                        shape: BoxShape.circle,
+                                                        border: Border.all(
+                                                          color: theme
+                                                              .colorScheme
+                                                              .outline
+                                                              .withOpacity(0.2),
+                                                          width: 1,
+                                                        ),
+                                                        boxShadow: [
+                                                          BoxShadow(
+                                                            color: AppColors
+                                                                .black
+                                                                .withOpacity(
+                                                                  0.1,
+                                                                ),
+                                                            blurRadius: 8,
+                                                            offset:
+                                                                const Offset(
+                                                                  0,
+                                                                  2,
+                                                                ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                      child: Icon(
+                                                        Icons
+                                                            .chevron_left_rounded,
+                                                        color: theme
+                                                            .colorScheme
+                                                            .primary,
+                                                        size: 24,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          // Sağ ok (scroll right)
+                                          if (_showRightArrow)
+                                            Positioned(
+                                              right: 8,
+                                              top: 0,
+                                              bottom: 0,
+                                              child: Center(
+                                                child: Material(
+                                                  color: AppColors.transparent,
+                                                  child: InkWell(
+                                                    onTap: _scrollRight,
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          20,
+                                                        ),
+                                                    child: Container(
+                                                      width: 40,
+                                                      height: 40,
+                                                      decoration: BoxDecoration(
+                                                        gradient: LinearGradient(
+                                                          begin: Alignment
+                                                              .centerLeft,
+                                                          end: Alignment
+                                                              .centerRight,
+                                                          colors: [
+                                                            theme
+                                                                .colorScheme
+                                                                .surfaceContainerHighest
+                                                                .withOpacity(
+                                                                  0.9,
+                                                                ),
+                                                            theme
+                                                                .colorScheme
+                                                                .surfaceContainerHighest
+                                                                .withOpacity(
+                                                                  0.7,
+                                                                ),
+                                                          ],
+                                                        ),
+                                                        shape: BoxShape.circle,
+                                                        border: Border.all(
+                                                          color: theme
+                                                              .colorScheme
+                                                              .outline
+                                                              .withOpacity(0.2),
+                                                          width: 1,
+                                                        ),
+                                                        boxShadow: [
+                                                          BoxShadow(
+                                                            color: AppColors
+                                                                .black
+                                                                .withOpacity(
+                                                                  0.1,
+                                                                ),
+                                                            blurRadius: 8,
+                                                            offset:
+                                                                const Offset(
+                                                                  0,
+                                                                  2,
+                                                                ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                      child: Icon(
+                                                        Icons
+                                                            .chevron_right_rounded,
+                                                        color: theme
+                                                            .colorScheme
+                                                            .primary,
+                                                        size: 24,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
                                             ),
                                         ],
                                       );
                                     },
                                   ),
                                 ],
-                              ],
-                            ],
-                          ),
-                        ),
-                      if (displayStats.cachedAt != null ||
-                          previousStats?.cachedAt != null)
-                        const SizedBox(height: 16),
-                      // İstatistik badge'leri - yan yana
-                      Row(
-                        children: [
-                          // Albüm sayısı badge
-                          Expanded(
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 10,
-                              ),
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: [
-                                    theme.colorScheme.primaryContainer,
-                                    theme.colorScheme.primaryContainer
-                                        .withOpacity(0.8),
-                                  ],
-                                ),
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                  color: theme.colorScheme.primary.withOpacity(
-                                    0.2,
-                                  ),
-                                  width: 1,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: theme.colorScheme.primary
-                                        .withOpacity(0.15),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 3),
-                                    spreadRadius: 0,
-                                  ),
-                                ],
-                              ),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.folder,
-                                        size: 13,
-                                        color: theme
-                                            .colorScheme
-                                            .onPrimaryContainer
-                                            .withOpacity(0.9),
-                                      ),
-                                      const SizedBox(width: 5),
-                                      Flexible(
-                                        child: Text(
-                                          l10n.album,
-                                          style: theme.textTheme.labelSmall
-                                              ?.copyWith(
-                                                fontWeight: FontWeight.w600,
-                                                fontSize: 10,
-                                                color: theme
-                                                    .colorScheme
-                                                    .onPrimaryContainer
-                                                    .withOpacity(0.9),
-                                                letterSpacing: 0.3,
-                                              ),
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    '${displayStats.albumCount}',
-                                    style: theme.textTheme.headlineSmall
-                                        ?.copyWith(
-                                          fontWeight: FontWeight.w900,
-                                          fontSize: 20,
-                                          color: theme
-                                              .colorScheme
-                                              .onPrimaryContainer,
-                                          letterSpacing: -1.2,
-                                          height: 1,
-                                        ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  // Önceki analizle fark (mutlak değer + yüzde)
-                                  if (previousStats != null &&
-                                      albumChange != null &&
-                                      albumDiff != null) ...[
-                                    const SizedBox(height: 2),
-                                    Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text(
-                                          albumDiff != 0
-                                              ? (albumDiff > 0 ? '+' : '-')
-                                              : '',
-                                          style: theme.textTheme.labelSmall
-                                              ?.copyWith(
-                                                fontSize: 9,
-                                                color: albumChange > 0
-                                                    ? Colors.green.shade700
-                                                    : albumChange < 0
-                                                    ? Colors.red.shade700
-                                                    : theme
-                                                          .colorScheme
-                                                          .onPrimaryContainer
-                                                          .withOpacity(0.7),
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                        ),
-                                        Text(
-                                          albumDiff.abs().toString(),
-                                          style: theme.textTheme.labelSmall
-                                              ?.copyWith(
-                                                fontSize: 9,
-                                                color: albumChange > 0
-                                                    ? Colors.green.shade700
-                                                    : albumChange < 0
-                                                    ? Colors.red.shade700
-                                                    : theme
-                                                          .colorScheme
-                                                          .onPrimaryContainer
-                                                          .withOpacity(0.7),
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                        ),
-                                        Text(
-                                          ' (${albumChange > 0 ? '+' : ''}${albumChange.toStringAsFixed(1)}%)',
-                                          style: theme.textTheme.labelSmall
-                                              ?.copyWith(
-                                                fontSize: 8,
-                                                color: albumChange > 0
-                                                    ? Colors.green.shade700
-                                                    : albumChange < 0
-                                                    ? Colors.red.shade700
-                                                    : theme
-                                                          .colorScheme
-                                                          .onPrimaryContainer
-                                                          .withOpacity(0.7),
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ],
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 10),
-                          // Fotoğraf/Video sayısı badge
-                          Expanded(
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 10,
-                              ),
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: [
-                                    theme.colorScheme.secondaryContainer,
-                                    theme.colorScheme.secondaryContainer
-                                        .withOpacity(0.8),
-                                  ],
-                                ),
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                  color: theme.colorScheme.secondary
-                                      .withOpacity(0.2),
-                                  width: 1,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: theme.colorScheme.secondary
-                                        .withOpacity(0.15),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 3),
-                                    spreadRadius: 0,
-                                  ),
-                                ],
-                              ),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.photo,
-                                        size: 13,
-                                        color: theme
-                                            .colorScheme
-                                            .onSecondaryContainer
-                                            .withOpacity(0.9),
-                                      ),
-                                      const SizedBox(width: 5),
-                                      Flexible(
-                                        child: Text(
-                                          l10n.photoVideo,
-                                          style: theme.textTheme.labelSmall
-                                              ?.copyWith(
-                                                fontWeight: FontWeight.w600,
-                                                fontSize: 10,
-                                                color: theme
-                                                    .colorScheme
-                                                    .onSecondaryContainer
-                                                    .withOpacity(0.9),
-                                                letterSpacing: 0.3,
-                                              ),
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    '${displayStats.mediaCount}',
-                                    style: theme.textTheme.headlineSmall
-                                        ?.copyWith(
-                                          fontWeight: FontWeight.w900,
-                                          fontSize: 20,
-                                          color: theme
-                                              .colorScheme
-                                              .onSecondaryContainer,
-                                          letterSpacing: -1.2,
-                                          height: 1,
-                                        ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  // Önceki analizle fark (mutlak değer + yüzde)
-                                  if (previousStats != null &&
-                                      mediaChange != null &&
-                                      mediaDiff != null) ...[
-                                    const SizedBox(height: 2),
-                                    Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text(
-                                          mediaDiff != 0
-                                              ? (mediaDiff > 0 ? '+' : '-')
-                                              : '',
-                                          style: theme.textTheme.labelSmall
-                                              ?.copyWith(
-                                                fontSize: 9,
-                                                color: mediaChange > 0
-                                                    ? Colors.green.shade700
-                                                    : mediaChange < 0
-                                                    ? Colors.red.shade700
-                                                    : theme
-                                                          .colorScheme
-                                                          .onSecondaryContainer
-                                                          .withOpacity(0.7),
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                        ),
-                                        Text(
-                                          mediaDiff.abs().toString(),
-                                          style: theme.textTheme.labelSmall
-                                              ?.copyWith(
-                                                fontSize: 9,
-                                                color: mediaChange > 0
-                                                    ? Colors.green.shade700
-                                                    : mediaChange < 0
-                                                    ? Colors.red.shade700
-                                                    : theme
-                                                          .colorScheme
-                                                          .onSecondaryContainer
-                                                          .withOpacity(0.7),
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                        ),
-                                        Text(
-                                          ' (${mediaChange > 0 ? '+' : ''}${mediaChange.toStringAsFixed(1)}%)',
-                                          style: theme.textTheme.labelSmall
-                                              ?.copyWith(
-                                                fontSize: 8,
-                                                color: mediaChange > 0
-                                                    ? Colors.green.shade700
-                                                    : mediaChange < 0
-                                                    ? Colors.red.shade700
-                                                    : theme
-                                                          .colorScheme
-                                                          .onSecondaryContainer
-                                                          .withOpacity(0.7),
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          // Toplam boyut badge
-                          Expanded(
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 10,
-                              ),
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: [
-                                    theme.colorScheme.tertiaryContainer,
-                                    theme.colorScheme.tertiaryContainer
-                                        .withOpacity(0.8),
-                                  ],
-                                ),
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                  color: theme.colorScheme.tertiary.withOpacity(
-                                    0.2,
-                                  ),
-                                  width: 1,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: theme.colorScheme.tertiary
-                                        .withOpacity(0.15),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 3),
-                                    spreadRadius: 0,
-                                  ),
-                                ],
-                              ),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.storage,
-                                        size: 13,
-                                        color: theme
-                                            .colorScheme
-                                            .onTertiaryContainer
-                                            .withOpacity(0.9),
-                                      ),
-                                      const SizedBox(width: 5),
-                                      Flexible(
-                                        child: Text(
-                                          l10n.totalSize,
-                                          style: theme.textTheme.labelSmall
-                                              ?.copyWith(
-                                                fontWeight: FontWeight.w600,
-                                                fontSize: 10,
-                                                color: theme
-                                                    .colorScheme
-                                                    .onTertiaryContainer
-                                                    .withOpacity(0.9),
-                                                letterSpacing: 0.3,
-                                              ),
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    '${displayStats.totalSizeMB.toStringAsFixed(1)}',
-                                    style: theme.textTheme.headlineSmall
-                                        ?.copyWith(
-                                          fontWeight: FontWeight.w900,
-                                          fontSize: 20,
-                                          color: theme
-                                              .colorScheme
-                                              .onTertiaryContainer,
-                                          letterSpacing: -1.2,
-                                          height: 1,
-                                        ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  Row(
-                                    children: [
-                                      Text(
-                                        'MB',
-                                        style: theme.textTheme.labelSmall
-                                            ?.copyWith(
-                                              fontSize: 8,
-                                              color: theme
-                                                  .colorScheme
-                                                  .onTertiaryContainer
-                                                  .withOpacity(0.7),
-                                            ),
-                                      ),
-                                      // Önceki analizle fark (mutlak değer + yüzde)
-                                      if (previousStats != null &&
-                                          sizeChange != null &&
-                                          sizeDiff != null) ...[
-                                        const SizedBox(width: 4),
-                                        Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Text(
-                                              sizeDiff != 0
-                                                  ? (sizeDiff > 0 ? '+' : '-')
-                                                  : '',
-                                              style: theme.textTheme.labelSmall
-                                                  ?.copyWith(
-                                                    fontSize: 9,
-                                                    color: sizeChange > 0
-                                                        ? Colors.green.shade700
-                                                        : sizeChange < 0
-                                                        ? Colors.red.shade700
-                                                        : theme
-                                                              .colorScheme
-                                                              .onTertiaryContainer
-                                                              .withOpacity(0.7),
-                                                    fontWeight: FontWeight.w600,
-                                                  ),
-                                            ),
-                                            Text(
-                                              '${sizeDiff.abs().toStringAsFixed(1)} MB',
-                                              style: theme.textTheme.labelSmall
-                                                  ?.copyWith(
-                                                    fontSize: 9,
-                                                    color: sizeChange > 0
-                                                        ? Colors.green.shade700
-                                                        : sizeChange < 0
-                                                        ? Colors.red.shade700
-                                                        : theme
-                                                              .colorScheme
-                                                              .onTertiaryContainer
-                                                              .withOpacity(0.7),
-                                                    fontWeight: FontWeight.w600,
-                                                  ),
-                                            ),
-                                            Text(
-                                              ' (${sizeChange > 0 ? '+' : ''}${sizeChange.toStringAsFixed(1)}%)',
-                                              style: theme.textTheme.labelSmall
-                                                  ?.copyWith(
-                                                    fontSize: 8,
-                                                    color: sizeChange > 0
-                                                        ? Colors.green.shade700
-                                                        : sizeChange < 0
-                                                        ? Colors.red.shade700
-                                                        : theme
-                                                              .colorScheme
-                                                              .onTertiaryContainer
-                                                              .withOpacity(0.7),
-                                                    fontWeight: FontWeight.w500,
-                                                  ),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
+                          ],
                         ],
                       ),
-                      // Albüm detayları - varsa göster
-                      if (displayStats.albumDetails.isNotEmpty) ...[
-                        const SizedBox(height: 12),
-                        Container(
+                    ),
+                    // Otomatik analiz toggle ve Tekrardan Analiz Et butonu (ekranın en altında - sabit)
+                    if (!isScanning)
+                      Positioned(
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        child: Container(
+                          width: double.infinity,
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: theme.colorScheme.surfaceContainerHighest,
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.folder_open,
-                                    size: 16,
-                                    color: theme.colorScheme.primary,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    l10n.albumDetails,
-                                    style: theme.textTheme.titleMedium
-                                        ?.copyWith(
-                                          fontWeight: FontWeight.w600,
-                                          color: theme.colorScheme.primary,
-                                        ),
-                                  ),
-                                ],
+                            color: theme.colorScheme.background,
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.black.withOpacity(0.1),
+                                blurRadius: 10,
+                                offset: const Offset(0, -2),
                               ),
-                              const SizedBox(height: 12),
-                              // Yatay scroll edilebilir grid yapısı + scroll okları
-                              Stack(
-                                children: [
-                                  SizedBox(
-                                    height:
-                                        320, // 2 satır * kart yüksekliği + spacing
-                                    child: GridView.builder(
-                                      controller: _albumScrollController,
-                                      scrollDirection: Axis.horizontal,
-                                      physics: const BouncingScrollPhysics(),
-                                      padding: const EdgeInsets.only(right: 16),
-                                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                                        crossAxisCount:
-                                            2, // 2 satır (yatay scroll'da satır sayısı)
-                                        mainAxisSpacing:
-                                            14, // Yatay spacing (kartlar arası)
-                                        crossAxisSpacing:
-                                            14, // Dikey spacing (satırlar arası)
-                                        mainAxisExtent:
-                                            300, // Kart genişliği (yatay scroll'da) - daha geniş
-                                      ),
-                                      itemCount:
-                                          displayStats.albumDetails.length,
-                                      itemBuilder: (context, index) {
-                                        final detail =
-                                            displayStats.albumDetails[index];
-                                        final double sizeMb = detail.sizeMB;
-                                        // Toplam galeri boyutuna göre yüzde hesapla
-                                        final double totalSizeMb =
-                                            displayStats.totalSizeMB > 0
-                                                ? displayStats.totalSizeMB
-                                                : 1;
-                                        final double percentage =
-                                            (sizeMb / totalSizeMb * 100)
-                                                .clamp(0.0, 100.0);
+                            ],
+                          ),
+                          child: SafeArea(
+                            top: false,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                // Otomatik analiz toggle
+                                Consumer(
+                                  builder: (context, ref, _) {
+                                    final prefsService = ref.read(
+                                      preferencesServiceProvider,
+                                    );
+                                    return FutureBuilder<bool>(
+                                      future: prefsService
+                                          .isAutoAnalyzeOnLaunchEnabled(),
+                                      builder: (context, snapshot) {
+                                        final isEnabled = snapshot.data ?? true;
                                         return Container(
-                                          constraints: const BoxConstraints(
-                                            maxHeight: double.infinity,
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 16,
+                                            vertical: 12,
                                           ),
-                                          padding: const EdgeInsets.all(10),
                                           decoration: BoxDecoration(
-                                            color: theme.colorScheme.surface,
-                                            borderRadius: BorderRadius.circular(12),
+                                            color: theme
+                                                .colorScheme
+                                                .surfaceContainerHighest
+                                                .withOpacity(
+                                                  isEnabled ? 0.5 : 0.7,
+                                                ),
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
                                             border: Border.all(
-                                              color: theme.colorScheme.outline
-                                                  .withOpacity(0.08),
+                                              color: isEnabled
+                                                  ? theme.colorScheme.outline
+                                                        .withOpacity(0.1)
+                                                  : theme.colorScheme.outline
+                                                        .withOpacity(0.3),
                                               width: 1,
                                             ),
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color: Colors.black.withOpacity(0.04),
-                                                blurRadius: 8,
-                                                offset: const Offset(0, 2),
-                                                spreadRadius: 0,
-                                              ),
-                                            ],
                                           ),
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            mainAxisSize: MainAxisSize.min,
+                                          child: Row(
                                             children: [
-                                              // Album Name - Header (ultra compact)
-                                              Row(
-                                                children: [
-                                                  Container(
-                                                    width: 32,
-                                                    height: 32,
-                                                    decoration: BoxDecoration(
-                                                      color: theme
-                                                          .colorScheme
-                                                          .primaryContainer
-                                                          .withOpacity(0.6),
-                                                      borderRadius:
-                                                          BorderRadius.circular(8),
-                                                      border: Border.all(
-                                                        color: theme
-                                                            .colorScheme
-                                                            .primary
-                                                            .withOpacity(0.15),
-                                                        width: 1,
-                                                      ),
-                                                    ),
-                                                    child: Icon(
-                                                      Icons.folder_rounded,
-                                                      size: 16,
-                                                      color: theme
-                                                          .colorScheme
-                                                          .primary,
-                                                    ),
-                                                  ),
-                                                  const SizedBox(width: 8),
-                                                  Expanded(
-                                                    child: Column(
-                                                      crossAxisAlignment:
-                                                          CrossAxisAlignment.start,
-                                                      mainAxisSize:
-                                                          MainAxisSize.min,
-                                                      children: [
-                                                        Text(
-                                                          detail.albumName,
-                                                          style: theme
-                                                              .textTheme
-                                                              .titleSmall
-                                                              ?.copyWith(
-                                                                fontWeight:
-                                                                    FontWeight.w700,
-                                                                fontSize: 13,
-                                                                color: theme
-                                                                    .colorScheme
-                                                                    .onSurface,
-                                                                letterSpacing: -0.2,
-                                                                height: 1.1,
-                                                              ),
-                                                          maxLines: 1,
-                                                          overflow:
-                                                              TextOverflow.ellipsis,
-                                                        ),
-                                                        const SizedBox(height: 2),
-                                                        // Percentage badge (inline)
-                                                        Text(
-                                                          '${percentage.toStringAsFixed(1)}%',
-                                                          style: theme
-                                                              .textTheme
-                                                              .labelSmall
-                                                              ?.copyWith(
-                                                                fontWeight:
-                                                                    FontWeight.w600,
-                                                                fontSize: 8,
-                                                                color: theme
-                                                                    .colorScheme
-                                                                    .secondary,
-                                                                letterSpacing: 0.1,
-                                                                height: 1.0,
-                                                              ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                              const SizedBox(height: 8),
-                                              // Stats Grid (ultra compact)
-                                              Row(
-                                                children: [
-                                                  // Media Count
-                                                  Expanded(
-                                                    child: _AlbumStatItem(
-                                                      icon: Icons.photo_library_rounded,
-                                                      label: l10n.mediaUnit,
-                                                      value: '${detail.mediaCount}',
-                                                      theme: theme,
-                                                      color: theme.colorScheme.primary,
-                                                      isCompact: true,
-                                                    ),
-                                                  ),
-                                                  const SizedBox(width: 6),
-                                                  // Size
-                                                  Expanded(
-                                                    child: _AlbumStatItem(
-                                                      icon: Icons.storage_rounded,
-                                                      label: 'MB',
-                                                      value:
-                                                          sizeMb.toStringAsFixed(1),
-                                                      theme: theme,
-                                                      color: theme.colorScheme.secondary,
-                                                      isCompact: true,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                              const SizedBox(height: 8),
-                                              // Progress Bar (ultra compact)
-                                              Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  Row(
-                                                    mainAxisAlignment:
-                                                        MainAxisAlignment
-                                                            .spaceBetween,
-                                                    children: [
-                                                      Flexible(
-                                                        child: Text(
-                                                          l10n.ofGallery,
-                                                          style: theme
-                                                              .textTheme
-                                                              .labelSmall
-                                                              ?.copyWith(
-                                                                fontWeight:
-                                                                    FontWeight.w500,
-                                                                fontSize: 8,
-                                                                color: theme
-                                                                    .colorScheme
-                                                                    .onSurface
-                                                                    .withOpacity(0.6),
-                                                                height: 1.0,
-                                                              ),
-                                                          overflow: TextOverflow.ellipsis,
-                                                        ),
-                                                      ),
-                                                      Text(
-                                                        '${percentage.toStringAsFixed(1)}%',
-                                                        style: theme
-                                                            .textTheme
-                                                            .labelSmall
-                                                            ?.copyWith(
-                                                              fontWeight:
-                                                                  FontWeight.w700,
-                                                              fontSize: 9,
-                                                              color: theme
-                                                                  .colorScheme
-                                                                  .primary,
-                                                              height: 1.0,
-                                                            ),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                  const SizedBox(height: 4),
-                                                  ClipRRect(
-                                                    borderRadius:
-                                                        BorderRadius.circular(4),
-                                                    child: SizedBox(
-                                                      height: 5,
-                                                      child: Stack(
-                                                        children: [
-                                                          Container(
-                                                            decoration: BoxDecoration(
-                                                              color: theme
-                                                                  .colorScheme
-                                                                  .surfaceContainerHighest
-                                                                  .withOpacity(0.4),
-                                                            ),
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    Text(
+                                                      l10n.autoAnalyzeOnLaunch,
+                                                      style: theme
+                                                          .textTheme
+                                                          .titleSmall
+                                                          ?.copyWith(
+                                                            fontWeight:
+                                                                FontWeight.w700,
+                                                            fontSize: 14,
+                                                            color: theme
+                                                                .colorScheme
+                                                                .onSurface,
                                                           ),
-                                                          FractionallySizedBox(
-                                                            widthFactor: (percentage / 100)
-                                                                .clamp(0.0, 1.0),
-                                                            alignment: Alignment
-                                                                .centerLeft,
-                                                            child: Container(
-                                                              decoration: BoxDecoration(
-                                                                color: theme
-                                                                    .colorScheme
-                                                                    .primary,
-                                                              ),
-                                                            ),
-                                                          ),
-                                                        ],
-                                                      ),
                                                     ),
-                                                  ),
-                                                ],
+                                                    const SizedBox(height: 2),
+                                                    Text(
+                                                      l10n.autoAnalyzeOnLaunchDescription,
+                                                      style: theme
+                                                          .textTheme
+                                                          .bodySmall
+                                                          ?.copyWith(
+                                                            fontSize: 11,
+                                                            color: theme
+                                                                .colorScheme
+                                                                .onSurface
+                                                                .withOpacity(
+                                                                  0.65,
+                                                                ),
+                                                          ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                              const SizedBox(width: 12),
+                                              Switch(
+                                                value: isEnabled,
+                                                onChanged: (value) async {
+                                                  await prefsService
+                                                      .setAutoAnalyzeOnLaunch(
+                                                        value,
+                                                      );
+                                                  if (mounted) {
+                                                    setState(() {});
+                                                  }
+                                                },
+                                                activeColor:
+                                                    theme.colorScheme.primary,
+                                                inactiveTrackColor: theme
+                                                    .colorScheme
+                                                    .onSurface
+                                                    .withOpacity(0.3),
+                                                inactiveThumbColor: theme
+                                                    .colorScheme
+                                                    .onSurface
+                                                    .withOpacity(0.5),
                                               ),
                                             ],
                                           ),
                                         );
                                       },
+                                    );
+                                  },
+                                ),
+                                const SizedBox(height: 12),
+                                // Re-Analyze butonu
+                                FilledButton.icon(
+                                  onPressed: () {
+                                    ref
+                                        .read(galleryStatsProvider.notifier)
+                                        .refresh();
+                                  },
+                                  icon: const Icon(Icons.refresh),
+                                  label: Text(l10n.reAnalyze),
+                                  style: FilledButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 24,
+                                      vertical: 16,
+                                    ),
+                                    backgroundColor: theme.colorScheme.primary
+                                        .withOpacity(0.85),
+                                    side: BorderSide(
+                                      color: theme.colorScheme.primary
+                                          .withOpacity(0.9),
+                                      width: 1.5,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
                                     ),
                                   ),
-                                  // Sol ok (scroll left)
-                                  if (_showLeftArrow)
-                                    Positioned(
-                                      left: 8,
-                                      top: 0,
-                                      bottom: 0,
-                                      child: Center(
-                                        child: Material(
-                                          color: Colors.transparent,
-                                          child: InkWell(
-                                            onTap: _scrollLeft,
-                                            borderRadius: BorderRadius.circular(
-                                              20,
-                                            ),
-                                            child: Container(
-                                              width: 40,
-                                              height: 40,
-                                              decoration: BoxDecoration(
-                                                gradient: LinearGradient(
-                                                  begin: Alignment.centerLeft,
-                                                  end: Alignment.centerRight,
-                                                  colors: [
-                                                    theme.colorScheme.surface
-                                                        .withOpacity(0.9),
-                                                    theme.colorScheme.surface
-                                                        .withOpacity(0.7),
-                                                  ],
-                                                ),
-                                                shape: BoxShape.circle,
-                                                border: Border.all(
-                                                  color: theme
-                                                      .colorScheme
-                                                      .outline
-                                                      .withOpacity(0.2),
-                                                  width: 1,
-                                                ),
-                                                boxShadow: [
-                                                  BoxShadow(
-                                                    color: Colors.black
-                                                        .withOpacity(0.1),
-                                                    blurRadius: 8,
-                                                    offset: const Offset(0, 2),
-                                                  ),
-                                                ],
-                                              ),
-                                              child: Icon(
-                                                Icons.chevron_left_rounded,
-                                                color:
-                                                    theme.colorScheme.primary,
-                                                size: 24,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  // Sağ ok (scroll right)
-                                  if (_showRightArrow)
-                                    Positioned(
-                                      right: 8,
-                                      top: 0,
-                                      bottom: 0,
-                                      child: Center(
-                                        child: Material(
-                                          color: Colors.transparent,
-                                          child: InkWell(
-                                            onTap: _scrollRight,
-                                            borderRadius: BorderRadius.circular(
-                                              20,
-                                            ),
-                                            child: Container(
-                                              width: 40,
-                                              height: 40,
-                                              decoration: BoxDecoration(
-                                                gradient: LinearGradient(
-                                                  begin: Alignment.centerLeft,
-                                                  end: Alignment.centerRight,
-                                                  colors: [
-                                                    theme.colorScheme.surface
-                                                        .withOpacity(0.9),
-                                                    theme.colorScheme.surface
-                                                        .withOpacity(0.7),
-                                                  ],
-                                                ),
-                                                shape: BoxShape.circle,
-                                                border: Border.all(
-                                                  color: theme
-                                                      .colorScheme
-                                                      .outline
-                                                      .withOpacity(0.2),
-                                                  width: 1,
-                                                ),
-                                                boxShadow: [
-                                                  BoxShadow(
-                                                    color: Colors.black
-                                                        .withOpacity(0.1),
-                                                    blurRadius: 8,
-                                                    offset: const Offset(0, 2),
-                                                  ),
-                                                ],
-                                              ),
-                                              child: Icon(
-                                                Icons.chevron_right_rounded,
-                                                color:
-                                                    theme.colorScheme.primary,
-                                                size: 24,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                      // Tekrardan Analiz Et butonu (sayfanın en altında)
-                      const SizedBox(height: 24),
-                      if (!isScanning)
-                        FilledButton.icon(
-                          onPressed: () {
-                            ref.read(galleryStatsProvider.notifier).refresh();
-                          },
-                          icon: const Icon(Icons.refresh),
-                          label: Text(l10n.reAnalyze),
-                          style: FilledButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 24,
-                              vertical: 16,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                                ),
+                              ],
                             ),
                           ),
                         ),
-                      const SizedBox(height: 16),
-                    ],
-                  ),
+                      ),
+                  ],
                 );
               },
             ),

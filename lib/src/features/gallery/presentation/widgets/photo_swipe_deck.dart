@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:lottie/lottie.dart';
 import 'package:photo_manager/photo_manager.dart' as pm;
 import '../../../../app/theme/app_theme.dart';
+import '../../../../app/theme/app_colors.dart';
 import '../../../../../l10n/app_localizations.dart';
 import '../../../../core/services/sound_service.dart';
 
@@ -281,7 +282,7 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck> with TickerProviderStat
 
     // Stack'e şeffaf arka plan ekle - siyah alan sorununu önlemek için
     return Container(
-      color: Colors.transparent,
+      color: AppColors.transparent,
       child: Stack(children: cards.reversed.toList()),
     );
   }
@@ -317,7 +318,7 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck> with TickerProviderStat
         ? (decisionStrength >= 0
             ? sem.keep.withOpacity(keepOpacity * 0.8)
             : sem.delete.withOpacity(deleteOpacity * 0.8))
-        : Colors.transparent;
+        : AppColors.transparent;
     final borderWidth = isTop
         ? ((keepOpacity > deleteOpacity ? keepOpacity : deleteOpacity) * 3.5 + 1.5)
         : 0.0;
@@ -339,7 +340,7 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck> with TickerProviderStat
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(20),
                 // Şeffaf arka plan - siyah alan sorununu önlemek için
-                color: Colors.transparent,
+                color: AppColors.transparent,
                 // Border sadece top kartta ve swipe yapıldığında gösterilir
                 border: isTop && borderWidth > 0
                     ? Border.all(
@@ -349,7 +350,7 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck> with TickerProviderStat
                     : null,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.3 - (indexFromTop * 0.06)),
+                    color: AppColors.black.withOpacity(0.3 - (indexFromTop * 0.06)),
                     blurRadius: 24 - (indexFromTop * 4),
                     offset: Offset(0, 10 + (indexFromTop * 2.5)),
                     spreadRadius: -2,
@@ -478,8 +479,8 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck> with TickerProviderStat
                         begin: Alignment.bottomCenter,
                         end: Alignment.topCenter,
                         colors: [
-                          Colors.black.withOpacity(0.22),
-                          Colors.transparent,
+                          AppColors.black.withOpacity(0.22),
+                          AppColors.transparent,
                         ],
                       ),
                     ),
@@ -674,7 +675,9 @@ class _BadgeWithArrowState extends State<_BadgeWithArrow>
         color: bg,
         borderRadius: borderRadius,
         border: Border.all(
-          color: Colors.white.withOpacity(0.45),
+          color: widget.isDelete 
+              ? AppColors.error.withOpacity(0.8) // Silme butonu için daha belirgin kırmızı border
+              : AppColors.white.withOpacity(0.6), // Diğer butonlar için beyaz border
           width: 2,
         ),
         boxShadow: [
@@ -685,7 +688,7 @@ class _BadgeWithArrowState extends State<_BadgeWithArrow>
             offset: const Offset(0, 8),
           ),
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
+            color: AppColors.black.withOpacity(0.2),
             blurRadius: 16,
             offset: const Offset(0, 4),
           ),
@@ -698,7 +701,7 @@ class _BadgeWithArrowState extends State<_BadgeWithArrow>
                 height: 22,
                 child: ColorFiltered(
                   colorFilter: const ColorFilter.mode(
-                    Colors.white,
+                    AppColors.white,
                     BlendMode.srcATop,
                   ),
                   child: Lottie.asset(
@@ -720,7 +723,7 @@ class _BadgeWithArrowState extends State<_BadgeWithArrow>
                     height: 22,
                     child: ColorFiltered(
                       colorFilter: const ColorFilter.mode(
-                        Colors.white,
+                        AppColors.white,
                         BlendMode.srcATop,
                       ),
                       child: Lottie.asset(
@@ -736,18 +739,26 @@ class _BadgeWithArrowState extends State<_BadgeWithArrow>
                       ),
                     ),
                   )
-                : Icon(widget.icon, color: Colors.white, size: 22),
+                : Icon(widget.icon, color: AppColors.white, size: 22),
         const SizedBox(width: 10),
         Text(
           widget.label.toUpperCase(),
           style: const TextStyle(
-            color: Colors.white,
+            color: AppColors.white,
             fontWeight: FontWeight.w900,
             fontSize: 16,
             letterSpacing: 1.2,
             shadows: [
-              Shadow(color: Colors.black54, blurRadius: 6, offset: Offset(0, 2)),
-              Shadow(color: Colors.black38, blurRadius: 10, offset: Offset(0, 1)),
+              Shadow(
+                color: AppColors.black54,
+                blurRadius: 6,
+                offset: Offset(0, 2),
+              ),
+              Shadow(
+                color: AppColors.black38,
+                blurRadius: 10,
+                offset: Offset(0, 1),
+              ),
             ],
           ),
         ),
@@ -842,8 +853,8 @@ class _PhotoCardState extends State<_PhotoCard> {
           begin: Alignment.bottomCenter,
           end: Alignment.topCenter,
           colors: [
-            Colors.black.withOpacity(0.35),
-            Colors.black.withOpacity(0.15),
+            AppColors.black.withOpacity(0.35),
+            AppColors.black.withOpacity(0.15),
           ],
         ),
       ),
@@ -853,7 +864,7 @@ class _PhotoCardState extends State<_PhotoCard> {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(20),
         child: Container(
-          color: Colors.transparent,
+          color: AppColors.transparent,
           width: double.infinity,
           height: double.infinity,
           child: FutureBuilder<Uint8List?>(

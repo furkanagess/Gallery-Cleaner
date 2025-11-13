@@ -23,7 +23,10 @@ import '../../application/review_actions_controller.dart';
 import '../../application/review_history_controller.dart';
 import '../../application/gallery_stats_provider.dart';
 import '../../../../app/theme/app_theme.dart';
+import '../../../../app/theme/app_colors.dart';
+import '../../../../app/theme/app_decorations.dart';
 import '../../../settings/presentation/settings_page.dart' as settings;
+import 'results_page_helpers.dart';
 
 // Provider for tracking drag over "Change Album" zone
 final _isDraggingOverChangeAlbumProvider = StateProvider<bool>((ref) => false);
@@ -73,7 +76,7 @@ Future<void> _presentAlbumPicker({
 
   final selection = await showModalBottomSheet<pm.AssetPathEntity?>(
     context: context,
-    backgroundColor: Colors.transparent,
+    backgroundColor: AppColors.transparent,
     isScrollControlled: true,
     builder: (context) => Container(
       constraints: BoxConstraints(
@@ -191,7 +194,7 @@ class _ChangeAlbumZone extends ConsumerWidget {
                   radius: 0.95,
                   colors: [
                     theme.colorScheme.primary.withOpacity(0.12),
-                    Colors.transparent,
+                    AppColors.transparent,
                   ],
                   stops: const [0.0, 1.0],
                 ),
@@ -205,34 +208,9 @@ class _ChangeAlbumZone extends ConsumerWidget {
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              decoration: BoxDecoration(
-                color: isDraggingOver
-                    ? theme.colorScheme.primaryContainer.withOpacity(0.95)
-                    : theme.appBarTheme.backgroundColor ??
-                          theme.colorScheme.surface,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: isDraggingOver
-                      ? theme.colorScheme.primary
-                      : theme.colorScheme.outline.withOpacity(0.4),
-                  width: isDraggingOver ? 3 : 2,
-                ),
-                boxShadow: isDraggingOver
-                    ? [
-                        BoxShadow(
-                          color: theme.colorScheme.primary.withOpacity(0.45),
-                          blurRadius: 18,
-                          spreadRadius: 2,
-                          offset: const Offset(0, 6),
-                        ),
-                      ]
-                    : [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.08),
-                          blurRadius: 6,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
+              // Container decoration kaldırıldı - sadece içerik gösteriliyor
+              decoration: const BoxDecoration(
+                color: AppColors.transparent, // Container arka planı kaldırıldı
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -465,7 +443,7 @@ class _SwipeAreaContentState extends ConsumerState<_SwipeAreaContent> {
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 200),
                           curve: Curves.easeOutCubic,
-                          color: Colors.black.withOpacity(
+                          color: AppColors.black.withOpacity(
                             (1 - _dragOpacity) * 0.4,
                           ),
                         ),
@@ -612,9 +590,9 @@ class _SwipeAreaContentState extends ConsumerState<_SwipeAreaContent> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      barrierColor: Colors.black.withOpacity(0.6),
+      barrierColor: AppColors.black.withOpacity(0.6),
       builder: (dialogContext) => Dialog(
-        backgroundColor: Colors.transparent,
+        backgroundColor: AppColors.transparent,
         elevation: 0,
         insetPadding: const EdgeInsets.symmetric(horizontal: 24),
         child: TweenAnimationBuilder<double>(
@@ -635,7 +613,7 @@ class _SwipeAreaContentState extends ConsumerState<_SwipeAreaContent> {
               borderRadius: BorderRadius.circular(28),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.25),
+                  color: AppColors.black.withOpacity(0.25),
                   blurRadius: 32,
                   spreadRadius: 2,
                   offset: const Offset(0, 16),
@@ -721,7 +699,7 @@ class _SwipeAreaContentState extends ConsumerState<_SwipeAreaContent> {
                       ],
                     ),
                     child: Material(
-                      color: Colors.transparent,
+                      color: AppColors.transparent,
                       child: InkWell(
                         onTap: () {
                           Navigator.of(dialogContext).pop();
@@ -739,7 +717,7 @@ class _SwipeAreaContentState extends ConsumerState<_SwipeAreaContent> {
                             style: theme.textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
-                              color: Colors.white,
+                              color: AppColors.white,
                               letterSpacing: 0.5,
                             ),
                             textAlign: TextAlign.center,
@@ -1092,7 +1070,7 @@ class _SwipeTabState extends ConsumerState<_SwipeTab> {
                               ],
                             ),
                             child: Material(
-                              color: Colors.transparent,
+                              color: AppColors.transparent,
                               child: InkWell(
                                 onTap: openAlbumPicker,
                                 borderRadius: BorderRadius.circular(16),
@@ -1106,7 +1084,7 @@ class _SwipeTabState extends ConsumerState<_SwipeTab> {
                                     children: [
                                       Icon(
                                         Icons.folder_open_rounded,
-                                        color: Colors.white,
+                                        color: AppColors.white,
                                         size: 24,
                                       ),
                                       const SizedBox(width: 12),
@@ -1116,7 +1094,7 @@ class _SwipeTabState extends ConsumerState<_SwipeTab> {
                                             ?.copyWith(
                                               fontWeight: FontWeight.bold,
                                               fontSize: 16,
-                                              color: Colors.white,
+                                              color: AppColors.white,
                                               letterSpacing: 0.5,
                                             ),
                                       ),
@@ -1140,7 +1118,7 @@ class _SwipeTabState extends ConsumerState<_SwipeTab> {
                               ),
                             ),
                             child: Material(
-                              color: Colors.transparent,
+                              color: AppColors.transparent,
                               child: InkWell(
                                 onTap: () {
                                   ref.invalidate(
@@ -1266,6 +1244,12 @@ class _SwipeTabState extends ConsumerState<_SwipeTab> {
                             child: Text(
                               l10n.undo,
                               overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.primary, // Daha belirgin renk
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
                             style: OutlinedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 16),
@@ -1273,13 +1257,14 @@ class _SwipeTabState extends ConsumerState<_SwipeTab> {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               side: BorderSide(
-                                color: Theme.of(context).colorScheme.outline,
+                                color: Theme.of(context).colorScheme.primary
+                                    .withOpacity(0.6), // Primary renkte border
                                 width: 1.5,
                               ),
                               foregroundColor: Theme.of(
                                 context,
                               ).colorScheme.outline,
-                              backgroundColor: Colors.transparent,
+                              backgroundColor: AppColors.transparent,
                             ),
                           ),
                         ),
@@ -1445,6 +1430,12 @@ class _SwipeTabState extends ConsumerState<_SwipeTab> {
                               foregroundColor: Theme.of(
                                 context,
                               ).colorScheme.onError,
+                              side: BorderSide(
+                                color: AppColors.error.withOpacity(
+                                  0.9,
+                                ), // Kırmızı border
+                                width: 1.5,
+                              ),
                             ),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
@@ -1548,7 +1539,10 @@ class _BlurTabState extends ConsumerState<_BlurTab> {
             ? [selectedAlbum]
             : albums.where((a) => !a.isAll).toList();
 
-        final hasResults = blurState.totalBlurryPhotos > 0;
+        // Eğer tarama tamamlandıysa, sonuç olsun ya da olmasın results view göster
+        // Böylece no results ekranı da gösterilebilir
+        final hasResults =
+            blurState.hasCompletedScan || blurState.totalBlurryPhotos > 0;
         final isScanning = blurState.isScanning;
 
         // Tarama yapılırken full-screen overlay göster
@@ -1631,6 +1625,12 @@ class _BlurTabState extends ConsumerState<_BlurTab> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
+                      side: BorderSide(
+                        color: AppColors.error.withOpacity(
+                          0.9,
+                        ), // Kırmızı border
+                        width: 1.5,
+                      ),
                     ),
                   ),
                 ],
@@ -1659,24 +1659,25 @@ class _BlurTabState extends ConsumerState<_BlurTab> {
               right: 0,
               child: Container(
                 padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surface,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 10,
-                      offset: const Offset(0, -2),
-                    ),
-                  ],
-                ),
+                decoration: BoxDecoration(color: theme.colorScheme.background),
                 child: SafeArea(
                   child: Consumer(
                     builder: (context, ref, _) {
-                      final scanLimitAsync = ref.watch(scanLimitProvider);
+                      // Check if there are actual photos to delete
+                      final allPhotos = <BlurPhoto>[];
+                      for (final entry
+                          in blurState.blurryPhotosByAlbum.entries) {
+                        allPhotos.addAll(entry.value);
+                      }
+                      final hasPhotosToDelete = allPhotos.isNotEmpty;
+
+                      final blurScanLimitAsync = ref.watch(
+                        blurScanLimitProvider,
+                      );
                       final isPremiumAsync = ref.watch(isPremiumProvider);
 
-                      return scanLimitAsync.when(
-                        loading: () => hasResults
+                      return blurScanLimitAsync.when(
+                        loading: () => hasPhotosToDelete
                             ? FilledButton.icon(
                                 onPressed: () async {
                                   final allPhotos = <BlurPhoto>[];
@@ -1788,8 +1789,16 @@ class _BlurTabState extends ConsumerState<_BlurTab> {
                                     vertical: 16,
                                   ),
                                   minimumSize: const Size(double.infinity, 56),
-                                  backgroundColor: theme.colorScheme.error,
+                                  backgroundColor: AppColors.error.withOpacity(
+                                    0.85,
+                                  ), // Soluk iç renk
                                   foregroundColor: theme.colorScheme.onError,
+                                  side: BorderSide(
+                                    color: AppColors.error.withOpacity(
+                                      0.9,
+                                    ), // Kırmızı border
+                                    width: 1.5,
+                                  ),
                                 ),
                               )
                             : _buildModernScanButton(
@@ -1802,7 +1811,7 @@ class _BlurTabState extends ConsumerState<_BlurTab> {
                                 isEnabled: false,
                                 isError: false,
                               ),
-                        error: (_, __) => hasResults
+                        error: (_, __) => hasPhotosToDelete
                             ? FilledButton.icon(
                                 onPressed: () async {
                                   final allPhotos = <BlurPhoto>[];
@@ -1914,8 +1923,16 @@ class _BlurTabState extends ConsumerState<_BlurTab> {
                                     vertical: 16,
                                   ),
                                   minimumSize: const Size(double.infinity, 56),
-                                  backgroundColor: theme.colorScheme.error,
+                                  backgroundColor: AppColors.error.withOpacity(
+                                    0.85,
+                                  ), // Soluk iç renk
                                   foregroundColor: theme.colorScheme.onError,
+                                  side: BorderSide(
+                                    color: AppColors.error.withOpacity(
+                                      0.9,
+                                    ), // Kırmızı border
+                                    width: 1.5,
+                                  ),
                                 ),
                               )
                             : _buildModernScanButton(
@@ -1930,7 +1947,7 @@ class _BlurTabState extends ConsumerState<_BlurTab> {
                               ),
                         data: (scanLimit) {
                           return isPremiumAsync.when(
-                            loading: () => hasResults
+                            loading: () => hasPhotosToDelete
                                 ? FilledButton.icon(
                                     onPressed: () async {
                                       final allPhotos = <BlurPhoto>[];
@@ -2001,6 +2018,12 @@ class _BlurTabState extends ConsumerState<_BlurTab> {
                                       backgroundColor: theme.colorScheme.error,
                                       foregroundColor:
                                           theme.colorScheme.onError,
+                                      side: BorderSide(
+                                        color: AppColors.error.withOpacity(
+                                          0.9,
+                                        ), // Kırmızı border
+                                        width: 1.5,
+                                      ),
                                     ),
                                   )
                                 : _buildModernScanButton(
@@ -2013,7 +2036,7 @@ class _BlurTabState extends ConsumerState<_BlurTab> {
                                     isEnabled: false,
                                     isError: false,
                                   ),
-                            error: (_, __) => hasResults
+                            error: (_, __) => hasPhotosToDelete
                                 ? FilledButton.icon(
                                     onPressed: () async {
                                       final allPhotos = <BlurPhoto>[];
@@ -2084,6 +2107,12 @@ class _BlurTabState extends ConsumerState<_BlurTab> {
                                       backgroundColor: theme.colorScheme.error,
                                       foregroundColor:
                                           theme.colorScheme.onError,
+                                      side: BorderSide(
+                                        color: AppColors.error.withOpacity(
+                                          0.9,
+                                        ), // Kırmızı border
+                                        width: 1.5,
+                                      ),
                                     ),
                                   )
                                 : _buildModernScanButton(
@@ -2100,7 +2129,12 @@ class _BlurTabState extends ConsumerState<_BlurTab> {
                               final hasNoScanRights =
                                   !isPremium && scanLimit <= 0;
 
-                              return hasResults
+                              // No blurry photos found durumunda hiçbir buton gösterilmez
+                              if (hasResults && !hasPhotosToDelete) {
+                                return const SizedBox.shrink();
+                              }
+
+                              return hasResults && hasPhotosToDelete
                                   ? FilledButton.icon(
                                       onPressed: () async {
                                         final allPhotos = <BlurPhoto>[];
@@ -2139,6 +2173,11 @@ class _BlurTabState extends ConsumerState<_BlurTab> {
                                                 style: FilledButton.styleFrom(
                                                   backgroundColor:
                                                       theme.colorScheme.error,
+                                                  side: BorderSide(
+                                                    color: AppColors.error
+                                                        .withOpacity(0.9),
+                                                    width: 1.5,
+                                                  ),
                                                 ),
                                                 child: Text(l10n.delete),
                                               ),
@@ -2175,6 +2214,12 @@ class _BlurTabState extends ConsumerState<_BlurTab> {
                                             theme.colorScheme.error,
                                         foregroundColor:
                                             theme.colorScheme.onError,
+                                        side: BorderSide(
+                                          color: AppColors.error.withOpacity(
+                                            0.9,
+                                          ), // Kırmızı border
+                                          width: 1.5,
+                                        ),
                                       ),
                                     )
                                   : _buildModernScanButton(
@@ -2233,24 +2278,10 @@ class _BlurTabState extends ConsumerState<_BlurTab> {
       children: [
         // Kompakt info card
         Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                theme.colorScheme.primaryContainer,
-                theme.colorScheme.secondaryContainer,
-              ],
-            ),
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: theme.colorScheme.primary.withOpacity(0.1),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
+          padding: const EdgeInsets.all(14),
+          decoration: AppDecorations.floatingCard(
+            borderRadius: 18,
+            color: theme.colorScheme.surface,
           ),
           child: Row(
             children: [
@@ -2442,87 +2473,37 @@ class _BlurTabState extends ConsumerState<_BlurTab> {
     required bool isEnabled,
     required bool isError,
   }) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: isEnabled && !isError
-            ? LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  theme.colorScheme.primary,
-                  theme.colorScheme.primary.withOpacity(0.8),
-                ],
-              )
-            : null,
-        color: isError
-            ? theme.colorScheme.errorContainer
-            : !isEnabled
-            ? theme.colorScheme.surfaceContainerHighest
-            : null,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: isEnabled && !isError
-            ? [
-                BoxShadow(
-                  color: theme.colorScheme.primary.withOpacity(0.3),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                  spreadRadius: 0,
-                ),
-              ]
-            : null,
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onPressed,
-          borderRadius: BorderRadius.circular(16),
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: (isEnabled && !isError)
-                        ? Colors.white.withOpacity(0.2)
-                        : theme.colorScheme.onSurface.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(
-                    icon,
-                    size: 24,
-                    color: isError
-                        ? theme.colorScheme.onErrorContainer
-                        : isEnabled
-                        ? Colors.white
-                        : theme.colorScheme.onSurface.withOpacity(0.6),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  label,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    color: isError
-                        ? theme.colorScheme.onErrorContainer
-                        : isEnabled
-                        ? Colors.white
-                        : theme.colorScheme.onSurface.withOpacity(0.6),
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                if (isEnabled && !isError) ...[
-                  const SizedBox(width: 8),
-                  Icon(
-                    Icons.arrow_forward_rounded,
-                    size: 20,
-                    color: Colors.white,
-                  ),
-                ],
-              ],
-            ),
+    return SizedBox(
+      width: double.infinity,
+      child: FilledButton(
+        onPressed: isEnabled ? onPressed : null,
+        style: FilledButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          minimumSize: const Size(double.infinity, 56),
+          backgroundColor: isError
+              ? theme.colorScheme.error
+              : isEnabled
+              ? AppColors.primary.withOpacity(0.85)
+              : theme.colorScheme.surfaceContainerHighest,
+          foregroundColor: isError
+              ? theme.colorScheme.onError
+              : isEnabled
+              ? AppColors.white
+              : theme.colorScheme.onSurface.withOpacity(0.6),
+          side: BorderSide(
+            color: isError
+                ? AppColors.error.withOpacity(0.9)
+                : isEnabled
+                ? AppColors.primary.withOpacity(0.9)
+                : theme.colorScheme.onSurface.withOpacity(0.3),
+            width: 1.5,
+          ),
+        ),
+        child: Text(
+          label,
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+            fontSize: 15,
           ),
         ),
       ),
@@ -2541,7 +2522,7 @@ class _BlurTabState extends ConsumerState<_BlurTab> {
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 3),
         child: Material(
-          color: Colors.transparent,
+          color: AppColors.transparent,
           child: InkWell(
             onTap: onTap,
             borderRadius: BorderRadius.circular(10),
@@ -2611,39 +2592,211 @@ class _BlurTabState extends ConsumerState<_BlurTab> {
     if (allPhotos.isEmpty) {
       return Center(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              // Modern illustration container
               Container(
-                padding: const EdgeInsets.all(20),
+                width: 200,
+                height: 200,
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.primaryContainer.withValues(
-                    alpha: 0.3,
+                  borderRadius: BorderRadius.circular(32),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      AppColors.primary.withOpacity(0.15),
+                      AppColors.secondary.withOpacity(0.1),
+                    ],
                   ),
-                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withOpacity(0.2),
+                      blurRadius: 40,
+                      spreadRadius: 8,
+                      offset: const Offset(0, 12),
+                    ),
+                  ],
                 ),
-                child: Icon(
-                  Icons.check_circle_outline,
-                  size: 64,
-                  color: theme.colorScheme.primary,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    // Background pattern
+                    Positioned.fill(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(32),
+                          gradient: RadialGradient(
+                            center: Alignment.topRight,
+                            radius: 1.5,
+                            colors: [
+                              AppColors.accent.withOpacity(0.1),
+                              AppColors.transparent,
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Main icon with decorative elements
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: AppColors.primary.withOpacity(0.1),
+                            border: Border.all(
+                              color: AppColors.primary.withOpacity(0.3),
+                              width: 2,
+                            ),
+                          ),
+                          child: Icon(
+                            Icons.image_not_supported_rounded,
+                            size: 64,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        // Decorative dots
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: AppColors.primary.withOpacity(0.4),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Container(
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: AppColors.secondary.withOpacity(0.4),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Container(
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: AppColors.accent.withOpacity(0.4),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 40),
+              // Main title
               Text(
-                l10n.noResultsFound,
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
+                l10n.noBlurryPhotosFoundTitle,
+                style: theme.textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 28,
+                  letterSpacing: -0.8,
+                  color: theme.colorScheme.onSurface,
+                  height: 1.2,
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 8),
-              Text(
-                l10n.noBlurryPhotosFound,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+              const SizedBox(height: 16),
+              // Detailed description
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Column(
+                  children: [
+                    Text(
+                      l10n.scanCompletedSuccessfully,
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.8,
+                        ),
+                        height: 1.6,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      l10n.noBlurryPhotosFound,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.65,
+                        ),
+                        height: 1.5,
+                        fontSize: 15,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
                 ),
-                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 40),
+              // Retry scan button with gradient
+              Consumer(
+                builder: (context, ref, _) {
+                  return Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      gradient: LinearGradient(
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                        colors: [
+                          AppColors.primary.withOpacity(0.85), // Soluk iç renk
+                          AppColors.accent.withOpacity(0.75), // Soluk iç renk
+                        ],
+                      ),
+                      border: Border.all(
+                        color: AppColors.primary.withOpacity(
+                          0.9,
+                        ), // Koyu border
+                        width: 1.5,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primary.withOpacity(0.2),
+                          blurRadius: 16,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: FilledButton.icon(
+                      onPressed: () {
+                        ref.read(blurDetectionProvider.notifier).clear();
+                      },
+                      icon: const Icon(Icons.refresh_rounded, size: 22),
+                      label: Text(
+                        l10n.startNewScan,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      style: FilledButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 32,
+                          vertical: 18,
+                        ),
+                        minimumSize: const Size(240, 56),
+                        backgroundColor: AppColors.transparent,
+                        foregroundColor: AppColors.white,
+                        shadowColor: AppColors.transparent,
+                      ),
+                    ),
+                  );
+                },
               ),
             ],
           ),
@@ -2740,29 +2893,32 @@ class _BlurTabState extends ConsumerState<_BlurTab> {
           ),
         ),
         const SizedBox(height: 8),
-        // Kompakt Stats Cards
-        Row(
-          children: [
-            Expanded(
-              child: _BlurTabState._buildModernStatCard(
-                theme,
-                Icons.photo_library,
-                '${allPhotos.length}',
-                l10n.photo,
-                theme.colorScheme.secondaryContainer,
+        // Compact Stats Cards
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+          child: Row(
+            children: [
+              Expanded(
+                child: _BlurTabState._buildCompactStatCard(
+                  theme,
+                  Icons.photo_library_rounded,
+                  '${allPhotos.length}',
+                  l10n.photo,
+                  AppColors.primary,
+                ),
               ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _BlurTabState._buildModernStatCard(
-                theme,
-                Icons.storage,
-                '${state.totalSpaceToSaveMB.toStringAsFixed(1)} MB',
-                l10n.spaceToSave,
-                theme.colorScheme.tertiaryContainer,
+              const SizedBox(width: 10),
+              Expanded(
+                child: _BlurTabState._buildCompactStatCard(
+                  theme,
+                  Icons.storage_rounded,
+                  '${state.totalSpaceToSaveMB.toStringAsFixed(1)} MB',
+                  l10n.spaceToSave,
+                  AppColors.accent,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
         const SizedBox(height: 8),
         // Kompakt Photos Grid - Expanded ile scroll edilebilir yap
@@ -2771,47 +2927,87 @@ class _BlurTabState extends ConsumerState<_BlurTab> {
     );
   }
 
-  static Widget _buildModernStatCard(
+  static Widget _buildCompactStatCard(
     ThemeData theme,
     IconData icon,
     String value,
     String label,
-    Color backgroundColor,
+    Color accentColor,
   ) {
+    final isDark = theme.brightness == Brightness.dark;
+
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: backgroundColor,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            accentColor.withOpacity(isDark ? 0.18 : 0.1),
+            accentColor.withOpacity(isDark ? 0.12 : 0.06),
+          ],
+        ),
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: accentColor.withOpacity(isDark ? 0.25 : 0.15),
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: accentColor.withOpacity(isDark ? 0.15 : 0.1),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+            spreadRadius: 0,
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Icon(
-            icon,
-            color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-            size: 20,
-          ),
-          const SizedBox(height: 12),
-          Text(
-            value,
-            style: theme.textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: theme.colorScheme.onSurface,
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: accentColor.withOpacity(isDark ? 0.2 : 0.12),
+              borderRadius: BorderRadius.circular(10),
             ),
+            child: Icon(icon, color: accentColor, size: 18),
           ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    value,
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 18,
+                      color: theme.colorScheme.onSurface,
+                      letterSpacing: -0.4,
+                    ),
+                    maxLines: 1,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    label,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.onSurface.withValues(
+                        alpha: 0.65,
+                      ),
+                      fontWeight: FontWeight.w500,
+                      fontSize: 11,
+                    ),
+                    maxLines: 1,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -2879,7 +3075,7 @@ class _BlurTabState extends ConsumerState<_BlurTab> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
+            color: AppColors.black.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 4),
             spreadRadius: 0,
@@ -2962,7 +3158,7 @@ class _BlurTabState extends ConsumerState<_BlurTab> {
                         top: 12,
                         right: 12,
                         child: Material(
-                          color: Colors.black.withValues(alpha: 0.5),
+                          color: AppColors.black.withValues(alpha: 0.5),
                           shape: const CircleBorder(),
                           child: InkWell(
                             onTap: () => _deletePhoto(context, photo, theme),
@@ -2972,7 +3168,7 @@ class _BlurTabState extends ConsumerState<_BlurTab> {
                               child: const Icon(
                                 Icons.delete_outline,
                                 size: 18,
-                                color: Colors.white,
+                                color: AppColors.white,
                               ),
                             ),
                           ),
@@ -3010,6 +3206,10 @@ class _BlurTabState extends ConsumerState<_BlurTab> {
             onPressed: () => Navigator.of(context).pop(true),
             style: FilledButton.styleFrom(
               backgroundColor: theme.colorScheme.error,
+              side: BorderSide(
+                color: AppColors.error.withOpacity(0.9),
+                width: 1.5,
+              ),
             ),
             child: Text(l10n.delete),
           ),
@@ -3037,15 +3237,15 @@ class _BlurTabState extends ConsumerState<_BlurTab> {
     final isPixelated = photo.isPixelated();
     final isBlurry = photo.isBlurry();
     final problemColor = isPixelated && isBlurry
-        ? Colors.purple
+        ? AppColors.secondary
         : isPixelated
-        ? Colors.blue
-        : Colors.red;
+        ? AppColors.blurTab
+        : AppColors.error;
 
     await showDialog(
       context: context,
       builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
+        backgroundColor: AppColors.transparent,
         child: Container(
           constraints: BoxConstraints(
             maxHeight: MediaQuery.of(context).size.height * 0.9,
@@ -3082,7 +3282,9 @@ class _BlurTabState extends ConsumerState<_BlurTab> {
                                     vertical: 4,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: Colors.red.withValues(alpha: 0.2),
+                                    color: AppColors.error.withValues(
+                                      alpha: 0.2,
+                                    ),
                                     borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: Text(
@@ -3092,7 +3294,7 @@ class _BlurTabState extends ConsumerState<_BlurTab> {
                                     style: TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
-                                      color: Colors.red.shade700,
+                                      color: AppColors.error,
                                     ),
                                   ),
                                 ),
@@ -3103,7 +3305,9 @@ class _BlurTabState extends ConsumerState<_BlurTab> {
                                     vertical: 4,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: Colors.blue.withValues(alpha: 0.2),
+                                    color: AppColors.blurTab.withValues(
+                                      alpha: 0.2,
+                                    ),
                                     borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: Text(
@@ -3113,7 +3317,7 @@ class _BlurTabState extends ConsumerState<_BlurTab> {
                                     style: TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
-                                      color: Colors.blue.shade700,
+                                      color: AppColors.blurTab,
                                     ),
                                   ),
                                 ),
@@ -3263,7 +3467,10 @@ class _DuplicateTabState extends ConsumerState<_DuplicateTab> {
             ? [selectedAlbum]
             : albums.where((a) => !a.isAll).toList();
 
-        final hasResults = duplicateState.totalGroups > 0;
+        // Eğer tarama tamamlandıysa, sonuç olsun ya da olmasın results view göster
+        // Böylece no results ekranı da gösterilebilir
+        final hasResults =
+            duplicateState.hasCompletedScan || duplicateState.totalGroups > 0;
         final isScanning = duplicateState.isScanning;
 
         // Tarama yapılırken full-screen overlay göster
@@ -3346,6 +3553,12 @@ class _DuplicateTabState extends ConsumerState<_DuplicateTab> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
+                      side: BorderSide(
+                        color: AppColors.error.withOpacity(
+                          0.9,
+                        ), // Kırmızı border
+                        width: 1.5,
+                      ),
                     ),
                   ),
                 ],
@@ -3374,24 +3587,21 @@ class _DuplicateTabState extends ConsumerState<_DuplicateTab> {
               right: 0,
               child: Container(
                 padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surface,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 10,
-                      offset: const Offset(0, -2),
-                    ),
-                  ],
-                ),
+                decoration: BoxDecoration(color: theme.colorScheme.background),
                 child: SafeArea(
                   child: Consumer(
                     builder: (context, ref, _) {
-                      final scanLimitAsync = ref.watch(scanLimitProvider);
+                      // Check if there are actual duplicate groups to delete
+                      final hasPhotosToDelete =
+                          duplicateState.totalDuplicatePhotos > 0;
+
+                      final duplicateScanLimitAsync = ref.watch(
+                        duplicateScanLimitProvider,
+                      );
                       final isPremiumAsync = ref.watch(isPremiumProvider);
 
-                      return scanLimitAsync.when(
-                        loading: () => hasResults
+                      return duplicateScanLimitAsync.when(
+                        loading: () => hasPhotosToDelete
                             ? FilledButton.icon(
                                 onPressed: () async {
                                   final l10n = AppLocalizations.of(context)!;
@@ -3442,8 +3652,16 @@ class _DuplicateTabState extends ConsumerState<_DuplicateTab> {
                                     vertical: 16,
                                   ),
                                   minimumSize: const Size(double.infinity, 56),
-                                  backgroundColor: theme.colorScheme.error,
+                                  backgroundColor: AppColors.error.withOpacity(
+                                    0.85,
+                                  ), // Soluk iç renk
                                   foregroundColor: theme.colorScheme.onError,
+                                  side: BorderSide(
+                                    color: AppColors.error.withOpacity(
+                                      0.9,
+                                    ), // Kırmızı border
+                                    width: 1.5,
+                                  ),
                                 ),
                               )
                             : _DuplicateTabState._buildModernScanButton(
@@ -3456,7 +3674,7 @@ class _DuplicateTabState extends ConsumerState<_DuplicateTab> {
                                 isEnabled: false,
                                 isError: false,
                               ),
-                        error: (_, __) => hasResults
+                        error: (_, __) => hasPhotosToDelete
                             ? FilledButton.icon(
                                 onPressed: () async {
                                   final l10n = AppLocalizations.of(context)!;
@@ -3561,8 +3779,16 @@ class _DuplicateTabState extends ConsumerState<_DuplicateTab> {
                                     vertical: 16,
                                   ),
                                   minimumSize: const Size(double.infinity, 56),
-                                  backgroundColor: theme.colorScheme.error,
+                                  backgroundColor: AppColors.error.withOpacity(
+                                    0.85,
+                                  ), // Soluk iç renk
                                   foregroundColor: theme.colorScheme.onError,
+                                  side: BorderSide(
+                                    color: AppColors.error.withOpacity(
+                                      0.9,
+                                    ), // Kırmızı border
+                                    width: 1.5,
+                                  ),
                                 ),
                               )
                             : FilledButton.icon(
@@ -3578,7 +3804,7 @@ class _DuplicateTabState extends ConsumerState<_DuplicateTab> {
                               ),
                         data: (scanLimit) {
                           return isPremiumAsync.when(
-                            loading: () => hasResults
+                            loading: () => hasPhotosToDelete
                                 ? FilledButton.icon(
                                     onPressed: () async {
                                       final l10n = AppLocalizations.of(
@@ -3654,7 +3880,7 @@ class _DuplicateTabState extends ConsumerState<_DuplicateTab> {
                                     isEnabled: false,
                                     isError: false,
                                   ),
-                            error: (_, __) => hasResults
+                            error: (_, __) => hasPhotosToDelete
                                 ? FilledButton.icon(
                                     onPressed: () async {
                                       final l10n = AppLocalizations.of(
@@ -3734,7 +3960,12 @@ class _DuplicateTabState extends ConsumerState<_DuplicateTab> {
                               final hasNoScanRights =
                                   !isPremium && scanLimit <= 0;
 
-                              return hasResults
+                              // No duplicates found durumunda hiçbir buton gösterilmez
+                              if (hasResults && !hasPhotosToDelete) {
+                                return const SizedBox.shrink();
+                              }
+
+                              return hasResults && hasPhotosToDelete
                                   ? FilledButton.icon(
                                       onPressed: () async {
                                         final l10n = AppLocalizations.of(
@@ -3766,6 +3997,11 @@ class _DuplicateTabState extends ConsumerState<_DuplicateTab> {
                                                 style: FilledButton.styleFrom(
                                                   backgroundColor:
                                                       theme.colorScheme.error,
+                                                  side: BorderSide(
+                                                    color: AppColors.error
+                                                        .withOpacity(0.9),
+                                                    width: 1.5,
+                                                  ),
                                                 ),
                                                 child: Text(l10n.delete),
                                               ),
@@ -3974,87 +4210,37 @@ class _DuplicateTabState extends ConsumerState<_DuplicateTab> {
     required bool isEnabled,
     required bool isError,
   }) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: isEnabled && !isError
-            ? LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  theme.colorScheme.primary,
-                  theme.colorScheme.primary.withOpacity(0.8),
-                ],
-              )
-            : null,
-        color: isError
-            ? theme.colorScheme.errorContainer
-            : !isEnabled
-            ? theme.colorScheme.surfaceContainerHighest
-            : null,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: isEnabled && !isError
-            ? [
-                BoxShadow(
-                  color: theme.colorScheme.primary.withOpacity(0.3),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                  spreadRadius: 0,
-                ),
-              ]
-            : null,
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onPressed,
-          borderRadius: BorderRadius.circular(16),
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: (isEnabled && !isError)
-                        ? Colors.white.withOpacity(0.2)
-                        : theme.colorScheme.onSurface.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(
-                    icon,
-                    size: 24,
-                    color: isError
-                        ? theme.colorScheme.onErrorContainer
-                        : isEnabled
-                        ? Colors.white
-                        : theme.colorScheme.onSurface.withOpacity(0.6),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  label,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    color: isError
-                        ? theme.colorScheme.onErrorContainer
-                        : isEnabled
-                        ? Colors.white
-                        : theme.colorScheme.onSurface.withOpacity(0.6),
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                if (isEnabled && !isError) ...[
-                  const SizedBox(width: 8),
-                  Icon(
-                    Icons.arrow_forward_rounded,
-                    size: 20,
-                    color: Colors.white,
-                  ),
-                ],
-              ],
-            ),
+    return SizedBox(
+      width: double.infinity,
+      child: FilledButton(
+        onPressed: isEnabled ? onPressed : null,
+        style: FilledButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          minimumSize: const Size(double.infinity, 56),
+          backgroundColor: isError
+              ? theme.colorScheme.error
+              : isEnabled
+              ? AppColors.primary.withOpacity(0.85)
+              : theme.colorScheme.surfaceContainerHighest,
+          foregroundColor: isError
+              ? theme.colorScheme.onError
+              : isEnabled
+              ? AppColors.white
+              : theme.colorScheme.onSurface.withOpacity(0.6),
+          side: BorderSide(
+            color: isError
+                ? AppColors.error.withOpacity(0.9)
+                : isEnabled
+                ? AppColors.primary.withOpacity(0.9)
+                : theme.colorScheme.onSurface.withOpacity(0.3),
+            width: 1.5,
+          ),
+        ),
+        child: Text(
+          label,
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+            fontSize: 15,
           ),
         ),
       ),
@@ -4074,39 +4260,211 @@ class _DuplicateTabState extends ConsumerState<_DuplicateTab> {
     if (albumEntries.isEmpty) {
       return Center(
         child: Padding(
-          padding: const EdgeInsets.all(32),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              // Modern illustration container
               Container(
-                padding: const EdgeInsets.all(24),
+                width: 200,
+                height: 200,
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.primaryContainer.withValues(
-                    alpha: 0.3,
+                  borderRadius: BorderRadius.circular(32),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      AppColors.secondary.withOpacity(0.15),
+                      AppColors.primary.withOpacity(0.1),
+                    ],
                   ),
-                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.secondary.withOpacity(0.2),
+                      blurRadius: 40,
+                      spreadRadius: 8,
+                      offset: const Offset(0, 12),
+                    ),
+                  ],
                 ),
-                child: Icon(
-                  Icons.check_circle_outline,
-                  size: 64,
-                  color: theme.colorScheme.primary,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    // Background pattern
+                    Positioned.fill(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(32),
+                          gradient: RadialGradient(
+                            center: Alignment.topLeft,
+                            radius: 1.5,
+                            colors: [
+                              AppColors.accent.withOpacity(0.1),
+                              AppColors.transparent,
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Main icon with decorative elements
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: AppColors.secondary.withOpacity(0.1),
+                            border: Border.all(
+                              color: AppColors.secondary.withOpacity(0.3),
+                              width: 2,
+                            ),
+                          ),
+                          child: Icon(
+                            Icons.collections_rounded,
+                            size: 64,
+                            color: AppColors.secondary,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        // Decorative elements - overlapping circles
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              width: 10,
+                              height: 10,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: AppColors.secondary.withOpacity(0.5),
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Container(
+                              width: 10,
+                              height: 10,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: AppColors.primary.withOpacity(0.5),
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Container(
+                              width: 10,
+                              height: 10,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: AppColors.accent.withOpacity(0.5),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 40),
+              // Main title
               Text(
-                l10n.noResultsFound,
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
+                l10n.noDuplicatesFoundTitle,
+                style: theme.textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 28,
+                  letterSpacing: -0.8,
+                  color: theme.colorScheme.onSurface,
+                  height: 1.2,
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 8),
-              Text(
-                l10n.noDuplicatePhotosFound,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+              const SizedBox(height: 16),
+              // Detailed description
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Column(
+                  children: [
+                    Text(
+                      l10n.scanCompletedSuccessfullyDuplicate,
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.8,
+                        ),
+                        height: 1.6,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      l10n.noDuplicatePhotosFound,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.65,
+                        ),
+                        height: 1.5,
+                        fontSize: 15,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
                 ),
-                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 40),
+              // Retry scan button with gradient
+              Consumer(
+                builder: (context, ref, _) {
+                  return Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      gradient: LinearGradient(
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                        colors: [
+                          AppColors.primary.withOpacity(0.85), // Soluk iç renk
+                          AppColors.accent.withOpacity(0.75), // Soluk iç renk
+                        ],
+                      ),
+                      border: Border.all(
+                        color: AppColors.primary.withOpacity(
+                          0.9,
+                        ), // Koyu border
+                        width: 1.5,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primary.withOpacity(0.2),
+                          blurRadius: 16,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: FilledButton.icon(
+                      onPressed: () {
+                        ref.read(duplicateDetectionProvider.notifier).clear();
+                      },
+                      icon: const Icon(Icons.refresh_rounded, size: 22),
+                      label: Text(
+                        l10n.startNewScan,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      style: FilledButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 32,
+                          vertical: 18,
+                        ),
+                        minimumSize: const Size(240, 56),
+                        backgroundColor: AppColors.transparent,
+                        foregroundColor: AppColors.white,
+                        shadowColor: AppColors.transparent,
+                      ),
+                    ),
+                  );
+                },
               ),
             ],
           ),
@@ -4200,95 +4558,221 @@ class _DuplicateTabState extends ConsumerState<_DuplicateTab> {
             ],
           ),
         ),
-        const SizedBox(height: 8),
-        // Kompakt Stats Cards
-        Row(
-          children: [
-            Expanded(
-              child: _BlurTabState._buildModernStatCard(
-                theme,
-                Icons.collections,
-                '${state.totalGroups}',
-                l10n.group,
-                theme.colorScheme.secondaryContainer,
+        // Modern Stats Cards with gradient
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+          child: Row(
+            children: [
+              Expanded(
+                child: _buildEnhancedStatCard(
+                  theme,
+                  Icons.collections_rounded,
+                  '${state.totalGroups}',
+                  l10n.group,
+                  AppColors.secondary,
+                ),
               ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _BlurTabState._buildModernStatCard(
-                theme,
-                Icons.photo_library,
-                '${state.totalDuplicatePhotos}',
-                l10n.photo,
-                theme.colorScheme.tertiaryContainer,
+              const SizedBox(width: 10),
+              Expanded(
+                child: _buildCompactStatCard(
+                  theme,
+                  Icons.photo_library_rounded,
+                  '${state.totalDuplicatePhotos}',
+                  l10n.photo,
+                  AppColors.primary,
+                ),
               ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _BlurTabState._buildModernStatCard(
-                theme,
-                Icons.storage,
-                '${state.totalSpaceToSaveMB.toStringAsFixed(1)} MB',
-                l10n.spaceToSave,
-                theme.colorScheme.errorContainer.withValues(alpha: 0.3),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _buildCompactStatCard(
+                  theme,
+                  Icons.storage_rounded,
+                  '${state.totalSpaceToSaveMB.toStringAsFixed(1)} MB',
+                  l10n.spaceToSave,
+                  AppColors.accent,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-        const SizedBox(height: 8),
-        // Kompakt Results grid - Kaydırılabilir yapıldı
-        Expanded(child: _buildDuplicateGrid(context, state, theme, l10n)),
+        // Modern Duplicate Grid
+        Expanded(child: buildDuplicateGrid(context, state, theme, l10n, ref)),
       ],
     );
   }
 
-  Widget _buildDuplicateGrid(
-    BuildContext context,
-    DuplicateDetectionState state,
+  Widget _buildCompactStatCard(
     ThemeData theme,
-    AppLocalizations l10n,
+    IconData icon,
+    String value,
+    String label,
+    Color accentColor,
   ) {
-    final allGroups = <DuplicatePhotoGroup>[];
-    for (final entry in state.duplicatesByAlbum.entries) {
-      allGroups.addAll(entry.value);
-    }
+    final isDark = theme.brightness == Brightness.dark;
 
-    if (allGroups.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return GridView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
-      physics: const BouncingScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 8,
-        mainAxisSpacing: 8,
-        childAspectRatio: 0.85,
-      ),
-      itemCount: allGroups.length,
-      itemBuilder: (context, index) {
-        final group = allGroups[index];
-        return TweenAnimationBuilder<double>(
-          tween: Tween(begin: 0.0, end: 1.0),
-          duration: Duration(milliseconds: 300 + (index * 50)),
-          curve: Curves.easeOut,
-          builder: (context, value, child) {
-            return Opacity(
-              opacity: value,
-              child: Transform.translate(
-                offset: Offset(0, 20 * (1 - value)),
-                child: child,
-              ),
-            );
-          },
-          child: _DuplicateGroupCard(
-            group: group,
-            onDelete: () => _deleteGroup(context, group, l10n, theme),
-            onTap: () => _showDuplicateGroupDetail(context, group, l10n, theme),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            accentColor.withOpacity(isDark ? 0.18 : 0.1),
+            accentColor.withOpacity(isDark ? 0.12 : 0.06),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: accentColor.withOpacity(isDark ? 0.25 : 0.15),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: accentColor.withOpacity(isDark ? 0.15 : 0.1),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+            spreadRadius: 0,
           ),
-        );
-      },
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: accentColor.withOpacity(isDark ? 0.2 : 0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: accentColor, size: 18),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    value,
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 18,
+                      color: theme.colorScheme.onSurface,
+                      letterSpacing: -0.4,
+                    ),
+                    maxLines: 1,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    label,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.onSurface.withValues(
+                        alpha: 0.65,
+                      ),
+                      fontWeight: FontWeight.w500,
+                      fontSize: 11,
+                    ),
+                    maxLines: 1,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEnhancedStatCard(
+    ThemeData theme,
+    IconData icon,
+    String value,
+    String label,
+    Color accentColor,
+  ) {
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Container(
+      height: 140, // Sabit yükseklik
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            accentColor.withOpacity(isDark ? 0.2 : 0.12),
+            accentColor.withOpacity(isDark ? 0.15 : 0.08),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: accentColor.withOpacity(isDark ? 0.3 : 0.2),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: accentColor.withOpacity(isDark ? 0.2 : 0.15),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+            spreadRadius: 0,
+          ),
+          BoxShadow(
+            color: AppColors.black.withValues(alpha: isDark ? 0.2 : 0.08),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+            spreadRadius: 0,
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: accentColor.withOpacity(isDark ? 0.25 : 0.15),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(icon, color: accentColor, size: 22),
+          ),
+          const Spacer(),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value,
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w800,
+                fontSize: 20,
+                color: theme.colorScheme.onSurface,
+                letterSpacing: -0.5,
+              ),
+              maxLines: 1,
+            ),
+          ),
+          const SizedBox(height: 4),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              label,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                fontWeight: FontWeight.w500,
+                fontSize: 12,
+              ),
+              maxLines: 1,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -4314,6 +4798,10 @@ class _DuplicateTabState extends ConsumerState<_DuplicateTab> {
             onPressed: () => Navigator.of(context).pop(true),
             style: FilledButton.styleFrom(
               backgroundColor: theme.colorScheme.error,
+              side: BorderSide(
+                color: AppColors.error.withOpacity(0.9),
+                width: 1.5,
+              ),
             ),
             child: Text(l10n.delete),
           ),
@@ -4341,7 +4829,7 @@ class _DuplicateTabState extends ConsumerState<_DuplicateTab> {
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppColors.transparent,
       builder: (context) => _DuplicateGroupDetailSheet(
         group: group,
         onDelete: () {
@@ -4375,7 +4863,7 @@ class _DuplicateGroupCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
+            color: AppColors.black.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 4),
             spreadRadius: 0,
@@ -4440,8 +4928,8 @@ class _DuplicateGroupCard extends StatelessWidget {
                               begin: Alignment.topCenter,
                               end: Alignment.bottomCenter,
                               colors: [
-                                Colors.transparent,
-                                Colors.black.withValues(alpha: 0.7),
+                                AppColors.transparent,
+                                AppColors.black.withValues(alpha: 0.7),
                               ],
                             ),
                           ),
@@ -4461,7 +4949,7 @@ class _DuplicateGroupCard extends StatelessWidget {
                             borderRadius: BorderRadius.circular(12),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.2),
+                                color: AppColors.black.withValues(alpha: 0.2),
                                 blurRadius: 4,
                                 offset: const Offset(0, 2),
                               ),
@@ -4482,7 +4970,7 @@ class _DuplicateGroupCard extends StatelessWidget {
                         top: 12,
                         right: 12,
                         child: Material(
-                          color: Colors.black.withValues(alpha: 0.5),
+                          color: AppColors.black.withValues(alpha: 0.5),
                           shape: const CircleBorder(),
                           child: InkWell(
                             onTap: onDelete,
@@ -4492,7 +4980,7 @@ class _DuplicateGroupCard extends StatelessWidget {
                               child: const Icon(
                                 Icons.delete_outline,
                                 size: 18,
-                                color: Colors.white,
+                                color: AppColors.white,
                               ),
                             ),
                           ),
@@ -4509,7 +4997,7 @@ class _DuplicateGroupCard extends StatelessWidget {
                             Text(
                               '${toDelete.length} ${l10n.photo}',
                               style: const TextStyle(
-                                color: Colors.white,
+                                color: AppColors.white,
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -4518,7 +5006,7 @@ class _DuplicateGroupCard extends StatelessWidget {
                             Text(
                               '${group.spaceToSaveMB.toStringAsFixed(1)} MB',
                               style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.9),
+                                color: AppColors.white.withValues(alpha: 0.9),
                                 fontSize: 11,
                                 fontWeight: FontWeight.w500,
                               ),
@@ -4636,13 +5124,24 @@ class _ScanLimitInfoState extends ConsumerState<_ScanLimitInfo>
           if (!mounted) return;
 
           try {
-            // Increase scan limit by 100
+            // Increase scan limit by 100 based on ad unit type
             final prefsService = PreferencesService();
-            await prefsService.increaseScanLimit(100);
-
-            // Refresh the provider
-            if (mounted) {
-              ref.invalidate(scanLimitProvider);
+            if (widget.adUnitType == AdUnitType.blurScanLimit) {
+              await prefsService.increaseBlurScanLimit(100);
+              if (mounted) {
+                ref.invalidate(blurScanLimitProvider);
+              }
+            } else if (widget.adUnitType == AdUnitType.duplicateScanLimit) {
+              await prefsService.increaseDuplicateScanLimit(100);
+              if (mounted) {
+                ref.invalidate(duplicateScanLimitProvider);
+              }
+            } else {
+              // Fallback to old scan limit for backward compatibility
+              await prefsService.increaseScanLimit(100);
+              if (mounted) {
+                ref.invalidate(scanLimitProvider);
+              }
             }
           } catch (e) {
             debugPrint('❌ [ScanLimitInfo] Error in onRewarded callback: $e');
@@ -4691,9 +5190,9 @@ class _ScanLimitInfoState extends ConsumerState<_ScanLimitInfo>
     showDialog(
       context: context,
       barrierDismissible: true,
-      barrierColor: Colors.black.withOpacity(0.6),
+      barrierColor: AppColors.black.withOpacity(0.6),
       builder: (dialogContext) => Dialog(
-        backgroundColor: Colors.transparent,
+        backgroundColor: AppColors.transparent,
         elevation: 0,
         insetPadding: const EdgeInsets.symmetric(horizontal: 24),
         child: TweenAnimationBuilder<double>(
@@ -4714,7 +5213,7 @@ class _ScanLimitInfoState extends ConsumerState<_ScanLimitInfo>
               borderRadius: BorderRadius.circular(24),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
+                  color: AppColors.black.withOpacity(0.2),
                   blurRadius: 24,
                   spreadRadius: 2,
                   offset: const Offset(0, 12),
@@ -4738,7 +5237,7 @@ class _ScanLimitInfoState extends ConsumerState<_ScanLimitInfo>
                 const SizedBox(height: 24),
                 // Watch Ad button - sadece reklam hazırsa tıklanabilir
                 Material(
-                  color: Colors.transparent,
+                  color: AppColors.transparent,
                   child: InkWell(
                     onTap: _isAdReady && !_isLoadingAd
                         ? () async {
@@ -4851,7 +5350,14 @@ class _ScanLimitInfoState extends ConsumerState<_ScanLimitInfo>
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
-    final scanLimitAsync = ref.watch(scanLimitProvider);
+
+    // Use appropriate provider based on ad unit type
+    final scanLimitAsync = widget.adUnitType == AdUnitType.blurScanLimit
+        ? ref.watch(blurScanLimitProvider)
+        : widget.adUnitType == AdUnitType.duplicateScanLimit
+        ? ref.watch(duplicateScanLimitProvider)
+        : ref.watch(scanLimitProvider);
+
     final isPremiumAsync = ref.watch(isPremiumProvider);
 
     return scanLimitAsync.when(
@@ -4864,350 +5370,16 @@ class _ScanLimitInfoState extends ConsumerState<_ScanLimitInfo>
           data: (isPremium) {
             if (isPremium) {
               // Premium kullanıcılar için şaşalı container - sonsuzluk işareti ve premium ikon
-              return Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surface,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: theme.colorScheme.outline.withOpacity(0.1),
-                    width: 1,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                      spreadRadius: 0,
-                    ),
-                  ],
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Premium scan rights container - şaşalı tasarım
-                    IntrinsicHeight(
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          // Premium scan rights badge - sonsuzluk işareti ile
-                          Expanded(
-                            flex: 2,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 10,
-                              ),
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: [
-                                    theme.colorScheme.primaryContainer,
-                                    theme.colorScheme.primaryContainer
-                                        .withOpacity(0.8),
-                                  ],
-                                ),
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                  color: theme.colorScheme.primary.withOpacity(
-                                    0.3,
-                                  ),
-                                  width: 2,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: theme.colorScheme.primary
-                                        .withOpacity(0.4),
-                                    blurRadius: 20,
-                                    offset: const Offset(0, 4),
-                                    spreadRadius: 3,
-                                  ),
-                                  BoxShadow(
-                                    color: theme.colorScheme.primary
-                                        .withOpacity(0.25),
-                                    blurRadius: 12,
-                                    offset: const Offset(0, 2),
-                                    spreadRadius: 1,
-                                  ),
-                                  BoxShadow(
-                                    color: theme.colorScheme.primary
-                                        .withOpacity(0.15),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 1),
-                                    spreadRadius: 0,
-                                  ),
-                                ],
-                              ),
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Icon(
-                                              Icons.search_rounded,
-                                              size: 13,
-                                              color: theme
-                                                  .colorScheme
-                                                  .onPrimaryContainer
-                                                  .withOpacity(0.9),
-                                            ),
-                                            const SizedBox(width: 5),
-                                            Flexible(
-                                              child: Text(
-                                                l10n.remainingScanRights,
-                                                style: theme
-                                                    .textTheme
-                                                    .labelSmall
-                                                    ?.copyWith(
-                                                      fontWeight:
-                                                          FontWeight.w700,
-                                                      fontSize: 10,
-                                                      color: theme
-                                                          .colorScheme
-                                                          .onPrimaryContainer
-                                                          .withOpacity(0.9),
-                                                      letterSpacing: 0.4,
-                                                    ),
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          '∞',
-                                          style: theme.textTheme.headlineSmall
-                                              ?.copyWith(
-                                                fontWeight: FontWeight.w900,
-                                                fontSize: 26,
-                                                color: theme
-                                                    .colorScheme
-                                                    .onPrimaryContainer,
-                                                letterSpacing: -1.5,
-                                                height: 1,
-                                                shadows: [
-                                                  Shadow(
-                                                    color: theme
-                                                        .colorScheme
-                                                        .primary
-                                                        .withOpacity(0.5),
-                                                    blurRadius: 10,
-                                                    offset: const Offset(0, 2),
-                                                  ),
-                                                  Shadow(
-                                                    color: theme
-                                                        .colorScheme
-                                                        .onPrimaryContainer
-                                                        .withOpacity(0.3),
-                                                    blurRadius: 6,
-                                                    offset: const Offset(0, 1),
-                                                  ),
-                                                ],
-                                              ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  // Premium icon button
-                                  Container(
-                                    width: 36,
-                                    height: 36,
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        begin: Alignment.topLeft,
-                                        end: Alignment.bottomRight,
-                                        colors: [
-                                          theme.colorScheme.primaryContainer,
-                                          theme.colorScheme.primaryContainer
-                                              .withOpacity(0.7),
-                                        ],
-                                      ),
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: theme.colorScheme.primary
-                                            .withOpacity(0.4),
-                                        width: 2,
-                                      ),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: theme.colorScheme.primary
-                                              .withOpacity(0.5),
-                                          blurRadius: 12,
-                                          offset: const Offset(0, 2),
-                                          spreadRadius: 2,
-                                        ),
-                                        BoxShadow(
-                                          color: theme.colorScheme.primary
-                                              .withOpacity(0.3),
-                                          blurRadius: 6,
-                                          offset: const Offset(0, 1),
-                                          spreadRadius: 0,
-                                        ),
-                                      ],
-                                    ),
-                                    child: Icon(
-                                      Icons.workspace_premium_rounded,
-                                      size: 22,
-                                      color:
-                                          theme.colorScheme.onPrimaryContainer,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          // Album selection dropdown button
-                          const SizedBox(width: 6),
-                          Expanded(
-                            flex: 2,
-                            child: Consumer(
-                              builder: (context, ref, _) {
-                                final albumsAsync = ref.watch(albumsProvider);
-                                final selectedAlbum = ref.watch(
-                                  selectedAlbumProvider,
-                                );
-                                final albumsData = albumsAsync.asData?.value;
-                                final canOpenAlbumPicker =
-                                    albumsData != null && albumsData.isNotEmpty;
-                                final displayAlbumName =
-                                    selectedAlbum?.name ?? l10n.allPhotos;
-
-                                Future<void> openAlbumPicker() async {
-                                  final availableAlbums = albumsData;
-                                  if (availableAlbums == null ||
-                                      availableAlbums.isEmpty)
-                                    return;
-                                  await _presentAlbumPicker(
-                                    context: context,
-                                    albums: availableAlbums,
-                                    selectedAlbum: selectedAlbum,
-                                    onSelected: (album) {
-                                      ref
-                                              .read(
-                                                selectedAlbumProvider.notifier,
-                                              )
-                                              .state =
-                                          album;
-                                    },
-                                  );
-                                }
-
-                                return Material(
-                                  color: Colors.transparent,
-                                  child: InkWell(
-                                    onTap: canOpenAlbumPicker
-                                        ? openAlbumPicker
-                                        : null,
-                                    borderRadius: BorderRadius.circular(16),
-                                    child: Container(
-                                      height: double.infinity,
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                        vertical: 10,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: theme
-                                            .colorScheme
-                                            .surfaceContainerHighest
-                                            .withOpacity(0.6),
-                                        borderRadius: BorderRadius.circular(16),
-                                        border: Border.all(
-                                          color: theme.colorScheme.outline
-                                              .withOpacity(0.2),
-                                          width: 1,
-                                        ),
-                                      ),
-                                      child: Row(
-                                        children: [
-                                          Icon(
-                                            Icons.photo_library_outlined,
-                                            size: 16,
-                                            color: canOpenAlbumPicker
-                                                ? theme.colorScheme.onSurface
-                                                : theme.colorScheme.onSurface
-                                                      .withOpacity(0.3),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Expanded(
-                                            child: Text(
-                                              displayAlbumName,
-                                              style: theme.textTheme.labelMedium
-                                                  ?.copyWith(
-                                                    fontWeight: FontWeight.w600,
-                                                    fontSize: 12,
-                                                    color: canOpenAlbumPicker
-                                                        ? theme
-                                                              .colorScheme
-                                                              .onSurface
-                                                        : theme
-                                                              .colorScheme
-                                                              .onSurface
-                                                              .withOpacity(0.3),
-                                                  ),
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ),
-                                          const SizedBox(width: 4),
-                                          Icon(
-                                            Icons.arrow_drop_down,
-                                            size: 20,
-                                            color: canOpenAlbumPicker
-                                                ? theme.colorScheme.onSurface
-                                                      .withOpacity(0.7)
-                                                : theme.colorScheme.onSurface
-                                                      .withOpacity(0.3),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }
-
-            // Premium olmayan kullanıcılar için delete limit gibi yapı
-            return Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: theme.colorScheme.outline.withOpacity(0.1),
-                  width: 1,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                    spreadRadius: 0,
-                  ),
-                ],
-              ),
-              child: Column(
+              // Container decoration kaldırıldı
+              return Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Top row: Scan rights badge and Album selection
+                  // Premium scan rights container - şaşalı tasarım
                   IntrinsicHeight(
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        // Scan rights badge - Daha geniş, primary renk
+                        // Premium scan rights badge - sonsuzluk işareti ile
                         Expanded(
                           flex: 2,
                           child: Container(
@@ -5228,17 +5400,33 @@ class _ScanLimitInfoState extends ConsumerState<_ScanLimitInfo>
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
                                 color: theme.colorScheme.primary.withOpacity(
-                                  0.2,
+                                  0.3,
                                 ),
-                                width: 1,
+                                width: 2,
                               ),
                               boxShadow: [
+                                BoxShadow(
+                                  color: theme.colorScheme.primary.withOpacity(
+                                    0.4,
+                                  ),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 4),
+                                  spreadRadius: 3,
+                                ),
+                                BoxShadow(
+                                  color: theme.colorScheme.primary.withOpacity(
+                                    0.25,
+                                  ),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 2),
+                                  spreadRadius: 1,
+                                ),
                                 BoxShadow(
                                   color: theme.colorScheme.primary.withOpacity(
                                     0.15,
                                   ),
                                   blurRadius: 8,
-                                  offset: const Offset(0, 3),
+                                  offset: const Offset(0, 1),
                                   spreadRadius: 0,
                                 ),
                               ],
@@ -5268,13 +5456,13 @@ class _ScanLimitInfoState extends ConsumerState<_ScanLimitInfo>
                                               l10n.remainingScanRights,
                                               style: theme.textTheme.labelSmall
                                                   ?.copyWith(
-                                                    fontWeight: FontWeight.w600,
+                                                    fontWeight: FontWeight.w700,
                                                     fontSize: 10,
                                                     color: theme
                                                         .colorScheme
                                                         .onPrimaryContainer
                                                         .withOpacity(0.9),
-                                                    letterSpacing: 0.3,
+                                                    letterSpacing: 0.4,
                                                   ),
                                               overflow: TextOverflow.ellipsis,
                                             ),
@@ -5283,53 +5471,80 @@ class _ScanLimitInfoState extends ConsumerState<_ScanLimitInfo>
                                       ),
                                       const SizedBox(height: 2),
                                       Text(
-                                        '$scanLimit',
+                                        '∞',
                                         style: theme.textTheme.headlineSmall
                                             ?.copyWith(
                                               fontWeight: FontWeight.w900,
-                                              fontSize: 20,
+                                              fontSize: 26,
                                               color: theme
                                                   .colorScheme
                                                   .onPrimaryContainer,
-                                              letterSpacing: -1.2,
+                                              letterSpacing: -1.5,
                                               height: 1,
+                                              shadows: [
+                                                Shadow(
+                                                  color: theme
+                                                      .colorScheme
+                                                      .primary
+                                                      .withOpacity(0.5),
+                                                  blurRadius: 10,
+                                                  offset: const Offset(0, 2),
+                                                ),
+                                                Shadow(
+                                                  color: theme
+                                                      .colorScheme
+                                                      .onPrimaryContainer
+                                                      .withOpacity(0.3),
+                                                  blurRadius: 6,
+                                                  offset: const Offset(0, 1),
+                                                ),
+                                              ],
                                             ),
-                                        overflow: TextOverflow.ellipsis,
                                       ),
                                     ],
                                   ),
                                 ),
-                                // + Button - her zaman tıklanabilir
-                                Material(
-                                  color: Colors.transparent,
-                                  child: InkWell(
-                                    onTap: () => _showAddRightsDialog(context),
-                                    borderRadius: BorderRadius.circular(20),
-                                    child: Container(
-                                      width: 32,
-                                      height: 32,
-                                      decoration: BoxDecoration(
-                                        color: theme
-                                            .colorScheme
-                                            .onPrimaryContainer
-                                            .withOpacity(0.15),
-                                        shape: BoxShape.circle,
-                                        border: Border.all(
-                                          color: theme
-                                              .colorScheme
-                                              .onPrimaryContainer
-                                              .withOpacity(0.3),
-                                          width: 1.5,
-                                        ),
-                                      ),
-                                      child: Icon(
-                                        Icons.add_rounded,
-                                        size: 18,
-                                        color: theme
-                                            .colorScheme
-                                            .onPrimaryContainer,
-                                      ),
+                                // Premium icon button
+                                Container(
+                                  width: 36,
+                                  height: 36,
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                      colors: [
+                                        theme.colorScheme.primaryContainer,
+                                        theme.colorScheme.primaryContainer
+                                            .withOpacity(0.7),
+                                      ],
                                     ),
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: theme.colorScheme.primary
+                                          .withOpacity(0.4),
+                                      width: 2,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: theme.colorScheme.primary
+                                            .withOpacity(0.5),
+                                        blurRadius: 12,
+                                        offset: const Offset(0, 2),
+                                        spreadRadius: 2,
+                                      ),
+                                      BoxShadow(
+                                        color: theme.colorScheme.primary
+                                            .withOpacity(0.3),
+                                        blurRadius: 6,
+                                        offset: const Offset(0, 1),
+                                        spreadRadius: 0,
+                                      ),
+                                    ],
+                                  ),
+                                  child: Icon(
+                                    Icons.workspace_premium_rounded,
+                                    size: 22,
+                                    color: theme.colorScheme.onPrimaryContainer,
                                   ),
                                 ),
                               ],
@@ -5373,7 +5588,7 @@ class _ScanLimitInfoState extends ConsumerState<_ScanLimitInfo>
                               }
 
                               return Material(
-                                color: Colors.transparent,
+                                color: AppColors.transparent,
                                 child: InkWell(
                                   onTap: canOpenAlbumPicker
                                       ? openAlbumPicker
@@ -5449,7 +5664,256 @@ class _ScanLimitInfoState extends ConsumerState<_ScanLimitInfo>
                     ),
                   ),
                 ],
-              ),
+              );
+            }
+
+            // Premium olmayan kullanıcılar için delete limit gibi yapı
+            // Container decoration kaldırıldı
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Top row: Scan rights badge and Album selection
+                IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Scan rights badge - Daha geniş, primary renk
+                      Expanded(
+                        flex: 2,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                theme.colorScheme.primaryContainer,
+                                theme.colorScheme.primaryContainer.withOpacity(
+                                  0.8,
+                                ),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: theme.colorScheme.primary.withOpacity(0.2),
+                              width: 1,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: theme.colorScheme.primary.withOpacity(
+                                  0.15,
+                                ),
+                                blurRadius: 8,
+                                offset: const Offset(0, 3),
+                                spreadRadius: 0,
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.search_rounded,
+                                          size: 13,
+                                          color: theme
+                                              .colorScheme
+                                              .onPrimaryContainer
+                                              .withOpacity(0.9),
+                                        ),
+                                        const SizedBox(width: 5),
+                                        Flexible(
+                                          child: Text(
+                                            l10n.remainingScanRights,
+                                            style: theme.textTheme.labelSmall
+                                                ?.copyWith(
+                                                  fontWeight: FontWeight.w600,
+                                                  fontSize: 10,
+                                                  color: theme
+                                                      .colorScheme
+                                                      .onPrimaryContainer
+                                                      .withOpacity(0.9),
+                                                  letterSpacing: 0.3,
+                                                ),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      '$scanLimit',
+                                      style: theme.textTheme.headlineSmall
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.w900,
+                                            fontSize: 20,
+                                            color: theme
+                                                .colorScheme
+                                                .onPrimaryContainer,
+                                            letterSpacing: -1.2,
+                                            height: 1,
+                                          ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              // + Button - her zaman tıklanabilir
+                              Material(
+                                color: AppColors.transparent,
+                                child: InkWell(
+                                  onTap: () => _showAddRightsDialog(context),
+                                  borderRadius: BorderRadius.circular(20),
+                                  child: Container(
+                                    width: 32,
+                                    height: 32,
+                                    decoration: BoxDecoration(
+                                      color: theme
+                                          .colorScheme
+                                          .onPrimaryContainer
+                                          .withOpacity(0.15),
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: theme
+                                            .colorScheme
+                                            .onPrimaryContainer
+                                            .withOpacity(0.3),
+                                        width: 1.5,
+                                      ),
+                                    ),
+                                    child: Icon(
+                                      Icons.add_rounded,
+                                      size: 18,
+                                      color:
+                                          theme.colorScheme.onPrimaryContainer,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      // Album selection dropdown button
+                      const SizedBox(width: 6),
+                      Expanded(
+                        flex: 2,
+                        child: Consumer(
+                          builder: (context, ref, _) {
+                            final albumsAsync = ref.watch(albumsProvider);
+                            final selectedAlbum = ref.watch(
+                              selectedAlbumProvider,
+                            );
+                            final albumsData = albumsAsync.asData?.value;
+                            final canOpenAlbumPicker =
+                                albumsData != null && albumsData.isNotEmpty;
+                            final displayAlbumName =
+                                selectedAlbum?.name ?? l10n.allPhotos;
+
+                            Future<void> openAlbumPicker() async {
+                              final availableAlbums = albumsData;
+                              if (availableAlbums == null ||
+                                  availableAlbums.isEmpty)
+                                return;
+                              await _presentAlbumPicker(
+                                context: context,
+                                albums: availableAlbums,
+                                selectedAlbum: selectedAlbum,
+                                onSelected: (album) {
+                                  ref
+                                          .read(selectedAlbumProvider.notifier)
+                                          .state =
+                                      album;
+                                },
+                              );
+                            }
+
+                            return Material(
+                              color: AppColors.transparent,
+                              child: InkWell(
+                                onTap: canOpenAlbumPicker
+                                    ? openAlbumPicker
+                                    : null,
+                                borderRadius: BorderRadius.circular(16),
+                                child: Container(
+                                  height: double.infinity,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 10,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: theme
+                                        .colorScheme
+                                        .surfaceContainerHighest
+                                        .withOpacity(0.6),
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color: theme.colorScheme.outline
+                                          .withOpacity(0.2),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.photo_library_outlined,
+                                        size: 16,
+                                        color: canOpenAlbumPicker
+                                            ? theme.colorScheme.onSurface
+                                            : theme.colorScheme.onSurface
+                                                  .withOpacity(0.3),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          displayAlbumName,
+                                          style: theme.textTheme.labelMedium
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 12,
+                                                color: canOpenAlbumPicker
+                                                    ? theme
+                                                          .colorScheme
+                                                          .onSurface
+                                                    : theme
+                                                          .colorScheme
+                                                          .onSurface
+                                                          .withOpacity(0.3),
+                                              ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Icon(
+                                        Icons.arrow_drop_down,
+                                        size: 20,
+                                        color: canOpenAlbumPicker
+                                            ? theme.colorScheme.onSurface
+                                                  .withOpacity(0.7)
+                                            : theme.colorScheme.onSurface
+                                                  .withOpacity(0.3),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             );
           },
         );
@@ -5576,7 +6040,7 @@ class _DuplicateGroupDetailSheet extends StatelessWidget {
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: isKeep
-                              ? Colors.green
+                              ? AppColors.success
                               : isToDelete
                               ? theme.colorScheme.error
                               : theme.colorScheme.outline.withValues(
@@ -5628,14 +6092,14 @@ class _DuplicateGroupDetailSheet extends StatelessWidget {
                         ),
                         decoration: BoxDecoration(
                           color: isKeep
-                              ? Colors.green
+                              ? AppColors.success
                               : theme.colorScheme.error,
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
                           isKeep ? l10n.keepOldest : l10n.deleteDuplicates,
                           style: theme.textTheme.labelSmall?.copyWith(
-                            color: Colors.white,
+                            color: AppColors.white,
                             fontWeight: FontWeight.bold,
                           ),
                           textAlign: TextAlign.center,
@@ -5652,13 +6116,13 @@ class _DuplicateGroupDetailSheet extends StatelessWidget {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.6),
+                          color: AppColors.black.withValues(alpha: 0.6),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
                           '${asset.width}x${asset.height}',
                           style: theme.textTheme.labelSmall?.copyWith(
-                            color: Colors.white,
+                            color: AppColors.white,
                           ),
                           textAlign: TextAlign.center,
                         ),
@@ -5669,18 +6133,35 @@ class _DuplicateGroupDetailSheet extends StatelessWidget {
               },
             ),
           ),
-          Padding(
+          Container(
             padding: const EdgeInsets.all(16),
-            child: SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: onDelete,
-                icon: const Icon(Icons.delete_outline),
-                label: Text(l10n.deleteDuplicates),
-                style: FilledButton.styleFrom(
-                  backgroundColor: theme.colorScheme.error,
-                  foregroundColor: theme.colorScheme.onError,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.black.withOpacity(0.1),
+                  blurRadius: 10,
+                  offset: const Offset(0, -2),
+                ),
+              ],
+            ),
+            child: SafeArea(
+              child: SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: onDelete,
+                  icon: const Icon(Icons.delete_outline),
+                  label: Text(l10n.deleteDuplicates),
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    minimumSize: const Size(double.infinity, 56),
+                    backgroundColor: AppColors.error.withOpacity(0.85),
+                    foregroundColor: theme.colorScheme.onError,
+                    side: BorderSide(
+                      color: AppColors.error.withOpacity(0.9),
+                      width: 1.5,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -5757,7 +6238,7 @@ class _SwipePageState extends ConsumerState<SwipePage>
       // Otomatik analiz başlatılmıyor
     });
 
-    // Blur tarama durumunu dinle - tarama bittiğinde pulse başlat
+    // Blur tarama durumunu dinle - tarama bittiğinde pulse başlat ve results sayfasına yönlendir
     ref.listen<BlurDetectionState>(blurDetectionProvider, (previous, next) {
       if (!mounted) return;
 
@@ -5765,21 +6246,19 @@ class _SwipePageState extends ConsumerState<SwipePage>
       final isNowScanning = next.isScanning;
       final hasCompleted = next.hasCompletedScan && !next.isScanning;
 
-      // Tarama bittiğinde ve tamamlandıysa pulse başlat
+      // Tarama bittiğinde ve tamamlandıysa results sayfasına yönlendir
+      // Nefes alma animasyonu kaldırıldı
       if (wasScanning && !isNowScanning && hasCompleted) {
-        if (!_blurTabPulseController.isAnimating) {
-          _blurTabPulseController.repeat(reverse: true);
-        }
-      } else if (next.isScanning) {
-        // Tarama başladığında pulse'u durdur
-        if (_blurTabPulseController.isAnimating) {
-          _blurTabPulseController.stop();
-          _blurTabPulseController.reset();
-        }
+        // Otomatik olarak results sayfasına yönlendir
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (mounted) {
+            context.push('/results/blur');
+          }
+        });
       }
     });
 
-    // Duplicate tarama durumunu dinle - tarama bittiğinde pulse başlat
+    // Duplicate tarama durumunu dinle - tarama bittiğinde pulse başlat ve results sayfasına yönlendir
     ref.listen<DuplicateDetectionState>(duplicateDetectionProvider, (
       previous,
       next,
@@ -5790,17 +6269,15 @@ class _SwipePageState extends ConsumerState<SwipePage>
       final isNowScanning = next.isScanning;
       final hasCompleted = next.hasCompletedScan && !next.isScanning;
 
-      // Tarama bittiğinde ve tamamlandıysa pulse başlat
+      // Tarama bittiğinde ve tamamlandıysa results sayfasına yönlendir
+      // Nefes alma animasyonu kaldırıldı
       if (wasScanning && !isNowScanning && hasCompleted) {
-        if (!_duplicateTabPulseController.isAnimating) {
-          _duplicateTabPulseController.repeat(reverse: true);
-        }
-      } else if (next.isScanning) {
-        // Tarama başladığında pulse'u durdur
-        if (_duplicateTabPulseController.isAnimating) {
-          _duplicateTabPulseController.stop();
-          _duplicateTabPulseController.reset();
-        }
+        // Otomatik olarak results sayfasına yönlendir
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (mounted) {
+            context.push('/results/duplicate');
+          }
+        });
       }
     });
 
@@ -5816,7 +6293,7 @@ class _SwipePageState extends ConsumerState<SwipePage>
               colors: [
                 theme.colorScheme.primary.withOpacity(0.1),
                 theme.colorScheme.secondary.withOpacity(0.05),
-                Colors.transparent,
+                AppColors.transparent,
               ],
             ),
           ),
@@ -5853,30 +6330,15 @@ class _SwipePageState extends ConsumerState<SwipePage>
     // İzin yoksa izin ekranı göster
     if (permission != GalleryPermissionStatus.authorized) {
       return Scaffold(
+        backgroundColor: theme.colorScheme.background,
         extendBodyBehindAppBar: true,
         appBar: AppBar(
-          backgroundColor: Colors.transparent,
+          backgroundColor: AppColors.transparent,
           elevation: 0,
           title: Text(l10n.appTitle, overflow: TextOverflow.ellipsis),
         ),
         body: Stack(
           children: [
-            // Background gradient
-            Positioned.fill(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      theme.colorScheme.primary.withOpacity(0.1),
-                      theme.colorScheme.secondary.withOpacity(0.05),
-                      Colors.transparent,
-                    ],
-                  ),
-                ),
-              ),
-            ),
             // Decorative circles
             Positioned(
               top: -60,
@@ -5940,7 +6402,7 @@ class _SwipePageState extends ConsumerState<SwipePage>
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.06),
+                            color: AppColors.black.withOpacity(0.06),
                             blurRadius: 16,
                             offset: const Offset(0, 8),
                           ),
@@ -6000,28 +6462,21 @@ class _SwipePageState extends ConsumerState<SwipePage>
       );
     }
 
-    final displayAlbumName = selectedAlbum?.name ?? l10n.allPhotos;
-
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: Text(
-          displayAlbumName,
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
-          overflow: TextOverflow.ellipsis,
-        ),
-        centerTitle: true,
-        backgroundColor: Colors.transparent,
+        centerTitle: false,
+        backgroundColor: theme.colorScheme.background,
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(72),
+          preferredSize: const Size.fromHeight(76),
           child: Container(
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
-              borderRadius: BorderRadius.circular(16),
+            decoration: AppDecorations.glassSurface(
+              borderRadius: 20,
+              tint: theme.colorScheme.surface,
+              opacity: theme.brightness == Brightness.light ? 0.7 : 0.32,
             ),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
             child: TabBar(
               controller: _tabController,
               onTap: (index) {
@@ -6036,27 +6491,12 @@ class _SwipePageState extends ConsumerState<SwipePage>
                   _duplicateTabPulseController.reset();
                 }
               },
-              indicator: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    theme.colorScheme.primary,
-                    theme.colorScheme.primary.withOpacity(0.85),
-                  ],
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: theme.colorScheme.primary.withOpacity(0.4),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                    spreadRadius: 0,
-                  ),
-                ],
+              indicator: AppDecorations.pill(
+                color: theme.colorScheme.primary,
+                borderRadius: 16,
               ),
               indicatorSize: TabBarIndicatorSize.tab,
-              dividerColor: Colors.transparent,
+              dividerColor: AppColors.transparent,
               labelColor: theme.colorScheme.onPrimary,
               unselectedLabelColor: theme.colorScheme.onSurface.withOpacity(
                 0.7,
@@ -6084,18 +6524,8 @@ class _SwipePageState extends ConsumerState<SwipePage>
                     ],
                   ),
                 ),
-                Tab(
-                  height: 56,
-                  child: _BlurTabIndicator(
-                    pulseController: _blurTabPulseController,
-                  ),
-                ),
-                Tab(
-                  height: 56,
-                  child: _DuplicateTabIndicator(
-                    pulseController: _duplicateTabPulseController,
-                  ),
-                ),
+                Tab(height: 56, child: const _BlurTabIndicator()),
+                Tab(height: 56, child: const _DuplicateTabIndicator()),
               ],
             ),
           ),
@@ -6116,7 +6546,7 @@ class _SwipePageState extends ConsumerState<SwipePage>
                             ? Icons.workspace_premium
                             : Icons.workspace_premium_outlined,
                         color: isPremium
-                            ? Colors.amber
+                            ? AppColors.warningLight
                             : theme.colorScheme.onSurface.withOpacity(0.6),
                       ),
                       tooltip: isPremium
@@ -6146,6 +6576,31 @@ class _SwipePageState extends ConsumerState<SwipePage>
               },
             ),
           _HistoryButton(pulseController: _historyPulseController),
+          Consumer(
+            builder: (context, ref, _) {
+              final isPremiumAsync = ref.watch(isPremiumProvider);
+              return isPremiumAsync.when(
+                loading: () => const SizedBox.shrink(),
+                error: (_, __) => const SizedBox.shrink(),
+                data: (isPremium) {
+                  return IconButton(
+                    onPressed: isPremium
+                        ? null
+                        : () {
+                            context.push('/paywall');
+                          },
+                    icon: Icon(
+                      Icons.workspace_premium_rounded,
+                      color: isPremium
+                          ? AppColors.warningLight
+                          : theme.colorScheme.primary,
+                    ),
+                    tooltip: isPremium ? null : l10n.goPremium,
+                  );
+                },
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.settings),
             tooltip: l10n.settings,
@@ -6155,27 +6610,13 @@ class _SwipePageState extends ConsumerState<SwipePage>
           ),
         ],
       ),
+      backgroundColor: theme.colorScheme.background,
       body: SafeArea(
         top: false,
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Theme.of(context).colorScheme.primary.withOpacity(0.06),
-                Theme.of(
-                  context,
-                ).colorScheme.secondaryContainer.withOpacity(0.04),
-                Colors.transparent,
-              ],
-            ),
-          ),
-          child: TabBarView(
-            controller: _tabController,
-            physics: const NeverScrollableScrollPhysics(),
-            children: const [_SwipeTab(), _BlurTab(), _DuplicateTab()],
-          ),
+        child: TabBarView(
+          controller: _tabController,
+          physics: const NeverScrollableScrollPhysics(),
+          children: const [_SwipeTab(), _BlurTab(), _DuplicateTab()],
         ),
       ),
     );
@@ -6323,7 +6764,7 @@ Future<void> _showAlbumSelectionDialog(
     context: context,
     showDragHandle: true,
     isScrollControlled: true,
-    backgroundColor: Colors.transparent,
+    backgroundColor: AppColors.transparent,
     builder: (context) => _AlbumSelectionSheet(albums: albums),
   );
 
@@ -6524,9 +6965,9 @@ class _DeleteLimitInfoState extends ConsumerState<_DeleteLimitInfo>
     showDialog(
       context: context,
       barrierDismissible: true,
-      barrierColor: Colors.black.withOpacity(0.6),
+      barrierColor: AppColors.black.withOpacity(0.6),
       builder: (dialogContext) => Dialog(
-        backgroundColor: Colors.transparent,
+        backgroundColor: AppColors.transparent,
         elevation: 0,
         insetPadding: const EdgeInsets.symmetric(horizontal: 24),
         child: TweenAnimationBuilder<double>(
@@ -6547,7 +6988,7 @@ class _DeleteLimitInfoState extends ConsumerState<_DeleteLimitInfo>
               borderRadius: BorderRadius.circular(24),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
+                  color: AppColors.black.withOpacity(0.2),
                   blurRadius: 24,
                   spreadRadius: 2,
                   offset: const Offset(0, 12),
@@ -6571,7 +7012,7 @@ class _DeleteLimitInfoState extends ConsumerState<_DeleteLimitInfo>
                 const SizedBox(height: 24),
                 // Watch Ad button - sadece reklam hazırsa tıklanabilir
                 Material(
-                  color: Colors.transparent,
+                  color: AppColors.transparent,
                   child: InkWell(
                     onTap: _isAdReady && !_isLoadingAd
                         ? () async {
@@ -6693,393 +7134,369 @@ class _DeleteLimitInfoState extends ConsumerState<_DeleteLimitInfo>
           loading: () => const SizedBox.shrink(),
           error: (_, __) => const SizedBox.shrink(),
           data: (isPremium) {
-            return Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: theme.colorScheme.outline.withOpacity(0.1),
-                  width: 1,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                    spreadRadius: 0,
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Top row: Deletion rights badge and Album selection
-                  IntrinsicHeight(
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // Deletion rights badge - Premium için parlak tasarım
-                        Expanded(
-                          flex: 2,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 10,
-                            ),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [
-                                  theme.colorScheme.primaryContainer,
-                                  theme.colorScheme.primaryContainer
-                                      .withOpacity(0.8),
-                                ],
-                              ),
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: isPremium
-                                    ? theme.colorScheme.primary.withOpacity(0.3)
-                                    : theme.colorScheme.primary.withOpacity(
-                                        0.2,
-                                      ),
-                                width: isPremium ? 2 : 1,
-                              ),
-                              boxShadow: isPremium
-                                  ? [
-                                      BoxShadow(
-                                        color: theme.colorScheme.primary
-                                            .withOpacity(0.4),
-                                        blurRadius: 20,
-                                        offset: const Offset(0, 4),
-                                        spreadRadius: 3,
-                                      ),
-                                      BoxShadow(
-                                        color: theme.colorScheme.primary
-                                            .withOpacity(0.25),
-                                        blurRadius: 12,
-                                        offset: const Offset(0, 2),
-                                        spreadRadius: 1,
-                                      ),
-                                      BoxShadow(
-                                        color: theme.colorScheme.primary
-                                            .withOpacity(0.15),
-                                        blurRadius: 8,
-                                        offset: const Offset(0, 1),
-                                        spreadRadius: 0,
-                                      ),
-                                    ]
-                                  : [
-                                      BoxShadow(
-                                        color: theme.colorScheme.primary
-                                            .withOpacity(0.15),
-                                        blurRadius: 8,
-                                        offset: const Offset(0, 3),
-                                        spreadRadius: 0,
-                                      ),
-                                    ],
-                            ),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          SizedBox(
-                                            width: 13,
-                                            height: 13,
-                                            child: ColorFiltered(
-                                              colorFilter: ColorFilter.mode(
-                                                theme
-                                                    .colorScheme
-                                                    .onPrimaryContainer
-                                                    .withOpacity(0.9),
-                                                BlendMode.srcATop,
-                                              ),
-                                              child: Lottie.asset(
-                                                'assets/lottie/trash.json',
-                                                width: 13,
-                                                height: 13,
-                                                fit: BoxFit.contain,
-                                                repeat: true,
-                                                options: LottieOptions(
-                                                  enableMergePaths: true,
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                          const SizedBox(width: 5),
-                                          Flexible(
-                                            child: Text(
-                                              l10n.remainingDeletionRights,
-                                              style: theme.textTheme.labelSmall
-                                                  ?.copyWith(
-                                                    fontWeight: isPremium
-                                                        ? FontWeight.w700
-                                                        : FontWeight.w600,
-                                                    fontSize: 10,
-                                                    color: theme
-                                                        .colorScheme
-                                                        .onPrimaryContainer
-                                                        .withOpacity(0.9),
-                                                    letterSpacing: isPremium
-                                                        ? 0.4
-                                                        : 0.3,
-                                                  ),
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        isPremium ? '∞' : '$deleteLimit',
-                                        style: theme.textTheme.headlineSmall
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.w900,
-                                              fontSize: isPremium ? 26 : 20,
-                                              color: theme
-                                                  .colorScheme
-                                                  .onPrimaryContainer,
-                                              letterSpacing: isPremium
-                                                  ? -1.5
-                                                  : -1.2,
-                                              height: 1,
-                                              shadows: isPremium
-                                                  ? [
-                                                      Shadow(
-                                                        color: theme
-                                                            .colorScheme
-                                                            .primary
-                                                            .withOpacity(0.5),
-                                                        blurRadius: 10,
-                                                        offset: const Offset(
-                                                          0,
-                                                          2,
-                                                        ),
-                                                      ),
-                                                      Shadow(
-                                                        color: theme
-                                                            .colorScheme
-                                                            .onPrimaryContainer
-                                                            .withOpacity(0.3),
-                                                        blurRadius: 6,
-                                                        offset: const Offset(
-                                                          0,
-                                                          1,
-                                                        ),
-                                                      ),
-                                                    ]
-                                                  : null,
-                                            ),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ],
-                                  ),
+            // Container decoration kaldırıldı
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Top row: Deletion rights badge and Album selection
+                IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Deletion rights badge - Premium için parlak tasarım
+                      Expanded(
+                        flex: 2,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                theme.colorScheme.primaryContainer,
+                                theme.colorScheme.primaryContainer.withOpacity(
+                                  0.8,
                                 ),
-                                // Premium icon veya + Button
-                                if (isPremium)
-                                  Container(
-                                    width: 36,
-                                    height: 36,
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        begin: Alignment.topLeft,
-                                        end: Alignment.bottomRight,
-                                        colors: [
-                                          theme.colorScheme.primaryContainer,
-                                          theme.colorScheme.primaryContainer
-                                              .withOpacity(0.7),
-                                        ],
-                                      ),
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: theme.colorScheme.primary
-                                            .withOpacity(0.4),
-                                        width: 2,
-                                      ),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: theme.colorScheme.primary
-                                              .withOpacity(0.5),
-                                          blurRadius: 12,
-                                          offset: const Offset(0, 2),
-                                          spreadRadius: 2,
-                                        ),
-                                        BoxShadow(
-                                          color: theme.colorScheme.primary
-                                              .withOpacity(0.3),
-                                          blurRadius: 6,
-                                          offset: const Offset(0, 1),
-                                          spreadRadius: 0,
-                                        ),
-                                      ],
-                                    ),
-                                    child: Icon(
-                                      Icons.workspace_premium_rounded,
-                                      size: 22,
-                                      color:
-                                          theme.colorScheme.onPrimaryContainer,
-                                    ),
-                                  )
-                                else
-                                  Material(
-                                    color: Colors.transparent,
-                                    child: InkWell(
-                                      onTap: () =>
-                                          _showAddRightsDialog(context),
-                                      borderRadius: BorderRadius.circular(20),
-                                      child: Container(
-                                        width: 32,
-                                        height: 32,
-                                        decoration: BoxDecoration(
-                                          color: theme
-                                              .colorScheme
-                                              .onPrimaryContainer
-                                              .withOpacity(0.15),
-                                          shape: BoxShape.circle,
-                                          border: Border.all(
-                                            color: theme
-                                                .colorScheme
-                                                .onPrimaryContainer
-                                                .withOpacity(0.3),
-                                            width: 1.5,
-                                          ),
-                                        ),
-                                        child: Icon(
-                                          Icons.add_rounded,
-                                          size: 18,
-                                          color: theme
-                                              .colorScheme
-                                              .onPrimaryContainer,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
                               ],
                             ),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: isPremium
+                                  ? theme.colorScheme.primary.withOpacity(0.3)
+                                  : theme.colorScheme.primary.withOpacity(0.2),
+                              width: isPremium ? 2 : 1,
+                            ),
+                            boxShadow: isPremium
+                                ? [
+                                    BoxShadow(
+                                      color: theme.colorScheme.primary
+                                          .withOpacity(0.4),
+                                      blurRadius: 20,
+                                      offset: const Offset(0, 4),
+                                      spreadRadius: 3,
+                                    ),
+                                    BoxShadow(
+                                      color: theme.colorScheme.primary
+                                          .withOpacity(0.25),
+                                      blurRadius: 12,
+                                      offset: const Offset(0, 2),
+                                      spreadRadius: 1,
+                                    ),
+                                    BoxShadow(
+                                      color: theme.colorScheme.primary
+                                          .withOpacity(0.15),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 1),
+                                      spreadRadius: 0,
+                                    ),
+                                  ]
+                                : [
+                                    BoxShadow(
+                                      color: theme.colorScheme.primary
+                                          .withOpacity(0.15),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 3),
+                                      spreadRadius: 0,
+                                    ),
+                                  ],
                           ),
-                        ),
-                        // Album selection dropdown button
-                        const SizedBox(width: 6),
-                        Expanded(
-                          flex: 2,
-                          child: Consumer(
-                            builder: (context, ref, _) {
-                              final albumsAsync = ref.watch(albumsProvider);
-                              final selectedAlbum = ref.watch(
-                                selectedAlbumProvider,
-                              );
-                              final albumsData = albumsAsync.asData?.value;
-                              final canOpenAlbumPicker =
-                                  albumsData != null && albumsData.isNotEmpty;
-                              final displayAlbumName =
-                                  selectedAlbum?.name ?? l10n.allPhotos;
-
-                              Future<void> openAlbumPicker() async {
-                                final availableAlbums = albumsData;
-                                if (availableAlbums == null ||
-                                    availableAlbums.isEmpty)
-                                  return;
-                                await _presentAlbumPicker(
-                                  context: context,
-                                  albums: availableAlbums,
-                                  selectedAlbum: selectedAlbum,
-                                  onSelected: (album) {
-                                    ref
-                                            .read(
-                                              selectedAlbumProvider.notifier,
-                                            )
-                                            .state =
-                                        album;
-                                  },
-                                );
-                              }
-
-                              return Material(
-                                color: Colors.transparent,
-                                child: InkWell(
-                                  onTap: canOpenAlbumPicker
-                                      ? openAlbumPicker
-                                      : null,
-                                  borderRadius: BorderRadius.circular(16),
-                                  child: Container(
-                                    height: double.infinity,
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 10,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: theme
-                                          .colorScheme
-                                          .surfaceContainerHighest
-                                          .withOpacity(0.6),
-                                      borderRadius: BorderRadius.circular(16),
-                                      border: Border.all(
-                                        color: theme.colorScheme.outline
-                                            .withOpacity(0.2),
-                                        width: 1,
-                                      ),
-                                    ),
-                                    child: Row(
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        Icon(
-                                          Icons.photo_library_outlined,
-                                          size: 16,
-                                          color: canOpenAlbumPicker
-                                              ? theme.colorScheme.onSurface
-                                              : theme.colorScheme.onSurface
-                                                    .withOpacity(0.3),
+                                        SizedBox(
+                                          width: 13,
+                                          height: 13,
+                                          child: ColorFiltered(
+                                            colorFilter: ColorFilter.mode(
+                                              theme
+                                                  .colorScheme
+                                                  .onPrimaryContainer
+                                                  .withOpacity(0.9),
+                                              BlendMode.srcATop,
+                                            ),
+                                            child: Lottie.asset(
+                                              'assets/lottie/trash.json',
+                                              width: 13,
+                                              height: 13,
+                                              fit: BoxFit.contain,
+                                              repeat: true,
+                                              options: LottieOptions(
+                                                enableMergePaths: true,
+                                              ),
+                                            ),
+                                          ),
                                         ),
-                                        const SizedBox(width: 8),
-                                        Expanded(
+                                        const SizedBox(width: 5),
+                                        Flexible(
                                           child: Text(
-                                            displayAlbumName,
-                                            style: theme.textTheme.labelMedium
+                                            l10n.remainingDeletionRights,
+                                            style: theme.textTheme.labelSmall
                                                 ?.copyWith(
-                                                  fontWeight: FontWeight.w600,
-                                                  fontSize: 12,
-                                                  color: canOpenAlbumPicker
-                                                      ? theme
-                                                            .colorScheme
-                                                            .onSurface
-                                                      : theme
-                                                            .colorScheme
-                                                            .onSurface
-                                                            .withOpacity(0.3),
+                                                  fontWeight: isPremium
+                                                      ? FontWeight.w700
+                                                      : FontWeight.w600,
+                                                  fontSize: 10,
+                                                  color: theme
+                                                      .colorScheme
+                                                      .onPrimaryContainer
+                                                      .withOpacity(0.9),
+                                                  letterSpacing: isPremium
+                                                      ? 0.4
+                                                      : 0.3,
                                                 ),
                                             overflow: TextOverflow.ellipsis,
                                           ),
                                         ),
-                                        const SizedBox(width: 4),
-                                        Icon(
-                                          Icons.arrow_drop_down,
-                                          size: 20,
-                                          color: canOpenAlbumPicker
-                                              ? theme.colorScheme.onSurface
-                                                    .withOpacity(0.7)
-                                              : theme.colorScheme.onSurface
-                                                    .withOpacity(0.3),
-                                        ),
                                       ],
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      isPremium ? '∞' : '$deleteLimit',
+                                      style: theme.textTheme.headlineSmall
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.w900,
+                                            fontSize: isPremium ? 26 : 20,
+                                            color: theme
+                                                .colorScheme
+                                                .onPrimaryContainer,
+                                            letterSpacing: isPremium
+                                                ? -1.5
+                                                : -1.2,
+                                            height: 1,
+                                            shadows: isPremium
+                                                ? [
+                                                    Shadow(
+                                                      color: theme
+                                                          .colorScheme
+                                                          .primary
+                                                          .withOpacity(0.5),
+                                                      blurRadius: 10,
+                                                      offset: const Offset(
+                                                        0,
+                                                        2,
+                                                      ),
+                                                    ),
+                                                    Shadow(
+                                                      color: theme
+                                                          .colorScheme
+                                                          .onPrimaryContainer
+                                                          .withOpacity(0.3),
+                                                      blurRadius: 6,
+                                                      offset: const Offset(
+                                                        0,
+                                                        1,
+                                                      ),
+                                                    ),
+                                                  ]
+                                                : null,
+                                          ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              // Premium icon veya + Button
+                              if (isPremium)
+                                Container(
+                                  width: 36,
+                                  height: 36,
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                      colors: [
+                                        theme.colorScheme.primaryContainer,
+                                        theme.colorScheme.primaryContainer
+                                            .withOpacity(0.7),
+                                      ],
+                                    ),
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: theme.colorScheme.primary
+                                          .withOpacity(0.4),
+                                      width: 2,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: theme.colorScheme.primary
+                                            .withOpacity(0.5),
+                                        blurRadius: 12,
+                                        offset: const Offset(0, 2),
+                                        spreadRadius: 2,
+                                      ),
+                                      BoxShadow(
+                                        color: theme.colorScheme.primary
+                                            .withOpacity(0.3),
+                                        blurRadius: 6,
+                                        offset: const Offset(0, 1),
+                                        spreadRadius: 0,
+                                      ),
+                                    ],
+                                  ),
+                                  child: Icon(
+                                    Icons.workspace_premium_rounded,
+                                    size: 22,
+                                    color: theme.colorScheme.onPrimaryContainer,
+                                  ),
+                                )
+                              else
+                                Material(
+                                  color: AppColors.transparent,
+                                  child: InkWell(
+                                    onTap: () => _showAddRightsDialog(context),
+                                    borderRadius: BorderRadius.circular(20),
+                                    child: Container(
+                                      width: 32,
+                                      height: 32,
+                                      decoration: BoxDecoration(
+                                        color: theme
+                                            .colorScheme
+                                            .onPrimaryContainer
+                                            .withOpacity(0.15),
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: theme
+                                              .colorScheme
+                                              .onPrimaryContainer
+                                              .withOpacity(0.3),
+                                          width: 1.5,
+                                        ),
+                                      ),
+                                      child: Icon(
+                                        Icons.add_rounded,
+                                        size: 18,
+                                        color: theme
+                                            .colorScheme
+                                            .onPrimaryContainer,
+                                      ),
                                     ),
                                   ),
                                 ),
-                              );
-                            },
+                            ],
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                      // Album selection dropdown button
+                      const SizedBox(width: 6),
+                      Expanded(
+                        flex: 2,
+                        child: Consumer(
+                          builder: (context, ref, _) {
+                            final albumsAsync = ref.watch(albumsProvider);
+                            final selectedAlbum = ref.watch(
+                              selectedAlbumProvider,
+                            );
+                            final albumsData = albumsAsync.asData?.value;
+                            final canOpenAlbumPicker =
+                                albumsData != null && albumsData.isNotEmpty;
+                            final displayAlbumName =
+                                selectedAlbum?.name ?? l10n.allPhotos;
+
+                            Future<void> openAlbumPicker() async {
+                              final availableAlbums = albumsData;
+                              if (availableAlbums == null ||
+                                  availableAlbums.isEmpty)
+                                return;
+                              await _presentAlbumPicker(
+                                context: context,
+                                albums: availableAlbums,
+                                selectedAlbum: selectedAlbum,
+                                onSelected: (album) {
+                                  ref
+                                          .read(selectedAlbumProvider.notifier)
+                                          .state =
+                                      album;
+                                },
+                              );
+                            }
+
+                            return Material(
+                              color: AppColors.transparent,
+                              child: InkWell(
+                                onTap: canOpenAlbumPicker
+                                    ? openAlbumPicker
+                                    : null,
+                                borderRadius: BorderRadius.circular(16),
+                                child: Container(
+                                  height: double.infinity,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 10,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: theme
+                                        .colorScheme
+                                        .surfaceContainerHighest
+                                        .withOpacity(0.6),
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color: theme.colorScheme.outline
+                                          .withOpacity(0.2),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.photo_library_outlined,
+                                        size: 16,
+                                        color: canOpenAlbumPicker
+                                            ? theme.colorScheme.onSurface
+                                            : theme.colorScheme.onSurface
+                                                  .withOpacity(0.3),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          displayAlbumName,
+                                          style: theme.textTheme.labelMedium
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 12,
+                                                color: canOpenAlbumPicker
+                                                    ? theme
+                                                          .colorScheme
+                                                          .onSurface
+                                                    : theme
+                                                          .colorScheme
+                                                          .onSurface
+                                                          .withOpacity(0.3),
+                                              ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Icon(
+                                        Icons.arrow_drop_down,
+                                        size: 20,
+                                        color: canOpenAlbumPicker
+                                            ? theme.colorScheme.onSurface
+                                                  .withOpacity(0.7)
+                                            : theme.colorScheme.onSurface
+                                                  .withOpacity(0.3),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             );
           },
         );
@@ -7291,10 +7708,9 @@ class _PurchaseFeatureItem extends StatelessWidget {
   }
 }
 
-// Blur tab indicator with pulse animation when scan completes
+// Blur tab indicator (nefes alma animasyonu kaldırıldı)
 class _BlurTabIndicator extends ConsumerStatefulWidget {
-  const _BlurTabIndicator({required this.pulseController});
-  final AnimationController pulseController;
+  const _BlurTabIndicator();
 
   @override
   ConsumerState<_BlurTabIndicator> createState() => _BlurTabIndicatorState();
@@ -7309,45 +7725,30 @@ class _BlurTabIndicatorState extends ConsumerState<_BlurTabIndicator> {
     final isScanning = blurState.isScanning;
     final hasCompleted = blurState.hasCompletedScan && !isScanning;
 
-    return AnimatedBuilder(
-      animation: widget.pulseController,
-      builder: (context, child) {
-        final scale = hasCompleted
-            ? 1.0 + (widget.pulseController.value * 0.2)
-            : 1.0;
-        return Transform.scale(
-          scale: scale,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.blur_on_rounded,
-                size: 20,
-                color: hasCompleted ? theme.colorScheme.primary : null,
-              ),
-              const SizedBox(width: 6),
-              Text(l10n.blurTab),
-              if (hasCompleted) ...[
-                const SizedBox(width: 4),
-                Icon(
-                  Icons.check_circle,
-                  size: 14,
-                  color: theme.colorScheme.primary,
-                ),
-              ],
-            ],
-          ),
-        );
-      },
+    // Nefes alma animasyonu kaldırıldı - sadece statik gösterim
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          Icons.blur_on_rounded,
+          size: 20,
+          color: hasCompleted ? theme.colorScheme.primary : null,
+        ),
+        const SizedBox(width: 6),
+        Text(l10n.blurTab),
+        if (hasCompleted) ...[
+          const SizedBox(width: 4),
+          Icon(Icons.check_circle, size: 14, color: theme.colorScheme.primary),
+        ],
+      ],
     );
   }
 }
 
-// Duplicate tab indicator with pulse animation when scan completes
+// Duplicate tab indicator (nefes alma animasyonu kaldırıldı)
 class _DuplicateTabIndicator extends ConsumerStatefulWidget {
-  const _DuplicateTabIndicator({required this.pulseController});
-  final AnimationController pulseController;
+  const _DuplicateTabIndicator();
 
   @override
   ConsumerState<_DuplicateTabIndicator> createState() =>
@@ -7364,37 +7765,23 @@ class _DuplicateTabIndicatorState
     final isScanning = duplicateState.isScanning;
     final hasCompleted = duplicateState.hasCompletedScan && !isScanning;
 
-    return AnimatedBuilder(
-      animation: widget.pulseController,
-      builder: (context, child) {
-        final scale = hasCompleted
-            ? 1.0 + (widget.pulseController.value * 0.2)
-            : 1.0;
-        return Transform.scale(
-          scale: scale,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.content_copy_rounded,
-                size: 20,
-                color: hasCompleted ? theme.colorScheme.primary : null,
-              ),
-              const SizedBox(width: 6),
-              Text(l10n.duplicateTab),
-              if (hasCompleted) ...[
-                const SizedBox(width: 4),
-                Icon(
-                  Icons.check_circle,
-                  size: 14,
-                  color: theme.colorScheme.primary,
-                ),
-              ],
-            ],
-          ),
-        );
-      },
+    // Nefes alma animasyonu kaldırıldı - sadece statik gösterim
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          Icons.content_copy_rounded,
+          size: 20,
+          color: hasCompleted ? theme.colorScheme.primary : null,
+        ),
+        const SizedBox(width: 6),
+        Text(l10n.duplicateTab),
+        if (hasCompleted) ...[
+          const SizedBox(width: 4),
+          Icon(Icons.check_circle, size: 14, color: theme.colorScheme.primary),
+        ],
+      ],
     );
   }
 }
@@ -7457,9 +7844,9 @@ void _showDeleteSuccessDialog(BuildContext context, int deletedCount) {
   showDialog(
     context: context,
     barrierDismissible: true,
-    barrierColor: Colors.black.withOpacity(0.5),
+    barrierColor: AppColors.black.withOpacity(0.5),
     builder: (context) => Dialog(
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppColors.transparent,
       elevation: 0,
       insetPadding: const EdgeInsets.symmetric(horizontal: 24),
       child: TweenAnimationBuilder<double>(
@@ -7480,7 +7867,7 @@ void _showDeleteSuccessDialog(BuildContext context, int deletedCount) {
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.15),
+                color: AppColors.black.withOpacity(0.15),
                 blurRadius: 24,
                 spreadRadius: 0,
                 offset: const Offset(0, 8),
@@ -7548,7 +7935,7 @@ void _showDeleteSuccessDialog(BuildContext context, int deletedCount) {
                     ],
                   ),
                   child: Material(
-                    color: Colors.transparent,
+                    color: AppColors.transparent,
                     child: InkWell(
                       onTap: () => Navigator.of(context).pop(),
                       borderRadius: BorderRadius.circular(16),
@@ -7562,7 +7949,7 @@ void _showDeleteSuccessDialog(BuildContext context, int deletedCount) {
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
-                            color: Colors.white,
+                            color: AppColors.white,
                             letterSpacing: 0.5,
                           ),
                           textAlign: TextAlign.center,
