@@ -1749,6 +1749,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not open store'**
   String get couldNotOpenStore;
+
+  /// Estimated scan time in seconds
+  ///
+  /// In en, this message translates to:
+  /// **'~{seconds} seconds'**
+  String estimatedTimeSeconds(int seconds);
+
+  /// Estimated scan time in minutes
+  ///
+  /// In en, this message translates to:
+  /// **'~{minutes} minutes'**
+  String estimatedTimeMinutes(int minutes);
+
+  /// Estimated scan time label with time value
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated time: {time}'**
+  String estimatedScanTime(String time);
+
+  /// Confirmation dialog title for starting blur scan
+  ///
+  /// In en, this message translates to:
+  /// **'Start blur detection?'**
+  String get confirmBlurScan;
+
+  /// Confirmation dialog message for starting blur scan
+  ///
+  /// In en, this message translates to:
+  /// **'Blur detection will be performed on selected albums. Do you want to continue?'**
+  String get confirmBlurScanMessage;
+
+  /// Confirmation dialog title for starting duplicate scan
+  ///
+  /// In en, this message translates to:
+  /// **'Start duplicate detection?'**
+  String get confirmDuplicateScan;
+
+  /// Confirmation dialog message for starting duplicate scan
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate detection will be performed on selected albums. Do you want to continue?'**
+  String get confirmDuplicateScanMessage;
+
+  /// Scan button text
+  ///
+  /// In en, this message translates to:
+  /// **'Scan'**
+  String get scan;
 }
 
 class _AppLocalizationsDelegate

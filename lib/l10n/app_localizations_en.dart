@@ -940,4 +940,36 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get couldNotOpenStore => 'Could not open store';
+
+  @override
+  String estimatedTimeSeconds(int seconds) {
+    return '~$seconds seconds';
+  }
+
+  @override
+  String estimatedTimeMinutes(int minutes) {
+    return '~$minutes minutes';
+  }
+
+  @override
+  String estimatedScanTime(String time) {
+    return 'Estimated time: $time';
+  }
+
+  @override
+  String get confirmBlurScan => 'Start blur detection?';
+
+  @override
+  String get confirmBlurScanMessage =>
+      'Blur detection will be performed on selected albums. Do you want to continue?';
+
+  @override
+  String get confirmDuplicateScan => 'Start duplicate detection?';
+
+  @override
+  String get confirmDuplicateScanMessage =>
+      'Duplicate detection will be performed on selected albums. Do you want to continue?';
+
+  @override
+  String get scan => 'Scan';
 }

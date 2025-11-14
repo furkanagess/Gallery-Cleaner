@@ -1505,17 +1505,21 @@ class _BlurTabState extends ConsumerState<_BlurTab> {
     final blurState = ref.watch(blurDetectionProvider);
 
     // Scanner durumu değiştiğinde ses kontrolü yap
-    ref.listen<bool>(
-      blurDetectionProvider.select((state) => state.isScanning),
-      (previous, next) {
-        // Sadece durum değiştiğinde ses kontrolü yap
-        if (next) {
-          _soundService.playScannerSound();
-        } else {
-          _soundService.stopScannerSound();
-        }
-      },
-    );
+    ref.listen<BlurDetectionState>(blurDetectionProvider, (previous, next) {
+      // Scan durumu veya tamamlanma durumu değiştiğinde ses kontrolü yap
+      final wasScanning = previous?.isScanning ?? false;
+      final isScanning = next.isScanning;
+      final hasCompleted = next.hasCompletedScan;
+
+      // Scan başladıysa ses çal
+      if (isScanning && !wasScanning) {
+        _soundService.playScannerSound();
+      }
+      // Scan durduysa veya tamamlandıysa ses durdur
+      else if ((!isScanning && wasScanning) || hasCompleted) {
+        _soundService.stopScannerSound();
+      }
+    });
 
     return albumsAsync.when(
       loading: () => Center(
@@ -1776,6 +1780,14 @@ class _BlurTabState extends ConsumerState<_BlurTab> {
                                     debugPrint(
                                       '✅ [SwipePage] Blur tab - $deletedCount fotoğraf silindi',
                                     );
+
+                                    // Cleanup complete dialogunu göster
+                                    if (mounted) {
+                                      _showDeleteSuccessDialog(
+                                        context,
+                                        deletedCount,
+                                      );
+                                    }
                                   } else {
                                     debugPrint(
                                       '⚠️ [SwipePage] Blur tab - Silme işlemi başarısız veya limit yok',
@@ -1910,6 +1922,14 @@ class _BlurTabState extends ConsumerState<_BlurTab> {
                                     debugPrint(
                                       '✅ [SwipePage] Blur tab - $deletedCount fotoğraf silindi',
                                     );
+
+                                    // Cleanup complete dialogunu göster
+                                    if (mounted) {
+                                      _showDeleteSuccessDialog(
+                                        context,
+                                        deletedCount,
+                                      );
+                                    }
                                   } else {
                                     debugPrint(
                                       '⚠️ [SwipePage] Blur tab - Silme işlemi başarısız veya limit yok',
@@ -2222,35 +2242,177 @@ class _BlurTabState extends ConsumerState<_BlurTab> {
                                         ),
                                       ),
                                     )
-                                  : _buildModernScanButton(
-                                      context: context,
-                                      theme: theme,
-                                      l10n: l10n,
-                                      onPressed: isScanning || hasNoScanRights
-                                          ? null
-                                          : () async {
-                                              await ref
-                                                  .read(
-                                                    blurDetectionProvider
-                                                        .notifier,
-                                                  )
-                                                  .scanAlbums(
-                                                    selectedAlbums,
-                                                    blurThreshold:
-                                                        _blurThreshold,
+                                  : FutureBuilder<int>(
+                                      future: _estimateScanDuration(
+                                        selectedAlbums,
+                                        true,
+                                      ),
+                                      builder: (context, snapshot) {
+                                        final estimatedTimeText =
+                                            snapshot.hasData
+                                            ? _formatEstimatedTime(
+                                                snapshot.data!,
+                                                l10n,
+                                              )
+                                            : null;
+
+                                        return _buildModernScanButton(
+                                          context: context,
+                                          theme: theme,
+                                          l10n: l10n,
+                                          onPressed:
+                                              isScanning || hasNoScanRights
+                                              ? null
+                                              : () async {
+                                                  // Seçili albüm isimlerini hazırla
+                                                  final albumNames =
+                                                      selectedAlbums
+                                                          .map((a) => a.name)
+                                                          .join(', ');
+
+                                                  // Onay dialogu göster
+                                                  final confirmed = await showDialog<bool>(
+                                                    context: context,
+                                                    builder: (dialogContext) => AlertDialog(
+                                                      title: Text(
+                                                        l10n.confirmBlurScan,
+                                                      ),
+                                                      content: Column(
+                                                        mainAxisSize:
+                                                            MainAxisSize.min,
+                                                        crossAxisAlignment:
+                                                            CrossAxisAlignment
+                                                                .start,
+                                                        children: [
+                                                          Text(
+                                                            l10n.confirmBlurScanMessage,
+                                                          ),
+                                                          const SizedBox(
+                                                            height: 12,
+                                                          ),
+                                                          Container(
+                                                            padding:
+                                                                const EdgeInsets.all(
+                                                                  12,
+                                                                ),
+                                                            decoration: BoxDecoration(
+                                                              color: theme
+                                                                  .colorScheme
+                                                                  .primaryContainer
+                                                                  .withOpacity(
+                                                                    0.3,
+                                                                  ),
+                                                              borderRadius:
+                                                                  BorderRadius.circular(
+                                                                    8,
+                                                                  ),
+                                                              border: Border.all(
+                                                                color: theme
+                                                                    .colorScheme
+                                                                    .primary
+                                                                    .withOpacity(
+                                                                      0.2,
+                                                                    ),
+                                                                width: 1,
+                                                              ),
+                                                            ),
+                                                            child: Row(
+                                                              children: [
+                                                                Icon(
+                                                                  Icons
+                                                                      .folder_rounded,
+                                                                  size: 20,
+                                                                  color: theme
+                                                                      .colorScheme
+                                                                      .primary,
+                                                                ),
+                                                                const SizedBox(
+                                                                  width: 8,
+                                                                ),
+                                                                Expanded(
+                                                                  child: Text(
+                                                                    albumNames,
+                                                                    style: theme
+                                                                        .textTheme
+                                                                        .bodyMedium
+                                                                        ?.copyWith(
+                                                                          color: theme
+                                                                              .colorScheme
+                                                                              .primary,
+                                                                          fontWeight:
+                                                                              FontWeight.w600,
+                                                                        ),
+                                                                    maxLines: 3,
+                                                                    overflow:
+                                                                        TextOverflow
+                                                                            .ellipsis,
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                      actions: [
+                                                        TextButton(
+                                                          onPressed: () =>
+                                                              Navigator.of(
+                                                                dialogContext,
+                                                              ).pop(false),
+                                                          child: Text(
+                                                            l10n.cancel,
+                                                          ),
+                                                        ),
+                                                        FilledButton(
+                                                          onPressed: () =>
+                                                              Navigator.of(
+                                                                dialogContext,
+                                                              ).pop(true),
+                                                          style: FilledButton.styleFrom(
+                                                            backgroundColor:
+                                                                theme
+                                                                    .colorScheme
+                                                                    .primary,
+                                                          ),
+                                                          child: Text(
+                                                            l10n.scan,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
                                                   );
 
-                                              if (!mounted) return;
-                                            },
-                                      icon: hasNoScanRights
-                                          ? Icons.block
-                                          : Icons.search_rounded,
-                                      label: hasNoScanRights
-                                          ? l10n.noScanRightsLeft
-                                          : l10n.startScan,
-                                      isEnabled:
-                                          !isScanning && !hasNoScanRights,
-                                      isError: hasNoScanRights,
+                                                  // Kullanıcı onaylamadıysa veya dialog kapatıldıysa çık
+                                                  if (confirmed != true ||
+                                                      !mounted)
+                                                    return;
+
+                                                  // Scan başlat
+                                                  await ref
+                                                      .read(
+                                                        blurDetectionProvider
+                                                            .notifier,
+                                                      )
+                                                      .scanAlbums(
+                                                        selectedAlbums,
+                                                        blurThreshold:
+                                                            _blurThreshold,
+                                                      );
+
+                                                  if (!mounted) return;
+                                                },
+                                          icon: hasNoScanRights
+                                              ? Icons.block
+                                              : Icons.search_rounded,
+                                          label: hasNoScanRights
+                                              ? l10n.noScanRightsLeft
+                                              : l10n.scanSelectedAlbums,
+                                          isEnabled:
+                                              !isScanning && !hasNoScanRights,
+                                          isError: hasNoScanRights,
+                                          estimatedTimeText: estimatedTimeText,
+                                        );
+                                      },
                                     );
                             },
                           );
@@ -2463,6 +2625,54 @@ class _BlurTabState extends ConsumerState<_BlurTab> {
     );
   }
 
+  /// Tahmini scan süresini hesapla (saniye cinsinden)
+  Future<int> _estimateScanDuration(
+    List<pm.AssetPathEntity> albums,
+    bool isBlurScan,
+  ) async {
+    try {
+      int totalPhotoCount = 0;
+
+      for (final album in albums) {
+        try {
+          final count = await album.assetCountAsync;
+          totalPhotoCount += count;
+        } catch (e) {
+          // Hata durumunda tahmin et
+          debugPrint(
+            '⚠️ [SwipePage] Albüm sayısı alınamadı: ${album.name}, $e',
+          );
+          // Ortalama albüm boyutu tahmini
+          totalPhotoCount += 500;
+        }
+      }
+
+      // Fotoğraf başına ortalama işleme süresi (saniye)
+      // Blur detection: ~0.15 saniye/fotoğraf (400x400 thumbnail + çoklu analiz)
+      // Duplicate detection: ~0.08 saniye/fotoğraf (hash hesaplama)
+      final secondsPerPhoto = isBlurScan ? 0.15 : 0.08;
+
+      // Toplam tahmini süre (saniye)
+      final estimatedSeconds = (totalPhotoCount * secondsPerPhoto).round();
+
+      // Minimum 5 saniye, maksimum 300 saniye (5 dakika)
+      return estimatedSeconds.clamp(5, 300);
+    } catch (e) {
+      debugPrint('⚠️ [SwipePage] Tahmini süre hesaplanamadı: $e');
+      return 30; // Varsayılan 30 saniye
+    }
+  }
+
+  /// Süreyi formatla (örn: "~30 saniye", "~2 dakika")
+  String _formatEstimatedTime(int seconds, AppLocalizations l10n) {
+    if (seconds < 60) {
+      return l10n.estimatedTimeSeconds(seconds);
+    } else {
+      final minutes = (seconds / 60).round();
+      return l10n.estimatedTimeMinutes(minutes);
+    }
+  }
+
   Widget _buildModernScanButton({
     required BuildContext context,
     required ThemeData theme,
@@ -2472,41 +2682,92 @@ class _BlurTabState extends ConsumerState<_BlurTab> {
     required String label,
     required bool isEnabled,
     required bool isError,
+    String? estimatedTimeText,
   }) {
-    return SizedBox(
-      width: double.infinity,
-      child: FilledButton(
-        onPressed: isEnabled ? onPressed : null,
-        style: FilledButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          minimumSize: const Size(double.infinity, 56),
-          backgroundColor: isError
-              ? theme.colorScheme.error
-              : isEnabled
-              ? AppColors.primary.withOpacity(0.85)
-              : theme.colorScheme.surfaceContainerHighest,
-          foregroundColor: isError
-              ? theme.colorScheme.onError
-              : isEnabled
-              ? AppColors.white
-              : theme.colorScheme.onSurface.withOpacity(0.6),
-          side: BorderSide(
-            color: isError
-                ? AppColors.error.withOpacity(0.9)
-                : isEnabled
-                ? AppColors.primary.withOpacity(0.9)
-                : theme.colorScheme.onSurface.withOpacity(0.3),
-            width: 1.5,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (estimatedTimeText != null && isEnabled && !isError) ...[
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: theme.colorScheme.primary.withOpacity(0.2),
+                width: 1,
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.access_time_rounded,
+                  size: 16,
+                  color: theme.colorScheme.primary,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  l10n.estimatedScanTime(estimatedTimeText),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.primary,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton(
+            onPressed: isEnabled ? onPressed : null,
+            style: FilledButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              minimumSize: const Size(double.infinity, 56),
+              backgroundColor: isError
+                  ? AppColors
+                        .error // Daha belirgin kırmızı
+                  : isEnabled
+                  ? AppColors.primary.withOpacity(0.85)
+                  : theme.colorScheme.surfaceContainerHighest,
+              disabledBackgroundColor: isError
+                  ? AppColors
+                        .error // Disabled durumda da kırmızı
+                  : theme.colorScheme.surfaceContainerHighest,
+              foregroundColor: isError
+                  ? AppColors
+                        .white // Kırmızı üzerinde beyaz text
+                  : isEnabled
+                  ? AppColors.white
+                  : theme.colorScheme.onSurface.withOpacity(0.6),
+              disabledForegroundColor: isError
+                  ? AppColors
+                        .white // Disabled durumda da beyaz text
+                  : theme.colorScheme.onSurface.withOpacity(0.6),
+              side: BorderSide(
+                color: isError
+                    ? AppColors
+                          .error // Kırmızı border
+                    : isEnabled
+                    ? AppColors.primary.withOpacity(0.9)
+                    : theme.colorScheme.onSurface.withOpacity(0.3),
+                width: 1.5,
+              ),
+            ),
+            child: Text(
+              label,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+                fontSize: 15,
+              ),
+            ),
           ),
         ),
-        child: Text(
-          label,
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w700,
-            fontSize: 15,
-          ),
-        ),
-      ),
+      ],
     );
   }
 
@@ -3433,17 +3694,24 @@ class _DuplicateTabState extends ConsumerState<_DuplicateTab> {
     final duplicateState = ref.watch(duplicateDetectionProvider);
 
     // Scanner durumu değiştiğinde ses kontrolü yap
-    ref.listen<bool>(
-      duplicateDetectionProvider.select((state) => state.isScanning),
-      (previous, next) {
-        // Sadece durum değiştiğinde ses kontrolü yap
-        if (next) {
-          _soundService.playScannerSound();
-        } else {
-          _soundService.stopScannerSound();
-        }
-      },
-    );
+    ref.listen<DuplicateDetectionState>(duplicateDetectionProvider, (
+      previous,
+      next,
+    ) {
+      // Scan durumu veya tamamlanma durumu değiştiğinde ses kontrolü yap
+      final wasScanning = previous?.isScanning ?? false;
+      final isScanning = next.isScanning;
+      final hasCompleted = next.hasCompletedScan;
+
+      // Scan başladıysa ses çal
+      if (isScanning && !wasScanning) {
+        _soundService.playScannerSound();
+      }
+      // Scan durduysa veya tamamlandıysa ses durdur
+      else if ((!isScanning && wasScanning) || hasCompleted) {
+        _soundService.stopScannerSound();
+      }
+    });
 
     return albumsAsync.when(
       loading: () => Center(
@@ -3626,6 +3894,13 @@ class _DuplicateTabState extends ConsumerState<_DuplicateTab> {
                                           style: FilledButton.styleFrom(
                                             backgroundColor:
                                                 theme.colorScheme.error,
+                                            side: BorderSide(
+                                              color: AppColors.error
+                                                  .withOpacity(
+                                                    0.9,
+                                                  ), // Kırmızı border
+                                              width: 1.5,
+                                            ),
                                           ),
                                           child: Text(l10n.delete),
                                         ),
@@ -3699,6 +3974,13 @@ class _DuplicateTabState extends ConsumerState<_DuplicateTab> {
                                           style: FilledButton.styleFrom(
                                             backgroundColor:
                                                 theme.colorScheme.error,
+                                            side: BorderSide(
+                                              color: AppColors.error
+                                                  .withOpacity(
+                                                    0.9,
+                                                  ), // Kırmızı border
+                                              width: 1.5,
+                                            ),
                                           ),
                                           child: Text(l10n.delete),
                                         ),
@@ -3766,6 +4048,14 @@ class _DuplicateTabState extends ConsumerState<_DuplicateTab> {
                                     debugPrint(
                                       '✅ [SwipePage] Duplicate tab - $deletedCount fotoğraf silindi',
                                     );
+
+                                    // Cleanup complete dialogunu göster
+                                    if (mounted) {
+                                      _showDeleteSuccessDialog(
+                                        context,
+                                        deletedCount,
+                                      );
+                                    }
                                   } else {
                                     debugPrint(
                                       '⚠️ [SwipePage] Duplicate tab - Silme işlemi başarısız veya limit yok',
@@ -3910,6 +4200,11 @@ class _DuplicateTabState extends ConsumerState<_DuplicateTab> {
                                               style: FilledButton.styleFrom(
                                                 backgroundColor:
                                                     theme.colorScheme.error,
+                                                side: BorderSide(
+                                                  color: AppColors.error
+                                                      .withOpacity(0.9),
+                                                  width: 1.5,
+                                                ),
                                               ),
                                               child: Text(l10n.delete),
                                             ),
@@ -3944,6 +4239,12 @@ class _DuplicateTabState extends ConsumerState<_DuplicateTab> {
                                       backgroundColor: theme.colorScheme.error,
                                       foregroundColor:
                                           theme.colorScheme.onError,
+                                      side: BorderSide(
+                                        color: AppColors.error.withOpacity(
+                                          0.9,
+                                        ), // Kırmızı border
+                                        width: 1.5,
+                                      ),
                                     ),
                                   )
                                 : _DuplicateTabState._buildModernScanButton(
@@ -4039,33 +4340,184 @@ class _DuplicateTabState extends ConsumerState<_DuplicateTab> {
                                             theme.colorScheme.error,
                                         foregroundColor:
                                             theme.colorScheme.onError,
+                                        side: BorderSide(
+                                          color: AppColors.error.withOpacity(
+                                            0.9,
+                                          ), // Kırmızı border
+                                          width: 1.5,
+                                        ),
                                       ),
                                     )
-                                  : _DuplicateTabState._buildModernScanButton(
-                                      context: context,
-                                      theme: theme,
-                                      l10n: l10n,
-                                      onPressed: isScanning || hasNoScanRights
-                                          ? null
-                                          : () async {
-                                              await ref
-                                                  .read(
-                                                    duplicateDetectionProvider
-                                                        .notifier,
-                                                  )
-                                                  .scanAlbums(selectedAlbums);
+                                  : FutureBuilder<int>(
+                                      future:
+                                          _DuplicateTabState._estimateScanDurationStatic(
+                                            selectedAlbums,
+                                            false,
+                                          ),
+                                      builder: (context, snapshot) {
+                                        final estimatedTimeText =
+                                            snapshot.hasData
+                                            ? _DuplicateTabState._formatEstimatedTimeStatic(
+                                                snapshot.data!,
+                                                l10n,
+                                              )
+                                            : null;
 
-                                              if (!mounted) return;
-                                            },
-                                      icon: hasNoScanRights
-                                          ? Icons.block
-                                          : Icons.search_rounded,
-                                      label: hasNoScanRights
-                                          ? l10n.noScanRightsLeft
-                                          : l10n.scanSelectedAlbums,
-                                      isEnabled:
-                                          !isScanning && !hasNoScanRights,
-                                      isError: hasNoScanRights,
+                                        return _DuplicateTabState._buildModernScanButton(
+                                          context: context,
+                                          theme: theme,
+                                          l10n: l10n,
+                                          onPressed:
+                                              isScanning || hasNoScanRights
+                                              ? null
+                                              : () async {
+                                                  // Seçili albüm isimlerini hazırla
+                                                  final albumNames =
+                                                      selectedAlbums
+                                                          .map((a) => a.name)
+                                                          .join(', ');
+
+                                                  // Onay dialogu göster
+                                                  final confirmed = await showDialog<bool>(
+                                                    context: context,
+                                                    builder: (dialogContext) => AlertDialog(
+                                                      title: Text(
+                                                        l10n.confirmDuplicateScan,
+                                                      ),
+                                                      content: Column(
+                                                        mainAxisSize:
+                                                            MainAxisSize.min,
+                                                        crossAxisAlignment:
+                                                            CrossAxisAlignment
+                                                                .start,
+                                                        children: [
+                                                          Text(
+                                                            l10n.confirmDuplicateScanMessage,
+                                                          ),
+                                                          const SizedBox(
+                                                            height: 12,
+                                                          ),
+                                                          Container(
+                                                            padding:
+                                                                const EdgeInsets.all(
+                                                                  12,
+                                                                ),
+                                                            decoration: BoxDecoration(
+                                                              color: theme
+                                                                  .colorScheme
+                                                                  .primaryContainer
+                                                                  .withOpacity(
+                                                                    0.3,
+                                                                  ),
+                                                              borderRadius:
+                                                                  BorderRadius.circular(
+                                                                    8,
+                                                                  ),
+                                                              border: Border.all(
+                                                                color: theme
+                                                                    .colorScheme
+                                                                    .primary
+                                                                    .withOpacity(
+                                                                      0.2,
+                                                                    ),
+                                                                width: 1,
+                                                              ),
+                                                            ),
+                                                            child: Row(
+                                                              children: [
+                                                                Icon(
+                                                                  Icons
+                                                                      .folder_rounded,
+                                                                  size: 20,
+                                                                  color: theme
+                                                                      .colorScheme
+                                                                      .primary,
+                                                                ),
+                                                                const SizedBox(
+                                                                  width: 8,
+                                                                ),
+                                                                Expanded(
+                                                                  child: Text(
+                                                                    albumNames,
+                                                                    style: theme
+                                                                        .textTheme
+                                                                        .bodyMedium
+                                                                        ?.copyWith(
+                                                                          color: theme
+                                                                              .colorScheme
+                                                                              .primary,
+                                                                          fontWeight:
+                                                                              FontWeight.w600,
+                                                                        ),
+                                                                    maxLines: 3,
+                                                                    overflow:
+                                                                        TextOverflow
+                                                                            .ellipsis,
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                      actions: [
+                                                        TextButton(
+                                                          onPressed: () =>
+                                                              Navigator.of(
+                                                                dialogContext,
+                                                              ).pop(false),
+                                                          child: Text(
+                                                            l10n.cancel,
+                                                          ),
+                                                        ),
+                                                        FilledButton(
+                                                          onPressed: () =>
+                                                              Navigator.of(
+                                                                dialogContext,
+                                                              ).pop(true),
+                                                          style: FilledButton.styleFrom(
+                                                            backgroundColor:
+                                                                theme
+                                                                    .colorScheme
+                                                                    .primary,
+                                                          ),
+                                                          child: Text(
+                                                            l10n.scan,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  );
+
+                                                  // Kullanıcı onaylamadıysa veya dialog kapatıldıysa çık
+                                                  if (confirmed != true ||
+                                                      !mounted)
+                                                    return;
+
+                                                  // Scan başlat
+                                                  await ref
+                                                      .read(
+                                                        duplicateDetectionProvider
+                                                            .notifier,
+                                                      )
+                                                      .scanAlbums(
+                                                        selectedAlbums,
+                                                      );
+
+                                                  if (!mounted) return;
+                                                },
+                                          icon: hasNoScanRights
+                                              ? Icons.block
+                                              : Icons.search_rounded,
+                                          label: hasNoScanRights
+                                              ? l10n.noScanRightsLeft
+                                              : l10n.scanSelectedAlbums,
+                                          isEnabled:
+                                              !isScanning && !hasNoScanRights,
+                                          isError: hasNoScanRights,
+                                          estimatedTimeText: estimatedTimeText,
+                                        );
+                                      },
                                     );
                             },
                           );
@@ -4200,6 +4652,54 @@ class _DuplicateTabState extends ConsumerState<_DuplicateTab> {
     );
   }
 
+  /// Tahmini scan süresini hesapla (saniye cinsinden) - Static versiyon
+  static Future<int> _estimateScanDurationStatic(
+    List<pm.AssetPathEntity> albums,
+    bool isBlurScan,
+  ) async {
+    try {
+      int totalPhotoCount = 0;
+
+      for (final album in albums) {
+        try {
+          final count = await album.assetCountAsync;
+          totalPhotoCount += count;
+        } catch (e) {
+          // Hata durumunda tahmin et
+          debugPrint(
+            '⚠️ [SwipePage] Albüm sayısı alınamadı: ${album.name}, $e',
+          );
+          // Ortalama albüm boyutu tahmini
+          totalPhotoCount += 500;
+        }
+      }
+
+      // Fotoğraf başına ortalama işleme süresi (saniye)
+      // Blur detection: ~0.15 saniye/fotoğraf (400x400 thumbnail + çoklu analiz)
+      // Duplicate detection: ~0.08 saniye/fotoğraf (hash hesaplama)
+      final secondsPerPhoto = isBlurScan ? 0.15 : 0.08;
+
+      // Toplam tahmini süre (saniye)
+      final estimatedSeconds = (totalPhotoCount * secondsPerPhoto).round();
+
+      // Minimum 5 saniye, maksimum 300 saniye (5 dakika)
+      return estimatedSeconds.clamp(5, 300);
+    } catch (e) {
+      debugPrint('⚠️ [SwipePage] Tahmini süre hesaplanamadı: $e');
+      return 30; // Varsayılan 30 saniye
+    }
+  }
+
+  /// Süreyi formatla (örn: "~30 saniye", "~2 dakika") - Static versiyon
+  static String _formatEstimatedTimeStatic(int seconds, AppLocalizations l10n) {
+    if (seconds < 60) {
+      return l10n.estimatedTimeSeconds(seconds);
+    } else {
+      final minutes = (seconds / 60).round();
+      return l10n.estimatedTimeMinutes(minutes);
+    }
+  }
+
   static Widget _buildModernScanButton({
     required BuildContext context,
     required ThemeData theme,
@@ -4209,41 +4709,92 @@ class _DuplicateTabState extends ConsumerState<_DuplicateTab> {
     required String label,
     required bool isEnabled,
     required bool isError,
+    String? estimatedTimeText,
   }) {
-    return SizedBox(
-      width: double.infinity,
-      child: FilledButton(
-        onPressed: isEnabled ? onPressed : null,
-        style: FilledButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          minimumSize: const Size(double.infinity, 56),
-          backgroundColor: isError
-              ? theme.colorScheme.error
-              : isEnabled
-              ? AppColors.primary.withOpacity(0.85)
-              : theme.colorScheme.surfaceContainerHighest,
-          foregroundColor: isError
-              ? theme.colorScheme.onError
-              : isEnabled
-              ? AppColors.white
-              : theme.colorScheme.onSurface.withOpacity(0.6),
-          side: BorderSide(
-            color: isError
-                ? AppColors.error.withOpacity(0.9)
-                : isEnabled
-                ? AppColors.primary.withOpacity(0.9)
-                : theme.colorScheme.onSurface.withOpacity(0.3),
-            width: 1.5,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (estimatedTimeText != null && isEnabled && !isError) ...[
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: theme.colorScheme.primary.withOpacity(0.2),
+                width: 1,
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.access_time_rounded,
+                  size: 16,
+                  color: theme.colorScheme.primary,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  l10n.estimatedScanTime(estimatedTimeText),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.primary,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton(
+            onPressed: isEnabled ? onPressed : null,
+            style: FilledButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              minimumSize: const Size(double.infinity, 56),
+              backgroundColor: isError
+                  ? AppColors
+                        .error // Daha belirgin kırmızı
+                  : isEnabled
+                  ? AppColors.primary.withOpacity(0.85)
+                  : theme.colorScheme.surfaceContainerHighest,
+              disabledBackgroundColor: isError
+                  ? AppColors
+                        .error // Disabled durumda da kırmızı
+                  : theme.colorScheme.surfaceContainerHighest,
+              foregroundColor: isError
+                  ? AppColors
+                        .white // Kırmızı üzerinde beyaz text
+                  : isEnabled
+                  ? AppColors.white
+                  : theme.colorScheme.onSurface.withOpacity(0.6),
+              disabledForegroundColor: isError
+                  ? AppColors
+                        .white // Disabled durumda da beyaz text
+                  : theme.colorScheme.onSurface.withOpacity(0.6),
+              side: BorderSide(
+                color: isError
+                    ? AppColors
+                          .error // Kırmızı border
+                    : isEnabled
+                    ? AppColors.primary.withOpacity(0.9)
+                    : theme.colorScheme.onSurface.withOpacity(0.3),
+                width: 1.5,
+              ),
+            ),
+            child: Text(
+              label,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+                fontSize: 15,
+              ),
+            ),
           ),
         ),
-        child: Text(
-          label,
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w700,
-            fontSize: 15,
-          ),
-        ),
-      ),
+      ],
     );
   }
 
@@ -4574,7 +5125,7 @@ class _DuplicateTabState extends ConsumerState<_DuplicateTab> {
               ),
               const SizedBox(width: 10),
               Expanded(
-                child: _buildCompactStatCard(
+                child: _buildEnhancedStatCard(
                   theme,
                   Icons.photo_library_rounded,
                   '${state.totalDuplicatePhotos}',
@@ -4584,7 +5135,7 @@ class _DuplicateTabState extends ConsumerState<_DuplicateTab> {
               ),
               const SizedBox(width: 10),
               Expanded(
-                child: _buildCompactStatCard(
+                child: _buildEnhancedStatCard(
                   theme,
                   Icons.storage_rounded,
                   '${state.totalSpaceToSaveMB.toStringAsFixed(1)} MB',
@@ -5054,9 +5605,8 @@ class _ScanLimitInfoState extends ConsumerState<_ScanLimitInfo>
       parent: _breathingController,
       curve: Curves.easeInOut,
     );
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadAd();
-    });
+    // Reklam yüklemesi artık dialog açıldığında yapılacak
+    // initState'te yükleme yapılmıyor
   }
 
   @override
@@ -5186,6 +5736,9 @@ class _ScanLimitInfoState extends ConsumerState<_ScanLimitInfo>
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final isBlur = widget.adUnitType == AdUnitType.blurScanLimit;
+
+    // Dialog açıldığında reklam yüklemesi başlat
+    _loadAd();
 
     showDialog(
       context: context,
@@ -5943,7 +6496,7 @@ class _DuplicateGroupDetailSheet extends StatelessWidget {
     return Container(
       height: MediaQuery.of(context).size.height * 0.9,
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+        color: theme.colorScheme.background,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Column(
@@ -6180,11 +6733,12 @@ class SwipePage extends ConsumerStatefulWidget {
 }
 
 class _SwipePageState extends ConsumerState<SwipePage>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   late TabController _tabController;
   late AnimationController _historyPulseController;
   late AnimationController _blurTabPulseController;
   late AnimationController _duplicateTabPulseController;
+  final SoundService _soundService = SoundService();
 
   @override
   void initState() {
@@ -6203,6 +6757,9 @@ class _SwipePageState extends ConsumerState<SwipePage>
       duration: const Duration(milliseconds: 1500),
     );
 
+    // Lifecycle observer'ı ekle (arka plan/ön plan kontrolü için)
+    WidgetsBinding.instance.addObserver(this);
+
     // İzin durumunu hemen kontrol et - böylece izin varsa hiç izin ekranı gösterilmez
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
@@ -6212,7 +6769,31 @@ class _SwipePageState extends ConsumerState<SwipePage>
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+
+    // Arka plana geçildiğinde scanner sesini durdur
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
+      _soundService.stopScannerSound();
+    }
+    // Ön plana döndüğünde, eğer scan devam ediyorsa sesi tekrar başlat
+    else if (state == AppLifecycleState.resumed) {
+      final blurState = ref.read(blurDetectionProvider);
+      final duplicateState = ref.read(duplicateDetectionProvider);
+
+      // Eğer blur veya duplicate scan devam ediyorsa sesi başlat
+      if (blurState.isScanning || duplicateState.isScanning) {
+        _soundService.playScannerSound();
+      }
+    }
+  }
+
+  @override
   void dispose() {
+    // Lifecycle observer'ı kaldır
+    WidgetsBinding.instance.removeObserver(this);
+
     _tabController.dispose();
     _historyPulseController.dispose();
     _blurTabPulseController.dispose();
@@ -6531,50 +7112,49 @@ class _SwipePageState extends ConsumerState<SwipePage>
           ),
         ),
         actions: [
-          // Debug mod: Premium durumu toggle butonu
-          if (kDebugMode)
-            Consumer(
-              builder: (context, ref, _) {
-                final isPremiumAsync = ref.watch(isPremiumProvider);
-                return isPremiumAsync.when(
-                  loading: () => const SizedBox.shrink(),
-                  error: (_, __) => const SizedBox.shrink(),
-                  data: (isPremium) {
-                    return IconButton(
-                      icon: Icon(
-                        isPremium
-                            ? Icons.workspace_premium
-                            : Icons.workspace_premium_outlined,
-                        color: isPremium
-                            ? AppColors.warningLight
-                            : theme.colorScheme.onSurface.withOpacity(0.6),
-                      ),
-                      tooltip: isPremium
-                          ? 'Premium: AÇIK (Debug)'
-                          : 'Premium: KAPALI (Debug)',
-                      onPressed: () async {
-                        final prefsService = PreferencesService();
-                        await prefsService.setPremium(!isPremium);
-                        ref.invalidate(isPremiumProvider);
-                        // Show snackbar
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                isPremium
-                                    ? 'Premium kapatıldı (Debug)'
-                                    : 'Premium açıldı (Debug)',
-                              ),
-                              duration: const Duration(seconds: 1),
+          // Premium durumu toggle butonu (tüm modlarda çalışır)
+          Consumer(
+            builder: (context, ref, _) {
+              final isPremiumAsync = ref.watch(isPremiumProvider);
+              return isPremiumAsync.when(
+                loading: () => const SizedBox.shrink(),
+                error: (_, __) => const SizedBox.shrink(),
+                data: (isPremium) {
+                  return IconButton(
+                    icon: Icon(
+                      isPremium
+                          ? Icons.workspace_premium
+                          : Icons.workspace_premium_outlined,
+                      color: isPremium
+                          ? AppColors.warningLight
+                          : theme.colorScheme.onSurface.withOpacity(0.6),
+                    ),
+                    tooltip: isPremium
+                        ? 'Premium: AÇIK (Debug)'
+                        : 'Premium: KAPALI (Debug)',
+                    onPressed: () async {
+                      final prefsService = PreferencesService();
+                      await prefsService.setPremium(!isPremium);
+                      ref.invalidate(isPremiumProvider);
+                      // Show snackbar
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              isPremium
+                                  ? 'Premium kapatıldı (Debug)'
+                                  : 'Premium açıldı (Debug)',
                             ),
-                          );
-                        }
-                      },
-                    );
-                  },
-                );
-              },
-            ),
+                            duration: const Duration(seconds: 1),
+                          ),
+                        );
+                      }
+                    },
+                  );
+                },
+              );
+            },
+          ),
           _HistoryButton(pulseController: _historyPulseController),
           Consumer(
             builder: (context, ref, _) {
@@ -6843,21 +7423,8 @@ class _DeleteLimitInfoState extends ConsumerState<_DeleteLimitInfo>
       parent: _breathingController,
       curve: Curves.easeInOut,
     );
-    // Preload ad when widget is created
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        try {
-          // Reklam zaten yüklenmişse veya yükleniyorsa, tekrar yükleme isteği yapma
-          if (!_adsService.isAdReadyOrLoading(AdUnitType.deleteLimit)) {
-            _adsService.loadRewardedAd(AdUnitType.deleteLimit);
-          }
-          // Check ad readiness periodically
-          _checkAdReady();
-        } catch (e) {
-          debugPrint('❌ [SwipePage] Error loading ad in initState: $e');
-        }
-      }
-    });
+    // Reklam yüklemesi artık dialog açıldığında yapılacak
+    // initState'te yükleme yapılmıyor
   }
 
   void _checkAdReady() {
@@ -6961,6 +7528,12 @@ class _DeleteLimitInfoState extends ConsumerState<_DeleteLimitInfo>
   void _showAddRightsDialog(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
+
+    // Dialog açıldığında reklam yüklemesi başlat
+    if (!_adsService.isAdReadyOrLoading(AdUnitType.deleteLimit)) {
+      _adsService.loadRewardedAd(AdUnitType.deleteLimit);
+    }
+    _checkAdReady();
 
     showDialog(
       context: context,
@@ -7956,24 +8529,6 @@ void _showDeleteSuccessDialog(BuildContext context, int deletedCount) {
                         ),
                       ),
                     ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              // View Gallery link
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  // Navigate to gallery view if needed
-                },
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                ),
-                child: Text(
-                  l10n.viewGallery,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurface,
-                    fontSize: 14,
                   ),
                 ),
               ),

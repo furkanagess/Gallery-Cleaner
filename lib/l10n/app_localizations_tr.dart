@@ -946,4 +946,36 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get couldNotOpenStore => 'Mağaza açılamadı';
+
+  @override
+  String estimatedTimeSeconds(int seconds) {
+    return '~$seconds saniye';
+  }
+
+  @override
+  String estimatedTimeMinutes(int minutes) {
+    return '~$minutes dakika';
+  }
+
+  @override
+  String estimatedScanTime(String time) {
+    return 'Tahmini süre: $time';
+  }
+
+  @override
+  String get confirmBlurScan => 'Blur tespiti başlatılsın mı?';
+
+  @override
+  String get confirmBlurScanMessage =>
+      'Seçili albümlerde blur tespiti yapılacak. Devam etmek istiyor musunuz?';
+
+  @override
+  String get confirmDuplicateScan => 'Duplicate tespiti başlatılsın mı?';
+
+  @override
+  String get confirmDuplicateScanMessage =>
+      'Seçili albümlerde duplicate tespiti yapılacak. Devam etmek istiyor musunuz?';
+
+  @override
+  String get scan => 'Tara';
 }

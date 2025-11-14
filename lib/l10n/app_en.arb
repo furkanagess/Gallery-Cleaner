@@ -1243,6 +1243,53 @@
   "couldNotOpenStore": "Could not open store",
   "@couldNotOpenStore": {
     "description": "Error message when store cannot be opened"
+  },
+  "estimatedTimeSeconds": "~{seconds} seconds",
+  "@estimatedTimeSeconds": {
+    "description": "Estimated scan time in seconds",
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "estimatedTimeMinutes": "~{minutes} minutes",
+  "@estimatedTimeMinutes": {
+    "description": "Estimated scan time in minutes",
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "estimatedScanTime": "Estimated time: {time}",
+  "@estimatedScanTime": {
+    "description": "Estimated scan time label with time value",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "confirmBlurScan": "Start blur detection?",
+  "@confirmBlurScan": {
+    "description": "Confirmation dialog title for starting blur scan"
+  },
+  "confirmBlurScanMessage": "Blur detection will be performed on selected albums. Do you want to continue?",
+  "@confirmBlurScanMessage": {
+    "description": "Confirmation dialog message for starting blur scan"
+  },
+  "confirmDuplicateScan": "Start duplicate detection?",
+  "@confirmDuplicateScan": {
+    "description": "Confirmation dialog title for starting duplicate scan"
+  },
+  "confirmDuplicateScanMessage": "Duplicate detection will be performed on selected albums. Do you want to continue?",
+  "@confirmDuplicateScanMessage": {
+    "description": "Confirmation dialog message for starting duplicate scan"
+  },
+  "scan": "Scan",
+  "@scan": {
+    "description": "Scan button text"
   }
 }
 

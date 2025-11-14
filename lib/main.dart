@@ -12,7 +12,8 @@ void main() async {
     await RewardedAdsService.initialize();
     // Preload all ad types after initialization
     await Future.delayed(const Duration(seconds: 2));
-    await RewardedAdsService.preloadAllAds();
+    // Reklamlar artık sadece dialog açıldığında yüklenecek
+    // await RewardedAdsService.preloadAllAds();
   } catch (e) {
     debugPrint('⚠️ [main] Failed to initialize ads service: $e');
     // Continue app startup even if ads fail to initialize

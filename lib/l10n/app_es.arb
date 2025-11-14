@@ -893,6 +893,53 @@
   "couldNotOpenStore": "No se pudo abrir la tienda",
   "@couldNotOpenStore": {
     "description": "Error message when store cannot be opened"
+  },
+  "estimatedTimeSeconds": "~{seconds} segundos",
+  "@estimatedTimeSeconds": {
+    "description": "Estimated scan time in seconds",
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "estimatedTimeMinutes": "~{minutes} minutos",
+  "@estimatedTimeMinutes": {
+    "description": "Estimated scan time in minutes",
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "estimatedScanTime": "Tiempo estimado: {time}",
+  "@estimatedScanTime": {
+    "description": "Estimated scan time label with time value",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "confirmBlurScan": "¿Iniciar detección de desenfoque?",
+  "@confirmBlurScan": {
+    "description": "Confirmation dialog title for starting blur scan"
+  },
+  "confirmBlurScanMessage": "Se realizará la detección de desenfoque en los álbumes seleccionados. ¿Desea continuar?",
+  "@confirmBlurScanMessage": {
+    "description": "Confirmation dialog message for starting blur scan"
+  },
+  "confirmDuplicateScan": "¿Iniciar detección de duplicados?",
+  "@confirmDuplicateScan": {
+    "description": "Confirmation dialog title for starting duplicate scan"
+  },
+  "confirmDuplicateScanMessage": "Se realizará la detección de duplicados en los álbumes seleccionados. ¿Desea continuar?",
+  "@confirmDuplicateScanMessage": {
+    "description": "Confirmation dialog message for starting duplicate scan"
+  },
+  "scan": "Escanear",
+  "@scan": {
+    "description": "Scan button text"
   }
 }
 

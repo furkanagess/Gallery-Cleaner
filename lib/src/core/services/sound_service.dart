@@ -69,17 +69,18 @@ class SoundService {
   /// Scanner sesini durdur
   Future<void> stopScannerSound() async {
     try {
-      if (!_isScannerPlaying) {
-        return;
-      }
-      
+      // Flag'i önce false yap (tekrar çağrıları engellemek için)
       _isScannerPlaying = false;
+      
+      // Player durumunu kontrol et ve durdur
       final state = await _scannerPlayer.state;
-      if (state == PlayerState.playing) {
+      if (state == PlayerState.playing || state == PlayerState.paused) {
       await _scannerPlayer.stop();
+        // Release mode'u reset et (loop'u kaldır)
+        await _scannerPlayer.setReleaseMode(ReleaseMode.release);
       }
     } catch (e) {
-      // Hata sessizce yok sayılır
+      // Hata durumunda da flag'i false yap
       _isScannerPlaying = false;
       print('Scanner ses durdurma hatası: $e');
     }

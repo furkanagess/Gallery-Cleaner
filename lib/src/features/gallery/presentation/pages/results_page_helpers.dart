@@ -787,6 +787,10 @@ Future<void> deleteDuplicateGroup(
           onPressed: () => Navigator.of(context).pop(true),
           style: FilledButton.styleFrom(
             backgroundColor: theme.colorScheme.error,
+            side: BorderSide(
+              color: AppColors.error.withOpacity(0.9),
+              width: 1.5,
+            ),
           ),
           child: Text(l10n.delete),
         ),
@@ -827,7 +831,7 @@ class DuplicateGroupDetailSheet extends StatelessWidget {
     return Container(
       height: MediaQuery.of(context).size.height * 0.9,
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+        color: theme.colorScheme.background,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Column(
@@ -836,7 +840,7 @@ class DuplicateGroupDetailSheet extends StatelessWidget {
           Container(
             padding: const EdgeInsets.fromLTRB(20, 16, 12, 16),
             decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
+              color: theme.colorScheme.background,
               border: Border(
                 bottom: BorderSide(
                   color: theme.colorScheme.outline.withOpacity(0.1),
