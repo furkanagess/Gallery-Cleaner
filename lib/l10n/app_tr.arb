@@ -304,6 +304,18 @@
   "@premiumAccessDescription": {
     "description": "Description text for premium users explaining their access"
   },
+  "premiumActive": "Premium Aktif!",
+  "@premiumActive": {
+    "description": "Title shown in purchase success dialog"
+  },
+  "premiumActiveMessage": "Tebrikler! Premium üyeliğiniz aktif. Artık tüm özelliklere erişebilirsiniz.",
+  "@premiumActiveMessage": {
+    "description": "Message shown in purchase success dialog"
+  },
+  "startUsing": "Kullanmaya Başla",
+  "@startUsing": {
+    "description": "Button text to start using premium features"
+  },
   "unlimited": "Sınırsız",
   "@unlimited": {
     "description": "Short label for unlimited feature"
@@ -657,6 +669,10 @@
   "@sensitivity": {
     "description": "Sensitivity label"
   },
+  "duplicateMode": "Mod",
+  "@duplicateMode": {
+    "description": "Duplicate detection mode label"
+  },
   "thresholdLabel": "Threshold: {value}",
   "@thresholdLabel": {
     "description": "Threshold label with value",
@@ -686,7 +702,7 @@
   "@sensitivityDescription": {
     "description": "Sensitivity description"
   },
-  "sensitivityLevelsDescription": "• Düşük: Hafif bulanık fotoğrafları da tespit eder (daha fazla sonuç)\n• Orta: Orta seviye bulanık fotoğrafları tespit eder (dengeli)\n• Yüksek: Sadece çok bulanık fotoğrafları tespit eder (daha az sonuç)",
+  "sensitivityLevelsDescription": "• Düşük: Hafif bulanık fotoğrafları da tespit eder (daha fazla sonuç)\n• Orta: Orta seviye bulanık fotoğrafları tespit eder (dengeli)\n• Yüksek: Sadece çok bulanık fotoğrafları tespit eder (daha az sonuç)\n• Yüksek Hassasiyet: Maksimum hassasiyet, sadece çok bulanık fotoğrafları tespit eder",
   "@sensitivityLevelsDescription": {
     "description": "Detailed description of sensitivity levels"
   },
@@ -988,6 +1004,15 @@
       }
     }
   },
+  "maxPhotoLimitWarning": "Seçilen albümde {count} fotoğraf bulunuyor. Tek seferde en fazla 1000 fotoğraf analiz edilebilir.",
+  "@maxPhotoLimitWarning": {
+    "description": "Warning message when selected album has more than 1000 photos",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "confirmBlurScan": "Blur tespiti başlatılsın mı?",
   "@confirmBlurScan": {
     "description": "Confirmation dialog title for starting blur scan"
@@ -1007,6 +1032,38 @@
   "scan": "Tara",
   "@scan": {
     "description": "Scan button text"
+  },
+  "duplicateModeLowSpeedHighAccuracy": "Düşük Hız\nYüksek Hassasiyet",
+  "@duplicateModeLowSpeedHighAccuracy": {
+    "description": "Low speed high accuracy mode label for duplicate detection"
+  },
+  "duplicateModeBalanced": "Dengeli",
+  "@duplicateModeBalanced": {
+    "description": "Balanced mode label for duplicate detection"
+  },
+  "duplicateModeHighSpeedLowAccuracy": "Yüksek Hız\nDüşük Hassasiyet",
+  "@duplicateModeHighSpeedLowAccuracy": {
+    "description": "High speed low accuracy mode label for duplicate detection"
+  },
+  "duplicateModeLevelsDescription": "• Düşük Hız/Yüksek Hassasiyet: En doğru sonuçlar, daha uzun sürer\n• Dengeli: Hız ve hassasiyet dengesi\n• Yüksek Hız/Düşük Hassasiyet: Hızlı sonuçlar, daha az doğru\n• Yüksek Hız: Hızlı tarama için optimize edilmiş, görselleri daha hızlı işler",
+  "@duplicateModeLevelsDescription": {
+    "description": "Detailed description of duplicate detection mode levels"
+  },
+  "allPhotosReviewedTitle": "Tüm Fotoğraflar Gözden Geçirildi!",
+  "@allPhotosReviewedTitle": {
+    "description": "Title shown when all photos have been reviewed"
+  },
+  "allPhotosReviewedDescription": "Harika iş! Tüm mevcut fotoğrafları incelediniz.",
+  "@allPhotosReviewedDescription": {
+    "description": "Description shown when all photos have been reviewed"
+  },
+  "removeAdsAndUnlimitedDeletions": "Reklam Kaldır ve Sınırsız Silme Hakkı Kazan",
+  "@removeAdsAndUnlimitedDeletions": {
+    "description": "Title for premium dialog after 3 ads"
+  },
+  "removeAdsAndUnlimitedDeletionsDescription": "Premium'a yükselt ve reklamsız deneyim ile ömür boyu sınırsız silme hakkı kazan!",
+  "@removeAdsAndUnlimitedDeletionsDescription": {
+    "description": "Description for premium dialog after 3 ads"
   }
 }
 

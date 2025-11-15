@@ -580,6 +580,18 @@
   "@premiumAccessDescription": {
     "description": "Description text for premium users explaining their access"
   },
+  "premiumActive": "Premium Active!",
+  "@premiumActive": {
+    "description": "Title shown in purchase success dialog"
+  },
+  "premiumActiveMessage": "Congratulations! Your premium membership is active. You now have access to all features.",
+  "@premiumActiveMessage": {
+    "description": "Message shown in purchase success dialog"
+  },
+  "startUsing": "Start Using",
+  "@startUsing": {
+    "description": "Button text to start using premium features"
+  },
   "unlimited": "Unlimited",
   "@unlimited": {
     "description": "Short label for unlimited feature"
@@ -936,6 +948,10 @@
   "@sensitivity": {
     "description": "Sensitivity label"
   },
+  "duplicateMode": "Mode",
+  "@duplicateMode": {
+    "description": "Duplicate detection mode label"
+  },
   "thresholdLabel": "Threshold: {value}",
   "@thresholdLabel": {
     "description": "Threshold label with value",
@@ -965,7 +981,7 @@
   "@sensitivityDescription": {
     "description": "Sensitivity description"
   },
-  "sensitivityLevelsDescription": "• Low: Detects slightly blurry photos as well (more results)\n• Medium: Detects moderately blurry photos (balanced)\n• High: Only detects very blurry photos (fewer results)",
+  "sensitivityLevelsDescription": "• Low: Detects slightly blurry photos as well (more results)\n• Medium: Detects moderately blurry photos (balanced)\n• High: Only detects very blurry photos (fewer results)\n• High Sensitivity: Maximum precision, detects only very blurry photos",
   "@sensitivityLevelsDescription": {
     "description": "Detailed description of sensitivity levels"
   },
@@ -1271,6 +1287,15 @@
       }
     }
   },
+  "maxPhotoLimitWarning": "Selected album contains {count} photos. Maximum 1000 photos can be analyzed at once.",
+  "@maxPhotoLimitWarning": {
+    "description": "Warning message when selected album has more than 1000 photos",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "confirmBlurScan": "Start blur detection?",
   "@confirmBlurScan": {
     "description": "Confirmation dialog title for starting blur scan"
@@ -1290,6 +1315,38 @@
   "scan": "Scan",
   "@scan": {
     "description": "Scan button text"
+  },
+  "duplicateModeLowSpeedHighAccuracy": "Low Speed\nHigh Accuracy",
+  "@duplicateModeLowSpeedHighAccuracy": {
+    "description": "Low speed high accuracy mode label for duplicate detection"
+  },
+  "duplicateModeBalanced": "Balanced",
+  "@duplicateModeBalanced": {
+    "description": "Balanced mode label for duplicate detection"
+  },
+  "duplicateModeHighSpeedLowAccuracy": "High Speed\nLow Accuracy",
+  "@duplicateModeHighSpeedLowAccuracy": {
+    "description": "High speed low accuracy mode label for duplicate detection"
+  },
+  "duplicateModeLevelsDescription": "• Low Speed/High Accuracy: Most accurate results, takes longer\n• Balanced: Speed and accuracy balance\n• High Speed/Low Accuracy: Fast results, less accurate\n• High Speed: Optimized for quick scanning, processes images faster",
+  "@duplicateModeLevelsDescription": {
+    "description": "Detailed description of duplicate detection mode levels"
+  },
+  "allPhotosReviewedTitle": "All Photos Reviewed!",
+  "@allPhotosReviewedTitle": {
+    "description": "Title shown when all photos have been reviewed"
+  },
+  "allPhotosReviewedDescription": "Great job! You've reviewed all available photos.",
+  "@allPhotosReviewedDescription": {
+    "description": "Description shown when all photos have been reviewed"
+  },
+  "removeAdsAndUnlimitedDeletions": "Remove Ads and Get Unlimited Deletion Rights",
+  "@removeAdsAndUnlimitedDeletions": {
+    "description": "Title for premium dialog after 3 ads"
+  },
+  "removeAdsAndUnlimitedDeletionsDescription": "Upgrade to Premium and enjoy an ad-free experience with unlimited deletion rights forever!",
+  "@removeAdsAndUnlimitedDeletionsDescription": {
+    "description": "Description for premium dialog after 3 ads"
   }
 }
 

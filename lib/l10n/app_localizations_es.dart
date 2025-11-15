@@ -465,6 +465,16 @@ class AppLocalizationsEs extends AppLocalizations {
       '¡Tienes acceso a todas las funciones premium. Eliminación ilimitada, escaneo y más!';
 
   @override
+  String get premiumActive => '¡Premium Activo!';
+
+  @override
+  String get premiumActiveMessage =>
+      '¡Felicidades! Tu membresía premium está activa. Ahora tienes acceso a todas las funciones.';
+
+  @override
+  String get startUsing => 'Empezar a Usar';
+
+  @override
   String get unlimited => 'Ilimitado';
 
   @override
@@ -726,6 +736,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get sensitivity => 'Sensibilidad';
 
   @override
+  String get duplicateMode => 'Modo';
+
+  @override
   String thresholdLabel(String value) {
     return 'Umbral: $value';
   }
@@ -749,7 +762,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get sensitivityLevelsDescription =>
-      '• Baja: Detecta fotos ligeramente borrosas también (más resultados)\n• Media: Detecta fotos moderadamente borrosas (equilibrado)\n• Alta: Solo detecta fotos muy borrosas (menos resultados)';
+      '• Baja: Detecta fotos ligeramente borrosas también (más resultados)\n• Media: Detecta fotos moderadamente borrosas (equilibrado)\n• Alta: Solo detecta fotos muy borrosas (menos resultados)\n• Alta Sensibilidad: Máxima precisión, detecta solo fotos muy borrosas';
 
   @override
   String get currentSensitivity => 'Sensibilidad Actual';
@@ -965,6 +978,11 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String maxPhotoLimitWarning(int count) {
+    return 'El álbum seleccionado contiene $count fotos. Se pueden analizar un máximo de 1000 fotos a la vez.';
+  }
+
+  @override
   String get confirmBlurScan => '¿Iniciar detección de desenfoque?';
 
   @override
@@ -980,4 +998,34 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get scan => 'Escanear';
+
+  @override
+  String get duplicateModeLowSpeedHighAccuracy =>
+      'Baja Velocidad\nAlta Precisión';
+
+  @override
+  String get duplicateModeBalanced => 'Equilibrado';
+
+  @override
+  String get duplicateModeHighSpeedLowAccuracy =>
+      'Alta Velocidad\nBaja Precisión';
+
+  @override
+  String get duplicateModeLevelsDescription =>
+      '• Baja Velocidad/Alta Precisión: Resultados más precisos, toma más tiempo\n• Equilibrado: Equilibrio entre velocidad y precisión\n• Alta Velocidad/Baja Precisión: Resultados rápidos, menos precisos\n• Alta Velocidad: Optimizado para escaneo rápido, procesa imágenes más rápido';
+
+  @override
+  String get allPhotosReviewedTitle => '¡Todas las Fotos Revisadas!';
+
+  @override
+  String get allPhotosReviewedDescription =>
+      '¡Buen trabajo! Has revisado todas las fotos disponibles.';
+
+  @override
+  String get removeAdsAndUnlimitedDeletions =>
+      'Elimina Anuncios y Obtén Derechos Ilimitados';
+
+  @override
+  String get removeAdsAndUnlimitedDeletionsDescription =>
+      '¡Actualiza a Premium y disfruta de una experiencia sin anuncios con derechos de eliminación ilimitados para siempre!';
 }

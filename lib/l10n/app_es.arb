@@ -304,6 +304,18 @@
   "@premiumAccessDescription": {
     "description": "Description text for premium users explaining their access"
   },
+  "premiumActive": "¡Premium Activo!",
+  "@premiumActive": {
+    "description": "Title shown in purchase success dialog"
+  },
+  "premiumActiveMessage": "¡Felicidades! Tu membresía premium está activa. Ahora tienes acceso a todas las funciones.",
+  "@premiumActiveMessage": {
+    "description": "Message shown in purchase success dialog"
+  },
+  "startUsing": "Empezar a Usar",
+  "@startUsing": {
+    "description": "Button text to start using premium features"
+  },
   "unlimited": "Ilimitado",
   "@unlimited": {
     "description": "Short label for unlimited feature"
@@ -525,6 +537,10 @@
   "@sensitivity": {
     "description": "Sensitivity label"
   },
+  "duplicateMode": "Modo",
+  "@duplicateMode": {
+    "description": "Duplicate detection mode label"
+  },
   "thresholdLabel": "Umbral: {value}",
   "@thresholdLabel": {
     "description": "Threshold label with value",
@@ -554,7 +570,7 @@
   "@sensitivityDescription": {
     "description": "Sensitivity description"
   },
-  "sensitivityLevelsDescription": "• Baja: Detecta fotos ligeramente borrosas también (más resultados)\n• Media: Detecta fotos moderadamente borrosas (equilibrado)\n• Alta: Solo detecta fotos muy borrosas (menos resultados)",
+  "sensitivityLevelsDescription": "• Baja: Detecta fotos ligeramente borrosas también (más resultados)\n• Media: Detecta fotos moderadamente borrosas (equilibrado)\n• Alta: Solo detecta fotos muy borrosas (menos resultados)\n• Alta Sensibilidad: Máxima precisión, detecta solo fotos muy borrosas",
   "@sensitivityLevelsDescription": {
     "description": "Detailed description of sensitivity levels"
   },
@@ -921,6 +937,15 @@
       }
     }
   },
+  "maxPhotoLimitWarning": "El álbum seleccionado contiene {count} fotos. Se pueden analizar un máximo de 1000 fotos a la vez.",
+  "@maxPhotoLimitWarning": {
+    "description": "Warning message when selected album has more than 1000 photos",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "confirmBlurScan": "¿Iniciar detección de desenfoque?",
   "@confirmBlurScan": {
     "description": "Confirmation dialog title for starting blur scan"
@@ -940,6 +965,38 @@
   "scan": "Escanear",
   "@scan": {
     "description": "Scan button text"
+  },
+  "duplicateModeLowSpeedHighAccuracy": "Baja Velocidad\nAlta Precisión",
+  "@duplicateModeLowSpeedHighAccuracy": {
+    "description": "Low speed high accuracy mode label for duplicate detection"
+  },
+  "duplicateModeBalanced": "Equilibrado",
+  "@duplicateModeBalanced": {
+    "description": "Balanced mode label for duplicate detection"
+  },
+  "duplicateModeHighSpeedLowAccuracy": "Alta Velocidad\nBaja Precisión",
+  "@duplicateModeHighSpeedLowAccuracy": {
+    "description": "High speed low accuracy mode label for duplicate detection"
+  },
+  "duplicateModeLevelsDescription": "• Baja Velocidad/Alta Precisión: Resultados más precisos, toma más tiempo\n• Equilibrado: Equilibrio entre velocidad y precisión\n• Alta Velocidad/Baja Precisión: Resultados rápidos, menos precisos\n• Alta Velocidad: Optimizado para escaneo rápido, procesa imágenes más rápido",
+  "@duplicateModeLevelsDescription": {
+    "description": "Detailed description of duplicate detection mode levels"
+  },
+  "allPhotosReviewedTitle": "¡Todas las Fotos Revisadas!",
+  "@allPhotosReviewedTitle": {
+    "description": "Title shown when all photos have been reviewed"
+  },
+  "allPhotosReviewedDescription": "¡Buen trabajo! Has revisado todas las fotos disponibles.",
+  "@allPhotosReviewedDescription": {
+    "description": "Description shown when all photos have been reviewed"
+  },
+  "removeAdsAndUnlimitedDeletions": "Elimina Anuncios y Obtén Derechos Ilimitados",
+  "@removeAdsAndUnlimitedDeletions": {
+    "description": "Title for premium dialog after 3 ads"
+  },
+  "removeAdsAndUnlimitedDeletionsDescription": "¡Actualiza a Premium y disfruta de una experiencia sin anuncios con derechos de eliminación ilimitados para siempre!",
+  "@removeAdsAndUnlimitedDeletionsDescription": {
+    "description": "Description for premium dialog after 3 ads"
   }
 }
 

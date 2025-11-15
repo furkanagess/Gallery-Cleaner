@@ -41,8 +41,10 @@ class PreferencesService {
   static const String _swipeIndexKey = 'swipe_index';
   static const String _swipeAlbumIdKey = 'swipe_album_id';
   static const String _autoAnalyzeOnLaunchKey = 'auto_analyze_on_launch';
+  static const String _interstitialAdCountKey = 'interstitial_ad_count';
   static const int _defaultDeleteLimit = 100;
   static const int _defaultScanLimit = 1000;
+  static const int _premiumDialogThreshold = 3; // 3 reklam sonrası premium dialog göster
 
   /// Secure storage'dan integer değer oku
   Future<int?> _getSecureInt(String key) async {
@@ -413,10 +415,16 @@ class PreferencesService {
     debugPrint('💾 [PreferencesService] İlk analiz tamamlandı: $completed');
   }
 
-  /// Otomatik analiz açık mı? (varsayılan: true)
+  /// Otomatik analiz açık mı? (varsayılan: false)
   Future<bool> isAutoAnalyzeOnLaunchEnabled() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(_autoAnalyzeOnLaunchKey) ?? true; // Varsayılan olarak açık
+    final value = prefs.getBool(_autoAnalyzeOnLaunchKey);
+    // Eğer değer hiç set edilmemişse (null), false olarak set et ve döndür
+    if (value == null) {
+      await prefs.setBool(_autoAnalyzeOnLaunchKey, false);
+      return false; // Varsayılan olarak kapalı
+    }
+    return value;
   }
 
   /// Otomatik analiz ayarını değiştir
@@ -664,6 +672,36 @@ class PreferencesService {
     } catch (e) {
       debugPrint('❌ [PreferencesService] Swipe index temizlenemedi: $e');
     }
+  }
+
+  /// Interstisial reklam sayısını al
+  Future<int> getInterstitialAdCount() async {
+    final count = await _getSecureInt(_interstitialAdCountKey);
+    return count ?? 0;
+  }
+
+  /// Interstisial reklam sayısını artır ve premium dialog gösterilmesi gerekip gerekmediğini kontrol et
+  /// Returns true if premium dialog should be shown (after 3 ads)
+  Future<bool> incrementInterstitialAdCount() async {
+    final currentCount = await getInterstitialAdCount();
+    final newCount = currentCount + 1;
+    await _setSecureInt(_interstitialAdCountKey, newCount);
+    debugPrint('💾 [PreferencesService] Interstisial ad sayısı artırıldı: $currentCount -> $newCount');
+    
+    // 3 reklam görüldükten sonra premium dialog göster
+    if (newCount >= _premiumDialogThreshold) {
+      // Sayacı sıfırla (bir sonraki 3 reklam için)
+      await _setSecureInt(_interstitialAdCountKey, 0);
+      debugPrint('💾 [PreferencesService] Premium dialog gösterilecek (3 reklam tamamlandı)');
+      return true;
+    }
+    return false;
+  }
+
+  /// Interstisial reklam sayısını sıfırla
+  Future<void> resetInterstitialAdCount() async {
+    await _setSecureInt(_interstitialAdCountKey, 0);
+    debugPrint('💾 [PreferencesService] Interstisial ad sayısı sıfırlandı');
   }
 }
 

@@ -463,6 +463,16 @@ class AppLocalizationsTr extends AppLocalizations {
       'Tüm premium özelliklere erişiminiz var. Sınırsız silme, tarama ve daha fazlası!';
 
   @override
+  String get premiumActive => 'Premium Aktif!';
+
+  @override
+  String get premiumActiveMessage =>
+      'Tebrikler! Premium üyeliğiniz aktif. Artık tüm özelliklere erişebilirsiniz.';
+
+  @override
+  String get startUsing => 'Kullanmaya Başla';
+
+  @override
   String get unlimited => 'Sınırsız';
 
   @override
@@ -724,6 +734,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get sensitivity => 'Hassasiyet';
 
   @override
+  String get duplicateMode => 'Mod';
+
+  @override
   String thresholdLabel(String value) {
     return 'Threshold: $value';
   }
@@ -747,7 +760,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get sensitivityLevelsDescription =>
-      '• Düşük: Hafif bulanık fotoğrafları da tespit eder (daha fazla sonuç)\n• Orta: Orta seviye bulanık fotoğrafları tespit eder (dengeli)\n• Yüksek: Sadece çok bulanık fotoğrafları tespit eder (daha az sonuç)';
+      '• Düşük: Hafif bulanık fotoğrafları da tespit eder (daha fazla sonuç)\n• Orta: Orta seviye bulanık fotoğrafları tespit eder (dengeli)\n• Yüksek: Sadece çok bulanık fotoğrafları tespit eder (daha az sonuç)\n• Yüksek Hassasiyet: Maksimum hassasiyet, sadece çok bulanık fotoğrafları tespit eder';
 
   @override
   String get currentSensitivity => 'Mevcut Hassasiyet';
@@ -963,6 +976,11 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
+  String maxPhotoLimitWarning(int count) {
+    return 'Seçilen albümde $count fotoğraf bulunuyor. Tek seferde en fazla 1000 fotoğraf analiz edilebilir.';
+  }
+
+  @override
   String get confirmBlurScan => 'Blur tespiti başlatılsın mı?';
 
   @override
@@ -978,4 +996,34 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get scan => 'Tara';
+
+  @override
+  String get duplicateModeLowSpeedHighAccuracy =>
+      'Düşük Hız\nYüksek Hassasiyet';
+
+  @override
+  String get duplicateModeBalanced => 'Dengeli';
+
+  @override
+  String get duplicateModeHighSpeedLowAccuracy =>
+      'Yüksek Hız\nDüşük Hassasiyet';
+
+  @override
+  String get duplicateModeLevelsDescription =>
+      '• Düşük Hız/Yüksek Hassasiyet: En doğru sonuçlar, daha uzun sürer\n• Dengeli: Hız ve hassasiyet dengesi\n• Yüksek Hız/Düşük Hassasiyet: Hızlı sonuçlar, daha az doğru\n• Yüksek Hız: Hızlı tarama için optimize edilmiş, görselleri daha hızlı işler';
+
+  @override
+  String get allPhotosReviewedTitle => 'Tüm Fotoğraflar Gözden Geçirildi!';
+
+  @override
+  String get allPhotosReviewedDescription =>
+      'Harika iş! Tüm mevcut fotoğrafları incelediniz.';
+
+  @override
+  String get removeAdsAndUnlimitedDeletions =>
+      'Reklam Kaldır ve Sınırsız Silme Hakkı Kazan';
+
+  @override
+  String get removeAdsAndUnlimitedDeletionsDescription =>
+      'Premium\'a yükselt ve reklamsız deneyim ile ömür boyu sınırsız silme hakkı kazan!';
 }

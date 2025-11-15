@@ -904,6 +904,24 @@ abstract class AppLocalizations {
   /// **'You have access to all premium features. Unlimited deletion, scanning, and more!'**
   String get premiumAccessDescription;
 
+  /// Title shown in purchase success dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Premium Active!'**
+  String get premiumActive;
+
+  /// Message shown in purchase success dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Congratulations! Your premium membership is active. You now have access to all features.'**
+  String get premiumActiveMessage;
+
+  /// Button text to start using premium features
+  ///
+  /// In en, this message translates to:
+  /// **'Start Using'**
+  String get startUsing;
+
   /// Short label for unlimited feature
   ///
   /// In en, this message translates to:
@@ -1366,6 +1384,12 @@ abstract class AppLocalizations {
   /// **'Sensitivity'**
   String get sensitivity;
 
+  /// Duplicate detection mode label
+  ///
+  /// In en, this message translates to:
+  /// **'Mode'**
+  String get duplicateMode;
+
   /// Threshold label with value
   ///
   /// In en, this message translates to:
@@ -1405,7 +1429,7 @@ abstract class AppLocalizations {
   /// Detailed description of sensitivity levels
   ///
   /// In en, this message translates to:
-  /// **'• Low: Detects slightly blurry photos as well (more results)\n• Medium: Detects moderately blurry photos (balanced)\n• High: Only detects very blurry photos (fewer results)'**
+  /// **'• Low: Detects slightly blurry photos as well (more results)\n• Medium: Detects moderately blurry photos (balanced)\n• High: Only detects very blurry photos (fewer results)\n• High Sensitivity: Maximum precision, detects only very blurry photos'**
   String get sensitivityLevelsDescription;
 
   /// Current sensitivity label
@@ -1768,6 +1792,12 @@ abstract class AppLocalizations {
   /// **'Estimated time: {time}'**
   String estimatedScanTime(String time);
 
+  /// Warning message when selected album has more than 1000 photos
+  ///
+  /// In en, this message translates to:
+  /// **'Selected album contains {count} photos. Maximum 1000 photos can be analyzed at once.'**
+  String maxPhotoLimitWarning(int count);
+
   /// Confirmation dialog title for starting blur scan
   ///
   /// In en, this message translates to:
@@ -1797,6 +1827,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Scan'**
   String get scan;
+
+  /// Low speed high accuracy mode label for duplicate detection
+  ///
+  /// In en, this message translates to:
+  /// **'Low Speed\nHigh Accuracy'**
+  String get duplicateModeLowSpeedHighAccuracy;
+
+  /// Balanced mode label for duplicate detection
+  ///
+  /// In en, this message translates to:
+  /// **'Balanced'**
+  String get duplicateModeBalanced;
+
+  /// High speed low accuracy mode label for duplicate detection
+  ///
+  /// In en, this message translates to:
+  /// **'High Speed\nLow Accuracy'**
+  String get duplicateModeHighSpeedLowAccuracy;
+
+  /// Detailed description of duplicate detection mode levels
+  ///
+  /// In en, this message translates to:
+  /// **'• Low Speed/High Accuracy: Most accurate results, takes longer\n• Balanced: Speed and accuracy balance\n• High Speed/Low Accuracy: Fast results, less accurate\n• High Speed: Optimized for quick scanning, processes images faster'**
+  String get duplicateModeLevelsDescription;
+
+  /// Title shown when all photos have been reviewed
+  ///
+  /// In en, this message translates to:
+  /// **'All Photos Reviewed!'**
+  String get allPhotosReviewedTitle;
+
+  /// Description shown when all photos have been reviewed
+  ///
+  /// In en, this message translates to:
+  /// **'Great job! You\'ve reviewed all available photos.'**
+  String get allPhotosReviewedDescription;
+
+  /// Title for premium dialog after 3 ads
+  ///
+  /// In en, this message translates to:
+  /// **'Remove Ads and Get Unlimited Deletion Rights'**
+  String get removeAdsAndUnlimitedDeletions;
+
+  /// Description for premium dialog after 3 ads
+  ///
+  /// In en, this message translates to:
+  /// **'Upgrade to Premium and enjoy an ad-free experience with unlimited deletion rights forever!'**
+  String get removeAdsAndUnlimitedDeletionsDescription;
 }
 
 class _AppLocalizationsDelegate

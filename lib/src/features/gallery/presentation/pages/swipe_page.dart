@@ -18,6 +18,7 @@ import '../../../onboarding/application/permissions_controller.dart';
 import '../../../../core/models/blur_photo.dart';
 import '../../../../core/models/duplicate_photo.dart';
 import '../../../../core/services/rewarded_ads_service.dart';
+import '../../../../core/services/interstitial_ads_service.dart';
 import '../widgets/photo_swipe_deck.dart';
 import '../../application/review_actions_controller.dart';
 import '../../application/review_history_controller.dart';
@@ -26,6 +27,8 @@ import '../../../../app/theme/app_theme.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_decorations.dart';
 import '../../../settings/presentation/settings_page.dart' as settings;
+import '../../../settings/presentation/premium_after_ads_dialog.dart';
+import '../../../settings/presentation/premium_success_dialog.dart';
 import 'results_page_helpers.dart';
 
 // Provider for tracking drag over "Change Album" zone
@@ -397,58 +400,64 @@ class _SwipeAreaContentState extends ConsumerState<_SwipeAreaContent> {
 
   @override
   Widget build(BuildContext context) {
-    // Silme hakkı kontrolü
-    final deleteLimitAsync = ref.watch(deleteLimitProvider);
-    final canDelete = deleteLimitAsync.maybeWhen(
-      data: (limit) => limit > 0,
-      orElse: () => true, // Loading veya error durumunda varsayılan olarak true
+    // Silme hakkı kontrolü - sadece limit değiştiğinde rebuild
+    final canDelete = ref.watch(
+      deleteLimitProvider.select(
+        (asyncValue) => asyncValue.maybeWhen(
+          data: (limit) => limit > 0,
+          orElse: () =>
+              true, // Loading veya error durumunda varsayılan olarak true
+        ),
+      ),
     );
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 480),
-          child: AspectRatio(
-            aspectRatio: 3 / 4,
-            child: AnimatedScale(
-              scale: _dragScale,
-              duration: const Duration(milliseconds: 150),
-              curve: Curves.easeOutCubic,
-              child: Transform.translate(
-                offset: _dragOffset,
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    PhotoSwipeDeck(
-                      assets: widget.assets,
-                      initialIndex: widget.initialIndex,
-                      canDelete: canDelete,
-                      isDraggingToAlbum: () => _isDraggingToAlbum,
-                      onDragUpdate: _handleDragUpdate,
-                      onDragEnd: (asset, pos) {
-                        _handleDragEnd(asset, pos);
-                      },
-                      onDecision: (asset, decision) {
-                        _handleDecision(asset, decision);
-                      },
-                      onNoRightsLeft: () {
-                        _showNoRightsDialog(context);
-                      },
-                      onIndexChanged: widget.onIndexChanged,
-                      onResetCallbackReady: widget.onResetCallbackReady,
-                    ),
-                    if (_dragOpacity < 1.0)
-                      IgnorePointer(
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          curve: Curves.easeOutCubic,
-                          color: AppColors.black.withOpacity(
-                            (1 - _dragOpacity) * 0.4,
+    return RepaintBoundary(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: AspectRatio(
+              aspectRatio: 3 / 4,
+              child: AnimatedScale(
+                scale: _dragScale,
+                duration: const Duration(milliseconds: 150),
+                curve: Curves.easeOutCubic,
+                child: Transform.translate(
+                  offset: _dragOffset,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      PhotoSwipeDeck(
+                        assets: widget.assets,
+                        initialIndex: widget.initialIndex,
+                        canDelete: canDelete,
+                        isDraggingToAlbum: () => _isDraggingToAlbum,
+                        onDragUpdate: _handleDragUpdate,
+                        onDragEnd: (asset, pos) {
+                          _handleDragEnd(asset, pos);
+                        },
+                        onDecision: (asset, decision) {
+                          _handleDecision(asset, decision);
+                        },
+                        onNoRightsLeft: () {
+                          _showNoRightsDialog(context);
+                        },
+                        onIndexChanged: widget.onIndexChanged,
+                        onResetCallbackReady: widget.onResetCallbackReady,
+                      ),
+                      if (_dragOpacity < 1.0)
+                        IgnorePointer(
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            curve: Curves.easeOutCubic,
+                            color: AppColors.black.withOpacity(
+                              (1 - _dragOpacity) * 0.4,
+                            ),
                           ),
                         ),
-                      ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -764,7 +773,8 @@ class _SwipeTab extends ConsumerStatefulWidget {
   ConsumerState<_SwipeTab> createState() => _SwipeTabState();
 }
 
-class _SwipeTabState extends ConsumerState<_SwipeTab> {
+class _SwipeTabState extends ConsumerState<_SwipeTab>
+    with AutomaticKeepAliveClientMixin {
   int _currentSwipeIndex = 0;
   int _previousAssetsLength = 0;
   bool _showResetToStartButton = false;
@@ -772,6 +782,9 @@ class _SwipeTabState extends ConsumerState<_SwipeTab> {
   VoidCallback? _resetToStartCallback;
   bool _isDeleting = false;
   int? _pendingIndexAdjustment; // Reload sonrası index ayarlaması için
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -874,31 +887,25 @@ class _SwipeTabState extends ConsumerState<_SwipeTab> {
 
     final swipeAreaKey = albumId ?? 'all_photos';
 
-    return _SwipeAreaContent(
-      key: ValueKey('swipe_area_$swipeAreaKey'),
-      assets: assets,
-      changeAlbumZoneKey: changeAlbumZoneKey,
-      initialIndex: adjustedIndex,
-      onIndexChanged: _onSwipeIndexChanged,
-      onResetCallbackReady: (callback) {
-        _resetToStartCallback = callback;
-      },
+    return RepaintBoundary(
+      child: _SwipeAreaContent(
+        key: ValueKey('swipe_area_$swipeAreaKey'),
+        assets: assets,
+        changeAlbumZoneKey: changeAlbumZoneKey,
+        initialIndex: adjustedIndex,
+        onIndexChanged: _onSwipeIndexChanged,
+        onResetCallbackReady: (callback) {
+          _resetToStartCallback = callback;
+        },
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(galleryPagingControllerProvider);
-    final selectedAlbum = ref.watch(selectedAlbumProvider);
+    super.build(context); // AutomaticKeepAliveClientMixin için gerekli
 
-    // Album değiştiğinde index'i yükle
-    if (selectedAlbum?.id != _currentAlbumId) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _loadSwipeIndex();
-      });
-    }
-
-    // Geri al işlemlerini dinle
+    // Geri al işlemlerini dinle - sadece gerekli durumlarda setState yap
     ref.listen<List<dynamic>>(reviewActionsControllerProvider, (
       previous,
       next,
@@ -906,26 +913,73 @@ class _SwipeTabState extends ConsumerState<_SwipeTab> {
       if (previous != null &&
           previous.isNotEmpty &&
           next.isEmpty &&
-          _currentSwipeIndex > 0) {
+          _currentSwipeIndex > 0 &&
+          !_showResetToStartButton) {
         // Tüm geri al işlemleri yapıldı ve index > 0 ise buton göster
-        setState(() {
-          _showResetToStartButton = true;
-        });
+        // Sadece buton zaten gösterilmiyorsa setState yap
+        if (mounted) {
+          setState(() {
+            _showResetToStartButton = true;
+          });
+        }
       }
     });
 
+    final selectedAlbum = ref.watch(selectedAlbumProvider);
+
+    // Album değiştiğinde index'i yükle
+    if (selectedAlbum?.id != _currentAlbumId) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _loadSwipeIndex();
+        }
+      });
+    }
+
+    // Assets listesini selector ile izle - sadece assets listesi gerçekten değiştiğinde rebuild
+    // Loading state değişikliklerini ignore et - dialog/reklam gösterilirken rebuild'i engelle
+    final state = ref.watch(galleryPagingControllerProvider);
+
+    // Önceki assets listesini sakla - loading state'de kullanmak için
+    final previousAssets = state.maybeWhen(
+      data: (assets) => assets,
+      orElse: () => <pm.AssetEntity>[],
+    );
+
+    // Sadece data state'inde ve assets listesi gerçekten değiştiğinde rebuild yap
+    final currentAssets = ref.watch(
+      galleryPagingControllerProvider.select((asyncState) {
+        return asyncState.maybeWhen(
+          data: (assets) => assets,
+          orElse: () => null, // Loading/error state'lerinde null döndür
+        );
+      }),
+    );
+
+    // Assets listesi değişmediyse ve loading state'deyse, önceki build'i koru
+    final effectiveAssets = currentAssets ?? previousAssets;
+
     return state.when(
-      loading: () => Center(
-        child: SizedBox(
-          width: 100,
-          height: 100,
-          child: Lottie.asset(
-            'assets/lottie/loading.json',
-            fit: BoxFit.contain,
-            repeat: true,
+      loading: () {
+        // Loading state'de önceki widget'ı koru - dialog/reklam gösterilirken rebuild'i engelle
+        // Eğer önceki assets varsa onu göster, yoksa loading göster
+        if (effectiveAssets.isNotEmpty) {
+          // Önceki assets'i kullan - rebuild'i engelle
+          return _buildContentWithAssets(effectiveAssets, selectedAlbum);
+        }
+        // İlk yükleme ise loading göster
+        return Center(
+          child: SizedBox(
+            width: 100,
+            height: 100,
+            child: Lottie.asset(
+              'assets/lottie/loading.json',
+              fit: BoxFit.contain,
+              repeat: true,
+            ),
           ),
-        ),
-      ),
+        );
+      },
       error: (e, _) => Builder(
         builder: (ctx) {
           final l10n = AppLocalizations.of(ctx)!;
@@ -937,544 +991,562 @@ class _SwipeTabState extends ConsumerState<_SwipeTab> {
           );
         },
       ),
-      data: (assets) {
-        if (assets.isEmpty) {
-          return Builder(
-            builder: (ctx) {
-              final l10n = AppLocalizations.of(ctx)!;
-              final theme = Theme.of(ctx);
-              final albumsAsync = ref.watch(albumsProvider);
-              final albumsData = albumsAsync.asData?.value;
-              final canOpenAlbumPicker =
-                  albumsData != null && albumsData.isNotEmpty;
-              final selectedAlbum = ref.watch(selectedAlbumProvider);
+      data: (_) {
+        // effectiveAssets kullan - loading state'de önceki assets'i koru
+        return _buildContentWithAssets(effectiveAssets, selectedAlbum);
+      },
+    );
+  }
 
-              Future<void> openAlbumPicker() async {
-                final availableAlbums = albumsData;
-                if (availableAlbums == null || availableAlbums.isEmpty) return;
-                await _presentAlbumPicker(
-                  context: ctx,
-                  albums: availableAlbums,
-                  selectedAlbum: selectedAlbum,
-                  onSelected: (album) {
-                    ref.read(selectedAlbumProvider.notifier).state = album;
-                  },
-                );
-              }
+  Widget _buildContentWithAssets(
+    List<pm.AssetEntity> assetsToUse,
+    pm.AssetPathEntity? selectedAlbum,
+  ) {
+    if (assetsToUse.isEmpty) {
+      return Builder(
+        builder: (ctx) {
+          final l10n = AppLocalizations.of(ctx)!;
+          final theme = Theme.of(ctx);
+          final albumsAsync = ref.watch(albumsProvider);
+          final albumsData = albumsAsync.asData?.value;
+          final canOpenAlbumPicker =
+              albumsData != null && albumsData.isNotEmpty;
+          final selectedAlbum = ref.watch(selectedAlbumProvider);
 
-              return Center(
-                child: SingleChildScrollView(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 32,
-                      vertical: 48,
+          Future<void> openAlbumPicker() async {
+            final availableAlbums = albumsData;
+            if (availableAlbums == null || availableAlbums.isEmpty) return;
+            await _presentAlbumPicker(
+              context: ctx,
+              albums: availableAlbums,
+              selectedAlbum: selectedAlbum,
+              onSelected: (album) {
+                ref.read(selectedAlbumProvider.notifier).state = album;
+              },
+            );
+          }
+
+          return Center(
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 48,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Modern icon container with gradient and animation
+                    Container(
+                      width: 140,
+                      height: 140,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            theme.colorScheme.primaryContainer,
+                            theme.colorScheme.secondaryContainer,
+                          ],
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: theme.colorScheme.primary.withOpacity(0.25),
+                            blurRadius: 32,
+                            offset: const Offset(0, 12),
+                            spreadRadius: 0,
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        Icons.photo_library_outlined,
+                        color: theme.colorScheme.primary,
+                        size: 64,
+                      ),
                     ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Modern icon container with gradient and animation
-                        Container(
-                          width: 140,
-                          height: 140,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                theme.colorScheme.primaryContainer,
-                                theme.colorScheme.secondaryContainer,
-                              ],
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: theme.colorScheme.primary.withOpacity(
-                                  0.25,
-                                ),
-                                blurRadius: 32,
-                                offset: const Offset(0, 12),
-                                spreadRadius: 0,
-                              ),
+                    const SizedBox(height: 32),
+                    // Title with better styling
+                    Text(
+                      l10n.noPhotosToShow,
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 24,
+                        letterSpacing: -0.5,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 12),
+                    // Description in a container
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surfaceContainerHighest
+                            .withOpacity(0.5),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: theme.colorScheme.outline.withOpacity(0.1),
+                          width: 1,
+                        ),
+                      ),
+                      child: Text(
+                        l10n.selectAlbumToView,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurface.withOpacity(0.75),
+                          height: 1.5,
+                          fontSize: 14,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                    // Modern button with gradient
+                    if (canOpenAlbumPicker)
+                      Container(
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              theme.colorScheme.primary,
+                              theme.colorScheme.primary.withOpacity(0.8),
                             ],
                           ),
-                          child: Icon(
-                            Icons.photo_library_outlined,
-                            color: theme.colorScheme.primary,
-                            size: 64,
-                          ),
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: theme.colorScheme.primary.withOpacity(0.3),
+                              blurRadius: 16,
+                              offset: const Offset(0, 6),
+                              spreadRadius: 0,
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 32),
-                        // Title with better styling
-                        Text(
-                          l10n.noPhotosToShow,
-                          style: theme.textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 24,
-                            letterSpacing: -0.5,
-                            color: theme.colorScheme.onSurface,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 12),
-                        // Description in a container
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
-                          ),
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.surfaceContainerHighest
-                                .withOpacity(0.5),
+                        child: Material(
+                          color: AppColors.transparent,
+                          child: InkWell(
+                            onTap: openAlbumPicker,
                             borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: theme.colorScheme.outline.withOpacity(0.1),
-                              width: 1,
-                            ),
-                          ),
-                          child: Text(
-                            l10n.selectAlbumToView,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.onSurface.withOpacity(
-                                0.75,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                                vertical: 16,
                               ),
-                              height: 1.5,
-                              fontSize: 14,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                        const SizedBox(height: 32),
-                        // Modern button with gradient
-                        if (canOpenAlbumPicker)
-                          Container(
-                            width: double.infinity,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [
-                                  theme.colorScheme.primary,
-                                  theme.colorScheme.primary.withOpacity(0.8),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.folder_open_rounded,
+                                    color: AppColors.white,
+                                    size: 24,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    l10n.changeAlbum,
+                                    style: theme.textTheme.titleMedium
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                          color: AppColors.white,
+                                          letterSpacing: 0.5,
+                                        ),
+                                  ),
                                 ],
                               ),
-                              borderRadius: BorderRadius.circular(16),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: theme.colorScheme.primary.withOpacity(
-                                    0.3,
-                                  ),
-                                  blurRadius: 16,
-                                  offset: const Offset(0, 6),
-                                  spreadRadius: 0,
-                                ),
-                              ],
-                            ),
-                            child: Material(
-                              color: AppColors.transparent,
-                              child: InkWell(
-                                onTap: openAlbumPicker,
-                                borderRadius: BorderRadius.circular(16),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 24,
-                                    vertical: 16,
-                                  ),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        Icons.folder_open_rounded,
-                                        color: AppColors.white,
-                                        size: 24,
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Text(
-                                        l10n.changeAlbum,
-                                        style: theme.textTheme.titleMedium
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 16,
-                                              color: AppColors.white,
-                                              letterSpacing: 0.5,
-                                            ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          )
-                        else
-                          Container(
-                            width: double.infinity,
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.surfaceContainerHighest,
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: theme.colorScheme.outline.withOpacity(
-                                  0.2,
-                                ),
-                                width: 1.5,
-                              ),
-                            ),
-                            child: Material(
-                              color: AppColors.transparent,
-                              child: InkWell(
-                                onTap: () {
-                                  ref.invalidate(
-                                    galleryPagingControllerProvider,
-                                  );
-                                },
-                                borderRadius: BorderRadius.circular(16),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 24,
-                                    vertical: 16,
-                                  ),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        Icons.refresh_rounded,
-                                        color: theme.colorScheme.onSurface,
-                                        size: 24,
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Text(
-                                        l10n.tryAgain,
-                                        style: theme.textTheme.titleMedium
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.w600,
-                                              fontSize: 16,
-                                              color:
-                                                  theme.colorScheme.onSurface,
-                                              letterSpacing: 0.3,
-                                            ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            },
-          );
-        }
-        final changeAlbumZoneKey = GlobalKey();
-        final l10n = AppLocalizations.of(context)!;
-
-        return Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: _DeleteLimitInfo(),
-            ),
-            // Galeri Başına Dön butonu
-            if (_showResetToStartButton && _currentSwipeIndex > 0)
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: _resetToStart,
-                    icon: const Icon(Icons.restart_alt),
-                    label: Text(l10n.resetToStart),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      side: BorderSide(
-                        color: Theme.of(context).colorScheme.primary,
-                        width: 1.5,
-                      ),
-                      foregroundColor: Theme.of(context).colorScheme.primary,
-                    ),
-                  ),
-                ),
-              ),
-            Expanded(
-              child: _buildSwipeArea(
-                assets,
-                changeAlbumZoneKey,
-                selectedAlbum?.id,
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: _AnimatedSwipeInstructions(),
-            ),
-            Consumer(
-              builder: (context, ref, _) {
-                final pending = ref.watch(reviewActionsControllerProvider);
-                final pendingCount = pending.length;
-
-                if (pendingCount == 0 && !_showResetToStartButton) {
-                  return const SizedBox.shrink();
-                }
-
-                return Container(
-                  width: double.infinity,
-                  margin: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                  child: Row(
-                    children: [
-                      if (pendingCount > 0)
-                        Expanded(
-                          flex: 1,
-                          child: OutlinedButton(
-                            onPressed: () {
-                              while (ref
-                                  .read(reviewActionsControllerProvider)
-                                  .isNotEmpty) {
-                                ref
-                                    .read(
-                                      reviewActionsControllerProvider.notifier,
-                                    )
-                                    .undoLast();
-                              }
-                            },
-                            child: Text(
-                              l10n.undo,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.primary, // Daha belirgin renk
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              side: BorderSide(
-                                color: Theme.of(context).colorScheme.primary
-                                    .withOpacity(0.6), // Primary renkte border
-                                width: 1.5,
-                              ),
-                              foregroundColor: Theme.of(
-                                context,
-                              ).colorScheme.outline,
-                              backgroundColor: AppColors.transparent,
                             ),
                           ),
                         ),
-                      if (pendingCount > 0) const SizedBox(width: 12),
-                      if (pendingCount > 0)
-                        Expanded(
-                          flex: 3,
-                          child: FilledButton(
-                            onPressed: () async {
-                              final l10n = AppLocalizations.of(context)!;
-                              final theme = Theme.of(context);
+                      )
+                    else
+                      Container(
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: theme.colorScheme.outline.withOpacity(0.2),
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Material(
+                          color: AppColors.transparent,
+                          child: InkWell(
+                            onTap: () {
+                              ref.invalidate(galleryPagingControllerProvider);
+                            },
+                            borderRadius: BorderRadius.circular(16),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                                vertical: 16,
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.refresh_rounded,
+                                    color: theme.colorScheme.onSurface,
+                                    size: 24,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    l10n.tryAgain,
+                                    style: theme.textTheme.titleMedium
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 16,
+                                          color: theme.colorScheme.onSurface,
+                                          letterSpacing: 0.3,
+                                        ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      );
+    }
+    final changeAlbumZoneKey = GlobalKey();
+    final l10n = AppLocalizations.of(context)!;
 
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: _DeleteLimitInfo(),
+        ),
+        // Galeri Başına Dön butonu
+        if (_showResetToStartButton && _currentSwipeIndex > 0)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _resetToStart,
+                icon: const Icon(Icons.restart_alt),
+                label: Text(l10n.resetToStart),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  side: BorderSide(
+                    color: Theme.of(context).colorScheme.primary,
+                    width: 1.5,
+                  ),
+                  foregroundColor: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+            ),
+          ),
+        Expanded(
+          child: _buildSwipeArea(
+            assetsToUse,
+            changeAlbumZoneKey,
+            selectedAlbum?.id,
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: _AnimatedSwipeInstructions(),
+        ),
+        Consumer(
+          builder: (context, ref, _) {
+            final pending = ref.watch(reviewActionsControllerProvider);
+            final pendingCount = pending.length;
+
+            if (pendingCount == 0 && !_showResetToStartButton) {
+              return const SizedBox.shrink();
+            }
+
+            return Container(
+              width: double.infinity,
+              margin: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              child: Row(
+                children: [
+                  if (pendingCount > 0)
+                    Expanded(
+                      flex: 1,
+                      child: OutlinedButton(
+                        onPressed: () {
+                          while (ref
+                              .read(reviewActionsControllerProvider)
+                              .isNotEmpty) {
+                            ref
+                                .read(reviewActionsControllerProvider.notifier)
+                                .undoLast();
+                          }
+                        },
+                        child: Text(
+                          l10n.undo,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.primary, // Daha belirgin renk
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          side: BorderSide(
+                            color: Theme.of(context).colorScheme.primary
+                                .withOpacity(0.6), // Primary renkte border
+                            width: 1.5,
+                          ),
+                          foregroundColor: Theme.of(
+                            context,
+                          ).colorScheme.outline,
+                          backgroundColor: AppColors.transparent,
+                        ),
+                      ),
+                    ),
+                  if (pendingCount > 0) const SizedBox(width: 12),
+                  if (pendingCount > 0)
+                    Expanded(
+                      flex: 3,
+                      child: FilledButton(
+                        onPressed: () async {
+                          final l10n = AppLocalizations.of(context)!;
+                          final theme = Theme.of(context);
+
+                          setState(() {
+                            _isDeleting = true;
+                          });
+
+                          // Delete limit'i kontrol et
+                          final deleteLimitController = ref.read(
+                            deleteLimitProvider.notifier,
+                          );
+                          final deleteLimit = await deleteLimitController
+                              .currentLimit();
+                          final pendingCount = ref
+                              .read(reviewActionsControllerProvider)
+                              .length;
+
+                          // Delete limit'e göre maksimum silinebilecek fotoğraf sayısını belirle
+                          final maxDeleteCount = deleteLimit < 999999999
+                              ? math.min(deleteLimit, pendingCount)
+                              : pendingCount;
+
+                          debugPrint(
+                            '📊 [SwipePage] Silme işlemi başlatılıyor: $maxDeleteCount/$pendingCount fotoğraf silinecek (limit: $deleteLimit)',
+                          );
+
+                          final deletedCount = await ref
+                              .read(reviewActionsControllerProvider.notifier)
+                              .applyPendingDeletes(
+                                maxDeleteCount: maxDeleteCount,
+                              );
+
+                          debugPrint(
+                            '📊 [SwipePage] Silme işlemi tamamlandı: $deletedCount fotoğraf silindi',
+                          );
+
+                          if (!context.mounted) {
+                            debugPrint(
+                              '⚠️ [SwipePage] Context mounted değil, işlem iptal edildi',
+                            );
+                            if (mounted) {
                               setState(() {
-                                _isDeleting = true;
+                                _isDeleting = false;
                               });
+                            }
+                            return;
+                          }
 
-                              // Delete limit'i kontrol et
-                              final deleteLimitController = ref.read(
-                                deleteLimitProvider.notifier,
-                              );
-                              final deleteLimit = await deleteLimitController
-                                  .currentLimit();
-                              final pendingCount = ref
-                                  .read(reviewActionsControllerProvider)
-                                  .length;
+                          // Silme işlemi başarılı olup olmadığını kontrol et
+                          if (deletedCount > 0) {
+                            debugPrint(
+                              '✅ [SwipePage] $deletedCount fotoğraf başarıyla silindi, silme hakkı azaltılıyor...',
+                            );
 
-                              // Delete limit'e göre maksimum silinebilecek fotoğraf sayısını belirle
-                              final maxDeleteCount = deleteLimit < 999999999
-                                  ? math.min(deleteLimit, pendingCount)
-                                  : pendingCount;
-
+                            try {
+                              final newLimit = await deleteLimitController
+                                  .decrease(deletedCount);
                               debugPrint(
-                                '📊 [SwipePage] Silme işlemi başlatılıyor: $maxDeleteCount/$pendingCount fotoğraf silinecek (limit: $deleteLimit)',
+                                '💾 [SwipePage] Delete limit güncellendi, kalan: $newLimit (azaltılan: $deletedCount)',
                               );
 
-                              final deletedCount = await ref
-                                  .read(
-                                    reviewActionsControllerProvider.notifier,
-                                  )
-                                  .applyPendingDeletes(
-                                    maxDeleteCount: maxDeleteCount,
-                                  );
-
+                              // Mevcut swipe index'ini kaydet - silme sonrası kaldığı yerden devam etmek için
+                              final currentIndexBeforeReload =
+                                  _currentSwipeIndex;
                               debugPrint(
-                                '📊 [SwipePage] Silme işlemi tamamlandı: $deletedCount fotoğraf silindi',
+                                '💾 [SwipePage] Mevcut swipe index kaydedildi: $currentIndexBeforeReload',
                               );
 
-                              if (!context.mounted) {
+                              // Başarı dialog'unu önce göster - reload'dan önce
+                              // Böylece dialog gösterilirken TabView rebuild olmaz
+                              debugPrint(
+                                '🎯 [SwipePage] About to show delete success dialog - deletedCount: $deletedCount, context.mounted: ${context.mounted}',
+                              );
+                              if (context.mounted) {
                                 debugPrint(
-                                  '⚠️ [SwipePage] Context mounted değil, işlem iptal edildi',
+                                  '✅ [SwipePage] Context is mounted, calling _showDeleteSuccessDialog...',
                                 );
-                                if (mounted) {
-                                  setState(() {
-                                    _isDeleting = false;
-                                  });
-                                }
-                                return;
-                              }
-
-                              // Silme işlemi başarılı olup olmadığını kontrol et
-                              if (deletedCount > 0) {
+                                await _showDeleteSuccessDialog(
+                                  context,
+                                  deletedCount,
+                                );
                                 debugPrint(
-                                  '✅ [SwipePage] $deletedCount fotoğraf başarıyla silindi, silme hakkı azaltılıyor...',
+                                  '✅ [SwipePage] _showDeleteSuccessDialog completed',
                                 );
-
-                                try {
-                                  final newLimit = await deleteLimitController
-                                      .decrease(deletedCount);
-                                  debugPrint(
-                                    '💾 [SwipePage] Delete limit güncellendi, kalan: $newLimit (azaltılan: $deletedCount)',
-                                  );
-
-                                  // Mevcut swipe index'ini kaydet - silme sonrası kaldığı yerden devam etmek için
-                                  final currentIndexBeforeReload =
-                                      _currentSwipeIndex;
-                                  debugPrint(
-                                    '💾 [SwipePage] Mevcut swipe index kaydedildi: $currentIndexBeforeReload',
-                                  );
-
-                                  // Galeriyi yeniden yükle - silinen fotoğraflar listeden çıksın
-                                  // Ancak reload sonrası index'i ayarlayacağız
-                                  ref
-                                      .read(
-                                        galleryPagingControllerProvider
-                                            .notifier,
-                                      )
-                                      .reload();
-
-                                  // Reload sonrası, silinen fotoğraflar listeden çıktığı için
-                                  // index'i ayarla (silinen fotoğraflar kadar azalt)
-                                  // Ancak index 0'dan küçük olamaz
-                                  final adjustedIndex =
-                                      (currentIndexBeforeReload - deletedCount)
-                                          .clamp(0, 999999999);
-
-                                  // Index ayarlamasını işaretle - _buildSwipeArea'da uygulanacak
-                                  setState(() {
-                                    _pendingIndexAdjustment = adjustedIndex;
-                                    _currentSwipeIndex = adjustedIndex;
-                                  });
-                                  _saveSwipeIndex(adjustedIndex);
-                                  debugPrint(
-                                    '💾 [SwipePage] Swipe index ayarlandı: $currentIndexBeforeReload -> $adjustedIndex (silinen: $deletedCount)',
-                                  );
-
-                                  // Başarı dialog'unu göster
-                                  if (context.mounted) {
-                                    _showDeleteSuccessDialog(
-                                      context,
-                                      deletedCount,
-                                    );
-                                  }
-                                } catch (e, stackTrace) {
-                                  debugPrint(
-                                    '❌ [SwipePage] Silme hakkı azaltılırken hata: $e',
-                                  );
-                                  debugPrint(
-                                    '❌ [SwipePage] Stack trace: $stackTrace',
-                                  );
-                                  await deleteLimitController.refresh();
-                                  // Hata olsa bile dialog'u göster
-                                  if (context.mounted) {
-                                    _showDeleteSuccessDialog(
-                                      context,
-                                      deletedCount,
-                                    );
-                                  }
-                                }
                               } else {
                                 debugPrint(
-                                  '⚠️ [SwipePage] Silme işlemi başarısız veya hiç fotoğraf silinmedi (deletedCount: $deletedCount)',
+                                  '❌ [SwipePage] Context not mounted, cannot show dialog',
                                 );
-                                // Kullanıcıya bilgi ver
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(l10n.deleteOperationFailed),
-                                      backgroundColor: theme.colorScheme.error,
-                                      duration: const Duration(seconds: 2),
-                                    ),
-                                  );
-                                }
                               }
-                              // Animasyonu 1 saniye sonra durdur
-                              Future.delayed(
-                                const Duration(milliseconds: 1000),
-                                () {
-                                  if (mounted) {
-                                    setState(() {
-                                      _isDeleting = false;
-                                    });
-                                  }
-                                },
+
+                              // Reload'u dialog kapandıktan sonra yap
+                              // Böylece dialog gösterilirken TabView rebuild olmaz
+                              if (mounted) {
+                                ref
+                                    .read(
+                                      galleryPagingControllerProvider.notifier,
+                                    )
+                                    .reload();
+
+                                // Reload sonrası, silinen fotoğraflar listeden çıktığı için
+                                // index'i ayarla (silinen fotoğraflar kadar azalt)
+                                // Ancak index 0'dan küçük olamaz
+                                final adjustedIndex =
+                                    (currentIndexBeforeReload - deletedCount)
+                                        .clamp(0, 999999999);
+
+                                // Index ayarlamasını işaretle - _buildSwipeArea'da uygulanacak
+                                setState(() {
+                                  _pendingIndexAdjustment = adjustedIndex;
+                                  _currentSwipeIndex = adjustedIndex;
+                                });
+                                _saveSwipeIndex(adjustedIndex);
+                                debugPrint(
+                                  '💾 [SwipePage] Swipe index ayarlandı: $currentIndexBeforeReload -> $adjustedIndex (silinen: $deletedCount)',
+                                );
+                              }
+                            } catch (e, stackTrace) {
+                              debugPrint(
+                                '❌ [SwipePage] Silme hakkı azaltılırken hata: $e',
                               );
-                            },
-                            style: FilledButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              backgroundColor:
-                                  Theme.of(
-                                    context,
-                                  ).extension<AppSemanticColors>()?.delete ??
-                                  Theme.of(context).colorScheme.error,
-                              foregroundColor: Theme.of(
-                                context,
-                              ).colorScheme.onError,
-                              side: BorderSide(
-                                color: AppColors.error.withOpacity(
-                                  0.9,
-                                ), // Kırmızı border
-                                width: 1.5,
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: ColorFiltered(
-                                    colorFilter: ColorFilter.mode(
-                                      Theme.of(context).colorScheme.onError,
-                                      BlendMode.srcATop,
-                                    ),
-                                    child: Lottie.asset(
-                                      'assets/lottie/trash.json',
-                                      width: 20,
-                                      height: 20,
-                                      fit: BoxFit.contain,
-                                      repeat: _isDeleting,
-                                      options: LottieOptions(
-                                        enableMergePaths: true,
-                                      ),
-                                    ),
-                                  ),
+                              debugPrint(
+                                '❌ [SwipePage] Stack trace: $stackTrace',
+                              );
+                              await deleteLimitController.refresh();
+                              // Hata olsa bile dialog'u göster
+                              debugPrint(
+                                '🎯 [SwipePage] Error case - About to show delete success dialog - deletedCount: $deletedCount, context.mounted: ${context.mounted}',
+                              );
+                              if (context.mounted) {
+                                debugPrint(
+                                  '✅ [SwipePage] Error case - Context is mounted, calling _showDeleteSuccessDialog...',
+                                );
+                                await _showDeleteSuccessDialog(
+                                  context,
+                                  deletedCount,
+                                );
+                                debugPrint(
+                                  '✅ [SwipePage] Error case - _showDeleteSuccessDialog completed',
+                                );
+                              } else {
+                                debugPrint(
+                                  '❌ [SwipePage] Error case - Context not mounted, cannot show dialog',
+                                );
+                              }
+                            }
+                          } else {
+                            debugPrint(
+                              '⚠️ [SwipePage] Silme işlemi başarısız veya hiç fotoğraf silinmedi (deletedCount: $deletedCount)',
+                            );
+                            // Kullanıcıya bilgi ver
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(l10n.deleteOperationFailed),
+                                  backgroundColor: theme.colorScheme.error,
+                                  duration: const Duration(seconds: 2),
                                 ),
-                                const SizedBox(width: 8),
-                                Text(l10n.deletePhotos(pendingCount)),
-                              ],
-                            ),
+                              );
+                            }
+                          }
+                          // Animasyonu 1 saniye sonra durdur
+                          Future.delayed(
+                            const Duration(milliseconds: 1000),
+                            () {
+                              if (mounted) {
+                                setState(() {
+                                  _isDeleting = false;
+                                });
+                              }
+                            },
+                          );
+                        },
+                        style: FilledButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          backgroundColor:
+                              Theme.of(
+                                context,
+                              ).extension<AppSemanticColors>()?.delete ??
+                              Theme.of(context).colorScheme.error,
+                          foregroundColor: Theme.of(
+                            context,
+                          ).colorScheme.onError,
+                          side: BorderSide(
+                            color: AppColors.error.withOpacity(
+                              0.9,
+                            ), // Kırmızı border
+                            width: 1.5,
                           ),
                         ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ],
-        );
-      },
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: ColorFiltered(
+                                colorFilter: ColorFilter.mode(
+                                  Theme.of(context).colorScheme.onError,
+                                  BlendMode.srcATop,
+                                ),
+                                child: Lottie.asset(
+                                  'assets/lottie/trash.json',
+                                  width: 20,
+                                  height: 20,
+                                  fit: BoxFit.contain,
+                                  repeat: _isDeleting,
+                                  options: LottieOptions(
+                                    enableMergePaths: true,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(l10n.deletePhotos(pendingCount)),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            );
+          },
+        ),
+      ],
     );
   }
 }
@@ -1487,7 +1559,7 @@ class _BlurTab extends ConsumerStatefulWidget {
 }
 
 class _BlurTabState extends ConsumerState<_BlurTab> {
-  double _blurThreshold = 0.3;
+  double _blurThreshold = 0.5; // Default: Medium sensitivity
   final SoundService _soundService = SoundService();
 
   @override
@@ -1769,24 +1841,41 @@ class _BlurTabState extends ConsumerState<_BlurTab> {
                                       deletedCount,
                                     );
 
-                                    // Galeriyi yeniden yükle
-                                    ref
-                                        .read(
-                                          galleryPagingControllerProvider
-                                              .notifier,
-                                        )
-                                        .reload();
-
                                     debugPrint(
                                       '✅ [SwipePage] Blur tab - $deletedCount fotoğraf silindi',
                                     );
 
-                                    // Cleanup complete dialogunu göster
+                                    // Cleanup complete dialogunu önce göster - reload'dan önce
+                                    // Böylece dialog gösterilirken TabView rebuild olmaz
+                                    debugPrint(
+                                      '🎯 [SwipePage] Blur tab (post-scan) - About to show delete success dialog - deletedCount: $deletedCount, mounted: $mounted',
+                                    );
                                     if (mounted) {
-                                      _showDeleteSuccessDialog(
+                                      debugPrint(
+                                        '✅ [SwipePage] Blur tab (post-scan) - Mounted, calling _showDeleteSuccessDialog...',
+                                      );
+                                      await _showDeleteSuccessDialog(
                                         context,
                                         deletedCount,
                                       );
+                                      debugPrint(
+                                        '✅ [SwipePage] Blur tab (post-scan) - _showDeleteSuccessDialog completed',
+                                      );
+                                    } else {
+                                      debugPrint(
+                                        '❌ [SwipePage] Blur tab (post-scan) - Not mounted, cannot show dialog',
+                                      );
+                                    }
+
+                                    // Reload'u dialog kapandıktan sonra yap
+                                    // Böylece dialog gösterilirken TabView rebuild olmaz
+                                    if (mounted) {
+                                      ref
+                                          .read(
+                                            galleryPagingControllerProvider
+                                                .notifier,
+                                          )
+                                          .reload();
                                     }
                                   } else {
                                     debugPrint(
@@ -1911,24 +2000,41 @@ class _BlurTabState extends ConsumerState<_BlurTab> {
                                       deletedCount,
                                     );
 
-                                    // Galeriyi yeniden yükle
-                                    ref
-                                        .read(
-                                          galleryPagingControllerProvider
-                                              .notifier,
-                                        )
-                                        .reload();
-
                                     debugPrint(
                                       '✅ [SwipePage] Blur tab - $deletedCount fotoğraf silindi',
                                     );
 
-                                    // Cleanup complete dialogunu göster
+                                    // Cleanup complete dialogunu önce göster - reload'dan önce
+                                    // Böylece dialog gösterilirken TabView rebuild olmaz
+                                    debugPrint(
+                                      '🎯 [SwipePage] Blur tab (post-scan) - About to show delete success dialog - deletedCount: $deletedCount, mounted: $mounted',
+                                    );
                                     if (mounted) {
-                                      _showDeleteSuccessDialog(
+                                      debugPrint(
+                                        '✅ [SwipePage] Blur tab (post-scan) - Mounted, calling _showDeleteSuccessDialog...',
+                                      );
+                                      await _showDeleteSuccessDialog(
                                         context,
                                         deletedCount,
                                       );
+                                      debugPrint(
+                                        '✅ [SwipePage] Blur tab (post-scan) - _showDeleteSuccessDialog completed',
+                                      );
+                                    } else {
+                                      debugPrint(
+                                        '❌ [SwipePage] Blur tab (post-scan) - Not mounted, cannot show dialog',
+                                      );
+                                    }
+
+                                    // Reload'u dialog kapandıktan sonra yap
+                                    // Böylece dialog gösterilirken TabView rebuild olmaz
+                                    if (mounted) {
+                                      ref
+                                          .read(
+                                            galleryPagingControllerProvider
+                                                .notifier,
+                                          )
+                                          .reload();
                                     }
                                   } else {
                                     debugPrint(
@@ -2242,7 +2348,13 @@ class _BlurTabState extends ConsumerState<_BlurTab> {
                                         ),
                                       ),
                                     )
-                                  : FutureBuilder<int>(
+                                  : FutureBuilder<
+                                      ({
+                                        int estimatedSeconds,
+                                        int totalPhotoCount,
+                                        bool hasLimitWarning,
+                                      })
+                                    >(
                                       future: _estimateScanDuration(
                                         selectedAlbums,
                                         true,
@@ -2251,10 +2363,17 @@ class _BlurTabState extends ConsumerState<_BlurTab> {
                                         final estimatedTimeText =
                                             snapshot.hasData
                                             ? _formatEstimatedTime(
-                                                snapshot.data!,
+                                                snapshot.data!.estimatedSeconds,
                                                 l10n,
                                               )
                                             : null;
+
+                                        final hasLimitWarning =
+                                            snapshot.hasData &&
+                                            snapshot.data!.hasLimitWarning;
+                                        final totalPhotoCount = snapshot.hasData
+                                            ? snapshot.data!.totalPhotoCount
+                                            : 0;
 
                                         return _buildModernScanButton(
                                           context: context,
@@ -2411,6 +2530,8 @@ class _BlurTabState extends ConsumerState<_BlurTab> {
                                               !isScanning && !hasNoScanRights,
                                           isError: hasNoScanRights,
                                           estimatedTimeText: estimatedTimeText,
+                                          hasLimitWarning: hasLimitWarning,
+                                          totalPhotoCount: totalPhotoCount,
                                         );
                                       },
                                     );
@@ -2571,25 +2692,25 @@ class _BlurTabState extends ConsumerState<_BlurTab> {
                     theme,
                     l10n.sensitivityLow,
                     Icons.visibility_outlined,
-                    0.1,
-                    _blurThreshold <= 0.2,
-                    () => setState(() => _blurThreshold = 0.1),
+                    0.65, // Daha fazla sonuç, hafif blurlu fotoğraflar da dahil (yüksek threshold = daha fazla fotoğraf blur olarak işaretlenir)
+                    _blurThreshold >= 0.57,
+                    () => setState(() => _blurThreshold = 0.65),
                   ),
                   _buildSensitivityChip(
                     theme,
                     l10n.sensitivityMedium,
                     Icons.visibility,
-                    0.3,
-                    _blurThreshold > 0.2 && _blurThreshold <= 0.4,
-                    () => setState(() => _blurThreshold = 0.3),
+                    0.5, // Dengeli, orta seviye blur tespiti
+                    _blurThreshold > 0.42 && _blurThreshold < 0.57,
+                    () => setState(() => _blurThreshold = 0.5),
                   ),
                   _buildSensitivityChip(
                     theme,
                     l10n.sensitivityHigh,
                     Icons.visibility_off_outlined,
-                    0.5,
-                    _blurThreshold > 0.4,
-                    () => setState(() => _blurThreshold = 0.5),
+                    0.35, // Sadece çok blurlu fotoğraflar (düşük threshold = sadece çok düşük score'ları yakalar)
+                    _blurThreshold <= 0.42,
+                    () => setState(() => _blurThreshold = 0.35),
                   ),
                 ],
               ),
@@ -2626,7 +2747,10 @@ class _BlurTabState extends ConsumerState<_BlurTab> {
   }
 
   /// Tahmini scan süresini hesapla (saniye cinsinden)
-  Future<int> _estimateScanDuration(
+  /// Estimated scan duration ve limit kontrolü
+  /// Returns: ({estimatedSeconds: int, totalPhotoCount: int, hasLimitWarning: bool})
+  Future<({int estimatedSeconds, int totalPhotoCount, bool hasLimitWarning})>
+  _estimateScanDuration(
     List<pm.AssetPathEntity> albums,
     bool isBlurScan,
   ) async {
@@ -2647,19 +2771,30 @@ class _BlurTabState extends ConsumerState<_BlurTab> {
         }
       }
 
+      // 1000 fotoğraf limit kontrolü
+      const maxPhotos = 1000;
+      final hasLimitWarning = totalPhotoCount > maxPhotos;
+
+      // Limit varsa 1000 fotoğraf için hesapla
+      final effectivePhotoCount = hasLimitWarning ? maxPhotos : totalPhotoCount;
+
       // Fotoğraf başına ortalama işleme süresi (saniye)
       // Blur detection: ~0.15 saniye/fotoğraf (400x400 thumbnail + çoklu analiz)
       // Duplicate detection: ~0.08 saniye/fotoğraf (hash hesaplama)
       final secondsPerPhoto = isBlurScan ? 0.15 : 0.08;
 
-      // Toplam tahmini süre (saniye)
-      final estimatedSeconds = (totalPhotoCount * secondsPerPhoto).round();
+      // Toplam tahmini süre (saniye) - limit varsa 1000 fotoğraf için
+      final estimatedSeconds = (effectivePhotoCount * secondsPerPhoto).round();
 
       // Minimum 5 saniye, maksimum 300 saniye (5 dakika)
-      return estimatedSeconds.clamp(5, 300);
+      return (
+        estimatedSeconds: estimatedSeconds.clamp(5, 300),
+        totalPhotoCount: totalPhotoCount,
+        hasLimitWarning: hasLimitWarning,
+      );
     } catch (e) {
       debugPrint('⚠️ [SwipePage] Tahmini süre hesaplanamadı: $e');
-      return 30; // Varsayılan 30 saniye
+      return (estimatedSeconds: 30, totalPhotoCount: 0, hasLimitWarning: false);
     }
   }
 
@@ -2683,6 +2818,8 @@ class _BlurTabState extends ConsumerState<_BlurTab> {
     required bool isEnabled,
     required bool isError,
     String? estimatedTimeText,
+    bool hasLimitWarning = false,
+    int totalPhotoCount = 0,
   }) {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -2714,6 +2851,43 @@ class _BlurTabState extends ConsumerState<_BlurTab> {
                     color: theme.colorScheme.primary,
                     fontWeight: FontWeight.w600,
                     fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+        if (hasLimitWarning && isEnabled && !isError) ...[
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              color: AppColors.warningLight.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AppColors.warningLight.withOpacity(0.4),
+                width: 1,
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.info_outline_rounded,
+                  size: 16,
+                  color: AppColors.warningLight,
+                ),
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    l10n.maxPhotoLimitWarning(totalPhotoCount),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: AppColors.warningLight,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
                 ),
               ],
@@ -3678,6 +3852,7 @@ class _DuplicateTab extends ConsumerStatefulWidget {
 
 class _DuplicateTabState extends ConsumerState<_DuplicateTab> {
   final SoundService _soundService = SoundService();
+  DuplicateDetectionMode _duplicateMode = DuplicateDetectionMode.balanced;
 
   @override
   void dispose() {
@@ -4037,24 +4212,41 @@ class _DuplicateTabState extends ConsumerState<_DuplicateTab> {
                                       deletedCount,
                                     );
 
-                                    // Galeriyi yeniden yükle
-                                    ref
-                                        .read(
-                                          galleryPagingControllerProvider
-                                              .notifier,
-                                        )
-                                        .reload();
-
                                     debugPrint(
                                       '✅ [SwipePage] Duplicate tab - $deletedCount fotoğraf silindi',
                                     );
 
-                                    // Cleanup complete dialogunu göster
+                                    // Cleanup complete dialogunu önce göster - reload'dan önce
+                                    // Böylece dialog gösterilirken TabView rebuild olmaz
+                                    debugPrint(
+                                      '🎯 [SwipePage] Duplicate tab - About to show delete success dialog - deletedCount: $deletedCount, mounted: $mounted',
+                                    );
                                     if (mounted) {
-                                      _showDeleteSuccessDialog(
+                                      debugPrint(
+                                        '✅ [SwipePage] Duplicate tab - Mounted, calling _showDeleteSuccessDialog...',
+                                      );
+                                      await _showDeleteSuccessDialog(
                                         context,
                                         deletedCount,
                                       );
+                                      debugPrint(
+                                        '✅ [SwipePage] Duplicate tab - _showDeleteSuccessDialog completed',
+                                      );
+                                    } else {
+                                      debugPrint(
+                                        '❌ [SwipePage] Duplicate tab - Not mounted, cannot show dialog',
+                                      );
+                                    }
+
+                                    // Reload'u dialog kapandıktan sonra yap
+                                    // Böylece dialog gösterilirken TabView rebuild olmaz
+                                    if (mounted) {
+                                      ref
+                                          .read(
+                                            galleryPagingControllerProvider
+                                                .notifier,
+                                          )
+                                          .reload();
                                     }
                                   } else {
                                     debugPrint(
@@ -4348,7 +4540,13 @@ class _DuplicateTabState extends ConsumerState<_DuplicateTab> {
                                         ),
                                       ),
                                     )
-                                  : FutureBuilder<int>(
+                                  : FutureBuilder<
+                                      ({
+                                        int estimatedSeconds,
+                                        int totalPhotoCount,
+                                        bool hasLimitWarning,
+                                      })
+                                    >(
                                       future:
                                           _DuplicateTabState._estimateScanDurationStatic(
                                             selectedAlbums,
@@ -4358,10 +4556,17 @@ class _DuplicateTabState extends ConsumerState<_DuplicateTab> {
                                         final estimatedTimeText =
                                             snapshot.hasData
                                             ? _DuplicateTabState._formatEstimatedTimeStatic(
-                                                snapshot.data!,
+                                                snapshot.data!.estimatedSeconds,
                                                 l10n,
                                               )
                                             : null;
+
+                                        final hasLimitWarning =
+                                            snapshot.hasData &&
+                                            snapshot.data!.hasLimitWarning;
+                                        final totalPhotoCount = snapshot.hasData
+                                            ? snapshot.data!.totalPhotoCount
+                                            : 0;
 
                                         return _DuplicateTabState._buildModernScanButton(
                                           context: context,
@@ -4502,6 +4707,7 @@ class _DuplicateTabState extends ConsumerState<_DuplicateTab> {
                                                       )
                                                       .scanAlbums(
                                                         selectedAlbums,
+                                                        mode: _duplicateMode,
                                                       );
 
                                                   if (!mounted) return;
@@ -4516,6 +4722,8 @@ class _DuplicateTabState extends ConsumerState<_DuplicateTab> {
                                               !isScanning && !hasNoScanRights,
                                           isError: hasNoScanRights,
                                           estimatedTimeText: estimatedTimeText,
+                                          hasLimitWarning: hasLimitWarning,
+                                          totalPhotoCount: totalPhotoCount,
                                         );
                                       },
                                     );
@@ -4648,12 +4856,186 @@ class _DuplicateTabState extends ConsumerState<_DuplicateTab> {
         const SizedBox(height: 8),
         // Scan limit info
         _ScanLimitInfo(adUnitType: AdUnitType.duplicateScanLimit),
+        const SizedBox(height: 8),
+        // Kompakt mode section
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: theme.colorScheme.outline.withOpacity(0.1),
+              width: 1,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.tune_rounded,
+                    size: 16,
+                    color: theme.colorScheme.primary,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    l10n.duplicateMode,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              // Mode levels
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _buildDuplicateModeChip(
+                    theme,
+                    l10n.duplicateModeLowSpeedHighAccuracy,
+                    Icons.precision_manufacturing_rounded,
+                    DuplicateDetectionMode.lowSpeedHighAccuracy,
+                    _duplicateMode ==
+                        DuplicateDetectionMode.lowSpeedHighAccuracy,
+                    () => setState(
+                      () => _duplicateMode =
+                          DuplicateDetectionMode.lowSpeedHighAccuracy,
+                    ),
+                  ),
+                  _buildDuplicateModeChip(
+                    theme,
+                    l10n.duplicateModeBalanced,
+                    Icons.balance_rounded,
+                    DuplicateDetectionMode.balanced,
+                    _duplicateMode == DuplicateDetectionMode.balanced,
+                    () => setState(
+                      () => _duplicateMode = DuplicateDetectionMode.balanced,
+                    ),
+                  ),
+                  _buildDuplicateModeChip(
+                    theme,
+                    l10n.duplicateModeHighSpeedLowAccuracy,
+                    Icons.speed_rounded,
+                    DuplicateDetectionMode.highSpeedLowAccuracy,
+                    _duplicateMode ==
+                        DuplicateDetectionMode.highSpeedLowAccuracy,
+                    () => setState(
+                      () => _duplicateMode =
+                          DuplicateDetectionMode.highSpeedLowAccuracy,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              // Kompakt description
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    size: 14,
+                    color: theme.colorScheme.primary.withOpacity(0.7),
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      l10n.duplicateModeLevelsDescription,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurface.withOpacity(0.7),
+                        height: 1.3,
+                        fontSize: 10,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
 
+  Widget _buildDuplicateModeChip(
+    ThemeData theme,
+    String label,
+    IconData icon,
+    DuplicateDetectionMode mode,
+    bool isSelected,
+    VoidCallback onTap,
+  ) {
+    return Expanded(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 3),
+        child: Material(
+          color: AppColors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(10),
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? theme.colorScheme.primaryContainer.withOpacity(0.5)
+                    : theme.colorScheme.surfaceContainerHighest.withOpacity(
+                        0.3,
+                      ),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: isSelected
+                      ? theme.colorScheme.primary.withOpacity(0.4)
+                      : theme.colorScheme.outline.withOpacity(0.1),
+                  width: isSelected ? 1.5 : 1,
+                ),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    icon,
+                    size: 16,
+                    color: isSelected
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.onSurface.withOpacity(0.6),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    label,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      fontWeight: isSelected
+                          ? FontWeight.w700
+                          : FontWeight.w500,
+                      color: isSelected
+                          ? theme.colorScheme.primary
+                          : theme.colorScheme.onSurface.withOpacity(0.7),
+                      fontSize: 10,
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   /// Tahmini scan süresini hesapla (saniye cinsinden) - Static versiyon
-  static Future<int> _estimateScanDurationStatic(
+  /// Estimated scan duration ve limit kontrolü
+  /// Returns: ({estimatedSeconds: int, totalPhotoCount: int, hasLimitWarning: bool})
+  static Future<
+    ({int estimatedSeconds, int totalPhotoCount, bool hasLimitWarning})
+  >
+  _estimateScanDurationStatic(
     List<pm.AssetPathEntity> albums,
     bool isBlurScan,
   ) async {
@@ -4674,19 +5056,30 @@ class _DuplicateTabState extends ConsumerState<_DuplicateTab> {
         }
       }
 
+      // 1000 fotoğraf limit kontrolü
+      const maxPhotos = 1000;
+      final hasLimitWarning = totalPhotoCount > maxPhotos;
+
+      // Limit varsa 1000 fotoğraf için hesapla
+      final effectivePhotoCount = hasLimitWarning ? maxPhotos : totalPhotoCount;
+
       // Fotoğraf başına ortalama işleme süresi (saniye)
       // Blur detection: ~0.15 saniye/fotoğraf (400x400 thumbnail + çoklu analiz)
       // Duplicate detection: ~0.08 saniye/fotoğraf (hash hesaplama)
       final secondsPerPhoto = isBlurScan ? 0.15 : 0.08;
 
-      // Toplam tahmini süre (saniye)
-      final estimatedSeconds = (totalPhotoCount * secondsPerPhoto).round();
+      // Toplam tahmini süre (saniye) - limit varsa 1000 fotoğraf için
+      final estimatedSeconds = (effectivePhotoCount * secondsPerPhoto).round();
 
       // Minimum 5 saniye, maksimum 300 saniye (5 dakika)
-      return estimatedSeconds.clamp(5, 300);
+      return (
+        estimatedSeconds: estimatedSeconds.clamp(5, 300),
+        totalPhotoCount: totalPhotoCount,
+        hasLimitWarning: hasLimitWarning,
+      );
     } catch (e) {
       debugPrint('⚠️ [SwipePage] Tahmini süre hesaplanamadı: $e');
-      return 30; // Varsayılan 30 saniye
+      return (estimatedSeconds: 30, totalPhotoCount: 0, hasLimitWarning: false);
     }
   }
 
@@ -4710,6 +5103,8 @@ class _DuplicateTabState extends ConsumerState<_DuplicateTab> {
     required bool isEnabled,
     required bool isError,
     String? estimatedTimeText,
+    bool hasLimitWarning = false,
+    int totalPhotoCount = 0,
   }) {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -4741,6 +5136,43 @@ class _DuplicateTabState extends ConsumerState<_DuplicateTab> {
                     color: theme.colorScheme.primary,
                     fontWeight: FontWeight.w600,
                     fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+        if (hasLimitWarning && isEnabled && !isError) ...[
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              color: AppColors.warningLight.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AppColors.warningLight.withOpacity(0.4),
+                width: 1,
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.info_outline_rounded,
+                  size: 16,
+                  color: AppColors.warningLight,
+                ),
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    l10n.maxPhotoLimitWarning(totalPhotoCount),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: AppColors.warningLight,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
                 ),
               ],
@@ -6757,6 +7189,13 @@ class _SwipePageState extends ConsumerState<SwipePage>
       duration: const Duration(milliseconds: 1500),
     );
 
+    // Interstisial ad servisine premium dialog callback'i ayarla
+    InterstitialAdsService.instance.onPremiumDialogTrigger = () {
+      if (mounted) {
+        _showPremiumDialog();
+      }
+    };
+
     // Lifecycle observer'ı ekle (arka plan/ön plan kontrolü için)
     WidgetsBinding.instance.addObserver(this);
 
@@ -6789,10 +7228,22 @@ class _SwipePageState extends ConsumerState<SwipePage>
     }
   }
 
+  void _showPremiumDialog() {
+    if (!mounted) return;
+    debugPrint(
+      '💰 [SwipePage] Showing premium dialog after 3 interstitial ads',
+    );
+    // PremiumAfterAdsDialog'u göster
+    PremiumAfterAdsDialog.show(context);
+  }
+
   @override
   void dispose() {
     // Lifecycle observer'ı kaldır
     WidgetsBinding.instance.removeObserver(this);
+
+    // Callback'i temizle
+    InterstitialAdsService.instance.onPremiumDialogTrigger = null;
 
     _tabController.dispose();
     _historyPulseController.dispose();
@@ -7046,6 +7497,41 @@ class _SwipePageState extends ConsumerState<SwipePage>
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
+        // Premium badge - en solda (leading)
+        leading: Consumer(
+          builder: (context, ref, _) {
+            final isPremiumAsync = ref.watch(isPremiumProvider);
+            return isPremiumAsync.when(
+              loading: () => const SizedBox.shrink(),
+              error: (_, __) => const SizedBox.shrink(),
+              data: (isPremium) {
+                // Premium kullanıcıda buton görünür, tıklanabilir ve sarı renkte
+                // Tıklandığında premium success dialog gösterilir
+                // Premium olmayan kullanıcıda paywall page'e yönlendir
+                return IconButton(
+                  onPressed: isPremium
+                      ? () async {
+                          // Premium kullanıcıda premium success dialog göster
+                          await PremiumSuccessDialog.show(context);
+                        }
+                      : () {
+                          context.push('/paywall');
+                        },
+                  icon: Icon(
+                    Icons.workspace_premium_rounded,
+                    color: isPremium
+                        ? AppColors
+                              .warningLight // Premium kullanıcıda sarı renk
+                        : theme.colorScheme.primary,
+                  ),
+                  tooltip: isPremium
+                      ? 'Premium Aktif'
+                      : l10n.unlockPremiumFeatures,
+                );
+              },
+            );
+          },
+        ),
         centerTitle: false,
         backgroundColor: theme.colorScheme.background,
         bottom: PreferredSize(
@@ -7112,75 +7598,7 @@ class _SwipePageState extends ConsumerState<SwipePage>
           ),
         ),
         actions: [
-          // Premium durumu toggle butonu (tüm modlarda çalışır)
-          Consumer(
-            builder: (context, ref, _) {
-              final isPremiumAsync = ref.watch(isPremiumProvider);
-              return isPremiumAsync.when(
-                loading: () => const SizedBox.shrink(),
-                error: (_, __) => const SizedBox.shrink(),
-                data: (isPremium) {
-                  return IconButton(
-                    icon: Icon(
-                      isPremium
-                          ? Icons.workspace_premium
-                          : Icons.workspace_premium_outlined,
-                      color: isPremium
-                          ? AppColors.warningLight
-                          : theme.colorScheme.onSurface.withOpacity(0.6),
-                    ),
-                    tooltip: isPremium
-                        ? 'Premium: AÇIK (Debug)'
-                        : 'Premium: KAPALI (Debug)',
-                    onPressed: () async {
-                      final prefsService = PreferencesService();
-                      await prefsService.setPremium(!isPremium);
-                      ref.invalidate(isPremiumProvider);
-                      // Show snackbar
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              isPremium
-                                  ? 'Premium kapatıldı (Debug)'
-                                  : 'Premium açıldı (Debug)',
-                            ),
-                            duration: const Duration(seconds: 1),
-                          ),
-                        );
-                      }
-                    },
-                  );
-                },
-              );
-            },
-          ),
           _HistoryButton(pulseController: _historyPulseController),
-          Consumer(
-            builder: (context, ref, _) {
-              final isPremiumAsync = ref.watch(isPremiumProvider);
-              return isPremiumAsync.when(
-                loading: () => const SizedBox.shrink(),
-                error: (_, __) => const SizedBox.shrink(),
-                data: (isPremium) {
-                  return IconButton(
-                    onPressed: isPremium
-                        ? null
-                        : () {
-                            context.push('/paywall');
-                          },
-                    icon: Icon(
-                      Icons.workspace_premium_rounded,
-                      color: isPremium
-                          ? AppColors.warningLight
-                          : theme.colorScheme.primary,
-                    ),
-                    tooltip: isPremium ? null : l10n.goPremium,
-                  );
-                },
-              );
-            },
-          ),
           IconButton(
             icon: const Icon(Icons.settings),
             tooltip: l10n.settings,
@@ -7529,10 +7947,7 @@ class _DeleteLimitInfoState extends ConsumerState<_DeleteLimitInfo>
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
 
-    // Dialog açıldığında reklam yüklemesi başlat
-    if (!_adsService.isAdReadyOrLoading(AdUnitType.deleteLimit)) {
-      _adsService.loadRewardedAd(AdUnitType.deleteLimit);
-    }
+    // Reklam zaten uygulama açılışında yüklenmiş olmalı, sadece durumu kontrol et
     _checkAdReady();
 
     showDialog(
@@ -8410,132 +8825,245 @@ class _PermissionFeature extends StatelessWidget {
   }
 }
 
-void _showDeleteSuccessDialog(BuildContext context, int deletedCount) {
+Future<void> _showDeleteSuccessDialog(
+  BuildContext context,
+  int deletedCount,
+) async {
+  debugPrint(
+    '🎯 [SwipePage] _showDeleteSuccessDialog çağrıldı - deletedCount: $deletedCount',
+  );
+
+  if (!context.mounted) {
+    debugPrint(
+      '❌ [SwipePage] Context not mounted at start, cannot show dialog',
+    );
+    return;
+  }
+
+  // Root context'i başta sakla - reklam akışından sonra kullanmak için
+  final rootNavigator = Navigator.of(context, rootNavigator: true);
+  final rootContext = rootNavigator.context;
   final l10n = AppLocalizations.of(context)!;
   final theme = Theme.of(context);
 
-  showDialog(
-    context: context,
-    barrierDismissible: true,
-    barrierColor: AppColors.black.withOpacity(0.5),
-    builder: (context) => Dialog(
-      backgroundColor: AppColors.transparent,
-      elevation: 0,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 24),
-      child: TweenAnimationBuilder<double>(
-        tween: Tween(begin: 0.0, end: 1.0),
-        duration: const Duration(milliseconds: 400),
-        curve: Curves.easeOutCubic,
-        builder: (context, value, child) {
-          return Transform.scale(
-            scale: 0.85 + (value * 0.15),
-            child: Opacity(opacity: value, child: child),
+  // Premium kontrolü - premium kullanıcılar reklam görmesin
+  debugPrint('🔍 [SwipePage] Checking premium status...');
+  final prefsService = PreferencesService();
+  final isPremium = await prefsService.isPremium();
+  debugPrint('💰 [SwipePage] Premium status: $isPremium');
+
+  // Premium değilse interstitial ad göster (önce ad, sonra dialog)
+  // Ad başarısız olsa bile dialog mutlaka gösterilecek
+  // Reklam zaten uygulama açılışında yüklenmiş olmalı
+  if (!isPremium) {
+    debugPrint('📱 [SwipePage] Non-premium user, showing interstitial ad...');
+    try {
+      final adService = InterstitialAdsService.instance;
+
+      // Ad göster ve kapatılmasını bekle (timeout ile - maksimum 35 saniye bekle)
+      // showAd zaten 30 saniye timeout'a sahip, ekstra 5 saniye buffer
+      try {
+        debugPrint('📱 [SwipePage] Attempting to show preloaded ad...');
+        final adShown = await adService
+            .showAd()
+            .timeout(
+              const Duration(seconds: 35),
+              onTimeout: () {
+                debugPrint(
+                  '⚠️ [SwipePage] Ad showing timeout, continuing to show dialog',
+                );
+                return false;
+              },
+            )
+            .catchError((e) {
+              debugPrint(
+                '⚠️ [SwipePage] Ad showing error: $e, continuing to show dialog',
+              );
+              return false;
+            });
+
+        debugPrint('📱 [SwipePage] Ad shown result: $adShown');
+
+        if (adShown == true) {
+          // Ad kapatıldı, kısa bir bekleme sonra dialog göster
+          debugPrint(
+            '📱 [SwipePage] Ad was shown, waiting 500ms before dialog...',
           );
-        },
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 380),
-          padding: const EdgeInsets.all(32),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.black.withOpacity(0.15),
-                blurRadius: 24,
-                spreadRadius: 0,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Lottie animation
-              SizedBox(
-                width: 120,
-                height: 120,
-                child: Lottie.asset(
-                  'assets/lottie/wipe.json',
-                  fit: BoxFit.contain,
-                  repeat: true,
-                  animate: true,
-                ),
-              ),
-              const SizedBox(height: 24),
-              // Title
-              Text(
-                l10n.cleanupComplete,
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 24,
-                  color: theme.colorScheme.onSurface,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 16),
-              // Description with deleted count
-              Text(
-                l10n.cleanupCompleteMessageWithCount(deletedCount),
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurface.withOpacity(0.7),
-                  fontSize: 14,
-                  height: 1.5,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 32),
-              // Done button - uygulamadaki buton yapısına uygun
-              SizedBox(
-                width: double.infinity,
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        theme.colorScheme.primary,
-                        theme.colorScheme.primary.withOpacity(0.8),
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: theme.colorScheme.primary.withOpacity(0.3),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                        spreadRadius: 0,
-                      ),
-                    ],
-                  ),
-                  child: Material(
-                    color: AppColors.transparent,
-                    child: InkWell(
-                      onTap: () => Navigator.of(context).pop(),
-                      borderRadius: BorderRadius.circular(16),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 16,
-                          horizontal: 24,
-                        ),
-                        child: Text(
-                          l10n.done,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                            color: AppColors.white,
-                            letterSpacing: 0.5,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    ),
+          await Future.delayed(const Duration(milliseconds: 500));
+        } else {
+          debugPrint(
+            '📱 [SwipePage] Ad was not shown, proceeding to dialog...',
+          );
+        }
+      } catch (e) {
+        debugPrint(
+          '⚠️ [SwipePage] Error showing ad: $e, continuing to show dialog',
+        );
+        // Hata olsa bile devam et
+      }
+    } catch (e) {
+      debugPrint(
+        '⚠️ [SwipePage] Error in ad flow: $e, continuing to show dialog',
+      );
+      // Hata olsa bile dialog göster
+    }
+  } else {
+    debugPrint('💰 [SwipePage] Premium user, skipping ad...');
+  }
+
+  // Context kontrolü - ad gösterildikten sonra
+  // Root context'i kullan - başta sakladığımız root context'i kullan
+  BuildContext dialogContext;
+  if (context.mounted) {
+    dialogContext = context;
+  } else {
+    // Context unmount olduysa başta sakladığımız root context'i kullan
+    dialogContext = rootContext;
+    debugPrint(
+      '✅ [SwipePage] Using root navigator context for dialog (original context unmounted)',
+    );
+  }
+
+  // Dialog'u göster (ad gösterilmiş olsun veya olmasın - HER KOŞULDA)
+  // Root navigator kullanarak context unmount olsa bile dialog göster
+  debugPrint(
+    '✅ [SwipePage] Showing cleanup complete dialog - deletedCount: $deletedCount',
   );
+
+  try {
+    debugPrint('🎬 [SwipePage] Calling showDialog...');
+    await Future.delayed(const Duration(milliseconds: 100)); // Kısa bir bekleme
+    await showDialog(
+      context: dialogContext,
+      useRootNavigator: true, // Root navigator kullan
+      barrierDismissible: true,
+      barrierColor: AppColors.black.withOpacity(0.5),
+      builder: (dialogContext) {
+        debugPrint('🎬 [SwipePage] Dialog builder called');
+        return Dialog(
+          backgroundColor: AppColors.transparent,
+          elevation: 0,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+          child: TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0.0, end: 1.0),
+            duration: const Duration(milliseconds: 400),
+            curve: Curves.easeOutCubic,
+            builder: (context, value, child) {
+              return Transform.scale(
+                scale: 0.85 + (value * 0.15),
+                child: Opacity(opacity: value, child: child),
+              );
+            },
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 380),
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.black.withOpacity(0.15),
+                    blurRadius: 24,
+                    spreadRadius: 0,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Lottie animation
+                  SizedBox(
+                    width: 120,
+                    height: 120,
+                    child: Lottie.asset(
+                      'assets/lottie/wipe.json',
+                      fit: BoxFit.contain,
+                      repeat: true,
+                      animate: true,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  // Title
+                  Text(
+                    l10n.cleanupComplete,
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 24,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  // Description with deleted count
+                  Text(
+                    l10n.cleanupCompleteMessageWithCount(deletedCount),
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurface.withOpacity(0.7),
+                      fontSize: 14,
+                      height: 1.5,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 32),
+                  // Done button - uygulamadaki buton yapısına uygun
+                  SizedBox(
+                    width: double.infinity,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            theme.colorScheme.primary,
+                            theme.colorScheme.primary.withOpacity(0.8),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: theme.colorScheme.primary.withOpacity(0.3),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                            spreadRadius: 0,
+                          ),
+                        ],
+                      ),
+                      child: Material(
+                        color: AppColors.transparent,
+                        child: InkWell(
+                          onTap: () => Navigator.of(dialogContext).pop(),
+                          borderRadius: BorderRadius.circular(16),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 16,
+                              horizontal: 24,
+                            ),
+                            child: Text(
+                              l10n.done,
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                                color: AppColors.white,
+                                letterSpacing: 0.5,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+    debugPrint('✅ [SwipePage] showDialog completed successfully');
+  } catch (e, stackTrace) {
+    debugPrint('❌ [SwipePage] Error showing dialog: $e');
+    debugPrint('❌ [SwipePage] Stack trace: $stackTrace');
+  }
 }

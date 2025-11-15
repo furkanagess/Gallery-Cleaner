@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lottie/lottie.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../../l10n/app_localizations.dart';
 import '../../application/gallery_providers.dart';
@@ -313,8 +312,21 @@ class _BlurResultsTab extends ConsumerWidget {
           await ref.read(deleteLimitProvider.notifier).decrease(deletedCount);
 
           // Cleanup complete dialogunu göster
+          debugPrint(
+            '🎯 [ResultsPage] Blur - About to show delete success dialog - deletedCount: $deletedCount, context.mounted: ${context.mounted}',
+          );
           if (context.mounted && deletedCount > 0) {
-            _showDeleteSuccessDialog(context, deletedCount);
+            debugPrint(
+              '✅ [ResultsPage] Blur - Context is mounted and deletedCount > 0, calling _showDeleteSuccessDialog...',
+            );
+            await showDeleteSuccessDialog(context, deletedCount);
+            debugPrint(
+              '✅ [ResultsPage] Blur - _showDeleteSuccessDialog completed',
+            );
+          } else {
+            debugPrint(
+              '❌ [ResultsPage] Blur - Cannot show dialog - context.mounted: ${context.mounted}, deletedCount: $deletedCount',
+            );
           }
         },
         icon: const Icon(Icons.delete_outline),
@@ -786,8 +798,21 @@ class _DuplicateResultsTab extends ConsumerWidget {
           await ref.read(deleteLimitProvider.notifier).decrease(deletedCount);
 
           // Cleanup complete dialogunu göster
+          debugPrint(
+            '🎯 [ResultsPage] Blur - About to show delete success dialog - deletedCount: $deletedCount, context.mounted: ${context.mounted}',
+          );
           if (context.mounted && deletedCount > 0) {
-            _showDeleteSuccessDialog(context, deletedCount);
+            debugPrint(
+              '✅ [ResultsPage] Blur - Context is mounted and deletedCount > 0, calling _showDeleteSuccessDialog...',
+            );
+            await showDeleteSuccessDialog(context, deletedCount);
+            debugPrint(
+              '✅ [ResultsPage] Blur - _showDeleteSuccessDialog completed',
+            );
+          } else {
+            debugPrint(
+              '❌ [ResultsPage] Blur - Cannot show dialog - context.mounted: ${context.mounted}, deletedCount: $deletedCount',
+            );
           }
         },
         icon: const Icon(Icons.delete_outline),
@@ -1003,130 +1028,4 @@ class _DuplicateResultsTab extends ConsumerWidget {
       ),
     );
   }
-}
-
-void _showDeleteSuccessDialog(BuildContext context, int deletedCount) {
-  final l10n = AppLocalizations.of(context)!;
-  final theme = Theme.of(context);
-
-  showDialog(
-    context: context,
-    barrierDismissible: true,
-    barrierColor: AppColors.black.withOpacity(0.5),
-    builder: (context) => Dialog(
-      backgroundColor: AppColors.transparent,
-      elevation: 0,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 24),
-      child: TweenAnimationBuilder<double>(
-        tween: Tween(begin: 0.0, end: 1.0),
-        duration: const Duration(milliseconds: 400),
-        curve: Curves.easeOutCubic,
-        builder: (context, value, child) {
-          return Transform.scale(
-            scale: 0.85 + (value * 0.15),
-            child: Opacity(opacity: value, child: child),
-          );
-        },
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 380),
-          padding: const EdgeInsets.all(32),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.black.withOpacity(0.15),
-                blurRadius: 24,
-                spreadRadius: 0,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SizedBox(
-                width: 120,
-                height: 120,
-                child: Lottie.asset(
-                  'assets/lottie/wipe.json',
-                  fit: BoxFit.contain,
-                  repeat: true,
-                  animate: true,
-                ),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                l10n.cleanupComplete,
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 24,
-                  color: theme.colorScheme.onSurface,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                l10n.cleanupCompleteMessageWithCount(deletedCount),
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurface.withOpacity(0.7),
-                  fontSize: 14,
-                  height: 1.5,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 32),
-              SizedBox(
-                width: double.infinity,
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        theme.colorScheme.primary,
-                        theme.colorScheme.primary.withOpacity(0.8),
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: theme.colorScheme.primary.withOpacity(0.3),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                        spreadRadius: 0,
-                      ),
-                    ],
-                  ),
-                  child: Material(
-                    color: AppColors.transparent,
-                    child: InkWell(
-                      onTap: () => Navigator.of(context).pop(),
-                      borderRadius: BorderRadius.circular(16),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 16,
-                          horizontal: 24,
-                        ),
-                        child: Text(
-                          l10n.done,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                            color: AppColors.white,
-                            letterSpacing: 0.5,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    ),
-  );
 }

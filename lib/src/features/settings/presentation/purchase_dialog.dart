@@ -167,8 +167,23 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog>
         ref.invalidate(scanLimitProvider);
         await ref.read(deleteLimitProvider.notifier).refresh();
         if (mounted) {
+          // Parent context'i sakla (Navigator.pop() öncesi)
+          final navigator = Navigator.of(context, rootNavigator: true);
+          final rootContext = navigator.context;
+          
+          // Purchase dialog'unu kapat
           Navigator.of(context).pop();
-          await PremiumSuccessDialog.show(context);
+          
+          // Dialog'u root context'te göster (kısa bir delay ile context'in hazır olması için)
+          WidgetsBinding.instance.addPostFrameCallback((_) async {
+            if (mounted) {
+              try {
+                await PremiumSuccessDialog.show(rootContext);
+              } catch (e) {
+                debugPrint('⚠️ [PurchaseDialog] Dialog gösterilirken hata: $e');
+              }
+            }
+          });
         }
       }
     } catch (e) {

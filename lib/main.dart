@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'src/app/app.dart';
 import 'src/core/services/rewarded_ads_service.dart';
+import 'src/core/services/interstitial_ads_service.dart';
 import 'src/core/services/revenuecat_service.dart';
 
 void main() async {
@@ -10,10 +11,13 @@ void main() async {
   // Initialize Mobile Ads SDK with error handling
   try {
     await RewardedAdsService.initialize();
-    // Preload all ad types after initialization
+    // Preload all ad types after initialization (bir kere initialize et)
     await Future.delayed(const Duration(seconds: 2));
-    // Reklamlar artık sadece dialog açıldığında yüklenecek
-    // await RewardedAdsService.preloadAllAds();
+    await RewardedAdsService.preloadAllAds();
+
+    // Preload interstitial ads after initialization
+    await Future.delayed(const Duration(milliseconds: 500));
+    await InterstitialAdsService.instance.loadAd();
   } catch (e) {
     debugPrint('⚠️ [main] Failed to initialize ads service: $e');
     // Continue app startup even if ads fail to initialize

@@ -1,10 +1,13 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photo_manager/photo_manager.dart' as pm;
 
 import '../../../core/services/duplicate_detection_service.dart';
 import '../../../core/models/duplicate_photo.dart';
 import '../../../core/services/preferences_service.dart';
+
+export '../../../core/services/duplicate_detection_service.dart' show DuplicateDetectionMode;
 import '../../onboarding/application/permissions_controller.dart';
 import '../../onboarding/application/onboarding_controller.dart';
 import 'gallery_providers.dart';
@@ -95,9 +98,18 @@ class DuplicateDetectionNotifier extends StateNotifier<DuplicateDetectionState> 
 
   final Ref ref;
   bool _isCancelled = false;
+  
+  // Progress callback throttling
+  DateTime? _lastProgressUpdate;
+  double _lastProgress = -1.0;
+  static const _progressThrottleMs = 100; // Her 100ms'de bir güncelle
+  static const _progressMinDelta = 0.01; // En az %1 değişim olmalı
 
   /// Belirli albümlerde duplicate taraması yap
-  Future<void> scanAlbums(List<pm.AssetPathEntity> albums) async {
+  Future<void> scanAlbums(
+    List<pm.AssetPathEntity> albums, {
+    DuplicateDetectionMode mode = DuplicateDetectionMode.balanced,
+  }) async {
     debugPrint('🚀 [DuplicateDetection] scanAlbums çağrıldı - Albüm sayısı: ${albums.length}');
     
     final permission = ref.read(permissionsControllerProvider);
@@ -142,19 +154,35 @@ class DuplicateDetectionNotifier extends StateNotifier<DuplicateDetectionState> 
         debugPrint('📊 [DuplicateDetection] Kalan duplicate scan hakkı: $remainingScanLimit');
       }
 
-      debugPrint('🔍 [DuplicateDetection] findDuplicatesInAlbums çağrılıyor... (maxScanLimit: $remainingScanLimit)');
+      debugPrint('🔍 [DuplicateDetection] findDuplicatesInAlbums çağrılıyor... (maxScanLimit: $remainingScanLimit, mode: $mode)');
       final scanResult = await service.findDuplicatesInAlbums(
         albums,
+        mode: mode,
         progressCallback: (albumName, progress, processedCount, totalCount) {
           if (_isCancelled) return;
-          debugPrint('📊 [DuplicateDetection] Progress: $progress ($processedCount/$totalCount) - Album: $albumName');
-          if (!_isCancelled) {
-            state = state.copyWith(
-              progress: progress,
-              currentAlbum: albumName,
-              processedCount: processedCount,
-              totalCount: totalCount,
-            );
+          
+          // Throttle progress updates: Her 100ms'de bir veya %1 değişimde
+          final now = DateTime.now();
+          final progressDelta = (progress - _lastProgress).abs();
+          final timeDelta = _lastProgressUpdate != null 
+              ? now.difference(_lastProgressUpdate!).inMilliseconds 
+              : _progressThrottleMs + 1;
+          
+          if (timeDelta >= _progressThrottleMs || progressDelta >= _progressMinDelta) {
+            _lastProgressUpdate = now;
+            _lastProgress = progress;
+            
+            // State güncellemesini frame callback ile yap (UI thread'i bloklamamak için)
+            SchedulerBinding.instance.scheduleFrameCallback((_) {
+              if (!_isCancelled) {
+                state = state.copyWith(
+                  progress: progress,
+                  currentAlbum: albumName,
+                  processedCount: processedCount,
+                  totalCount: totalCount,
+                );
+              }
+            });
           }
         },
         shouldCancel: () => _isCancelled,

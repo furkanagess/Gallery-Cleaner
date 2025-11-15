@@ -146,8 +146,23 @@ class _PaywallPageState extends ConsumerState<PaywallPage>
         ref.invalidate(scanLimitProvider);
         await ref.read(deleteLimitProvider.notifier).refresh();
         if (mounted) {
+          // Root context'i sakla (context.pop() öncesi)
+          final navigator = Navigator.of(context, rootNavigator: true);
+          final rootContext = navigator.context;
+          
+          // Paywall page'i kapat
           context.pop();
-          await PremiumSuccessDialog.show(context);
+          
+          // Dialog'u root context'te göster (kısa bir delay ile context'in hazır olması için)
+          WidgetsBinding.instance.addPostFrameCallback((_) async {
+            if (mounted) {
+              try {
+                await PremiumSuccessDialog.show(rootContext);
+              } catch (e) {
+                debugPrint('⚠️ [PaywallPage] Dialog gösterilirken hata: $e');
+              }
+            }
+          });
         }
       }
     } catch (e) {
@@ -181,13 +196,25 @@ class _PaywallPageState extends ConsumerState<PaywallPage>
         ref.invalidate(isPremiumProvider);
         ref.invalidate(scanLimitProvider);
         await ref.read(deleteLimitProvider.notifier).refresh();
-        setState(() {
-          _successMessage = contextL10n.purchasesRestoredSuccessfully;
-          _isRestoring = false;
-        });
-        Future.delayed(const Duration(seconds: 2), () {
-          if (mounted) context.pop();
-        });
+        if (mounted) {
+          // Root context'i sakla (context.pop() öncesi)
+          final navigator = Navigator.of(context, rootNavigator: true);
+          final rootContext = navigator.context;
+          
+          // Paywall page'i kapat
+          context.pop();
+          
+          // Dialog'u root context'te göster (kısa bir delay ile context'in hazır olması için)
+          WidgetsBinding.instance.addPostFrameCallback((_) async {
+            if (mounted) {
+              try {
+                await PremiumSuccessDialog.show(rootContext);
+              } catch (e) {
+                debugPrint('⚠️ [PaywallPage] Dialog gösterilirken hata: $e');
+              }
+            }
+          });
+        }
       } else {
         setState(() {
           _errorMessage = contextL10n.noPreviousPurchases;

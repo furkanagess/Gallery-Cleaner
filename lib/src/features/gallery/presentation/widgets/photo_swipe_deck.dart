@@ -82,7 +82,8 @@ class PhotoSwipeDeck extends StatefulWidget {
   State<PhotoSwipeDeck> createState() => _PhotoSwipeDeckState();
 }
 
-class _PhotoSwipeDeckState extends State<PhotoSwipeDeck> with TickerProviderStateMixin {
+class _PhotoSwipeDeckState extends State<PhotoSwipeDeck>
+    with TickerProviderStateMixin {
   static const double _swipeThreshold = 120;
   static const double _rotationMaxDeg = 15;
   static const int _stackSize = 2;
@@ -102,13 +103,19 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck> with TickerProviderStat
   void initState() {
     super.initState();
     _topIndex = widget.initialIndex.clamp(0, widget.assets.length);
-    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 400));
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
+    );
     
-    _slideAnimation = Tween<Offset>(begin: Offset.zero, end: Offset.zero).animate(
+    _slideAnimation =
+        Tween<Offset>(begin: Offset.zero, end: Offset.zero).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
-    )..addListener(_onSlideAnimationUpdate)
+          )
+          ..addListener(_onSlideAnimationUpdate)
       ..addStatusListener((status) {
-        if (status == AnimationStatus.completed && _pendingDecision != null) {
+            if (status == AnimationStatus.completed &&
+                _pendingDecision != null) {
           _finalizeSwipe(_pendingDecision!);
         }
       });
@@ -135,7 +142,8 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck> with TickerProviderStat
   void didUpdateWidget(PhotoSwipeDeck oldWidget) {
     super.didUpdateWidget(oldWidget);
     final indexChanged = oldWidget.initialIndex != widget.initialIndex;
-    final assetsChanged = oldWidget.assets.length != widget.assets.length ||
+    final assetsChanged =
+        oldWidget.assets.length != widget.assets.length ||
         (oldWidget.assets.isNotEmpty &&
             widget.assets.isNotEmpty &&
             oldWidget.assets.first.id != widget.assets.first.id);
@@ -146,7 +154,9 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck> with TickerProviderStat
       final safeIndex = widget.assets.isEmpty
           ? 0
           : widget.initialIndex.clamp(0, widget.assets.length - 1);
-      if (_topIndex != safeIndex || _dragOffset != Offset.zero || _dragRotation != 0) {
+      if (_topIndex != safeIndex ||
+          _dragOffset != Offset.zero ||
+          _dragRotation != 0) {
         setState(() {
           _topIndex = safeIndex;
           _dragOffset = Offset.zero;
@@ -189,9 +199,10 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck> with TickerProviderStat
 
   void _animateBack() {
     _pendingDecision = null;
-    _slideAnimation = Tween<Offset>(begin: _dragOffset, end: Offset.zero).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
-    );
+    _slideAnimation = Tween<Offset>(
+      begin: _dragOffset,
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
     _controller
       ..reset()
       ..forward();
@@ -205,10 +216,13 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck> with TickerProviderStat
   void _animateOff(SwipeDecision decision) {
     _pendingDecision = decision;
     final width = MediaQuery.of(context).size.width;
-    final end = decision == SwipeDecision.keep ? Offset(width * 1.5, 0) : Offset(-width * 1.5, 0);
-    _slideAnimation = Tween<Offset>(begin: _dragOffset, end: end).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    final end = decision == SwipeDecision.keep
+        ? Offset(width * 1.5, 0)
+        : Offset(-width * 1.5, 0);
+    _slideAnimation = Tween<Offset>(
+      begin: _dragOffset,
+      end: end,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
     _controller
       ..reset()
       ..forward();
@@ -258,7 +272,8 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck> with TickerProviderStat
         if (data != null) {
           _ThumbnailMemoryCache.put(asset.id, data);
         }
-      }).catchError((error) {
+          })
+          .catchError((error) {
         debugPrint(
           '⚠️ [PhotoSwipeDeck] Prefetch failed for ${asset.id}: $error',
         );
@@ -269,7 +284,7 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck> with TickerProviderStat
   @override
   Widget build(BuildContext context) {
     if (_topIndex >= widget.assets.length) {
-      return const Center(child: Text('Bitti. Yeni fotoğraflar yok.'));
+      return _buildAllPhotosReviewedWidget(context);
     }
 
     final cards = <Widget>[];
@@ -277,7 +292,9 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck> with TickerProviderStat
     for (int i = 0; i < count; i++) {
       final idx = _topIndex + i;
       final isTop = i == 0;
-      cards.add(_buildCard(context, widget.assets[idx], indexFromTop: i, isTop: isTop));
+      cards.add(
+        _buildCard(context, widget.assets[idx], indexFromTop: i, isTop: isTop),
+      );
     }
 
     // Stack'e şeffaf arka plan ekle - siyah alan sorununu önlemek için
@@ -287,7 +304,12 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck> with TickerProviderStat
     );
   }
 
-  Widget _buildCard(BuildContext context, pm.AssetEntity asset, {required int indexFromTop, required bool isTop}) {
+  Widget _buildCard(
+    BuildContext context,
+    pm.AssetEntity asset, {
+    required int indexFromTop,
+    required bool isTop,
+  }) {
     const baseScale = 1.0;
     const baseOffsetY = 0.0;
 
@@ -320,7 +342,8 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck> with TickerProviderStat
             : sem.delete.withOpacity(deleteOpacity * 0.8))
         : AppColors.transparent;
     final borderWidth = isTop
-        ? ((keepOpacity > deleteOpacity ? keepOpacity : deleteOpacity) * 3.5 + 1.5)
+        ? ((keepOpacity > deleteOpacity ? keepOpacity : deleteOpacity) * 3.5 +
+              1.5)
         : 0.0;
     final l10n = AppLocalizations.of(context)!;
 
@@ -343,14 +366,13 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck> with TickerProviderStat
                 color: AppColors.transparent,
                 // Border sadece top kartta ve swipe yapıldığında gösterilir
                 border: isTop && borderWidth > 0
-                    ? Border.all(
-                        color: borderColor,
-                        width: borderWidth,
-                      )
+                    ? Border.all(color: borderColor, width: borderWidth)
                     : null,
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.black.withOpacity(0.3 - (indexFromTop * 0.06)),
+                    color: AppColors.black.withOpacity(
+                      0.3 - (indexFromTop * 0.06),
+                    ),
                     blurRadius: 24 - (indexFromTop * 4),
                     offset: Offset(0, 10 + (indexFromTop * 2.5)),
                     spreadRadius: -2,
@@ -387,7 +409,10 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck> with TickerProviderStat
           
           // Optimize: Sadece değişiklik varsa setState çağır
           final newRotation = isDraggingUpward
-              ? (newOffset.dx / 20).clamp(-_rotationMaxDeg * 0.5, _rotationMaxDeg * 0.5)
+              ? (newOffset.dx / 20).clamp(
+                  -_rotationMaxDeg * 0.5,
+                  _rotationMaxDeg * 0.5,
+                )
               : (newOffset.dx / 12).clamp(-_rotationMaxDeg, _rotationMaxDeg);
           
           if (_dragOffset != newOffset || _dragRotation != newRotation) {
@@ -402,7 +427,8 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck> with TickerProviderStat
             if (newOffset.dx > _swipeThreshold && !_didHapticForKeep) {
               HapticFeedback.lightImpact();
               _didHapticForKeep = true;
-            } else if (newOffset.dx < -_swipeThreshold && !_didHapticForDelete) {
+            } else if (newOffset.dx < -_swipeThreshold &&
+                !_didHapticForDelete) {
               HapticFeedback.lightImpact();
               _didHapticForDelete = true;
             }
@@ -427,9 +453,11 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck> with TickerProviderStat
           
           final wasDraggingToAlbum = widget.isDraggingToAlbum?.call() ?? false;
           final isUpwardDrag = dy < _verticalDragThreshold;
-          final releasePosition = _lastGlobalPosition ??
-              (context.findRenderObject() as RenderBox?)
-                  ?.localToGlobal(_dragOffset) ??
+          final releasePosition =
+              _lastGlobalPosition ??
+              (context.findRenderObject() as RenderBox?)?.localToGlobal(
+                _dragOffset,
+              ) ??
               Offset.zero;
           final currentAsset = widget.assets[_topIndex];
           
@@ -441,7 +469,9 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck> with TickerProviderStat
             
             // Eğer yukarı sürüklenmişse veya albüme sürüklenmişse, onDragEnd'i çağır
             if (wasDraggingToAlbum || isUpwardDrag) {
-              debugPrint('🔄 [PhotoSwipeDeck] Albüm taşıma modu - onDragEnd çağrılıyor');
+              debugPrint(
+                '🔄 [PhotoSwipeDeck] Albüm taşıma modu - onDragEnd çağrılıyor',
+              );
               widget.onDragEnd!(currentAsset, releasePosition);
               // Albüme taşındıysa swipe yapma, kartı geri döndür
               _animateBack();
@@ -452,10 +482,14 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck> with TickerProviderStat
           
           // Yukarı sürüklenmemişse ve albüme taşınmamışsa normal swipe kontrolü
           if (dx.abs() >= _swipeThreshold && dy >= _verticalDragThreshold) {
-            debugPrint('🔄 [PhotoSwipeDeck] Normal swipe: ${dx > 0 ? "keep" : "delete"}');
+            debugPrint(
+              '🔄 [PhotoSwipeDeck] Normal swipe: ${dx > 0 ? "keep" : "delete"}',
+            );
             _animateOff(dx > 0 ? SwipeDecision.keep : SwipeDecision.delete);
           } else {
-            debugPrint('🔄 [PhotoSwipeDeck] Swipe threshold altında, geri dönüyor');
+            debugPrint(
+              '🔄 [PhotoSwipeDeck] Swipe threshold altında, geri dönüyor',
+            );
             _animateBack();
           }
           
@@ -495,17 +529,25 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck> with TickerProviderStat
                 child: RepaintBoundary(
                   child: IgnorePointer(
                     ignoring: true,
-                    child: Stack(children: [
+                    child: Stack(
+                      children: [
                     // Delete badge (bottom-left) - sol alt köşede sabit
                     Positioned(
                       left: 16,
                       bottom: 16,
                       child: AnimatedOpacity(
-                        opacity: deleteOpacity > 0.08 ? deleteOpacity.clamp(0.5, 1.0) : 0.0,
+                            opacity: deleteOpacity > 0.08
+                                ? deleteOpacity.clamp(0.5, 1.0)
+                                : 0.0,
                         duration: const Duration(milliseconds: 200),
                         curve: Curves.easeOut,
                         child: AnimatedScale(
-                          scale: deleteOpacity > 0.08 ? (0.92 + deleteOpacity * 0.08).clamp(0.92, 1.0) : 0.88,
+                              scale: deleteOpacity > 0.08
+                                  ? (0.92 + deleteOpacity * 0.08).clamp(
+                                      0.92,
+                                      1.0,
+                                    )
+                                  : 0.88,
                           duration: const Duration(milliseconds: 200),
                           curve: Curves.easeOutCubic,
                           child: AnimatedRotation(
@@ -529,11 +571,15 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck> with TickerProviderStat
                       right: 16,
                       bottom: 16,
                       child: AnimatedOpacity(
-                        opacity: keepOpacity > 0.08 ? keepOpacity.clamp(0.5, 1.0) : 0.0,
+                            opacity: keepOpacity > 0.08
+                                ? keepOpacity.clamp(0.5, 1.0)
+                                : 0.0,
                         duration: const Duration(milliseconds: 200),
                         curve: Curves.easeOut,
                         child: AnimatedScale(
-                          scale: keepOpacity > 0.08 ? (0.92 + keepOpacity * 0.08).clamp(0.92, 1.0) : 0.88,
+                              scale: keepOpacity > 0.08
+                                  ? (0.92 + keepOpacity * 0.08).clamp(0.92, 1.0)
+                                  : 0.88,
                           duration: const Duration(milliseconds: 200),
                           curve: Curves.easeOutCubic,
                           child: AnimatedRotation(
@@ -552,7 +598,8 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck> with TickerProviderStat
                         ),
                       ),
                     ),
-                  ]),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -565,9 +612,82 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck> with TickerProviderStat
 
     // Optimize: RepaintBoundary ile wrap et
     // AnimatedSwitcher kaldırıldı - siyah alan sorununu önlemek için
-    return RepaintBoundary(
-          key: ValueKey(asset.id),
-          child: card,
+    return RepaintBoundary(key: ValueKey(asset.id), child: card);
+  }
+
+  Widget _buildAllPhotosReviewedWidget(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
+
+    return Center(
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 400),
+        padding: const EdgeInsets.all(32),
+        margin: const EdgeInsets.symmetric(horizontal: 24),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.black.withOpacity(0.15),
+              blurRadius: 24,
+              spreadRadius: 0,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Success icon with gradient background
+            Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: AppColors.ctaGradient,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withOpacity(0.3),
+                    blurRadius: 20,
+                    spreadRadius: 0,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.check_circle,
+                size: 80,
+                color: AppColors.white,
+              ),
+            ),
+            const SizedBox(height: 24),
+            // Title
+            Text(
+              l10n.allPhotosReviewedTitle,
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                fontSize: 24,
+                color: theme.colorScheme.onSurface,
+                letterSpacing: -0.5,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            // Description
+            Text(
+              l10n.allPhotosReviewedDescription,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurface.withOpacity(0.7),
+                fontSize: 15,
+                height: 1.5,
+                fontWeight: FontWeight.w500,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -616,10 +736,7 @@ class _BadgeWithArrowState extends State<_BadgeWithArrow>
     final duration = widget.isKeep 
         ? const Duration(milliseconds: 1000) // Keep için yavaş
         : const Duration(milliseconds: 1500); // Delete için daha yavaş
-    _animationController = AnimationController(
-      vsync: this,
-      duration: duration,
-    );
+    _animationController = AnimationController(vsync: this, duration: duration);
     if (widget.shouldAnimate && (widget.isDelete || widget.isKeep)) {
       _animationController.repeat();
     }
@@ -676,8 +793,12 @@ class _BadgeWithArrowState extends State<_BadgeWithArrow>
         borderRadius: borderRadius,
         border: Border.all(
           color: widget.isDelete 
-              ? AppColors.error.withOpacity(0.8) // Silme butonu için daha belirgin kırmızı border
-              : AppColors.white.withOpacity(0.6), // Diğer butonlar için beyaz border
+              ? AppColors.error.withOpacity(
+                  0.8,
+                ) // Silme butonu için daha belirgin kırmızı border
+              : AppColors.white.withOpacity(
+                  0.6,
+                ), // Diğer butonlar için beyaz border
           width: 2,
         ),
         boxShadow: [
@@ -694,7 +815,9 @@ class _BadgeWithArrowState extends State<_BadgeWithArrow>
           ),
         ],
       ),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
         widget.isDelete
             ? SizedBox(
                 width: 22,
@@ -711,9 +834,7 @@ class _BadgeWithArrowState extends State<_BadgeWithArrow>
                     fit: BoxFit.contain,
                     controller: _animationController,
                     repeat: widget.shouldAnimate,
-                    options: LottieOptions(
-                      enableMergePaths: true,
-                    ),
+                      options: LottieOptions(enableMergePaths: true),
                   ),
                 ),
               )
@@ -733,9 +854,7 @@ class _BadgeWithArrowState extends State<_BadgeWithArrow>
                         fit: BoxFit.contain,
                         controller: _animationController,
                         repeat: widget.shouldAnimate,
-                        options: LottieOptions(
-                          enableMergePaths: true,
-                        ),
+                      options: LottieOptions(enableMergePaths: true),
                       ),
                     ),
                   )
@@ -762,18 +881,35 @@ class _BadgeWithArrowState extends State<_BadgeWithArrow>
             ],
           ),
         ),
-      ]),
+        ],
+      ),
     );
 
     switch (widget.arrowDirection) {
       case _ArrowDirection.topLeft:
-        return Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.end, children: [arrow(), chip]);
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [arrow(), chip],
+        );
       case _ArrowDirection.topRight:
-        return Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [arrow(), chip]);
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [arrow(), chip],
+        );
       case _ArrowDirection.bottomLeft:
-        return Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.end, children: [chip, arrow()]);
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [chip, arrow()],
+        );
       case _ArrowDirection.bottomRight:
-        return Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [chip, arrow()]);
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [chip, arrow()],
+        );
     }
   }
 }
@@ -813,14 +949,16 @@ class _PhotoCardState extends State<_PhotoCard> {
 
   void _startThumbnailLoad() {
     _thumbFuture = _getThumbnailFuture();
-    _thumbFuture.then((data) {
+    _thumbFuture
+        .then((data) {
       if (!mounted || data == null) return;
       if (_currentImageData == data) return;
       setState(() {
         _currentImageData = data;
         _previousImageData ??= data;
       });
-    }).catchError((error) {
+        })
+        .catchError((error) {
       debugPrint('❌ [PhotoCard] Error loading thumbnail: $error');
     });
   }

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:lottie/lottie.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../app/theme/app_colors.dart';
 
@@ -56,7 +55,7 @@ class PremiumSuccessDialog extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'Premium Aktif!',
+                  l10n.premiumActive,
                   style: theme.textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.w800,
                     color: theme.colorScheme.onSurface,
@@ -66,7 +65,7 @@ class PremiumSuccessDialog extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Tebrikler! Premium üyeliğiniz aktif. Artık tüm özelliklere erişebilirsiniz.',
+                  l10n.premiumActiveMessage,
                   style: theme.textTheme.bodyLarge?.copyWith(
                     color: theme.colorScheme.onSurface.withOpacity(0.85),
                     height: 1.5,
@@ -193,7 +192,7 @@ class PremiumSuccessDialog extends StatelessWidget {
                       ),
                     ),
                     child: Text(
-                      'Kullanmaya Başla',
+                      l10n.startUsing,
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w700,
                         color: theme.colorScheme.onPrimary,
@@ -231,13 +230,10 @@ class PremiumSuccessDialog extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: Padding(
-                  padding: const EdgeInsets.all(18),
-                  child: Lottie.asset(
-                    'assets/lottie/succes.json',
-                    fit: BoxFit.contain,
-                    repeat: false,
-                  ),
+                child: Icon(
+                  Icons.check_circle_rounded,
+                  size: 74,
+                  color: AppColors.white,
                 ),
               ),
             ),

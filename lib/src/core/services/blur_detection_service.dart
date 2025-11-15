@@ -136,7 +136,8 @@ class BlurDetectionService {
 
       // Early exit: Eğer Laplacian score çok yüksekse (keskin görünüyorsa),
       // diğer pahalı hesaplamaları atla (performans optimizasyonu)
-      const earlyExitThreshold = 0.85; // 0.85'ten yüksekse keskin kabul et
+      // Daha fazla blur tespit etmek için threshold'u artırdık (0.98 - sadece çok keskin fotoğraflar için early exit)
+      const earlyExitThreshold = 0.98; // 0.98'den yüksekse keskin kabul et (daha fazla blur tespit için artırıldı)
       if (laplacianScore > earlyExitThreshold) {
         // Keskin görünüyor, diğer hesaplamaları atla
         debugPrint(
@@ -166,25 +167,26 @@ class BlurDetectionService {
       // 7. Local variance analizi (bölgesel blur tespiti)
       final localVarianceScore = _calculateLocalVarianceScore(grayImage, width, height);
 
-      // 8. Multi-scale analysis - Sadece çok şüpheli durumlarda
+      // 8. Multi-scale analysis - Daha fazla blur tespit için threshold artırıldı
       double multiScaleScore = 0.0;
       final avgBasicScore = (laplacianScore + sobelScore) / 2.0;
-      if (avgBasicScore < 0.5) {
-        // Temel skorlar düşük, multi-scale analiz yap
+      if (avgBasicScore < 0.6) {
+        // Temel skorlar düşük veya orta, multi-scale analiz yap (0.5'ten 0.6'ya artırıldı)
         multiScaleScore = _calculateMultiScaleBlur(grayImage, width, height);
       } else {
         // Multi-scale'e gerek yok, ortalama skor kullan
         multiScaleScore = avgBasicScore;
       }
 
-      // Kombine skor: ağırlıklı ortalama (gelişmiş algoritma)
-      // Laplacian: %25, Sobel: %15, Scharr: %15, Prewitt: %10, Gradient Histogram: %15, Edge Density: %10, Local Variance: %5, Multi-scale: %5
-      final combinedScore = (laplacianScore * 0.25) + 
+      // Kombine skor: ağırlıklı ortalama (daha fazla blur tespit için ağırlıklar ayarlandı)
+      // Laplacian: %20, Sobel: %15, Scharr: %15, Prewitt: %10, Gradient Histogram: %18, Edge Density: %12, Local Variance: %5, Multi-scale: %5
+      // Gradient Histogram ve Edge Density ağırlıkları artırıldı (blur tespiti için daha etkili)
+      final combinedScore = (laplacianScore * 0.20) + 
                            (sobelScore * 0.15) + 
                            (scharrScore * 0.15) +
                            (prewittScore * 0.10) +
-                           (gradientHistogramScore * 0.15) +
-                           (edgeDensityScore * 0.10) +
+                           (gradientHistogramScore * 0.18) +
+                           (edgeDensityScore * 0.12) +
                            (localVarianceScore * 0.05) +
                            (multiScaleScore * 0.05);
 
@@ -192,13 +194,13 @@ class BlurDetectionService {
       final finalScore = combinedScore.clamp(0.0, 1.0);
 
       // Debug: Tüm sonuçları logla (sadece blur tespit edildiğinde veya çok keskin olduğunda)
-      if (finalScore < 0.4 || finalScore > 0.9) {
+      if (finalScore < 0.5 || finalScore > 0.95) {
       debugPrint(
           '   📊 [BlurDetection] Asset ${asset.id}: L=${laplacianScore.toStringAsFixed(3)}, S=${sobelScore.toStringAsFixed(3)}, Sch=${scharrScore.toStringAsFixed(3)}, P=${prewittScore.toStringAsFixed(3)}, GH=${gradientHistogramScore.toStringAsFixed(3)}, ED=${edgeDensityScore.toStringAsFixed(3)}, LV=${localVarianceScore.toStringAsFixed(3)}, MS=${multiScaleScore.toStringAsFixed(3)}, Final=${finalScore.toStringAsFixed(3)}',
       );
       }
       
-      if (finalScore < 0.3) {
+      if (finalScore < 0.5) {
         debugPrint(
           '   🔴 [BlurDetection] BLURLU TESPİT EDİLDİ: Asset ${asset.id}, FinalScore=${finalScore.toStringAsFixed(3)}',
         );
@@ -496,10 +498,10 @@ class BlurDetectionService {
     final highGradientCount = histogram[7] + histogram[8] + histogram[9];
     final highGradientRatio = highGradientCount / totalPixels;
 
-    // Normalize et (0.0-1.0 arası)
+    // Normalize et (0.0-1.0 arası) - daha fazla blur tespit için threshold artırıldı
     // Keskin görüntülerde highGradientRatio genelde 0.15-0.30 arası
     // Blurlu görüntülerde 0.05'ten az
-    final score = (highGradientRatio * 5.0).clamp(0.0, 1.0);
+    final score = (highGradientRatio * 7.0).clamp(0.0, 1.0); // 6.0'dan 7.0'a artırıldı (daha fazla blur tespit)
     return score;
   }
 
@@ -548,10 +550,10 @@ class BlurDetectionService {
     // Edge density (edge sayısı / toplam pixel sayısı)
     final edgeDensity = edgeCount / totalPixels;
 
-    // Normalize et
+    // Normalize et - daha fazla blur tespit için threshold artırıldı
     // Keskin görüntülerde edge density genelde 0.15-0.35 arası
     // Blurlu görüntülerde 0.05'ten az
-    final score = (edgeDensity * 3.0).clamp(0.0, 1.0);
+    final score = (edgeDensity * 4.0).clamp(0.0, 1.0); // 3.5'ten 4.0'a artırıldı (daha fazla blur tespit)
     return score;
   }
 
@@ -602,10 +604,10 @@ class BlurDetectionService {
     }
     final avgLocalVariance = totalVariance / blockVariances.length;
 
-    // Normalize et
+    // Normalize et - daha fazla blur tespit için threshold düşürüldü
     // Yüksek local variance = keskin görüntü (detaylar var)
     // Düşük local variance = blurlu görüntü (detaylar yok)
-    const maxVariance = 2000.0; // 32x32 bloklar için
+    const maxVariance = 1300.0; // 1500'den 1300'e düşürüldü (daha fazla blur tespit - 32x32 bloklar için)
     final score = (avgLocalVariance / maxVariance).clamp(0.0, 1.0);
     return score;
   }
@@ -652,39 +654,40 @@ class BlurDetectionService {
 
   /// Gelişmiş variance normalizasyonu (adaptive threshold ve sigmoid mapping)
   /// Farklı operator'ler için farklı threshold'lar kullanır
+  /// Daha hassas blur tespiti için threshold'lar düşürüldü
   double _normalizeVarianceAdvanced(double variance, String operatorType) {
-    // Operator tipine göre threshold'lar (400x400 thumbnail için optimize edildi)
+    // Operator tipine göre threshold'lar (daha fazla blur tespit için daha da düşürüldü)
     double minVariance, maxVariance;
     switch (operatorType) {
       case 'laplacian':
         minVariance = 0.0;
-        maxVariance = 600.0; // 400x400 için artırıldı
+        maxVariance = 350.0; // 400'den 350'ye düşürüldü (daha fazla blur tespit)
         break;
       case 'sobel':
         minVariance = 0.0;
-        maxVariance = 800.0; // Sobel genelde daha yüksek değerler verir
+        maxVariance = 480.0; // 550'den 480'e düşürüldü (daha fazla blur tespit)
         break;
       case 'scharr':
         minVariance = 0.0;
-        maxVariance = 1000.0; // Scharr daha hassas, daha yüksek değerler
+        maxVariance = 600.0; // 700'den 600'e düşürüldü (daha fazla blur tespit)
         break;
       case 'prewitt':
         minVariance = 0.0;
-        maxVariance = 700.0;
+        maxVariance = 450.0; // 500'den 450'ye düşürüldü (daha fazla blur tespit)
         break;
       default:
         minVariance = 0.0;
-        maxVariance = 500.0;
+        maxVariance = 350.0; // 400'den 350'ye düşürüldü
     }
 
     // Clamp variance
     final clampedVariance = variance.clamp(minVariance, maxVariance);
     
-    // Sigmoid mapping (daha doğru sonuçlar için)
+    // Sigmoid mapping (daha fazla blur tespit için k değeri artırıldı)
     // Sigmoid: 1 / (1 + e^(-k*(x - midpoint)))
     // k = steepness, midpoint = maxVariance / 2
     final midpoint = maxVariance / 2.0;
-    final k = 8.0 / maxVariance; // Steepness factor
+    final k = 14.0 / maxVariance; // Steepness factor artırıldı (12'den 14'e - daha fazla blur tespit)
     final normalized = (clampedVariance - midpoint) * k;
     final sigmoidScore = 1.0 / (1.0 + math.exp(-normalized));
     
@@ -695,7 +698,7 @@ class BlurDetectionService {
   /// Returns: ({blurryPhotos: List<BlurPhoto>, scannedPhotoCount: int})
   Future<({List<BlurPhoto> blurryPhotos, int scannedPhotoCount})> findBlurryPhotosInAlbum(
     pm.AssetPathEntity album, {
-    double blurThreshold = 0.3,
+    double blurThreshold = 0.5, // Daha fazla blur tespit etmek için 0.4'ten 0.5'e artırıldı
     void Function(double progress, int processedCount, int totalCount)? progressCallback,
     bool Function()? shouldCancel,
     bool isPremium = false,
@@ -707,8 +710,8 @@ class BlurDetectionService {
 
     final blurryPhotos = <BlurPhoto>[];
     // Optimize sayfa boyutu: daha büyük sayfa = daha az I/O = daha hızlı
-    const pageSize = 1000; // 1000 medya/sayfa (memory-safe, daha hızlı I/O)
-    const batchSize = 40; // Paralel işlenecek asset sayısı (blur detection için) - 20'den 40'a artırıldı
+    const pageSize = 500; // 500 medya/sayfa (memory-safe, daha hızlı I/O)
+    const batchSize = 20; // Paralel işlenecek asset sayısı (performans için optimize edildi)
     int page = 0;
     int totalProcessed = 0;
     int totalAssets = 0;
@@ -732,13 +735,19 @@ class BlurDetectionService {
       debugPrint('💎 [BlurDetection] Premium durumu: $isPremium');
       debugPrint('📊 [BlurDetection] Max scan limit: $maxScanLimit');
 
-      // Kalan scan hakkı kadar fotoğraf scan et
-      final int maxImagesToProcess = isPremium ? 999999999 : maxScanLimit;
+      // 1000 fotoğraf limit kontrolü (premium olsa bile)
+      const maxPhotosPerScan = 1000;
+      final effectiveMaxLimit = isPremium 
+          ? maxPhotosPerScan // Premium olsa bile 1000 limit
+          : (maxScanLimit > maxPhotosPerScan ? maxPhotosPerScan : maxScanLimit);
       
-      // Toplam sayıyı maxImagesToProcess ile sınırla (premium değilse)
-      if (!isPremium && totalAssets > maxImagesToProcess) {
+      // Kalan scan hakkı kadar fotoğraf scan et (1000 limit ile)
+      final int maxImagesToProcess = effectiveMaxLimit;
+      
+      // Toplam sayıyı maxImagesToProcess ile sınırla
+      if (totalAssets > maxImagesToProcess) {
         totalAssets = maxImagesToProcess;
-        debugPrint('📊 [BlurDetection] Toplam sayı limit ile sınırlandı: $totalAssets');
+        debugPrint('📊 [BlurDetection] Toplam sayı 1000 limit ile sınırlandı: $totalAssets');
       }
 
       // Tüm asset'leri kontrol et
@@ -850,10 +859,25 @@ class BlurDetectionService {
           imageCount += batch.length;
           totalProcessed += batch.length;
 
-          // İlerleme callback (her batch'te)
-          if (progressCallback != null && totalAssets > 0) {
+          // İlerleme callback (throttled - her 50 asset'te bir veya her 500ms'de bir)
+          // UI thread'i bloklamamak için callback'leri azalt
+          if (progressCallback != null && totalAssets > 0 && (totalProcessed % 50 == 0 || totalProcessed == imageAssets.length)) {
             final progress = (totalProcessed / totalAssets).clamp(0.0, 1.0);
-            progressCallback(progress, totalProcessed, totalAssets);
+            // Async olarak çağır (UI thread'i bloklamamak için)
+            Future.microtask(() {
+              progressCallback(progress, totalProcessed, totalAssets);
+            });
+          }
+          
+          // Her 100 asset'te bir yield (UI thread'e nefes vermek için)
+          if (totalProcessed % 100 == 0) {
+            await Future.delayed(const Duration(milliseconds: 1));
+          }
+          
+          // Her 200 asset'te bir memory temizliği (GC'yi tetikle)
+          if (totalProcessed % 200 == 0) {
+            // Force garbage collection hint
+            await Future.delayed(const Duration(milliseconds: 5));
           }
 
           // Debug log (her 50 fotoğrafta bir)
@@ -893,7 +917,7 @@ class BlurDetectionService {
   /// Returns: ({results: Map<String, List<BlurPhoto>>, scannedPhotoCount: int})
   Future<({Map<String, List<BlurPhoto>> results, int scannedPhotoCount})> findBlurryPhotosInAlbums(
     List<pm.AssetPathEntity> albums, {
-    double blurThreshold = 0.3,
+    double blurThreshold = 0.5,
     void Function(String albumName, double progress, int processedCount, int totalCount)? progressCallback,
     bool Function()? shouldCancel,
     bool isPremium = false,

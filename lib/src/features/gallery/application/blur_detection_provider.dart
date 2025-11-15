@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photo_manager/photo_manager.dart' as pm;
 
@@ -31,7 +32,7 @@ class BlurDetectionState {
     this.progress = 0.0,
     this.currentAlbum,
     this.error,
-    this.blurThreshold = 0.3,
+    this.blurThreshold = 0.5, // Daha fazla blur tespit etmek için 0.4'ten 0.5'e artırıldı
     this.hasCompletedScan = false,
     this.processedCount = 0,
     this.totalCount = 0,
@@ -87,6 +88,12 @@ class BlurDetectionNotifier extends StateNotifier<BlurDetectionState> {
 
   final Ref ref;
   bool _isCancelled = false;
+  
+  // Progress callback throttling
+  DateTime? _lastProgressUpdate;
+  double _lastProgress = -1.0;
+  static const _progressThrottleMs = 100; // Her 100ms'de bir güncelle
+  static const _progressMinDelta = 0.01; // En az %1 değişim olmalı
 
   /// Belirli albümlerde blur taraması yap
   Future<void> scanAlbums(
@@ -151,16 +158,29 @@ class BlurDetectionNotifier extends StateNotifier<BlurDetectionState> {
         maxScanLimit: remainingScanLimit,
         progressCallback: (albumName, progress, processedCount, totalCount) {
           if (_isCancelled) return;
-          debugPrint(
-            '📊 [BlurDetection] Progress: $progress ($processedCount/$totalCount) - Album: $albumName',
-          );
-          if (!_isCancelled) {
-            state = state.copyWith(
-              progress: progress,
-              currentAlbum: albumName,
-              processedCount: processedCount,
-              totalCount: totalCount,
-            );
+          
+          // Throttle progress updates: Her 100ms'de bir veya %1 değişimde
+          final now = DateTime.now();
+          final progressDelta = (progress - _lastProgress).abs();
+          final timeDelta = _lastProgressUpdate != null 
+              ? now.difference(_lastProgressUpdate!).inMilliseconds 
+              : _progressThrottleMs + 1;
+          
+          if (timeDelta >= _progressThrottleMs || progressDelta >= _progressMinDelta) {
+            _lastProgressUpdate = now;
+            _lastProgress = progress;
+            
+            // State güncellemesini frame callback ile yap (UI thread'i bloklamamak için)
+            SchedulerBinding.instance.scheduleFrameCallback((_) {
+              if (!_isCancelled) {
+                state = state.copyWith(
+                  progress: progress,
+                  currentAlbum: albumName,
+                  processedCount: processedCount,
+                  totalCount: totalCount,
+                );
+              }
+            });
           }
         },
         shouldCancel: () => _isCancelled,

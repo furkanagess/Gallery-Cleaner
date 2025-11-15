@@ -10,6 +10,8 @@ import '../../../../core/models/duplicate_photo.dart';
 import '../../application/blur_detection_provider.dart';
 import '../../application/duplicate_detection_provider.dart';
 import '../../application/gallery_providers.dart';
+import '../../../../core/services/interstitial_ads_service.dart';
+import '../../../../core/services/preferences_service.dart';
 
 // Helper methods for results page
 Widget buildModernStatCard(
@@ -269,6 +271,9 @@ Future<void> deleteBlurPhoto(
   if (!context.mounted) return;
 
   await ref.read(deleteLimitProvider.notifier).decrease(deletedCount);
+
+  if (!context.mounted || deletedCount <= 0) return;
+  await showDeleteSuccessDialog(context, deletedCount);
 }
 
 String getBlurProblemTypeLabel(BlurPhoto photo, AppLocalizations l10n) {
@@ -807,6 +812,233 @@ Future<void> deleteDuplicateGroup(
   if (!context.mounted) return;
 
   await ref.read(deleteLimitProvider.notifier).decrease(deletedCount);
+
+  if (!context.mounted || deletedCount <= 0) return;
+  await showDeleteSuccessDialog(context, deletedCount);
+}
+
+Future<void> showDeleteSuccessDialog(
+  BuildContext context,
+  int deletedCount,
+) async {
+  debugPrint(
+    '🎯 [ResultsPageHelpers] showDeleteSuccessDialog çağrıldı - deletedCount: $deletedCount',
+  );
+
+  if (!context.mounted || deletedCount <= 0) {
+    debugPrint(
+      '❌ [ResultsPageHelpers] Context not mounted or deletedCount <= 0, dialog gösterilmeyecek',
+    );
+    return;
+  }
+
+  final l10n = AppLocalizations.of(context)!;
+  final theme = Theme.of(context);
+
+  debugPrint('🔍 [ResultsPageHelpers] Checking premium status for dialog...');
+  final prefsService = PreferencesService();
+  final isPremium = await prefsService.isPremium();
+  debugPrint('💰 [ResultsPageHelpers] Premium status: $isPremium');
+
+  if (!isPremium) {
+    debugPrint('📱 [ResultsPageHelpers] Non-premium user, showing interstitial ad...');
+    try {
+      final adService = InterstitialAdsService.instance;
+      try {
+        debugPrint('📱 [ResultsPageHelpers] Attempting to show preloaded ad...');
+        final adShown = await adService
+            .showAd()
+            .timeout(
+              const Duration(seconds: 35),
+              onTimeout: () {
+                debugPrint(
+                  '⚠️ [ResultsPageHelpers] Ad showing timeout, continuing to show dialog',
+                );
+                return false;
+              },
+            )
+            .catchError((e) {
+              debugPrint(
+                '⚠️ [ResultsPageHelpers] Ad showing error: $e, continuing to show dialog',
+              );
+              return false;
+            });
+
+        debugPrint('📱 [ResultsPageHelpers] Ad shown result: $adShown');
+
+        if (adShown == true) {
+          debugPrint(
+            '📱 [ResultsPageHelpers] Ad was shown, waiting 500ms before dialog...',
+          );
+          await Future.delayed(const Duration(milliseconds: 500));
+          
+          // InterstitialAdsService zaten ad sayacını artırdı ve 3'e ulaştığında callback çağıracak
+          // Burada ek bir işlem yapmaya gerek yok
+        } else {
+          debugPrint(
+            '📱 [ResultsPageHelpers] Ad was not shown, proceeding to dialog...',
+          );
+        }
+      } catch (e) {
+        debugPrint(
+          '⚠️ [ResultsPageHelpers] Error showing ad: $e, continuing to show dialog',
+        );
+      }
+    } catch (e) {
+      debugPrint(
+        '⚠️ [ResultsPageHelpers] Error in ad flow: $e, continuing to show dialog',
+      );
+    }
+  } else {
+    debugPrint('💰 [ResultsPageHelpers] Premium user, skipping ad...');
+  }
+
+  if (!context.mounted) {
+    debugPrint(
+      '❌ [ResultsPageHelpers] Context not mounted after ad flow, cannot show dialog',
+    );
+    return;
+  }
+
+  debugPrint(
+    '✅ [ResultsPageHelpers] Showing cleanup complete dialog - deletedCount: $deletedCount',
+  );
+
+  try {
+    await Future.delayed(Duration.zero);
+    if (!context.mounted) {
+      debugPrint(
+        '❌ [ResultsPageHelpers] Context not mounted after delay, cannot show dialog',
+      );
+      return;
+    }
+
+    await showDialog(
+      context: context,
+      useRootNavigator: true,
+      barrierDismissible: true,
+      barrierColor: AppColors.black.withOpacity(0.5),
+      builder: (dialogContext) {
+        return Dialog(
+          backgroundColor: AppColors.transparent,
+          elevation: 0,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+          child: TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0.0, end: 1.0),
+            duration: const Duration(milliseconds: 400),
+            curve: Curves.easeOutCubic,
+            builder: (context, value, child) {
+              return Transform.scale(
+                scale: 0.85 + (value * 0.15),
+                child: Opacity(opacity: value, child: child),
+              );
+            },
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 380),
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.black.withOpacity(0.15),
+                    blurRadius: 24,
+                    spreadRadius: 0,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    width: 120,
+                    height: 120,
+                    child: Lottie.asset(
+                      'assets/lottie/wipe.json',
+                      fit: BoxFit.contain,
+                      repeat: true,
+                      animate: true,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    l10n.cleanupComplete,
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 24,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    l10n.cleanupCompleteMessageWithCount(deletedCount),
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurface.withOpacity(0.7),
+                      fontSize: 14,
+                      height: 1.5,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 32),
+                  SizedBox(
+                    width: double.infinity,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            theme.colorScheme.primary,
+                            theme.colorScheme.primary.withOpacity(0.8),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: theme.colorScheme.primary.withOpacity(0.3),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                            spreadRadius: 0,
+                          ),
+                        ],
+                      ),
+                      child: Material(
+                        color: AppColors.transparent,
+                        child: InkWell(
+                          onTap: () => Navigator.of(dialogContext).pop(),
+                          borderRadius: BorderRadius.circular(16),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 16,
+                              horizontal: 24,
+                            ),
+                            child: Text(
+                              l10n.done,
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                                color: AppColors.white,
+                                letterSpacing: 0.5,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  } catch (e) {
+    debugPrint('❌ [ResultsPageHelpers] Error showing dialog: $e');
+  }
 }
 
 class DuplicateGroupDetailSheet extends StatelessWidget {
@@ -1219,4 +1451,3 @@ class DuplicateGroupDetailSheet extends StatelessWidget {
     );
   }
 }
-
