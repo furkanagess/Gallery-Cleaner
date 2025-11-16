@@ -15,20 +15,30 @@ final selectedAlbumProvider = StateProvider<pm.AssetPathEntity?>((ref) => null);
 
 final albumsProvider = FutureProvider<List<pm.AssetPathEntity>>((ref) async {
   final permission = ref.watch(permissionsControllerProvider);
+  // Unknown veya denied durumunda boş liste döndür
   if (permission != GalleryPermissionStatus.authorized) {
-    // Debug: Permission not granted, return empty list
-    // Using debugPrint here to avoid spamming in release builds
-    debugPrint('📁 [albumsProvider] Permission not authorized → returning empty album list');
+    debugPrint('📁 [albumsProvider] Permission not authorized (status: $permission) → returning empty album list');
     return [];
   }
-  final service = ref.watch(mediaLibraryServiceProvider);
-  debugPrint('📁 [albumsProvider] Fetching albums (images only)...');
-  final albums = await service.fetchAlbums(onlyAll: false, type: pm.RequestType.image);
-  debugPrint('📁 [albumsProvider] Albums fetched: count=${albums.length}');
-  for (final a in albums) {
-    debugPrint('   • ${a.name} (${a.id}) isAll=${a.isAll}');
+  
+  try {
+    // iOS'ta izin verildikten hemen sonra albums fetch edilirken race condition olmaması için kısa delay
+    await Future.delayed(const Duration(milliseconds: 100));
+    
+    final service = ref.watch(mediaLibraryServiceProvider);
+    debugPrint('📁 [albumsProvider] Fetching albums (images only)...');
+    final albums = await service.fetchAlbums(onlyAll: false, type: pm.RequestType.image);
+    debugPrint('📁 [albumsProvider] Albums fetched: count=${albums.length}');
+    for (final a in albums) {
+      debugPrint('   • ${a.name} (${a.id}) isAll=${a.isAll}');
+    }
+    return albums;
+  } catch (e, st) {
+    debugPrint('❌ [albumsProvider] Error fetching albums: $e');
+    debugPrint('   Stack trace: $st');
+    // Hata durumunda boş liste döndür
+    return [];
   }
-  return albums;
 });
 
 class GalleryPagingController extends StateNotifier<AsyncValue<List<pm.AssetEntity>>> {
@@ -89,20 +99,33 @@ final galleryPagingControllerProvider =
   // Auto-reload when permission granted or album changes
   ref.listen<GalleryPermissionStatus>(permissionsControllerProvider, (prev, next) {
     if (next == GalleryPermissionStatus.authorized && prev != next) {
-      debugPrint('🔄 [GalleryPagingController] Permission granted → reload');
-      controller.reload();
+      debugPrint('🔄 [GalleryPagingController] Permission granted → reload (with delay)');
+      // iOS'ta izin verildikten hemen sonra reload yaparken race condition olmaması için delay
+      Future.delayed(const Duration(milliseconds: 200), () {
+        if (ref.read(permissionsControllerProvider) == GalleryPermissionStatus.authorized) {
+          controller.reload();
+        }
+      });
     }
   });
   ref.listen<pm.AssetPathEntity?>(selectedAlbumProvider, (prev, next) {
     if (prev != next) {
       debugPrint('🔄 [GalleryPagingController] Selected album changed: prev=${prev?.name} next=${next?.name}');
-      controller.reload();
+      // Album değiştiğinde reload yaparken kısa delay
+      Future.delayed(const Duration(milliseconds: 100), () {
+        controller.reload();
+      });
     }
   });
 
   if (permission == GalleryPermissionStatus.authorized) {
-    debugPrint('🔄 [GalleryPagingController] Initial authorized state → initial reload');
-    controller.reload();
+    debugPrint('🔄 [GalleryPagingController] Initial authorized state → initial reload (with delay)');
+    // İlk yüklemede de delay ekle
+    Future.delayed(const Duration(milliseconds: 200), () {
+      if (ref.read(permissionsControllerProvider) == GalleryPermissionStatus.authorized) {
+        controller.reload();
+      }
+    });
   }
 
   return controller;

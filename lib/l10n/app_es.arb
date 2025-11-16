@@ -176,7 +176,7 @@
       }
     }
   },
-  "adNotReady": "El anuncio aún no está listo. Por favor, inténtalo de nuevo en unos segundos.",
+  "adNotReady": "Cargando Anuncio...",
   "@adNotReady": {
     "description": "Message when ad is not ready"
   },

@@ -48,8 +48,13 @@ class _SplashPageState extends ConsumerState<SplashPage> {
     final permissionStatus = ref.read(permissionsControllerProvider);
     
     if (permissionStatus == GalleryPermissionStatus.authorized) {
-      // İzin verilmişse direkt swipe page'e git
-      debugPrint('🚀 [SplashPage] İzin verilmiş, swipe page\'e yönlendiriliyor');
+      // İzin verilmişse swipe page'e git
+      // iOS'ta provider'ların hazır olması için kısa bir gecikme ekle
+      debugPrint('🚀 [SplashPage] İzin verilmiş, swipe page\'e yönlendiriliyor (with delay)');
+      await Future.delayed(const Duration(milliseconds: 300));
+      
+      if (!mounted) return;
+      
       context.go('/swipe');
     } else {
       // İzin verilmemişse permission page'e git

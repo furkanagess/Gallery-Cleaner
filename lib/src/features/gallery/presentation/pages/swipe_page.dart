@@ -34,7 +34,7 @@ import 'results_page_helpers.dart';
 // Provider for tracking drag over "Change Album" zone
 final _isDraggingOverChangeAlbumProvider = StateProvider<bool>((ref) => false);
 
-// Shimmer widget for loading states
+// Modern and subtle shimmer widget for loading states
 class _ShimmerWidget extends StatefulWidget {
   const _ShimmerWidget({
     required this.width,
@@ -59,7 +59,7 @@ class _ShimmerWidgetState extends State<_ShimmerWidget>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1500),
+      duration: const Duration(milliseconds: 1800),
     )..repeat();
   }
 
@@ -73,31 +73,55 @@ class _ShimmerWidgetState extends State<_ShimmerWidget>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final brightness = theme.brightness;
+    
+    // More subtle colors for a modern look
     final baseColor = brightness == Brightness.light
-        ? Colors.grey[300]!
-        : Colors.grey[800]!;
+        ? theme.colorScheme.surfaceContainerHighest.withOpacity(0.3)
+        : theme.colorScheme.surfaceContainerHighest.withOpacity(0.2);
     final highlightColor = brightness == Brightness.light
-        ? Colors.grey[100]!
-        : Colors.grey[700]!;
+        ? theme.colorScheme.surfaceContainerHighest.withOpacity(0.6)
+        : theme.colorScheme.surfaceContainerHighest.withOpacity(0.4);
 
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
+        final animationValue = _controller.value;
         return Container(
           width: widget.width,
           height: widget.height,
           decoration: BoxDecoration(
-            borderRadius: widget.borderRadius ?? BorderRadius.circular(8),
-            gradient: LinearGradient(
-              begin: Alignment(-1.0 - _controller.value * 2, 0.0),
-              end: Alignment(1.0 - _controller.value * 2, 0.0),
-              colors: [
-                baseColor,
-                highlightColor,
-                baseColor,
-              ],
-              stops: const [0.0, 0.5, 1.0],
-            ),
+            borderRadius: widget.borderRadius ?? BorderRadius.circular(12),
+            color: baseColor,
+          ),
+          child: Stack(
+            children: [
+              // Subtle shimmer effect
+              Positioned.fill(
+                child: ClipRRect(
+                  borderRadius: widget.borderRadius ?? BorderRadius.circular(12),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment(
+                          -1.0 + (animationValue * 2.0),
+                          0.0,
+                        ),
+                        end: Alignment(
+                          1.0 + (animationValue * 2.0),
+                          0.0,
+                        ),
+                        colors: [
+                          baseColor,
+                          highlightColor,
+                          baseColor,
+                        ],
+                        stops: const [0.0, 0.5, 1.0],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         );
       },
@@ -105,35 +129,112 @@ class _ShimmerWidgetState extends State<_ShimmerWidget>
   }
 }
 
-// Shimmer for photo cards (swipe tab)
-class _PhotoCardShimmer extends StatelessWidget {
-  const _PhotoCardShimmer();
+// Comprehensive shimmer for swipe tab covering all components
+class _SwipeTabShimmer extends StatelessWidget {
+  const _SwipeTabShimmer();
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: AspectRatio(
-          aspectRatio: 3 / 4,
-          child: _ShimmerWidget(
-            width: double.infinity,
-            height: double.infinity,
-            borderRadius: BorderRadius.circular(16),
+    return Column(
+      children: [
+        // Delete limit info shimmer
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            children: [
+              // Deletion rights badge shimmer
+              Expanded(
+                flex: 2,
+                child: _ShimmerWidget(
+                  width: double.infinity,
+                  height: 48,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Album selection shimmer
+              Expanded(
+                flex: 1,
+                child: _ShimmerWidget(
+                  width: double.infinity,
+                  height: 48,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+            ],
           ),
         ),
-      ),
+        // Main swipe area shimmer
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 480),
+                child: AspectRatio(
+                  aspectRatio: 3 / 4,
+                  child: _ShimmerWidget(
+                    width: double.infinity,
+                    height: double.infinity,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+        // Swipe instructions shimmer
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _ShimmerWidget(
+                width: 80,
+                height: 32,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              const SizedBox(width: 16),
+              _ShimmerWidget(
+                width: 80,
+                height: 32,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              const SizedBox(width: 16),
+              _ShimmerWidget(
+                width: 80,
+                height: 32,
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ],
+          ),
+        ),
+        // Bottom buttons shimmer
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+          child: Row(
+            children: [
+              Expanded(
+                flex: 1,
+                child: _ShimmerWidget(
+                  width: double.infinity,
+                  height: 48,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                flex: 1,
+                child: _ShimmerWidget(
+                  width: double.infinity,
+                  height: 48,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
@@ -1128,12 +1229,8 @@ class _SwipeTabState extends ConsumerState<_SwipeTab>
           // Önceki assets'i kullan - rebuild'i engelle
           return _buildContentWithAssets(effectiveAssets, selectedAlbum);
         }
-        // İlk yükleme ise photo card shimmer'ları göster
-        return ListView.builder(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          itemCount: 3,
-          itemBuilder: (context, index) => const _PhotoCardShimmer(),
-        );
+        // İlk yükleme ise comprehensive swipe tab shimmer'ı göster
+        return const _SwipeTabShimmer();
       },
       error: (e, _) => Builder(
         builder: (ctx) {
@@ -2983,15 +3080,15 @@ class _BlurTabState extends ConsumerState<_BlurTab> {
 
       // Fotoğraf başına ortalama işleme süresi (saniye)
       // Blur detection: ~0.15 saniye/fotoğraf (400x400 thumbnail + çoklu analiz)
-      // Duplicate detection: ~0.08 saniye/fotoğraf (hash hesaplama)
-      final secondsPerPhoto = isBlurScan ? 0.15 : 0.08;
+      // Duplicate detection: ~0.36 saniye/fotoğraf (500 fotoğraf = 3 dakika)
+      final secondsPerPhoto = isBlurScan ? 0.15 : 0.36;
 
       // Toplam tahmini süre (saniye) - limit varsa 1000 fotoğraf için
       final estimatedSeconds = (effectivePhotoCount * secondsPerPhoto).round();
 
-      // Minimum 5 saniye, maksimum 300 saniye (5 dakika)
+      // Minimum 5 saniye, maksimum 600 saniye (10 dakika)
       return (
-        estimatedSeconds: estimatedSeconds.clamp(5, 300),
+        estimatedSeconds: estimatedSeconds.clamp(5, 600),
         totalPhotoCount: totalPhotoCount,
         hasLimitWarning: hasLimitWarning,
       );
@@ -5316,15 +5413,15 @@ class _DuplicateTabState extends ConsumerState<_DuplicateTab> {
 
       // Fotoğraf başına ortalama işleme süresi (saniye)
       // Blur detection: ~0.15 saniye/fotoğraf (400x400 thumbnail + çoklu analiz)
-      // Duplicate detection: ~0.08 saniye/fotoğraf (hash hesaplama)
-      final secondsPerPhoto = isBlurScan ? 0.15 : 0.08;
+      // Duplicate detection: ~0.36 saniye/fotoğraf (500 fotoğraf = 3 dakika)
+      final secondsPerPhoto = isBlurScan ? 0.15 : 0.36;
 
       // Toplam tahmini süre (saniye) - limit varsa 1000 fotoğraf için
       final estimatedSeconds = (effectivePhotoCount * secondsPerPhoto).round();
 
-      // Minimum 5 saniye, maksimum 300 saniye (5 dakika)
+      // Minimum 5 saniye, maksimum 600 saniye (10 dakika)
       return (
-        estimatedSeconds: estimatedSeconds.clamp(5, 300),
+        estimatedSeconds: estimatedSeconds.clamp(5, 600),
         totalPhotoCount: totalPhotoCount,
         hasLimitWarning: hasLimitWarning,
       );

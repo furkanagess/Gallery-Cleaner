@@ -70,9 +70,10 @@ class _PermissionRequestPageState extends ConsumerState<PermissionRequestPage> {
           context.mounted &&
           prev != next) {
         // İzin yeni verildiyse swipe page'e yönlendir
+        // iOS'ta provider'ların hazır olması için gecikme ekle
         // Analiz başlatma işlemi _requestPermission() içinde yapılıyor (sadece ilk defa)
-        Future.microtask(() {
-          if (mounted) {
+        Future.delayed(const Duration(milliseconds: 300), () {
+          if (mounted && context.mounted) {
             // Swipe page'e yönlendir
             context.go('/swipe');
           }

@@ -452,7 +452,7 @@
       }
     }
   },
-  "adNotReady": "Ad is not ready yet. Please try again in a few seconds.",
+  "adNotReady": "Ad Loading...",
   "@adNotReady": {
     "description": "Message when ad is not ready"
   },

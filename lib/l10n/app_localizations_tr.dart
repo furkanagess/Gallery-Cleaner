@@ -312,8 +312,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get watchAdToEarn => 'Reklam İzle';
 
   @override
-  String get adNotReady =>
-      'Reklam henüz hazır değil. Lütfen birkaç saniye sonra tekrar deneyin.';
+  String get adNotReady => 'Reklam yükleniyor...';
 
   @override
   String get earnDeletionRights => '+20 Silme';

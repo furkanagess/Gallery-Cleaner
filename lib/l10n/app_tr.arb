@@ -176,7 +176,7 @@
       }
     }
   },
-  "adNotReady": "Reklam henüz hazır değil. Lütfen birkaç saniye sonra tekrar deneyin.",
+  "adNotReady": "Reklam yükleniyor...",
   "@adNotReady": {
     "description": "Message when ad is not ready"
   },

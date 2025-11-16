@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photo_manager/photo_manager.dart' as pm;
 
@@ -12,25 +13,44 @@ class PermissionsController extends StateNotifier<GalleryPermissionStatus> {
   PermissionsController() : super(GalleryPermissionStatus.unknown);
 
   Future<void> refresh() async {
-    final status = await _readCurrentStatus();
-    state = status;
+    try {
+      final status = await _readCurrentStatus();
+      state = status;
+    } catch (e) {
+      // iOS'ta ilk girişte PhotoManager henüz hazır olmayabilir
+      debugPrint('⚠️ [PermissionsController] refresh error: $e');
+      // Hata durumunda denied olarak işaretle
+      state = GalleryPermissionStatus.denied;
+    }
   }
 
   Future<GalleryPermissionStatus> _readCurrentStatus() async {
-    // Check permission status without prompting dialog
-    // requestPermissionExtend() won't show dialog if permission was already granted/denied
-    final result = await pm.PhotoManager.requestPermissionExtend();
-    if (result.isAuth) return GalleryPermissionStatus.authorized;
-    // Check if access was previously granted (but might need refresh)
-    if (result.hasAccess == true) return GalleryPermissionStatus.authorized;
-    return GalleryPermissionStatus.denied;
+    try {
+      // Check permission status without prompting dialog
+      // requestPermissionExtend() won't show dialog if permission was already granted/denied
+      final result = await pm.PhotoManager.requestPermissionExtend();
+      if (result.isAuth) return GalleryPermissionStatus.authorized;
+      // Check if access was previously granted (but might need refresh)
+      if (result.hasAccess == true) return GalleryPermissionStatus.authorized;
+      return GalleryPermissionStatus.denied;
+    } catch (e) {
+      debugPrint('⚠️ [PermissionsController] _readCurrentStatus error: $e');
+      // Hata durumunda denied olarak döndür
+      return GalleryPermissionStatus.denied;
+    }
   }
 
   Future<bool> request() async {
-    final result = await pm.PhotoManager.requestPermissionExtend();
-    final ok = result.isAuth || result.hasAccess == true;
-    state = ok ? GalleryPermissionStatus.authorized : GalleryPermissionStatus.denied;
-    return ok;
+    try {
+      final result = await pm.PhotoManager.requestPermissionExtend();
+      final ok = result.isAuth || result.hasAccess == true;
+      state = ok ? GalleryPermissionStatus.authorized : GalleryPermissionStatus.denied;
+      return ok;
+    } catch (e) {
+      debugPrint('⚠️ [PermissionsController] request error: $e');
+      state = GalleryPermissionStatus.denied;
+      return false;
+    }
   }
 
   Future<void> openSettings() async {
