@@ -89,11 +89,10 @@ class BlurDetectionNotifier extends StateNotifier<BlurDetectionState> {
   final Ref ref;
   bool _isCancelled = false;
   
-  // Progress callback throttling
+  // Progress callback throttling - %1 artışlarla güncelleme
   DateTime? _lastProgressUpdate;
-  double _lastProgress = -1.0;
-  static const _progressThrottleMs = 100; // Her 100ms'de bir güncelle
-  static const _progressMinDelta = 0.01; // En az %1 değişim olmalı
+  int _lastProgressPercent = -1; // Son gösterilen yüzde değeri
+  static const _progressThrottleMs = 50; // Her 50ms'de bir kontrol et
 
   /// Belirli albümlerde blur taraması yap
   Future<void> scanAlbums(
@@ -121,6 +120,8 @@ class BlurDetectionNotifier extends StateNotifier<BlurDetectionState> {
     final threshold = blurThreshold ?? state.blurThreshold;
 
     _isCancelled = false;
+    _lastProgressPercent = -1; // Progress takibini sıfırla
+    _lastProgressUpdate = null; // Zaman takibini sıfırla
     state = state.copyWith(
       isScanning: true,
       progress: 0.0,
@@ -130,6 +131,7 @@ class BlurDetectionNotifier extends StateNotifier<BlurDetectionState> {
       hasCompletedScan: false, // Yeni tarama başladığında false yap
       processedCount: 0,
       totalCount: 0,
+      currentAlbum: null, // Başlangıçta albüm bilgisi yok
     );
 
     try {
@@ -159,16 +161,17 @@ class BlurDetectionNotifier extends StateNotifier<BlurDetectionState> {
         progressCallback: (albumName, progress, processedCount, totalCount) {
           if (_isCancelled) return;
           
-          // Throttle progress updates: Her 100ms'de bir veya %1 değişimde
+          // Progress'i %1 artışlarla güncelle (0%, 1%, 2%, 3% şeklinde)
+          final currentProgressPercent = (progress * 100).floor(); // Yüzdeyi tam sayıya yuvarla
           final now = DateTime.now();
-          final progressDelta = (progress - _lastProgress).abs();
           final timeDelta = _lastProgressUpdate != null 
               ? now.difference(_lastProgressUpdate!).inMilliseconds 
               : _progressThrottleMs + 1;
           
-          if (timeDelta >= _progressThrottleMs || progressDelta >= _progressMinDelta) {
+          // %1 artış olduğunda veya zaman aşımında güncelle
+          if (currentProgressPercent > _lastProgressPercent || timeDelta >= _progressThrottleMs) {
             _lastProgressUpdate = now;
-            _lastProgress = progress;
+            _lastProgressPercent = currentProgressPercent;
             
             // State güncellemesini frame callback ile yap (UI thread'i bloklamamak için)
             SchedulerBinding.instance.scheduleFrameCallback((_) {

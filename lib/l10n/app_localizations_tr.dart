@@ -1026,4 +1026,8 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get removeAdsAndUnlimitedDeletionsDescription =>
       'Premium\'a yükselt ve reklamsız deneyim ile ömür boyu sınırsız silme hakkı kazan!';
+
+  @override
+  String get doNotLeaveScreenDuringScan =>
+      'Lütfen tarama işlemi devam ederken bu ekrandan ayrılmayın.';
 }

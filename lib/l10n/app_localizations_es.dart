@@ -1028,4 +1028,8 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get removeAdsAndUnlimitedDeletionsDescription =>
       '¡Actualiza a Premium y disfruta de una experiencia sin anuncios con derechos de eliminación ilimitados para siempre!';
+
+  @override
+  String get doNotLeaveScreenDuringScan =>
+      'Por favor, no abandone esta pantalla mientras el escaneo está en progreso.';
 }

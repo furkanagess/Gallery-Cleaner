@@ -1064,6 +1064,10 @@
   "removeAdsAndUnlimitedDeletionsDescription": "Premium'a yükselt ve reklamsız deneyim ile ömür boyu sınırsız silme hakkı kazan!",
   "@removeAdsAndUnlimitedDeletionsDescription": {
     "description": "Description for premium dialog after 3 ads"
+  },
+  "doNotLeaveScreenDuringScan": "Lütfen tarama işlemi devam ederken bu ekrandan ayrılmayın.",
+  "@doNotLeaveScreenDuringScan": {
+    "description": "Warning message shown when user tries to navigate away during scan"
   }
 }
 

@@ -1347,6 +1347,10 @@
   "removeAdsAndUnlimitedDeletionsDescription": "Upgrade to Premium and enjoy an ad-free experience with unlimited deletion rights forever!",
   "@removeAdsAndUnlimitedDeletionsDescription": {
     "description": "Description for premium dialog after 3 ads"
+  },
+  "doNotLeaveScreenDuringScan": "Please do not leave this screen while the scan is in progress.",
+  "@doNotLeaveScreenDuringScan": {
+    "description": "Warning message shown when user tries to navigate away during scan"
   }
 }
 

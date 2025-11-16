@@ -34,6 +34,167 @@ import 'results_page_helpers.dart';
 // Provider for tracking drag over "Change Album" zone
 final _isDraggingOverChangeAlbumProvider = StateProvider<bool>((ref) => false);
 
+// Shimmer widget for loading states
+class _ShimmerWidget extends StatefulWidget {
+  const _ShimmerWidget({
+    required this.width,
+    required this.height,
+    this.borderRadius,
+  });
+
+  final double width;
+  final double height;
+  final BorderRadius? borderRadius;
+
+  @override
+  State<_ShimmerWidget> createState() => _ShimmerWidgetState();
+}
+
+class _ShimmerWidgetState extends State<_ShimmerWidget>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final brightness = theme.brightness;
+    final baseColor = brightness == Brightness.light
+        ? Colors.grey[300]!
+        : Colors.grey[800]!;
+    final highlightColor = brightness == Brightness.light
+        ? Colors.grey[100]!
+        : Colors.grey[700]!;
+
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return Container(
+          width: widget.width,
+          height: widget.height,
+          decoration: BoxDecoration(
+            borderRadius: widget.borderRadius ?? BorderRadius.circular(8),
+            gradient: LinearGradient(
+              begin: Alignment(-1.0 - _controller.value * 2, 0.0),
+              end: Alignment(1.0 - _controller.value * 2, 0.0),
+              colors: [
+                baseColor,
+                highlightColor,
+                baseColor,
+              ],
+              stops: const [0.0, 0.5, 1.0],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+// Shimmer for photo cards (swipe tab)
+class _PhotoCardShimmer extends StatelessWidget {
+  const _PhotoCardShimmer();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: AspectRatio(
+          aspectRatio: 3 / 4,
+          child: _ShimmerWidget(
+            width: double.infinity,
+            height: double.infinity,
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Shimmer for scan form (blur/duplicate tabs)
+class _ScanFormShimmer extends StatelessWidget {
+  const _ScanFormShimmer();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Title shimmer
+          _ShimmerWidget(
+            width: 200,
+            height: 24,
+            borderRadius: BorderRadius.circular(4),
+          ),
+          const SizedBox(height: 24),
+          // Description shimmer
+          _ShimmerWidget(
+            width: double.infinity,
+            height: 16,
+            borderRadius: BorderRadius.circular(4),
+          ),
+          const SizedBox(height: 8),
+          _ShimmerWidget(
+            width: double.infinity,
+            height: 16,
+            borderRadius: BorderRadius.circular(4),
+          ),
+          const SizedBox(height: 32),
+          // Button shimmer
+          _ShimmerWidget(
+            width: double.infinity,
+            height: 56,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          const SizedBox(height: 16),
+          // Estimated time shimmer
+          _ShimmerWidget(
+            width: 150,
+            height: 40,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          const SizedBox(height: 12),
+          // Warning shimmer
+          _ShimmerWidget(
+            width: double.infinity,
+            height: 50,
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 // Helper function to check if a global position is over a widget's bounds
 bool _isPositionOverWidget(GlobalKey key, Offset globalPosition) {
   final renderBox = key.currentContext?.findRenderObject() as RenderBox?;
@@ -967,17 +1128,11 @@ class _SwipeTabState extends ConsumerState<_SwipeTab>
           // Önceki assets'i kullan - rebuild'i engelle
           return _buildContentWithAssets(effectiveAssets, selectedAlbum);
         }
-        // İlk yükleme ise loading göster
-        return Center(
-          child: SizedBox(
-            width: 100,
-            height: 100,
-            child: Lottie.asset(
-              'assets/lottie/loading.json',
-              fit: BoxFit.contain,
-              repeat: true,
-            ),
-          ),
+        // İlk yükleme ise photo card shimmer'ları göster
+        return ListView.builder(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          itemCount: 3,
+          itemBuilder: (context, index) => const _PhotoCardShimmer(),
         );
       },
       error: (e, _) => Builder(
@@ -1593,33 +1748,39 @@ class _BlurTabState extends ConsumerState<_BlurTab> {
       }
     });
 
-    return albumsAsync.when(
-      loading: () => Center(
-        child: SizedBox(
-          width: 100,
-          height: 100,
-          child: Lottie.asset(
-            'assets/lottie/loading.json',
-            fit: BoxFit.contain,
-            repeat: true,
-          ),
-        ),
-      ),
-      error: (e, _) => Center(child: Text(l10n.errorMessage(e.toString()))),
-      data: (albums) {
-        if (albums.isEmpty) {
-          return Center(child: Text(l10n.albumNotFound));
+    final isScanning = blurState.isScanning;
+
+    return PopScope(
+      canPop: !isScanning,
+      onPopInvoked: (didPop) {
+        if (!didPop && isScanning) {
+          // Kullanıcı scan sırasında geri tuşuna bastı, bilgilendirme göster
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(l10n.doNotLeaveScreenDuringScan),
+              duration: const Duration(seconds: 3),
+              backgroundColor: theme.colorScheme.errorContainer,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
         }
+      },
+      child: albumsAsync.when(
+        loading: () => const _ScanFormShimmer(),
+        error: (e, _) => Center(child: Text(l10n.errorMessage(e.toString()))),
+        data: (albums) {
+          if (albums.isEmpty) {
+            return Center(child: Text(l10n.albumNotFound));
+          }
 
-        final selectedAlbums = selectedAlbum != null
-            ? [selectedAlbum]
-            : albums.where((a) => !a.isAll).toList();
+          final selectedAlbums = selectedAlbum != null
+              ? [selectedAlbum]
+              : albums.where((a) => !a.isAll).toList();
 
-        // Eğer tarama tamamlandıysa, sonuç olsun ya da olmasın results view göster
-        // Böylece no results ekranı da gösterilebilir
-        final hasResults =
-            blurState.hasCompletedScan || blurState.totalBlurryPhotos > 0;
-        final isScanning = blurState.isScanning;
+          // Eğer tarama tamamlandıysa, sonuç olsun ya da olmasın results view göster
+          // Böylece no results ekranı da gösterilebilir
+          final hasResults =
+              blurState.hasCompletedScan || blurState.totalBlurryPhotos > 0;
 
         // Tarama yapılırken full-screen overlay göster
         if (isScanning) {
@@ -1656,33 +1817,74 @@ class _BlurTabState extends ConsumerState<_BlurTab> {
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  // Progress bilgisi
-                  if (blurState.currentAlbum != null ||
-                      blurState.progress > 0) ...[
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.primaryContainer.withOpacity(
-                          0.3,
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        blurState.currentAlbum != null
-                            ? '${blurState.currentAlbum} • ${(blurState.progress * 100).toInt()}%'
-                            : '${(blurState.progress * 100).toInt()}%',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.primary,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
+                  const SizedBox(height: 24),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 16,
                     ),
-                  ],
+                    decoration: BoxDecoration(
+                      color: AppColors.warningLight.withOpacity(0.4),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: AppColors.warning.withOpacity(0.7),
+                        width: 2,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.warning.withOpacity(0.2),
+                          blurRadius: 8,
+                          spreadRadius: 1,
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.warning_amber_rounded,
+                          size: 28,
+                          color: AppColors.warning,
+                        ),
+                        const SizedBox(width: 12),
+                        Flexible(
+                          child: Text(
+                            l10n.doNotLeaveScreenDuringScan,
+                            style: theme.textTheme.bodyLarge?.copyWith(
+                              color: AppColors.warning,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 15,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Progress bilgisi - scan başladığı andan itibaren göster
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primaryContainer.withOpacity(
+                        0.3,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      blurState.currentAlbum != null
+                          ? '${blurState.currentAlbum} • ${(blurState.progress * 100).floor()}%'
+                          : '${(blurState.progress * 100).floor()}%',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.primary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
                   const SizedBox(height: 24),
                   // Durdur butonu
                   FilledButton.icon(
@@ -2547,6 +2749,7 @@ class _BlurTabState extends ConsumerState<_BlurTab> {
           ],
         );
       },
+      ),
     );
   }
 
@@ -3888,33 +4091,39 @@ class _DuplicateTabState extends ConsumerState<_DuplicateTab> {
       }
     });
 
-    return albumsAsync.when(
-      loading: () => Center(
-        child: SizedBox(
-          width: 100,
-          height: 100,
-          child: Lottie.asset(
-            'assets/lottie/loading.json',
-            fit: BoxFit.contain,
-            repeat: true,
-          ),
-        ),
-      ),
-      error: (e, _) => Center(child: Text(l10n.errorMessage(e.toString()))),
-      data: (albums) {
-        if (albums.isEmpty) {
-          return Center(child: Text(l10n.albumNotFound));
+    final isScanning = duplicateState.isScanning;
+
+    return PopScope(
+      canPop: !isScanning,
+      onPopInvoked: (didPop) {
+        if (!didPop && isScanning) {
+          // Kullanıcı scan sırasında geri tuşuna bastı, bilgilendirme göster
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(l10n.doNotLeaveScreenDuringScan),
+              duration: const Duration(seconds: 3),
+              backgroundColor: theme.colorScheme.errorContainer,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
         }
+      },
+      child: albumsAsync.when(
+        loading: () => const _ScanFormShimmer(),
+        error: (e, _) => Center(child: Text(l10n.errorMessage(e.toString()))),
+        data: (albums) {
+          if (albums.isEmpty) {
+            return Center(child: Text(l10n.albumNotFound));
+          }
 
-        final selectedAlbums = selectedAlbum != null
-            ? [selectedAlbum]
-            : albums.where((a) => !a.isAll).toList();
+          final selectedAlbums = selectedAlbum != null
+              ? [selectedAlbum]
+              : albums.where((a) => !a.isAll).toList();
 
-        // Eğer tarama tamamlandıysa, sonuç olsun ya da olmasın results view göster
-        // Böylece no results ekranı da gösterilebilir
-        final hasResults =
-            duplicateState.hasCompletedScan || duplicateState.totalGroups > 0;
-        final isScanning = duplicateState.isScanning;
+          // Eğer tarama tamamlandıysa, sonuç olsun ya da olmasın results view göster
+          // Böylece no results ekranı da gösterilebilir
+          final hasResults =
+              duplicateState.hasCompletedScan || duplicateState.totalGroups > 0;
 
         // Tarama yapılırken full-screen overlay göster
         if (isScanning) {
@@ -3951,33 +4160,74 @@ class _DuplicateTabState extends ConsumerState<_DuplicateTab> {
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  // Progress bilgisi
-                  if (duplicateState.currentAlbum != null ||
-                      duplicateState.progress > 0) ...[
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.primaryContainer.withOpacity(
-                          0.3,
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        duplicateState.currentAlbum != null
-                            ? '${duplicateState.currentAlbum} • ${(duplicateState.progress * 100).toInt()}%'
-                            : '${(duplicateState.progress * 100).toInt()}%',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.primary,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
+                  const SizedBox(height: 24),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 16,
                     ),
-                  ],
+                    decoration: BoxDecoration(
+                      color: AppColors.warningLight.withOpacity(0.4),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: AppColors.warning.withOpacity(0.7),
+                        width: 2,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.warning.withOpacity(0.2),
+                          blurRadius: 8,
+                          spreadRadius: 1,
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.warning_amber_rounded,
+                          size: 28,
+                          color: AppColors.warning,
+                        ),
+                        const SizedBox(width: 12),
+                        Flexible(
+                          child: Text(
+                            l10n.doNotLeaveScreenDuringScan,
+                            style: theme.textTheme.bodyLarge?.copyWith(
+                              color: AppColors.warning,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 15,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Progress bilgisi - scan başladığı andan itibaren göster
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primaryContainer.withOpacity(
+                        0.3,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      duplicateState.currentAlbum != null
+                          ? '${duplicateState.currentAlbum} • ${(duplicateState.progress * 100).floor()}%'
+                          : '${(duplicateState.progress * 100).floor()}%',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.primary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
                   const SizedBox(height: 24),
                   // Durdur butonu
                   FilledButton.icon(
@@ -4739,6 +4989,7 @@ class _DuplicateTabState extends ConsumerState<_DuplicateTab> {
           ],
         );
       },
+      ),
     );
   }
 
@@ -7172,10 +7423,15 @@ class _SwipePageState extends ConsumerState<SwipePage>
   late AnimationController _duplicateTabPulseController;
   final SoundService _soundService = SoundService();
 
+  int? _previousTabIndex; // Scan sırasında tab değişimini engellemek için
+  bool _tabListenerAdded = false; // Listener'ın eklenip eklenmediğini takip et
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _previousTabIndex = _tabController.index;
+    
     _historyPulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1500),
@@ -7237,6 +7493,81 @@ class _SwipePageState extends ConsumerState<SwipePage>
     PremiumAfterAdsDialog.show(context);
   }
 
+  /// Scan tamamlandığında interstitial ad göster ve sonra results sayfasına yönlendir
+  Future<void> _showInterstitialAdAndNavigate(String route) async {
+    if (!mounted) return;
+
+    debugPrint('📱 [SwipePage] Scan completed, showing interstitial ad before navigating to $route');
+
+    // Premium kontrolü
+    final prefsService = PreferencesService();
+    final isPremium = await prefsService.isPremium();
+
+    if (!isPremium) {
+      debugPrint('📱 [SwipePage] Non-premium user, showing interstitial ad...');
+      try {
+        final adService = InterstitialAdsService.instance;
+
+        // Ad göster ve kapatılmasını bekle
+        try {
+          debugPrint('📱 [SwipePage] Attempting to show interstitial ad...');
+          final adShown = await adService
+              .showAd()
+              .timeout(
+                const Duration(seconds: 35),
+                onTimeout: () {
+                  debugPrint(
+                    '⚠️ [SwipePage] Ad showing timeout, continuing to navigate',
+                  );
+                  return false;
+                },
+              )
+              .catchError((e) {
+                debugPrint(
+                  '⚠️ [SwipePage] Ad showing error: $e, continuing to navigate',
+                );
+                return false;
+              });
+
+          debugPrint('📱 [SwipePage] Ad shown result: $adShown');
+
+          if (adShown == true) {
+            // Ad kapatıldı, kısa bir bekleme sonra navigate et
+            debugPrint(
+              '📱 [SwipePage] Ad was shown, waiting 500ms before navigation...',
+            );
+            await Future.delayed(const Duration(milliseconds: 500));
+          } else {
+            debugPrint(
+              '📱 [SwipePage] Ad was not shown, proceeding to navigation...',
+            );
+          }
+        } catch (e) {
+          debugPrint(
+            '⚠️ [SwipePage] Error showing ad: $e, continuing to navigate',
+          );
+          // Hata olsa bile devam et
+        }
+      } catch (e) {
+        debugPrint(
+          '⚠️ [SwipePage] Error in ad flow: $e, continuing to navigate',
+        );
+        // Hata olsa bile navigate et
+      }
+    } else {
+      debugPrint('💰 [SwipePage] Premium user, skipping ad...');
+    }
+
+    // Ad gösterildikten sonra (veya premium kullanıcı ise) results sayfasına yönlendir
+    if (mounted) {
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted) {
+          context.push(route);
+        }
+      });
+    }
+  }
+
   @override
   void dispose() {
     // Lifecycle observer'ı kaldır
@@ -7258,6 +7589,38 @@ class _SwipePageState extends ConsumerState<SwipePage>
     final theme = Theme.of(context);
     final permission = ref.watch(permissionsControllerProvider);
     final selectedAlbum = ref.watch(selectedAlbumProvider);
+    final blurState = ref.watch(blurDetectionProvider);
+    final duplicateState = ref.watch(duplicateDetectionProvider);
+    final isScanning = blurState.isScanning || duplicateState.isScanning;
+
+    // TabController listener - scan sırasında tab değişimini engelle
+    // Listener'ı sadece bir kez ekle
+    if (!_tabListenerAdded) {
+      _tabController.addListener(() {
+        if (!mounted) return;
+        final blurState = ref.read(blurDetectionProvider);
+        final duplicateState = ref.read(duplicateDetectionProvider);
+        final isScanning = blurState.isScanning || duplicateState.isScanning;
+        
+        if (isScanning && _previousTabIndex != null) {
+          // Scan sırasında tab değişimini geri al
+          if (_tabController.index != _previousTabIndex) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted && _tabController.index != _previousTabIndex) {
+                _tabController.animateTo(_previousTabIndex!);
+              }
+            });
+          }
+        } else {
+          // Normal durumda önceki index'i güncelle
+          _previousTabIndex = _tabController.index;
+        }
+      });
+      _tabListenerAdded = true;
+    } else if (!isScanning) {
+      // Listener zaten var, sadece önceki index'i güncelle
+      _previousTabIndex = _tabController.index;
+    }
 
     // İzin durumu değiştiğinde dinle - otomatik analiz yapılmıyor
     // Analiz sadece permission_request_page'de izin verildiğinde (ilk defa) başlatılıyor
@@ -7278,15 +7641,10 @@ class _SwipePageState extends ConsumerState<SwipePage>
       final isNowScanning = next.isScanning;
       final hasCompleted = next.hasCompletedScan && !next.isScanning;
 
-      // Tarama bittiğinde ve tamamlandıysa results sayfasına yönlendir
-      // Nefes alma animasyonu kaldırıldı
+      // Tarama bittiğinde ve tamamlandıysa interstitial ad göster ve results sayfasına yönlendir
       if (wasScanning && !isNowScanning && hasCompleted) {
-        // Otomatik olarak results sayfasına yönlendir
-        Future.delayed(const Duration(milliseconds: 500), () {
-          if (mounted) {
-            context.push('/results/blur');
-          }
-        });
+        // Önce interstitial ad göster, sonra results sayfasına yönlendir
+        _showInterstitialAdAndNavigate('/results/blur');
       }
     });
 
@@ -7301,15 +7659,10 @@ class _SwipePageState extends ConsumerState<SwipePage>
       final isNowScanning = next.isScanning;
       final hasCompleted = next.hasCompletedScan && !next.isScanning;
 
-      // Tarama bittiğinde ve tamamlandıysa results sayfasına yönlendir
-      // Nefes alma animasyonu kaldırıldı
+      // Tarama bittiğinde ve tamamlandıysa interstitial ad göster ve results sayfasına yönlendir
       if (wasScanning && !isNowScanning && hasCompleted) {
-        // Otomatik olarak results sayfasına yönlendir
-        Future.delayed(const Duration(milliseconds: 500), () {
-          if (mounted) {
-            context.push('/results/duplicate');
-          }
-        });
+        // Önce interstitial ad göster, sonra results sayfasına yönlendir
+        _showInterstitialAdAndNavigate('/results/duplicate');
       }
     });
 
@@ -7509,24 +7862,30 @@ class _SwipePageState extends ConsumerState<SwipePage>
                 // Tıklandığında premium success dialog gösterilir
                 // Premium olmayan kullanıcıda paywall page'e yönlendir
                 return IconButton(
-                  onPressed: isPremium
-                      ? () async {
-                          // Premium kullanıcıda premium success dialog göster
-                          await PremiumSuccessDialog.show(context);
-                        }
-                      : () {
-                          context.push('/paywall');
-                        },
+                  onPressed: isScanning
+                      ? null // Scan sırasında tıklanamaz
+                      : isPremium
+                          ? () async {
+                              // Premium kullanıcıda premium success dialog göster
+                              await PremiumSuccessDialog.show(context);
+                            }
+                          : () {
+                              context.push('/paywall');
+                            },
                   icon: Icon(
                     Icons.workspace_premium_rounded,
-                    color: isPremium
-                        ? AppColors
-                              .warningLight // Premium kullanıcıda sarı renk
-                        : theme.colorScheme.primary,
+                    color: isScanning
+                        ? theme.colorScheme.onSurface.withOpacity(0.38)
+                        : isPremium
+                            ? AppColors
+                                  .warningLight // Premium kullanıcıda sarı renk
+                            : theme.colorScheme.primary,
                   ),
-                  tooltip: isPremium
-                      ? 'Premium Aktif'
-                      : l10n.unlockPremiumFeatures,
+                  tooltip: isScanning
+                      ? l10n.doNotLeaveScreenDuringScan
+                      : isPremium
+                          ? 'Premium Aktif'
+                          : l10n.unlockPremiumFeatures,
                 );
               },
             );
@@ -7544,20 +7903,37 @@ class _SwipePageState extends ConsumerState<SwipePage>
               opacity: theme.brightness == Brightness.light ? 0.7 : 0.32,
             ),
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-            child: TabBar(
-              controller: _tabController,
-              onTap: (index) {
-                HapticFeedback.lightImpact();
-                // Tab değiştiğinde pulse animasyonlarını durdur
-                if (_blurTabPulseController.isAnimating) {
-                  _blurTabPulseController.stop();
-                  _blurTabPulseController.reset();
-                }
-                if (_duplicateTabPulseController.isAnimating) {
-                  _duplicateTabPulseController.stop();
-                  _duplicateTabPulseController.reset();
-                }
-              },
+            child: IgnorePointer(
+              ignoring: isScanning, // Scan sırasında tüm TabBar'ı devre dışı bırak
+              child: Opacity(
+                opacity: isScanning ? 0.5 : 1.0, // Scan sırasında görsel olarak da belirt
+                child: TabBar(
+                  controller: _tabController,
+                  onTap: (index) {
+                    // Scan sırasında tab değişimini engelle
+                    if (isScanning) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(l10n.doNotLeaveScreenDuringScan),
+                          duration: const Duration(seconds: 2),
+                          backgroundColor: theme.colorScheme.errorContainer,
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                      return;
+                    }
+                    HapticFeedback.lightImpact();
+                    _previousTabIndex = index; // Önceki index'i güncelle
+                    // Tab değiştiğinde pulse animasyonlarını durdur
+                    if (_blurTabPulseController.isAnimating) {
+                      _blurTabPulseController.stop();
+                      _blurTabPulseController.reset();
+                    }
+                    if (_duplicateTabPulseController.isAnimating) {
+                      _duplicateTabPulseController.stop();
+                      _duplicateTabPulseController.reset();
+                    }
+                  },
               indicator: AppDecorations.pill(
                 color: theme.colorScheme.primary,
                 borderRadius: 16,
@@ -7594,17 +7970,29 @@ class _SwipePageState extends ConsumerState<SwipePage>
                 Tab(height: 56, child: const _BlurTabIndicator()),
                 Tab(height: 56, child: const _DuplicateTabIndicator()),
               ],
+                ),
+              ),
             ),
           ),
         ),
         actions: [
-          _HistoryButton(pulseController: _historyPulseController),
+          _HistoryButton(
+            pulseController: _historyPulseController,
+            isScanning: isScanning,
+          ),
           IconButton(
-            icon: const Icon(Icons.settings),
-            tooltip: l10n.settings,
-            onPressed: () {
-              context.push('/settings');
-            },
+            icon: Icon(
+              Icons.settings,
+              color: isScanning
+                  ? theme.colorScheme.onSurface.withOpacity(0.38)
+                  : null,
+            ),
+            tooltip: isScanning ? l10n.doNotLeaveScreenDuringScan : l10n.settings,
+            onPressed: isScanning
+                ? null // Scan sırasında tıklanamaz
+                : () {
+                    context.push('/settings');
+                  },
           ),
         ],
       ),
@@ -7627,8 +8015,12 @@ int _topIndexHint(List<pm.AssetEntity> list, pm.AssetEntity current) {
 
 // History button with pulse animation when gallery stats scan completes
 class _HistoryButton extends ConsumerStatefulWidget {
-  const _HistoryButton({required this.pulseController});
+  const _HistoryButton({
+    required this.pulseController,
+    required this.isScanning,
+  });
   final AnimationController pulseController;
+  final bool isScanning;
 
   @override
   ConsumerState<_HistoryButton> createState() => _HistoryButtonState();
@@ -7685,22 +8077,26 @@ class _HistoryButtonState extends ConsumerState<_HistoryButton> {
           child: IconButton(
             icon: Icon(
               Icons.history,
-              color: shouldPulse
-                  ? Theme.of(context).colorScheme.primary
-                  : Theme.of(context).colorScheme.onSurface,
+              color: widget.isScanning
+                  ? Theme.of(context).colorScheme.onSurface.withOpacity(0.38)
+                  : shouldPulse
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).colorScheme.onSurface,
             ),
-            tooltip: l10n.history,
-            onPressed: () {
-              // İstatistikler sayfasına git
-              if (context.mounted) {
-                context.push('/gallery/stats');
-                // Pulse'u durdur
-                if (widget.pulseController.isAnimating) {
-                  widget.pulseController.stop();
-                  widget.pulseController.reset();
-                }
-              }
-            },
+            tooltip: widget.isScanning ? l10n.doNotLeaveScreenDuringScan : l10n.history,
+            onPressed: widget.isScanning
+                ? null // Scan sırasında tıklanamaz
+                : () {
+                    // İstatistikler sayfasına git
+                    if (context.mounted) {
+                      context.push('/gallery/stats');
+                      // Pulse'u durdur
+                      if (widget.pulseController.isAnimating) {
+                        widget.pulseController.stop();
+                        widget.pulseController.reset();
+                      }
+                    }
+                  },
           ),
         );
       },

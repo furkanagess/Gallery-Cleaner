@@ -1875,6 +1875,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Upgrade to Premium and enjoy an ad-free experience with unlimited deletion rights forever!'**
   String get removeAdsAndUnlimitedDeletionsDescription;
+
+  /// Warning message shown when user tries to navigate away during scan
+  ///
+  /// In en, this message translates to:
+  /// **'Please do not leave this screen while the scan is in progress.'**
+  String get doNotLeaveScreenDuringScan;
 }
 
 class _AppLocalizationsDelegate

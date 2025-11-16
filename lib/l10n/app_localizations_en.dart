@@ -1018,4 +1018,8 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get removeAdsAndUnlimitedDeletionsDescription =>
       'Upgrade to Premium and enjoy an ad-free experience with unlimited deletion rights forever!';
+
+  @override
+  String get doNotLeaveScreenDuringScan =>
+      'Please do not leave this screen while the scan is in progress.';
 }
