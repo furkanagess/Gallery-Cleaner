@@ -1,8 +1,8 @@
 name: gallery_cleaner
 description: "Gallery Cleaner - Clean your gallery with ease"
-publish_to: 'none'
+publish_to: "none"
 
-version: 1.0.0+15
+version: 1.0.0+16
 
 environment:
   sdk: ^3.11.0-57.0.dev
