@@ -110,13 +110,6 @@ class _BlurResultsTab extends ConsumerWidget {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: theme.colorScheme.background,
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.black.withOpacity(0.1),
-                blurRadius: 10,
-                offset: const Offset(0, -2),
-              ),
-            ],
           ),
           child: SafeArea(
             child: Consumer(
@@ -309,23 +302,46 @@ class _BlurResultsTab extends ConsumerWidget {
 
           if (!context.mounted) return;
 
+          // Root navigator context'ini kaydet - widget rebuild edilirse context kaybolabilir
+          final rootNavigatorContext = Navigator.of(context, rootNavigator: true).context;
+          
           await ref.read(deleteLimitProvider.notifier).decrease(deletedCount);
 
           // Cleanup complete dialogunu göster
           debugPrint(
             '🎯 [ResultsPage] Blur - About to show delete success dialog - deletedCount: $deletedCount, context.mounted: ${context.mounted}',
           );
-          if (context.mounted && deletedCount > 0) {
-            debugPrint(
-              '✅ [ResultsPage] Blur - Context is mounted and deletedCount > 0, calling _showDeleteSuccessDialog...',
-            );
-            await showDeleteSuccessDialog(context, deletedCount);
-            debugPrint(
-              '✅ [ResultsPage] Blur - _showDeleteSuccessDialog completed',
-            );
+          
+          // Context mounted kontrolünü decrease'dan sonra tekrar yap
+          if (deletedCount > 0) {
+            // Önce normal context'i kontrol et
+            if (context.mounted) {
+              debugPrint(
+                '✅ [ResultsPage] Blur - Context is mounted and deletedCount > 0, calling showDeleteSuccessDialog...',
+              );
+              await showDeleteSuccessDialog(context, deletedCount);
+              debugPrint(
+                '✅ [ResultsPage] Blur - showDeleteSuccessDialog completed',
+              );
+            } else {
+              // Context unmount olmuşsa, root navigator context'ini kullan
+              debugPrint(
+                '⚠️ [ResultsPage] Blur - Context not mounted after decrease, using rootNavigator context...',
+              );
+              // Bir sonraki frame'de root context ile dene
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                try {
+                  showDeleteSuccessDialog(rootNavigatorContext, deletedCount);
+                } catch (e) {
+                  debugPrint(
+                    '❌ [ResultsPage] Blur - Error showing dialog with rootNavigator context: $e',
+                  );
+                }
+              });
+            }
           } else {
             debugPrint(
-              '❌ [ResultsPage] Blur - Cannot show dialog - context.mounted: ${context.mounted}, deletedCount: $deletedCount',
+              '⚠️ [ResultsPage] Blur - deletedCount is 0, dialog gösterilmeyecek',
             );
           }
         },
@@ -607,13 +623,6 @@ class _DuplicateResultsTab extends ConsumerWidget {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: theme.colorScheme.background,
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.black.withOpacity(0.1),
-                blurRadius: 10,
-                offset: const Offset(0, -2),
-              ),
-            ],
           ),
           child: SafeArea(
             child: Consumer(
@@ -795,23 +804,46 @@ class _DuplicateResultsTab extends ConsumerWidget {
 
           if (!context.mounted) return;
 
+          // Root navigator context'ini kaydet - widget rebuild edilirse context kaybolabilir
+          final rootNavigatorContext = Navigator.of(context, rootNavigator: true).context;
+          
           await ref.read(deleteLimitProvider.notifier).decrease(deletedCount);
 
           // Cleanup complete dialogunu göster
           debugPrint(
-            '🎯 [ResultsPage] Blur - About to show delete success dialog - deletedCount: $deletedCount, context.mounted: ${context.mounted}',
+            '🎯 [ResultsPage] Duplicate - About to show delete success dialog - deletedCount: $deletedCount, context.mounted: ${context.mounted}',
           );
-          if (context.mounted && deletedCount > 0) {
-            debugPrint(
-              '✅ [ResultsPage] Blur - Context is mounted and deletedCount > 0, calling _showDeleteSuccessDialog...',
-            );
-            await showDeleteSuccessDialog(context, deletedCount);
-            debugPrint(
-              '✅ [ResultsPage] Blur - _showDeleteSuccessDialog completed',
-            );
+          
+          // Context mounted kontrolünü decrease'dan sonra tekrar yap
+          if (deletedCount > 0) {
+            // Önce normal context'i kontrol et
+            if (context.mounted) {
+              debugPrint(
+                '✅ [ResultsPage] Duplicate - Context is mounted and deletedCount > 0, calling showDeleteSuccessDialog...',
+              );
+              await showDeleteSuccessDialog(context, deletedCount);
+              debugPrint(
+                '✅ [ResultsPage] Duplicate - showDeleteSuccessDialog completed',
+              );
+            } else {
+              // Context unmount olmuşsa, root navigator context'ini kullan
+              debugPrint(
+                '⚠️ [ResultsPage] Duplicate - Context not mounted after decrease, using rootNavigator context...',
+              );
+              // Bir sonraki frame'de root context ile dene
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                try {
+                  showDeleteSuccessDialog(rootNavigatorContext, deletedCount);
+                } catch (e) {
+                  debugPrint(
+                    '❌ [ResultsPage] Duplicate - Error showing dialog with rootNavigator context: $e',
+                  );
+                }
+              });
+            }
           } else {
             debugPrint(
-              '❌ [ResultsPage] Blur - Cannot show dialog - context.mounted: ${context.mounted}, deletedCount: $deletedCount',
+              '⚠️ [ResultsPage] Duplicate - deletedCount is 0, dialog gösterilmeyecek',
             );
           }
         },

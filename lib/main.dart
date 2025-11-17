@@ -1,14 +1,34 @@
 import 'dart:io' show Platform;
+import 'dart:ui';
+
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:photo_manager/photo_manager.dart' as pm;
+
+import 'firebase_options.dart';
 import 'src/app/app.dart';
-import 'src/core/services/rewarded_ads_service.dart';
 import 'src/core/services/interstitial_ads_service.dart';
 import 'src/core/services/revenuecat_service.dart';
-import 'package:photo_manager/photo_manager.dart' as pm;
+import 'src/core/services/rewarded_ads_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
+    PlatformDispatcher.instance.onError = (error, stack) {
+      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+      return true;
+    };
+    await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(true);
+  } catch (e) {
+    debugPrint('⚠️ [main] Failed to initialize Firebase: $e');
+  }
 
   // iOS için PhotoManager'ın initialize olması için gecikme ekle
   // İlk girişte PhotoManager henüz hazır olmayabilir

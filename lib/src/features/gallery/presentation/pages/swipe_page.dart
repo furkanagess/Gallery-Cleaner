@@ -2429,6 +2429,14 @@ class _BlurTabState extends ConsumerState<_BlurTab> {
                                       await ref
                                           .read(deleteLimitProvider.notifier)
                                           .decrease(deletedCount);
+
+                                      // Success dialog göster
+                                      if (deletedCount > 0 && mounted) {
+                                        await _showDeleteSuccessDialog(
+                                          context,
+                                          deletedCount,
+                                        );
+                                      }
                                     },
                                     icon: const Icon(Icons.delete_outline),
                                     label: Text(l10n.deleteAllBlurryPhotos),
@@ -2518,6 +2526,14 @@ class _BlurTabState extends ConsumerState<_BlurTab> {
                                       await ref
                                           .read(deleteLimitProvider.notifier)
                                           .decrease(deletedCount);
+
+                                      // Success dialog göster
+                                      if (deletedCount > 0 && mounted) {
+                                        await _showDeleteSuccessDialog(
+                                          context,
+                                          deletedCount,
+                                        );
+                                      }
                                     },
                                     icon: const Icon(Icons.delete_outline),
                                     label: Text(l10n.deleteAllBlurryPhotos),
@@ -2624,6 +2640,14 @@ class _BlurTabState extends ConsumerState<_BlurTab> {
                                         await ref
                                             .read(deleteLimitProvider.notifier)
                                             .decrease(deletedCount);
+
+                                        // Success dialog göster
+                                        if (deletedCount > 0 && mounted) {
+                                          await _showDeleteSuccessDialog(
+                                            context,
+                                            deletedCount,
+                                          );
+                                        }
                                       },
                                       icon: const Icon(Icons.delete_outline),
                                       label: Text(l10n.deleteAllBlurryPhotos),
@@ -4441,6 +4465,14 @@ class _DuplicateTabState extends ConsumerState<_DuplicateTab> {
                                   await ref
                                       .read(deleteLimitProvider.notifier)
                                       .decrease(deletedCount);
+
+                                  // Success dialog göster
+                                  if (deletedCount > 0 && mounted) {
+                                    await _showDeleteSuccessDialog(
+                                      context,
+                                      deletedCount,
+                                    );
+                                  }
                                 },
                                 icon: const Icon(Icons.delete_outline),
                                 label: Text(l10n.deleteAllDuplicates),
@@ -4683,6 +4715,14 @@ class _DuplicateTabState extends ConsumerState<_DuplicateTab> {
                                       await ref
                                           .read(deleteLimitProvider.notifier)
                                           .decrease(deletedCount);
+
+                                      // Success dialog göster
+                                      if (deletedCount > 0 && mounted) {
+                                        await _showDeleteSuccessDialog(
+                                          context,
+                                          deletedCount,
+                                        );
+                                      }
                                     },
                                     icon: const Icon(Icons.delete_outline),
                                     label: Text(l10n.deleteAllDuplicates),
@@ -4764,6 +4804,14 @@ class _DuplicateTabState extends ConsumerState<_DuplicateTab> {
                                       await ref
                                           .read(deleteLimitProvider.notifier)
                                           .decrease(deletedCount);
+
+                                      // Success dialog göster
+                                      if (deletedCount > 0 && mounted) {
+                                        await _showDeleteSuccessDialog(
+                                          context,
+                                          deletedCount,
+                                        );
+                                      }
                                     },
                                     icon: const Icon(Icons.delete_outline),
                                     label: Text(l10n.deleteAllDuplicates),
@@ -4864,6 +4912,14 @@ class _DuplicateTabState extends ConsumerState<_DuplicateTab> {
                                         await ref
                                             .read(deleteLimitProvider.notifier)
                                             .decrease(deletedCount);
+
+                                        // Success dialog göster
+                                        if (deletedCount > 0 && mounted) {
+                                          await _showDeleteSuccessDialog(
+                                            context,
+                                            deletedCount,
+                                          );
+                                        }
                                       },
                                       icon: const Icon(Icons.delete_outline),
                                       label: Text(l10n.deleteAllDuplicates),
