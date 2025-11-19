@@ -26,12 +26,15 @@ class PermissionsController extends StateNotifier<GalleryPermissionStatus> {
 
   Future<GalleryPermissionStatus> _readCurrentStatus() async {
     try {
-      // Check permission status without prompting dialog
-      // requestPermissionExtend() won't show dialog if permission was already granted/denied
-      final result = await pm.PhotoManager.requestPermissionExtend();
-      if (result.isAuth) return GalleryPermissionStatus.authorized;
-      // Check if access was previously granted (but might need refresh)
-      if (result.hasAccess == true) return GalleryPermissionStatus.authorized;
+      final state = await pm.PhotoManager.getPermissionState(
+        requestOption: const pm.PermissionRequestOption(
+          iosAccessLevel: pm.IosAccessLevel.readWrite,
+        ),
+      );
+      if (state == pm.PermissionState.authorized ||
+          state == pm.PermissionState.limited) {
+        return GalleryPermissionStatus.authorized;
+      }
       return GalleryPermissionStatus.denied;
     } catch (e) {
       debugPrint('⚠️ [PermissionsController] _readCurrentStatus error: $e');

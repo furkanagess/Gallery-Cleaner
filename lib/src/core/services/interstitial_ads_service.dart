@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import '../config/ad_unit_ids.dart';
 import 'preferences_service.dart';
 
 class InterstitialAdsService {
@@ -21,10 +22,6 @@ class InterstitialAdsService {
   // Test Ad Unit ID (use for development)
   static const String _testAdUnitId = 'ca-app-pub-3940256099942544/1033173712'; // Test interstitial ad
   
-  // Production Ad Unit IDs
-  static const String _androidAdUnitId = 'ca-app-pub-3499593115543692/9975836638'; // Android Interstitial Ad Unit ID
-  static const String _iosAdUnitId = 'ca-app-pub-3499593115543692/7729657687'; // iOS Interstitial Ad Unit ID
-  
   // Use test ads in debug mode
   static const bool _useTestAds = kDebugMode;
   
@@ -41,9 +38,9 @@ class InterstitialAdsService {
     }
     
     if (Platform.isAndroid) {
-      return _androidAdUnitId;
+      return AdUnitIds.interstitialAndroid;
     } else if (Platform.isIOS) {
-      return _iosAdUnitId;
+      return AdUnitIds.interstitialIos;
     } else {
       return _testAdUnitId;
     }

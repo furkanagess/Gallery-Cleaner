@@ -152,37 +152,26 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog>
     try {
       final rc = RevenueCatService.instance;
       await rc.initialize();
+
+      if (await rc.isPremium()) {
+        await _handlePremiumUnlocked();
+        return;
+      }
+
       final success = await rc.purchaseLifetime();
       
       if (!mounted) return;
 
-      if (!success) {
-        setState(() {
-          _errorMessage = l10n.failedToInitiatePurchase;
-          _isLoading = false;
-        });
+      if (success) {
+        await _handlePremiumUnlocked();
       } else {
-        // Refresh and show success
-        ref.invalidate(isPremiumProvider);
-        ref.invalidate(scanLimitProvider);
-        await ref.read(deleteLimitProvider.notifier).refresh();
-        if (mounted) {
-          // Parent context'i sakla (Navigator.pop() öncesi)
-          final navigator = Navigator.of(context, rootNavigator: true);
-          final rootContext = navigator.context;
-          
-          // Purchase dialog'unu kapat
-          Navigator.of(context).pop();
-          
-          // Dialog'u root context'te göster (kısa bir delay ile context'in hazır olması için)
-          WidgetsBinding.instance.addPostFrameCallback((_) async {
-            if (mounted) {
-              try {
-                await PremiumSuccessDialog.show(rootContext);
-              } catch (e) {
-                debugPrint('⚠️ [PurchaseDialog] Dialog gösterilirken hata: $e');
-              }
-            }
+        final premiumNow = await rc.isPremium();
+        if (premiumNow) {
+          await _handlePremiumUnlocked();
+        } else {
+          setState(() {
+            _errorMessage = l10n.failedToInitiatePurchase;
+            _isLoading = false;
           });
         }
       }
@@ -214,21 +203,17 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog>
       if (!mounted) return;
       final contextL10n = AppLocalizations.of(context)!;
       if (ok) {
-        ref.invalidate(isPremiumProvider);
-        ref.invalidate(scanLimitProvider);
-        await ref.read(deleteLimitProvider.notifier).refresh();
-        setState(() {
-          _successMessage = contextL10n.purchasesRestoredSuccessfully;
-          _isRestoring = false;
-        });
-        Future.delayed(const Duration(seconds: 2), () {
-          if (mounted) Navigator.of(context).pop();
-        });
+        await _handlePremiumUnlocked(isFromRestore: true);
       } else {
-        setState(() {
-          _errorMessage = contextL10n.noPreviousPurchases;
-          _isRestoring = false;
-        });
+        final premiumNow = await rc.isPremium();
+        if (premiumNow) {
+          await _handlePremiumUnlocked(isFromRestore: true);
+        } else {
+          setState(() {
+            _errorMessage = contextL10n.noPreviousPurchases;
+            _isRestoring = false;
+          });
+        }
       }
     } catch (e) {
       if (!mounted) return;
@@ -239,10 +224,45 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog>
     }
   }
 
+  Future<void> _handlePremiumUnlocked({bool isFromRestore = false}) async {
+    if (!mounted) return;
+    setState(() {
+      _isLoading = false;
+      if (isFromRestore) {
+        _isRestoring = false;
+      }
+      _errorMessage = null;
+      _successMessage = null;
+    });
+
+    ref.invalidate(isPremiumProvider);
+    ref.invalidate(scanLimitProvider);
+    await ref.read(deleteLimitProvider.notifier).refresh();
+
+    if (!mounted) return;
+    final navigator = Navigator.of(context, rootNavigator: true);
+    final rootContext = navigator.context;
+
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      try {
+        await PremiumSuccessDialog.show(rootContext);
+      } catch (e) {
+        debugPrint('⚠️ [PurchaseDialog] Dialog gösterilirken hata: $e');
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
+    final isPremiumAsync = ref.watch(isPremiumProvider);
+    final isPremium = isPremiumAsync.asData?.value ?? false;
 
     return Dialog(
       backgroundColor: AppColors.transparent,
@@ -492,160 +512,157 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog>
                 ),
               ],
               const SizedBox(height: 28),
-              // Price section with discount
-              if (_productPrice != null && _originalPrice != null) ...[
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
-                        theme.colorScheme.surface.withOpacity(0.3),
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: theme.colorScheme.primary.withOpacity(0.2),
-                      width: 2,
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      // Original price (strikethrough)
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            l10n.originalPrice,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurface.withOpacity(0.6),
-                              fontSize: 12,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            _originalPrice!,
-                            style: theme.textTheme.bodyLarge?.copyWith(
-                              decoration: TextDecoration.lineThrough,
-                              decorationThickness: 2,
-                              color: theme.colorScheme.onSurface.withOpacity(0.5),
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
+              if (!isPremium) ...[
+                // Price section with discount
+                if (_productPrice != null && _originalPrice != null) ...[
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                          theme.colorScheme.surface.withOpacity(0.3),
                         ],
                       ),
-                      const SizedBox(height: 8),
-                      // Discounted price
-                      AnimatedBuilder(
-                        animation: _pulseAnimation,
-                        builder: (context, child) {
-                          return Transform.scale(
-                            scale: 0.98 + (_pulseAnimation.value - 1) * 0.02,
-                            child: Text(
-                              _productPrice!,
-                              style: theme.textTheme.headlineSmall?.copyWith(
-                                fontWeight: FontWeight.w900,
-                                fontSize: 32,
-                                color: theme.colorScheme.primary,
-                                letterSpacing: -0.5,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: theme.colorScheme.primary.withOpacity(0.2),
+                        width: 2,
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              l10n.originalPrice,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurface.withOpacity(0.6),
+                                fontSize: 12,
                               ),
                             ),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        l10n.saveNow,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 14,
-                          color: AppColors.success,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 20),
-              ],
-              // Purchase button with gradient and animation
-              AnimatedBuilder(
-                animation: _pulseAnimation,
-                builder: (context, child) {
-                  return Transform.scale(
-                    scale: _pulseAnimation.value,
-                    child: Container(
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            theme.colorScheme.primary,
-                            theme.colorScheme.primary.withOpacity(0.8),
+                            const SizedBox(width: 8),
+                            Text(
+                              _originalPrice!,
+                              style: theme.textTheme.bodyLarge?.copyWith(
+                                decoration: TextDecoration.lineThrough,
+                                decorationThickness: 2,
+                                color: theme.colorScheme.onSurface.withOpacity(0.5),
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                           ],
                         ),
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: theme.colorScheme.primary.withOpacity(0.5 * _pulseAnimation.value),
-                            blurRadius: 25 * _pulseAnimation.value,
-                            spreadRadius: 3 * _pulseAnimation.value,
-                            offset: Offset(0, 10 * _pulseAnimation.value),
+                        const SizedBox(height: 8),
+                        AnimatedBuilder(
+                          animation: _pulseAnimation,
+                          builder: (context, child) {
+                            return Transform.scale(
+                              scale: 0.98 + (_pulseAnimation.value - 1) * 0.02,
+                              child: Text(
+                                _productPrice!,
+                                style: theme.textTheme.headlineSmall?.copyWith(
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 32,
+                                  color: theme.colorScheme.primary,
+                                  letterSpacing: -0.5,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          l10n.saveNow,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14,
+                            color: AppColors.success,
                           ),
-                        ],
-                      ),
-                      child: Material(
-                        color: AppColors.transparent,
-                        child: InkWell(
-                          onTap: _isLoading ? null : _handlePurchase,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                ],
+                // Purchase button with gradient and animation
+                AnimatedBuilder(
+                  animation: _pulseAnimation,
+                  builder: (context, child) {
+                    return Transform.scale(
+                      scale: _pulseAnimation.value,
+                      child: Container(
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              theme.colorScheme.primary,
+                              theme.colorScheme.primary.withOpacity(0.8),
+                            ],
+                          ),
                           borderRadius: BorderRadius.circular(20),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 22),
-                            child: _isLoading
-                                ? SizedBox(
-                                    height: 24,
-                                    width: 24,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2.5,
-                                      valueColor: AlwaysStoppedAnimation<Color>(
-                                        theme.colorScheme.onPrimary,
-                                      ),
-                                    ),
-                                  )
-                                : Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        Icons.star_rounded,
-                                        color: theme.colorScheme.onPrimary,
-                                        size: 26,
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Text(
-                                        l10n.purchaseNow,
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.w900,
-                                          fontSize: 20,
-                                          color: theme.colorScheme.onPrimary,
-                                          letterSpacing: 0.8,
+                          boxShadow: [
+                            BoxShadow(
+                              color: theme.colorScheme.primary.withOpacity(0.5 * _pulseAnimation.value),
+                              blurRadius: 25 * _pulseAnimation.value,
+                              spreadRadius: 3 * _pulseAnimation.value,
+                              offset: Offset(0, 10 * _pulseAnimation.value),
+                            ),
+                          ],
+                        ),
+                        child: Material(
+                          color: AppColors.transparent,
+                          child: InkWell(
+                            onTap: _isLoading ? null : _handlePurchase,
+                            borderRadius: BorderRadius.circular(20),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 22),
+                              child: _isLoading
+                                  ? SizedBox(
+                                      height: 24,
+                                      width: 24,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2.5,
+                                        valueColor: AlwaysStoppedAnimation<Color>(
+                                          theme.colorScheme.onPrimary,
                                         ),
-                                        overflow: TextOverflow.ellipsis,
                                       ),
-                                    ],
-                                  ),
+                                    )
+                                  : Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.star_rounded,
+                                          color: theme.colorScheme.onPrimary,
+                                          size: 26,
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Text(
+                                          l10n.purchaseNow,
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.w900,
+                                            fontSize: 20,
+                                            color: theme.colorScheme.onPrimary,
+                                            letterSpacing: 0.8,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ],
+                                    ),
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: 12),
-              // Restore purchases button (iOS primarily, but available on Android too)
-              ...[
+                    );
+                  },
+                ),
+                const SizedBox(height: 12),
                 TextButton(
                   onPressed: (_isLoading || _isRestoring)
                       ? null
@@ -687,24 +704,87 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog>
                         ),
                 ),
                 const SizedBox(height: 8),
-              ],
-              // Cancel button
-              TextButton(
-                onPressed: (_isLoading || _isRestoring)
-                    ? null
-                    : () => Navigator.of(context).pop(),
-                style: TextButton.styleFrom(
-                  foregroundColor: theme.colorScheme.onSurface.withOpacity(0.7),
-                ),
-                child: Text(
-                  l10n.cancel,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
+                TextButton(
+                  onPressed: (_isLoading || _isRestoring)
+                      ? null
+                      : () => Navigator.of(context).pop(),
+                  style: TextButton.styleFrom(
+                    foregroundColor: theme.colorScheme.onSurface.withOpacity(0.7),
                   ),
-                  overflow: TextOverflow.ellipsis,
+                  child: Text(
+                    l10n.cancel,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
-              ),
+              ] else ...[
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surface,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: theme.colorScheme.primary.withOpacity(0.2),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: AppColors.success.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.verified_rounded,
+                          color: AppColors.success,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              l10n.youArePremium,
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              l10n.premiumAccessDescription,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurface.withOpacity(0.7),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                FilledButton(
+                  onPressed: () {
+                    if (Navigator.of(context).canPop()) {
+                      Navigator.of(context).pop();
+                    }
+                  },
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size.fromHeight(48),
+                  ),
+                  child: Text(
+                    l10n.startCleaningButton,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
             ],
           ),
         ),

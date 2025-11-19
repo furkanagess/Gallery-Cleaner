@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'dart:math' as math;
 import '../../../../../l10n/app_localizations.dart';
 
 import '../application/onboarding_controller.dart';
@@ -15,6 +14,7 @@ class OnboardingPage extends ConsumerStatefulWidget {
 }
 
 class _OnboardingPageState extends ConsumerState<OnboardingPage> {
+  static const int _totalPages = 3;
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
@@ -25,7 +25,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
   }
 
   void _nextPage() {
-    if (_currentPage < 4) {
+    if (_currentPage < _totalPages - 1) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
@@ -52,7 +52,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
         child: Column(
           children: [
             // Skip button
-            if (_currentPage < 4)
+            if (_currentPage < _totalPages - 1)
               Padding(
                 padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
                 child: Align(
@@ -81,8 +81,6 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                 },
                 children: const [
                   _OnboardingSlide1(),
-                  _OnboardingSlide2(),
-                  _OnboardingSlide3(),
                   _OnboardingSlide4(), // Blur tespit
                   _OnboardingSlide5(), // Duplicate tespit
                 ],
@@ -94,7 +92,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
               padding: const EdgeInsets.symmetric(vertical: 24),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(5, (index) {
+                children: List.generate(_totalPages, (index) {
                   return AnimatedContainer(
                     duration: const Duration(milliseconds: 300),
                     curve: Curves.easeInOut,
@@ -120,7 +118,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                   final l10n = AppLocalizations.of(ctx)!;
                   return _ModernActionButton(
                     onPressed: _nextPage,
-                    isLastPage: _currentPage == 4,
+                    isLastPage: _currentPage == _totalPages - 1,
                     theme: theme,
                     l10n: l10n,
                   );
@@ -232,223 +230,6 @@ class _OnboardingSlide1 extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _OnboardingSlide2 extends StatelessWidget {
-  const _OnboardingSlide2();
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // Folder organization illustration
-          Container(
-            width: 250,
-            height: 250,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              color: theme.colorScheme.secondaryContainer.withOpacity(0.3),
-            ),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                // Folders
-                Positioned(
-                  top: 40,
-                  left: 40,
-                  child: _FolderIcon(
-                    color: theme.colorScheme.primary,
-                    label: 'Tatil',
-                  ),
-                ),
-                Positioned(
-                  top: 100,
-                  right: 40,
-                  child: _FolderIcon(
-                    color: theme.colorScheme.secondary,
-                    label: 'Aile',
-                  ),
-                ),
-                Positioned(
-                  bottom: 40,
-                  left: 60,
-                  child: _FolderIcon(
-                    color: theme.colorScheme.tertiary,
-                    label: 'İş',
-                  ),
-                ),
-                // Drag arrow
-                Positioned(
-                  top: 100,
-                  left: 100,
-                  child: Transform.rotate(
-                    angle: math.pi / 4,
-                    child: Icon(
-                      Icons.arrow_forward,
-                      size: 40,
-                      color: theme.colorScheme.primary,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 48),
-          Builder(
-            builder: (ctx) {
-              final l10n = AppLocalizations.of(ctx)!;
-              return Text(
-                l10n.organizeAlbumsTitle,
-                textAlign: TextAlign.center,
-                style: theme.textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              );
-            },
-          ),
-          const SizedBox(height: 16),
-          Builder(
-            builder: (ctx) {
-              final l10n = AppLocalizations.of(ctx)!;
-              return Text(
-                l10n.organizeAlbumsDescription,
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  color: theme.textTheme.bodyMedium?.color?.withOpacity(0.8),
-                ),
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _OnboardingSlide3 extends StatelessWidget {
-  const _OnboardingSlide3();
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // Clean illustration
-          Container(
-            width: 200,
-            height: 200,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: theme.colorScheme.primaryContainer,
-            ),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                Icon(
-                  Icons.cleaning_services,
-                  size: 100,
-                  color: theme.colorScheme.primary,
-                ),
-                // Before/After indicators
-                Positioned(
-                  top: 20,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppColors.warning,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Text(
-                      '100%',
-                      style: TextStyle(color: AppColors.white, fontSize: 12),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  bottom: 20,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppColors.success,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Text(
-                      '40%',
-                      style: TextStyle(color: AppColors.white, fontSize: 12),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 48),
-          Builder(
-            builder: (ctx) {
-              final l10n = AppLocalizations.of(ctx)!;
-              return Text(
-                l10n.deleteUselessPhotosTitle,
-                textAlign: TextAlign.center,
-                style: theme.textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              );
-            },
-          ),
-          const SizedBox(height: 16),
-          Builder(
-            builder: (ctx) {
-              final l10n = AppLocalizations.of(ctx)!;
-              return Text(
-                l10n.deleteUselessPhotosDescription,
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  color: theme.textTheme.bodyMedium?.color?.withOpacity(0.8),
-                ),
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _FolderIcon extends StatelessWidget {
-  const _FolderIcon({
-    required this.color,
-    required this.label,
-  });
-
-  final Color color;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          Icons.folder,
-          size: 48,
-          color: color,
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: const TextStyle(fontSize: 10),
-        ),
-      ],
     );
   }
 }

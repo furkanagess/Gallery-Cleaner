@@ -153,15 +153,31 @@ class RevenueCatService {
           'productId=${pkg.storeProduct.identifier} '
           'price=${pkg.storeProduct.priceString}');
       final purchaseResult = await Purchases.purchasePackage(pkg);
-      final active = purchaseResult.customerInfo.entitlements.all[entitlementId]?.isActive == true;
-      debugPrint('✅ [RevenueCat] purchase result | premiumActive=$active');
-      if (active) {
-        await PreferencesService().setPremium(true);
-        debugPrint('💾 [RevenueCat] Local premium flag persisted (purchase).');
+      final active = await _markPremiumIfActive(purchaseResult.customerInfo);
+      if (active) return true;
+
+      // Entitlement might take a moment; re-fetch latest info before failing.
+      final refreshedInfo = await Purchases.getCustomerInfo();
+      final refreshedActive = await _markPremiumIfActive(refreshedInfo);
+      if (refreshedActive) {
+        debugPrint('✅ [RevenueCat] Entitlement activated after refresh.');
+        return true;
       }
-      return active;
-    } on PurchasesErrorCode catch (e) {
-      debugPrint('⚠️ [RevenueCat] purchase cancelled/error: $e');
+
+      debugPrint(
+        '⚠️ [RevenueCat] Purchase completed but entitlement "$entitlementId" is not active yet.',
+      );
+      return false;
+    } on PlatformException catch (e) {
+      final errorCode = PurchasesErrorHelper.getErrorCode(e);
+      if (errorCode == PurchasesErrorCode.productAlreadyPurchasedError) {
+        debugPrint('ℹ️ [RevenueCat] Product already purchased. Attempting restore.');
+        final restored = await restore();
+        if (restored) return true;
+        final premium = await isPremium();
+        if (premium) return true;
+      }
+      debugPrint('⚠️ [RevenueCat] purchase platform error: $errorCode | $e');
       return false;
     } catch (e) {
       debugPrint('❌ [RevenueCat] purchase error: $e');
@@ -173,12 +189,12 @@ class RevenueCatService {
     try {
       debugPrint('🟦 [RevenueCat] restorePurchases()...');
       final info = await Purchases.restorePurchases();
-      final active = info.entitlements.all[entitlementId]?.isActive == true;
-      debugPrint('✅ [RevenueCat] restore result | premiumActive=$active');
-      if (active) {
-        await PreferencesService().setPremium(true);
-        debugPrint('💾 [RevenueCat] Local premium flag persisted (restore).');
-      }
+      var active = await _markPremiumIfActive(info);
+      if (active) return true;
+
+      final refreshedInfo = await Purchases.getCustomerInfo();
+      active = await _markPremiumIfActive(refreshedInfo);
+      debugPrint('✅ [RevenueCat] restore result after refresh | premiumActive=$active');
       return active;
     } catch (e) {
       debugPrint('❌ [RevenueCat] restore error: $e');
@@ -206,6 +222,21 @@ class RevenueCatService {
       debugPrint('🔁 [RevenueCat] customerInfo updated | premiumActive=$active');
       onChange();
     });
+  }
+
+  Future<bool> _markPremiumIfActive(CustomerInfo info) async {
+    final active = _hasActiveEntitlement(info);
+    if (active) {
+      await PreferencesService().setPremium(true);
+      debugPrint('💾 [RevenueCat] Local premium flag persisted (entitlement active).');
+    }
+    return active;
+  }
+
+  bool _hasActiveEntitlement(CustomerInfo info) {
+    final premiumActive = info.entitlements.all[entitlementId]?.isActive == true;
+    final anyActive = info.entitlements.active.isNotEmpty;
+    return premiumActive || anyActive;
   }
 }
 

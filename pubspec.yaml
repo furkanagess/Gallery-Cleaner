@@ -2,7 +2,7 @@ name: gallery_cleaner
 description: "Gallery Cleaner - Clean your gallery with ease"
 publish_to: "none"
 
-version: 1.0.0+16
+version: 1.0.0+18
 
 environment:
   sdk: ^3.11.0-57.0.dev
@@ -30,6 +30,7 @@ dependencies:
   crypto: ^3.0.5
   image: ^4.3.0
   url_launcher: ^6.3.1
+  flutter_dotenv: ^5.1.0
   flutter_localizations:
     sdk: flutter
 
@@ -42,6 +43,7 @@ flutter:
   generate: true
   uses-material-design: true
   assets:
+    - .env
     - assets/lottie/loading.json
     - assets/lottie/gallery_loading.json
     - assets/lottie/duplicate.json

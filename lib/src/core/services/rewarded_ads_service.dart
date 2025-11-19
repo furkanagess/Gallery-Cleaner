@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import '../config/ad_unit_ids.dart';
 
 /// Ad unit types for different features
 enum AdUnitType {
@@ -24,18 +25,6 @@ class RewardedAdsService {
   // Test Ad Unit IDs (use these for development)
   // Test rewarded interstitial ad unit ID (same for Android and iOS)
   static const String _testAdUnitId = 'ca-app-pub-3940256099942544/5354046379'; // Test rewarded interstitial ad
-  
-  // Delete Limit Ads
-  static const String _deleteLimitAndroidAdUnitId = 'ca-app-pub-3499593115543692/1575404766'; // Android Delete Ad Unit ID
-  static const String _deleteLimitIosAdUnitId = 'ca-app-pub-3499593115543692/2388248395'; // iOS Delete Ad Unit ID
-  
-  // Blur Scan Limit Ads
-  static const String _blurScanLimitAndroidAdUnitId = 'ca-app-pub-3499593115543692/1034023877'; // Android Blur Ad Unit ID
-  static const String _blurScanLimitIosAdUnitId = 'ca-app-pub-3499593115543692/7683192707'; // iOS Blur Ad Unit ID
-  
-  // Duplicate Scan Limit Ads
-  static const String _duplicateScanLimitAndroidAdUnitId = 'ca-app-pub-3499593115543692/9608741799'; // Android Duplicate Ad Unit ID
-  static const String _duplicateScanLimitIosAdUnitId = 'ca-app-pub-3499593115543692/1924148305'; // iOS Duplicate Ad Unit ID
   
   // Use test ads in debug mode
   // Set to false for production to use real ad units
@@ -85,26 +74,30 @@ class RewardedAdsService {
   /// Get ad unit ID for a specific type and platform
   String _getAdUnitId(AdUnitType type) {
     final isAndroid = Platform.isAndroid;
-    String adUnitId;
-    
     // Use test ads if _useTestAds is true (which is true in debug mode)
     if (_useTestAds) {
       debugPrint('📱 [RewardedAdsService] Using test ad unit ID for type: $type (Debug mode)');
       return _testAdUnitId;
     }
     
-    // Use production ad unit IDs
+    // Use production ad unit IDs retrieved from .env
     switch (type) {
       case AdUnitType.deleteLimit:
-        adUnitId = isAndroid ? _deleteLimitAndroidAdUnitId : _deleteLimitIosAdUnitId;
+        final adUnitId = isAndroid
+            ? AdUnitIds.deleteLimitAndroid
+            : AdUnitIds.deleteLimitIos;
         debugPrint('📱 [RewardedAdsService] Using DELETE LIMIT ad unit: $adUnitId (Swipe Tab)');
         return adUnitId;
       case AdUnitType.blurScanLimit:
-        adUnitId = isAndroid ? _blurScanLimitAndroidAdUnitId : _blurScanLimitIosAdUnitId;
+        final adUnitId = isAndroid
+            ? AdUnitIds.blurScanLimitAndroid
+            : AdUnitIds.blurScanLimitIos;
         debugPrint('📱 [RewardedAdsService] Using BLUR SCAN LIMIT ad unit: $adUnitId (Blur Tab)');
         return adUnitId;
       case AdUnitType.duplicateScanLimit:
-        adUnitId = isAndroid ? _duplicateScanLimitAndroidAdUnitId : _duplicateScanLimitIosAdUnitId;
+        final adUnitId = isAndroid
+            ? AdUnitIds.duplicateScanLimitAndroid
+            : AdUnitIds.duplicateScanLimitIos;
         debugPrint('📱 [RewardedAdsService] Using DUPLICATE SCAN LIMIT ad unit: $adUnitId (Duplicate Tab)');
         return adUnitId;
     }

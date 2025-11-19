@@ -46,9 +46,9 @@
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Galeriyi düzenlemek için fotoğraflara erişim gerekiyor.</string>
+	<string>We need access to your photos to organize and clean your gallery.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>Fotoğrafları düzenlemek ve taşımak için kütüphaneye yazma izni gerekiyor.</string>
+	<string>Photo library write access is required to move, organize, and delete photos safely.</string>
 	<key>GADApplicationIdentifier</key>
 	<string>ca-app-pub-3499593115543692~6628420898</string>
 </dict>

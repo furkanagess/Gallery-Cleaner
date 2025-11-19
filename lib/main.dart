@@ -1,11 +1,10 @@
-import 'dart:io' show Platform;
 import 'dart:ui';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:photo_manager/photo_manager.dart' as pm;
 
 import 'firebase_options.dart';
 import 'src/app/app.dart';
@@ -15,6 +14,14 @@ import 'src/core/services/rewarded_ads_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Load environment variables
+  try {
+    await dotenv.load(fileName: '.env');
+    debugPrint('✅ [main] .env file loaded');
+  } catch (e) {
+    debugPrint('⚠️ [main] Failed to load .env file: $e');
+  }
 
   try {
     await Firebase.initializeApp(
@@ -28,20 +35,6 @@ void main() async {
     await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(true);
   } catch (e) {
     debugPrint('⚠️ [main] Failed to initialize Firebase: $e');
-  }
-
-  // iOS için PhotoManager'ın initialize olması için gecikme ekle
-  // İlk girişte PhotoManager henüz hazır olmayabilir
-  if (Platform.isIOS) {
-    try {
-      // PhotoManager'ın initialize olması için ilk çağrıyı yap
-      await pm.PhotoManager.requestPermissionExtend();
-      // iOS'ta native initialization için kısa bir gecikme
-      await Future.delayed(const Duration(milliseconds: 300));
-    } catch (e) {
-      debugPrint('⚠️ [main] Failed to pre-initialize PhotoManager: $e');
-      // Hata olsa bile devam et, PhotoManager kendi initialize edecektir
-    }
   }
 
   // Initialize Mobile Ads SDK with error handling
