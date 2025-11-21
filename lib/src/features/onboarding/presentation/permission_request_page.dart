@@ -1,3 +1,6 @@
+import 'dart:io' show Platform;
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -5,6 +8,7 @@ import 'package:lottie/lottie.dart';
 
 import '../application/permissions_controller.dart';
 import '../../gallery/application/gallery_stats_provider.dart';
+import '../../gallery/application/gallery_providers.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../app/theme/app_colors.dart';
 
@@ -57,6 +61,101 @@ class _PermissionRequestPageState extends ConsumerState<PermissionRequestPage> {
     }
   }
 
+  /// İzin verildikten sonra fotoğrafların yüklendiğinden emin ol ve swipe page'e geçiş yap
+  Future<void> _waitForPhotosAndNavigate(BuildContext context) async {
+    debugPrint('🔄 [PermissionRequestPage] İzin verildi, fotoğrafların yüklenmesi bekleniyor...');
+
+    // İlk gecikme - PhotoManager'ın hazır olması için
+    final initialDelay = Platform.isIOS 
+        ? const Duration(milliseconds: 800) 
+        : const Duration(milliseconds: 300);
+    await Future.delayed(initialDelay);
+
+    if (!mounted || !context.mounted) return;
+
+    // Album listesinin yüklendiğini bekle (maksimum 5 saniye, her 300ms'de bir kontrol)
+    bool albumsReady = false;
+    for (int attempt = 0; attempt < 17; attempt++) {
+      if (!mounted || !context.mounted) return;
+
+      final albumsAsync = ref.read(albumsProvider);
+      final albums = albumsAsync.maybeWhen(
+        data: (albums) => albums,
+        orElse: () => <dynamic>[],
+      );
+
+      if (albums.isNotEmpty) {
+        debugPrint('✅ [PermissionRequestPage] Album listesi yüklendi: ${albums.length} album');
+        albumsReady = true;
+        break;
+      }
+
+      // Hala yükleniyorsa veya boşsa bekle
+      if (albumsAsync.isLoading) {
+        debugPrint('⏳ [PermissionRequestPage] Album listesi yükleniyor... (attempt ${attempt + 1})');
+      } else {
+        debugPrint('⚠️ [PermissionRequestPage] Album listesi boş, yeniden deniyor... (attempt ${attempt + 1})');
+      }
+
+      await Future.delayed(const Duration(milliseconds: 300));
+    }
+
+    if (!albumsReady) {
+      debugPrint('⚠️ [PermissionRequestPage] Album listesi yüklenemedi, yine de swipe page\'e geçiliyor...');
+      // Yine de swipe page'e geç (kullanıcı deneyimi için)
+      if (mounted && context.mounted) {
+        context.go('/swipe');
+      }
+      return;
+    }
+
+    // Asset'lerin yüklendiğini bekle (maksimum 5 saniye, her 300ms'de bir kontrol)
+    bool assetsReady = false;
+    for (int attempt = 0; attempt < 17; attempt++) {
+      if (!mounted || !context.mounted) return;
+
+      final assetsAsync = ref.read(galleryPagingControllerProvider);
+      final assets = assetsAsync.maybeWhen(
+        data: (assets) => assets,
+        orElse: () => <dynamic>[],
+      );
+
+      if (assets.isNotEmpty) {
+        debugPrint('✅ [PermissionRequestPage] Fotoğraflar yüklendi: ${assets.length} fotoğraf');
+        assetsReady = true;
+        break;
+      }
+
+      // Hala yükleniyorsa bekle
+      if (assetsAsync.isLoading) {
+        debugPrint('⏳ [PermissionRequestPage] Fotoğraflar yükleniyor... (attempt ${attempt + 1})');
+      } else if (assetsAsync.hasError) {
+        debugPrint('⚠️ [PermissionRequestPage] Fotoğraf yükleme hatası, yeniden deniyor... (attempt ${attempt + 1})');
+        // Hata varsa reload'u tetikle
+        ref.read(galleryPagingControllerProvider.notifier).reload();
+      } else {
+        debugPrint('⚠️ [PermissionRequestPage] Fotoğraflar boş, yeniden deniyor... (attempt ${attempt + 1})');
+      }
+
+      await Future.delayed(const Duration(milliseconds: 300));
+    }
+
+    if (!assetsReady) {
+      debugPrint('⚠️ [PermissionRequestPage] Fotoğraflar yüklenemedi, yine de swipe page\'e geçiliyor...');
+      // Yine de swipe page'e geç (kullanıcı deneyimi için)
+      if (mounted && context.mounted) {
+        context.go('/swipe');
+      }
+      return;
+    }
+
+    // Her şey hazır, swipe page'e geç
+    debugPrint('✅ [PermissionRequestPage] Fotoğraflar hazır, swipe page\'e geçiliyor...');
+    if (mounted && context.mounted) {
+      context.go('/swipe');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final permission = ref.watch(permissionsControllerProvider);
@@ -69,15 +168,8 @@ class _PermissionRequestPageState extends ConsumerState<PermissionRequestPage> {
       if (next == GalleryPermissionStatus.authorized &&
           context.mounted &&
           prev != next) {
-        // İzin yeni verildiyse swipe page'e yönlendir
-        // iOS'ta provider'ların hazır olması için gecikme ekle
-        // Analiz başlatma işlemi _requestPermission() içinde yapılıyor (sadece ilk defa)
-        Future.delayed(const Duration(milliseconds: 300), () {
-          if (mounted && context.mounted) {
-            // Swipe page'e yönlendir
-            context.go('/swipe');
-          }
-        });
+        // İzin yeni verildiyse fotoğrafların yüklendiğinden emin ol ve swipe page'e yönlendir
+        _waitForPhotosAndNavigate(context);
       }
     });
 

@@ -24,9 +24,49 @@ class MediaLibraryService {
     pm.AssetPathEntity? album,
     pm.RequestType type = pm.RequestType.image,
   }) async {
-    final targetAlbum = album ?? (await fetchAlbums(onlyAll: true, type: type)).first;
-    final list = await targetAlbum.getAssetListPaged(page: page, size: pageSize);
-    return list;
+    // Eğer album verilmemişse, "All" albümünü al
+    if (album == null) {
+      final albums = await fetchAlbums(onlyAll: true, type: type);
+      
+      // iOS'ta izin verildikten hemen sonra PhotoManager henüz hazır olmayabilir
+      // Boş liste dönerse, PhotoManager'ın hazır olmasını bekle
+      if (albums.isEmpty) {
+        debugPrint('⚠️ [MediaLibraryService] Albums listesi boş - PhotoManager hazır olmayabilir, bekleniyor...');
+        
+        // iOS için PhotoManager'ın hazır olmasını bekle (max 3 saniye, her 200ms'de bir kontrol)
+        if (Platform.isIOS) {
+          for (int attempt = 0; attempt < 15; attempt++) {
+            await Future.delayed(const Duration(milliseconds: 200));
+            final retryAlbums = await fetchAlbums(onlyAll: true, type: type);
+            if (retryAlbums.isNotEmpty) {
+              debugPrint('✅ [MediaLibraryService] Albums yüklendi (attempt ${attempt + 1})');
+              album = retryAlbums.first;
+              break;
+            }
+          }
+        }
+        
+        // Hala boşsa hata fırlat
+        if (album == null) {
+          debugPrint('❌ [MediaLibraryService] Albums listesi hala boş - boş liste döndürülüyor');
+          return [];
+        }
+      } else {
+        album = albums.first;
+      }
+    }
+    
+    // Album artık null değil, asset'leri yükle
+    try {
+      // Album burada kesinlikle null değil
+      final list = await album.getAssetListPaged(page: page, size: pageSize);
+      return list;
+    } catch (e, st) {
+      debugPrint('❌ [MediaLibraryService] fetchRecentAssets hatası: $e');
+      debugPrint('   Stack trace: $st');
+      // Hata durumunda boş liste döndür (crash önleme)
+      return [];
+    }
   }
 
   Future<Uint8List?> loadThumbnailBytes(pm.AssetEntity asset, {int width = 300, int height = 300}) async {

@@ -170,6 +170,21 @@ class RevenueCatService {
       return false;
     } on PlatformException catch (e) {
       final errorCode = PurchasesErrorHelper.getErrorCode(e);
+      
+      // Handle user cancelled error - simülatörde bazen yanlış pozitif olabilir
+      if (errorCode == PurchasesErrorCode.purchaseCancelledError) {
+        debugPrint('⚠️ [RevenueCat] Purchase was cancelled by user.');
+        // Simülatörde bazen bu hata yanlış oluşabiliyor, 
+        // o yüzden bir kez daha premium durumunu kontrol edelim
+        final premium = await isPremium();
+        if (premium) {
+          debugPrint('✅ [RevenueCat] Premium is active despite cancellation error (possible simulator false positive).');
+          return true;
+        }
+        return false;
+      }
+      
+      // Handle already purchased error
       if (errorCode == PurchasesErrorCode.productAlreadyPurchasedError) {
         debugPrint('ℹ️ [RevenueCat] Product already purchased. Attempting restore.');
         final restored = await restore();
@@ -177,10 +192,17 @@ class RevenueCatService {
         final premium = await isPremium();
         if (premium) return true;
       }
-      debugPrint('⚠️ [RevenueCat] purchase platform error: $errorCode | $e');
+      
+      debugPrint('⚠️ [RevenueCat] purchase platform error: $errorCode | message=${e.message} | details=${e.details}');
       return false;
     } catch (e) {
       debugPrint('❌ [RevenueCat] purchase error: $e');
+      // Genel hata durumunda da premium durumunu kontrol edelim
+      final premium = await isPremium();
+      if (premium) {
+        debugPrint('✅ [RevenueCat] Premium is active despite error.');
+        return true;
+      }
       return false;
     }
   }

@@ -1,3 +1,5 @@
+import 'dart:io' show Platform;
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/foundation.dart';
 import 'package:photo_manager/photo_manager.dart' as pm;
@@ -100,8 +102,10 @@ final galleryPagingControllerProvider =
   ref.listen<GalleryPermissionStatus>(permissionsControllerProvider, (prev, next) {
     if (next == GalleryPermissionStatus.authorized && prev != next) {
       debugPrint('🔄 [GalleryPagingController] Permission granted → reload (with delay)');
-      // iOS'ta izin verildikten hemen sonra reload yaparken race condition olmaması için delay
-      Future.delayed(const Duration(milliseconds: 200), () {
+      // iOS'ta izin verildikten hemen sonra PhotoManager hazır olmayabilir
+      // Daha uzun bir gecikme ekle ve PhotoManager'ın hazır olmasını bekle
+      final delay = Platform.isIOS ? const Duration(milliseconds: 800) : const Duration(milliseconds: 300);
+      Future.delayed(delay, () {
         if (ref.read(permissionsControllerProvider) == GalleryPermissionStatus.authorized) {
           controller.reload();
         }
@@ -120,8 +124,9 @@ final galleryPagingControllerProvider =
 
   if (permission == GalleryPermissionStatus.authorized) {
     debugPrint('🔄 [GalleryPagingController] Initial authorized state → initial reload (with delay)');
-    // İlk yüklemede de delay ekle
-    Future.delayed(const Duration(milliseconds: 200), () {
+    // İlk yüklemede de delay ekle - iOS'ta PhotoManager hazır olması için daha uzun bekle
+    final delay = Platform.isIOS ? const Duration(milliseconds: 800) : const Duration(milliseconds: 300);
+    Future.delayed(delay, () {
       if (ref.read(permissionsControllerProvider) == GalleryPermissionStatus.authorized) {
         controller.reload();
       }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../core/services/revenuecat_service.dart';
@@ -153,11 +154,13 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog>
       final rc = RevenueCatService.instance;
       await rc.initialize();
 
+      // Önce premium durumunu kontrol et
       if (await rc.isPremium()) {
         await _handlePremiumUnlocked();
         return;
       }
 
+      // Satın alma işlemini başlat
       final success = await rc.purchaseLifetime();
       
       if (!mounted) return;
@@ -165,8 +168,12 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog>
       if (success) {
         await _handlePremiumUnlocked();
       } else {
+        // Başarısız olursa tekrar premium durumunu kontrol et
+        // (Simülatörde bazen false negative olabiliyor)
+        await Future.delayed(const Duration(milliseconds: 500));
         final premiumNow = await rc.isPremium();
         if (premiumNow) {
+          debugPrint('✅ [PurchaseDialog] Premium activated after retry check.');
           await _handlePremiumUnlocked();
         } else {
           setState(() {
@@ -175,10 +182,45 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog>
           });
         }
       }
+    } on PlatformException catch (e) {
+      if (!mounted) return;
+      
+      // Platform exception'ları yakalayıp daha detaylı loglama yap
+      final errorCode = PurchasesErrorHelper.getErrorCode(e);
+      debugPrint('⚠️ [PurchaseDialog] Platform exception: $errorCode | ${e.message}');
+      
+      // User cancelled durumunda bile bir kez daha premium kontrolü yap
+      if (errorCode == PurchasesErrorCode.purchaseCancelledError) {
+        await Future.delayed(const Duration(milliseconds: 500));
+        final rc = RevenueCatService.instance;
+        final premiumNow = await rc.isPremium();
+        if (premiumNow) {
+          debugPrint('✅ [PurchaseDialog] Premium activated despite cancellation error.');
+          await _handlePremiumUnlocked();
+          return;
+        }
+      }
+      
+      setState(() {
+        _errorMessage = l10n.failedToInitiatePurchase;
+        _isLoading = false;
+      });
     } catch (e) {
       if (!mounted) return;
+      
+      debugPrint('❌ [PurchaseDialog] Purchase error: $e');
+      
+      // Genel hata durumunda da premium kontrolü yap
+      final rc = RevenueCatService.instance;
+      final premiumNow = await rc.isPremium();
+      if (premiumNow) {
+        debugPrint('✅ [PurchaseDialog] Premium activated despite error.');
+        await _handlePremiumUnlocked();
+        return;
+      }
+      
       setState(() {
-        _errorMessage = '${l10n.purchaseError}: $e';
+        _errorMessage = '${l10n.purchaseError}: ${e.toString()}';
         _isLoading = false;
       });
     }
