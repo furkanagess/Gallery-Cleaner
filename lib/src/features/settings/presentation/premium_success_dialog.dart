@@ -9,7 +9,7 @@ class PremiumSuccessDialog extends StatelessWidget {
   static Future<void> show(BuildContext context) async {
     return showDialog<void>(
       context: context,
-      barrierDismissible: false,
+      barrierDismissible: true,
       builder: (context) => const PremiumSuccessDialog(),
     );
   }
@@ -63,16 +63,7 @@ class PremiumSuccessDialog extends StatelessWidget {
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 12),
-                Text(
-                  l10n.premiumActiveMessage,
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.85),
-                    height: 1.5,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 24),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                   decoration: BoxDecoration(
@@ -163,12 +154,6 @@ class PremiumSuccessDialog extends StatelessWidget {
                       _FeatureItem(
                         icon: Icons.block,
                         text: l10n.noAds,
-                        theme: theme,
-                      ),
-                      const SizedBox(height: 10),
-                      _FeatureItem(
-                        icon: Icons.verified,
-                        text: l10n.prioritySupport,
                         theme: theme,
                       ),
                     ],

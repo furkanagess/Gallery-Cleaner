@@ -8,6 +8,7 @@ import 'package:photo_manager/photo_manager.dart' as pm;
 
 import 'gallery_providers.dart';
 import 'review_history_controller.dart';
+import 'asset_size_helper.dart';
 
 class PendingDeleteAction {
   PendingDeleteAction({required this.asset});
@@ -23,9 +24,7 @@ class ReviewActionsController extends StateNotifier<List<PendingDeleteAction>> {
 
   Future<void> onKeep(pm.AssetEntity asset) async {
     HapticFeedback.lightImpact();
-    // Dosya boyutunu al
-    final file = await asset.file;
-    final fileSize = file != null ? await file.length() : 0;
+    final fileSize = await estimateAssetSize(asset);
     _ref.read(reviewHistoryControllerProvider.notifier).addKeep(
       asset.id,
       fileSizeBytes: fileSize,
@@ -36,9 +35,7 @@ class ReviewActionsController extends StateNotifier<List<PendingDeleteAction>> {
     HapticFeedback.heavyImpact();
     // Only queue delete - visual is immediate via card animation
     // Real deletion happens when user taps "Apply"
-    // Dosya boyutunu al
-    final file = await asset.file;
-    final fileSize = file != null ? await file.length() : 0;
+    final fileSize = await estimateAssetSize(asset);
     _ref.read(reviewHistoryControllerProvider.notifier).addDeletePending(
       asset.id,
       fileSizeBytes: fileSize,

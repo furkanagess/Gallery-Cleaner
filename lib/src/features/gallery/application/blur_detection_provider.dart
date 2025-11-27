@@ -9,8 +9,7 @@ import '../../onboarding/application/permissions_controller.dart';
 import '../../onboarding/application/onboarding_controller.dart';
 import 'gallery_providers.dart';
 
-final blurDetectionServiceProvider =
-    Provider<BlurDetectionService>((ref) {
+final blurDetectionServiceProvider = Provider<BlurDetectionService>((ref) {
   return BlurDetectionService();
 });
 
@@ -23,8 +22,10 @@ class BlurDetectionState {
   final Object? error;
   final double blurThreshold;
   final bool hasCompletedScan; // Tarama tamamlandı mı?
-  final int processedCount; // İşlenen fotoğraf sayısı
-  final int totalCount; // Toplam fotoğraf sayısı
+  final int processedCount; // Mevcut albümde işlenen fotoğraf sayısı
+  final int totalCount; // Mevcut albümdeki toplam fotoğraf sayısı
+  final int
+  plannedSampleCount; // Mevcut albümde analiz edilmesi planlanan fotoğraf sayısı
 
   const BlurDetectionState({
     this.blurryPhotosByAlbum = const {},
@@ -32,10 +33,12 @@ class BlurDetectionState {
     this.progress = 0.0,
     this.currentAlbum,
     this.error,
-    this.blurThreshold = 0.5, // Daha fazla blur tespit etmek için 0.4'ten 0.5'e artırıldı
+    this.blurThreshold =
+        0.5, // Daha fazla blur tespit etmek için 0.4'ten 0.5'e artırıldı
     this.hasCompletedScan = false,
     this.processedCount = 0,
     this.totalCount = 0,
+    this.plannedSampleCount = 0,
   });
 
   BlurDetectionState copyWith({
@@ -49,6 +52,7 @@ class BlurDetectionState {
     bool? hasCompletedScan,
     int? processedCount,
     int? totalCount,
+    int? plannedSampleCount,
   }) {
     return BlurDetectionState(
       blurryPhotosByAlbum: blurryPhotosByAlbum ?? this.blurryPhotosByAlbum,
@@ -60,6 +64,7 @@ class BlurDetectionState {
       hasCompletedScan: hasCompletedScan ?? this.hasCompletedScan,
       processedCount: processedCount ?? this.processedCount,
       totalCount: totalCount ?? this.totalCount,
+      plannedSampleCount: plannedSampleCount ?? this.plannedSampleCount,
     );
   }
 
@@ -75,7 +80,9 @@ class BlurDetectionState {
   double get totalSpaceToSaveMB {
     return blurryPhotosByAlbum.values.fold<double>(
       0.0,
-      (sum, photos) => sum + photos.fold<double>(
+      (sum, photos) =>
+          sum +
+          photos.fold<double>(
             0.0,
             (photoSum, photo) => photoSum + photo.estimatedSizeMB,
           ),
@@ -88,7 +95,7 @@ class BlurDetectionNotifier extends StateNotifier<BlurDetectionState> {
 
   final Ref ref;
   bool _isCancelled = false;
-  
+
   // Progress callback throttling - %1 artışlarla güncelleme
   DateTime? _lastProgressUpdate;
   int _lastProgressPercent = -1; // Son gösterilen yüzde değeri
@@ -131,6 +138,7 @@ class BlurDetectionNotifier extends StateNotifier<BlurDetectionState> {
       hasCompletedScan: false, // Yeni tarama başladığında false yap
       processedCount: 0,
       totalCount: 0,
+      plannedSampleCount: 0,
       currentAlbum: null, // Başlangıçta albüm bilgisi yok
     );
 
@@ -148,7 +156,9 @@ class BlurDetectionNotifier extends StateNotifier<BlurDetectionState> {
       int remainingScanLimit = 999999999; // Premium için sınırsız
       if (!isPremium) {
         remainingScanLimit = await prefsService.getBlurScanLimit();
-        debugPrint('📊 [BlurDetection] Kalan blur scan hakkı: $remainingScanLimit');
+        debugPrint(
+          '📊 [BlurDetection] Kalan blur scan hakkı: $remainingScanLimit',
+        );
       }
 
       debugPrint(
@@ -158,41 +168,57 @@ class BlurDetectionNotifier extends StateNotifier<BlurDetectionState> {
         albums,
         blurThreshold: threshold,
         maxScanLimit: remainingScanLimit,
-        progressCallback: (albumName, progress, processedCount, totalCount) {
-          if (_isCancelled) return;
-          
-          // Progress'i %1 artışlarla güncelle (0%, 1%, 2%, 3% şeklinde)
-          final currentProgressPercent = (progress * 100).floor(); // Yüzdeyi tam sayıya yuvarla
-          final now = DateTime.now();
-          final timeDelta = _lastProgressUpdate != null 
-              ? now.difference(_lastProgressUpdate!).inMilliseconds 
-              : _progressThrottleMs + 1;
-          
-          // %1 artış olduğunda veya zaman aşımında güncelle
-          if (currentProgressPercent > _lastProgressPercent || timeDelta >= _progressThrottleMs) {
-            _lastProgressUpdate = now;
-            _lastProgressPercent = currentProgressPercent;
-            
-            // State güncellemesini frame callback ile yap (UI thread'i bloklamamak için)
-            SchedulerBinding.instance.scheduleFrameCallback((_) {
-              if (!_isCancelled) {
-                state = state.copyWith(
-                  progress: progress,
-                  currentAlbum: albumName,
-                  processedCount: processedCount,
-                  totalCount: totalCount,
-                );
+        progressCallback:
+            (
+              albumName,
+              progress,
+              processedCount,
+              plannedCount,
+              albumTotalCount,
+            ) {
+              if (_isCancelled) return;
+
+              // Progress'i %1 artışlarla güncelle (0%, 1%, 2%, 3% şeklinde)
+              final currentProgressPercent = (progress * 100)
+                  .floor(); // Yüzdeyi tam sayıya yuvarla
+              final now = DateTime.now();
+              final timeDelta = _lastProgressUpdate != null
+                  ? now.difference(_lastProgressUpdate!).inMilliseconds
+                  : _progressThrottleMs + 1;
+
+              // %1 artış olduğunda veya zaman aşımında güncelle
+              if (currentProgressPercent > _lastProgressPercent ||
+                  timeDelta >= _progressThrottleMs) {
+                _lastProgressUpdate = now;
+                _lastProgressPercent = currentProgressPercent;
+
+                // State güncellemesini frame callback ile yap (UI thread'i bloklamamak için)
+                SchedulerBinding.instance.scheduleFrameCallback((_) {
+                  if (!_isCancelled) {
+                    final displayTotalCount = albumTotalCount > 0
+                        ? albumTotalCount
+                        : plannedCount;
+                    final normalizedProgress = displayTotalCount > 0
+                        ? (processedCount / displayTotalCount).clamp(0.0, 1.0)
+                        : progress.clamp(0.0, 1.0);
+                    state = state.copyWith(
+                      progress: normalizedProgress,
+                      currentAlbum: albumName,
+                      processedCount: processedCount,
+                      totalCount: displayTotalCount,
+                      plannedSampleCount: plannedCount,
+                    );
+                  }
+                });
               }
-            });
-          }
-        },
+            },
         shouldCancel: () => _isCancelled,
         isPremium: isPremium,
       );
-      
+
       final results = scanResult.results;
       final scannedPhotoCount = scanResult.scannedPhotoCount;
-      
+
       if (_isCancelled) {
         debugPrint('⚠️ [BlurDetection] Tarama iptal edildi');
         state = state.copyWith(
@@ -201,6 +227,7 @@ class BlurDetectionNotifier extends StateNotifier<BlurDetectionState> {
           currentAlbum: null,
           processedCount: 0,
           totalCount: 0,
+          plannedSampleCount: 0,
         );
         return;
       }
@@ -240,12 +267,16 @@ class BlurDetectionNotifier extends StateNotifier<BlurDetectionState> {
         try {
           await prefsService.decreaseBlurScanLimit(scannedPhotoCount);
           ref.invalidate(blurScanLimitProvider);
-          debugPrint('💾 [BlurDetection] Blur scan limit düşürüldü: $scannedPhotoCount fotoğraf (sonuç bulundu)');
+          debugPrint(
+            '💾 [BlurDetection] Blur scan limit düşürüldü: $scannedPhotoCount fotoğraf (sonuç bulundu)',
+          );
         } catch (e) {
           debugPrint('⚠️ [BlurDetection] Blur scan limit düşürülemedi: $e');
         }
       } else if (!hasResults) {
-        debugPrint('✅ [BlurDetection] Sonuç bulunamadı, blur scan limit azaltılmadı');
+        debugPrint(
+          '✅ [BlurDetection] Sonuç bulunamadı, blur scan limit azaltılmadı',
+        );
       }
 
       // State'i güncelle - YENİ Map oluştur (Riverpod için önemli)
@@ -269,8 +300,9 @@ class BlurDetectionNotifier extends StateNotifier<BlurDetectionState> {
         error: null,
         blurThreshold: threshold,
         hasCompletedScan: true, // Tarama tamamlandı
-        processedCount: scannedPhotoCount,
-        totalCount: scannedPhotoCount, // Tamamlandığında eşit olur
+        processedCount: 0,
+        totalCount: 0,
+        plannedSampleCount: 0,
       );
 
       debugPrint('✅ [BlurDetection] Yeni state oluşturuldu:');
@@ -281,27 +313,35 @@ class BlurDetectionNotifier extends StateNotifier<BlurDetectionState> {
       debugPrint(
         '   - totalSpaceToSaveMB: ${newState.totalSpaceToSaveMB.toStringAsFixed(2)}',
       );
-      
+
       // State güncellemesinden önce bir kontrol
       if (filteredResults.isEmpty) {
         debugPrint('   ⚠️ [BlurDetection] Filtrelenmiş sonuçlar boş!');
       } else {
-        debugPrint('   ✅ [BlurDetection] Filtrelenmiş sonuçlar dolu, state güncelleniyor...');
+        debugPrint(
+          '   ✅ [BlurDetection] Filtrelenmiş sonuçlar dolu, state güncelleniyor...',
+        );
         debugPrint('   📊 [BlurDetection] State güncellemesi öncesi:');
-        debugPrint('      - Eski state: ${state.blurryPhotosByAlbum.length} albüm');
-        debugPrint('      - Yeni state: ${newState.blurryPhotosByAlbum.length} albüm');
+        debugPrint(
+          '      - Eski state: ${state.blurryPhotosByAlbum.length} albüm',
+        );
+        debugPrint(
+          '      - Yeni state: ${newState.blurryPhotosByAlbum.length} albüm',
+        );
       }
 
       // State'i güncelle - bu Riverpod'ı notify edecek
       state = newState;
       debugPrint('✅ [BlurDetection] State başarıyla güncellendi!');
-      
+
       // State güncellemesinden sonra bir kez daha kontrol et
       Future.microtask(() {
         debugPrint('🔍 [BlurDetection] Microtask - State kontrolü:');
-        debugPrint('   - blurryPhotosByAlbum.length: ${state.blurryPhotosByAlbum.length}');
+        debugPrint(
+          '   - blurryPhotosByAlbum.length: ${state.blurryPhotosByAlbum.length}',
+        );
         debugPrint('   - totalBlurryPhotos: ${state.totalBlurryPhotos}');
-        
+
         // Her albüm için fotoğraf sayısını göster
         for (final entry in state.blurryPhotosByAlbum.entries) {
           debugPrint('     - ${entry.key}: ${entry.value.length} fotoğraf');
@@ -316,6 +356,7 @@ class BlurDetectionNotifier extends StateNotifier<BlurDetectionState> {
         currentAlbum: null,
         processedCount: 0,
         totalCount: 0,
+        plannedSampleCount: 0,
       );
     }
   }
@@ -323,40 +364,46 @@ class BlurDetectionNotifier extends StateNotifier<BlurDetectionState> {
   /// Blurlu fotoğrafları topluca sil
   Future<int> deleteBlurryPhotos(List<BlurPhoto> photos) async {
     if (photos.isEmpty) return 0;
-    
+
     final service = ref.read(mediaLibraryServiceProvider);
-    
+
     // Tüm fotoğraf ID'lerini topla
     final photoIds = photos.map((photo) => photo.asset.id).toList();
-    
-    debugPrint('🗑️ [BlurDetection] Toplu silme başlatılıyor: ${photoIds.length} fotoğraf');
-    
+
+    debugPrint(
+      '🗑️ [BlurDetection] Toplu silme başlatılıyor: ${photoIds.length} fotoğraf',
+    );
+
     try {
       // Toplu silme işlemi
       final deletedIds = await service.deleteBatch(photoIds);
       final deletedCount = deletedIds.length;
-      
-      debugPrint('✅ [BlurDetection] ${deletedCount}/${photoIds.length} fotoğraf başarıyla silindi');
-      
+
+      debugPrint(
+        '✅ [BlurDetection] ${deletedCount}/${photoIds.length} fotoğraf başarıyla silindi',
+      );
+
       // Silinen fotoğrafları state'ten kaldır
       final deletedIdsSet = Set<String>.from(deletedIds);
-    final updatedMap = <String, List<BlurPhoto>>{};
-      
-    for (final entry in state.blurryPhotosByAlbum.entries) {
-      final remainingPhotos = entry.value
+      final updatedMap = <String, List<BlurPhoto>>{};
+
+      for (final entry in state.blurryPhotosByAlbum.entries) {
+        final remainingPhotos = entry.value
             .where((photo) => !deletedIdsSet.contains(photo.asset.id))
-          .toList();
-      if (remainingPhotos.isNotEmpty) {
-        updatedMap[entry.key] = remainingPhotos;
+            .toList();
+        if (remainingPhotos.isNotEmpty) {
+          updatedMap[entry.key] = remainingPhotos;
+        }
       }
-    }
 
       // State'i güncelle
-    state = state.copyWith(blurryPhotosByAlbum: updatedMap);
-      
-      debugPrint('💾 [BlurDetection] State güncellendi: ${updatedMap.length} albüm kaldı');
+      state = state.copyWith(blurryPhotosByAlbum: updatedMap);
 
-    return deletedCount;
+      debugPrint(
+        '💾 [BlurDetection] State güncellendi: ${updatedMap.length} albüm kaldı',
+      );
+
+      return deletedCount;
     } catch (e) {
       debugPrint('❌ [BlurDetection] Toplu silme hatası: $e');
       return 0;
@@ -381,6 +428,7 @@ class BlurDetectionNotifier extends StateNotifier<BlurDetectionState> {
       currentAlbum: null,
       processedCount: 0,
       totalCount: 0,
+      plannedSampleCount: 0,
     );
   }
 
@@ -393,6 +441,5 @@ class BlurDetectionNotifier extends StateNotifier<BlurDetectionState> {
 
 final blurDetectionProvider =
     StateNotifierProvider<BlurDetectionNotifier, BlurDetectionState>((ref) {
-  return BlurDetectionNotifier(ref);
-});
-
+      return BlurDetectionNotifier(ref);
+    });

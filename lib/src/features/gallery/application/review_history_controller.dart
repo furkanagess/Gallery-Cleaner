@@ -2,7 +2,10 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:photo_manager/photo_manager.dart' as pm;
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'asset_size_helper.dart';
 
 enum ReviewActionType { keep, delete, move }
 enum ReviewActionStatus { pending, applied, undone }
@@ -124,6 +127,11 @@ class ReviewHistoryController extends StateNotifier<List<ReviewActionItem>> {
       status: ReviewActionStatus.applied,
       fileSizeBytes: fileSizeBytes,
     ));
+  }
+
+  Future<void> addMoveFromAsset(pm.AssetEntity asset, String albumId) async {
+    final fileSize = await estimateAssetSize(asset);
+    addMove(asset.id, albumId, fileSizeBytes: fileSize);
   }
 
   void clear() {

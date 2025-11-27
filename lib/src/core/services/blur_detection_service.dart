@@ -32,7 +32,7 @@ class BlurDetectionService {
       final blockSize = 6; // 6x6 bloklar (4x4'ten daha hızlı, yeterince doğru)
       final width = image.width;
       final height = image.height;
-      
+
       int blockCount = 0;
       double totalVariance = 0.0;
 
@@ -40,7 +40,7 @@ class BlurDetectionService {
       for (int by = 0; by < height - blockSize; by += blockSize) {
         for (int bx = 0; bx < width - blockSize; bx += blockSize) {
           blockCount++;
-          
+
           // Bloğun içindeki renkleri topla
           final colors = <int>[];
           for (int y = by; y < by + blockSize && y < height; y++) {
@@ -58,9 +58,11 @@ class BlurDetectionService {
           // Bloğun içindeki renk varyansını hesapla
           if (colors.isNotEmpty) {
             final mean = colors.reduce((a, b) => a + b) / colors.length;
-            final variance = colors
-                .map((c) => (c - mean) * (c - mean))
-                .reduce((a, b) => a + b) / colors.length;
+            final variance =
+                colors
+                    .map((c) => (c - mean) * (c - mean))
+                    .reduce((a, b) => a + b) /
+                colors.length;
             totalVariance += variance;
           }
         }
@@ -70,20 +72,21 @@ class BlurDetectionService {
 
       // Ortalama varyans
       final avgVariance = totalVariance / blockCount;
-      
+
       // Düşük varyans = pixelleşmiş (bloklar içinde benzer renkler)
       // Yüksek varyans = pixelleşmiş değil (bloklar içinde farklı renkler)
       // Pixelation score: 0.0 = pixelleşmiş değil, 1.0 = çok pixelleşmiş
-      
+
       // Normalize et (variance değerleri deneyerek ayarlanabilir)
       // Düşük varyans (<1000) = pixelleşmiş
       // Yüksek varyans (>10000) = pixelleşmiş değil
       const minVariance = 0.0;
       const maxVariance = 50000.0;
-      
-      final normalizedVariance = (avgVariance - minVariance) / (maxVariance - minVariance);
+
+      final normalizedVariance =
+          (avgVariance - minVariance) / (maxVariance - minVariance);
       final pixelationScore = (1.0 - normalizedVariance.clamp(0.0, 1.0));
-      
+
       return pixelationScore;
     } catch (e) {
       debugPrint('   ⚠️ [BlurDetection] Pixelation score hesaplama hatası: $e');
@@ -103,14 +106,18 @@ class BlurDetectionService {
       );
 
       if (thumbnail == null || thumbnail.isEmpty) {
-        debugPrint('   ⚠️ [BlurDetection] Thumbnail alınamadı (ID: ${asset.id})');
+        debugPrint(
+          '   ⚠️ [BlurDetection] Thumbnail alınamadı (ID: ${asset.id})',
+        );
         return 0.5; // Bilinmeyen durum için orta değer
       }
 
       // Image decode et
       final image = img.decodeImage(thumbnail);
       if (image == null) {
-        debugPrint('   ⚠️ [BlurDetection] Image decode edilemedi (ID: ${asset.id})');
+        debugPrint(
+          '   ⚠️ [BlurDetection] Image decode edilemedi (ID: ${asset.id})',
+        );
         return 0.5;
       }
 
@@ -132,12 +139,16 @@ class BlurDetectionService {
         width,
         height,
       );
-      final laplacianScore = _normalizeVarianceAdvanced(laplacianVariance, 'laplacian');
+      final laplacianScore = _normalizeVarianceAdvanced(
+        laplacianVariance,
+        'laplacian',
+      );
 
       // Early exit: Eğer Laplacian score çok yüksekse (keskin görünüyorsa),
       // diğer pahalı hesaplamaları atla (performans optimizasyonu)
       // Daha fazla blur tespit etmek için threshold'u artırdık (0.98 - sadece çok keskin fotoğraflar için early exit)
-      const earlyExitThreshold = 0.98; // 0.98'den yüksekse keskin kabul et (daha fazla blur tespit için artırıldı)
+      const earlyExitThreshold =
+          0.98; // 0.98'den yüksekse keskin kabul et (daha fazla blur tespit için artırıldı)
       if (laplacianScore > earlyExitThreshold) {
         // Keskin görünüyor, diğer hesaplamaları atla
         debugPrint(
@@ -155,17 +166,36 @@ class BlurDetectionService {
       final scharrScore = _normalizeVarianceAdvanced(scharrVariance, 'scharr');
 
       // 4. Prewitt operator (basit ama etkili)
-      final prewittVariance = _calculatePrewittVariance(grayImage, width, height);
-      final prewittScore = _normalizeVarianceAdvanced(prewittVariance, 'prewitt');
+      final prewittVariance = _calculatePrewittVariance(
+        grayImage,
+        width,
+        height,
+      );
+      final prewittScore = _normalizeVarianceAdvanced(
+        prewittVariance,
+        'prewitt',
+      );
 
       // 5. Gradient magnitude histogram analizi (blur detection için çok etkili)
-      final gradientHistogramScore = _calculateGradientHistogramScore(grayImage, width, height);
+      final gradientHistogramScore = _calculateGradientHistogramScore(
+        grayImage,
+        width,
+        height,
+      );
 
       // 6. Edge density analizi (blurlu görüntülerde edge sayısı azalır)
-      final edgeDensityScore = _calculateEdgeDensityScore(grayImage, width, height);
+      final edgeDensityScore = _calculateEdgeDensityScore(
+        grayImage,
+        width,
+        height,
+      );
 
       // 7. Local variance analizi (bölgesel blur tespiti)
-      final localVarianceScore = _calculateLocalVarianceScore(grayImage, width, height);
+      final localVarianceScore = _calculateLocalVarianceScore(
+        grayImage,
+        width,
+        height,
+      );
 
       // 8. Multi-scale analysis - Daha fazla blur tespit için threshold artırıldı
       double multiScaleScore = 0.0;
@@ -181,25 +211,26 @@ class BlurDetectionService {
       // Kombine skor: ağırlıklı ortalama (daha fazla blur tespit için ağırlıklar ayarlandı)
       // Laplacian: %20, Sobel: %15, Scharr: %15, Prewitt: %10, Gradient Histogram: %18, Edge Density: %12, Local Variance: %5, Multi-scale: %5
       // Gradient Histogram ve Edge Density ağırlıkları artırıldı (blur tespiti için daha etkili)
-      final combinedScore = (laplacianScore * 0.20) + 
-                           (sobelScore * 0.15) + 
-                           (scharrScore * 0.15) +
-                           (prewittScore * 0.10) +
-                           (gradientHistogramScore * 0.18) +
-                           (edgeDensityScore * 0.12) +
-                           (localVarianceScore * 0.05) +
-                           (multiScaleScore * 0.05);
+      final combinedScore =
+          (laplacianScore * 0.20) +
+          (sobelScore * 0.15) +
+          (scharrScore * 0.15) +
+          (prewittScore * 0.10) +
+          (gradientHistogramScore * 0.18) +
+          (edgeDensityScore * 0.12) +
+          (localVarianceScore * 0.05) +
+          (multiScaleScore * 0.05);
 
       // Final score'u clamp et
       final finalScore = combinedScore.clamp(0.0, 1.0);
 
       // Debug: Tüm sonuçları logla (sadece blur tespit edildiğinde veya çok keskin olduğunda)
       if (finalScore < 0.5 || finalScore > 0.95) {
-      debugPrint(
+        debugPrint(
           '   📊 [BlurDetection] Asset ${asset.id}: L=${laplacianScore.toStringAsFixed(3)}, S=${sobelScore.toStringAsFixed(3)}, Sch=${scharrScore.toStringAsFixed(3)}, P=${prewittScore.toStringAsFixed(3)}, GH=${gradientHistogramScore.toStringAsFixed(3)}, ED=${edgeDensityScore.toStringAsFixed(3)}, LV=${localVarianceScore.toStringAsFixed(3)}, MS=${multiScaleScore.toStringAsFixed(3)}, Final=${finalScore.toStringAsFixed(3)}',
-      );
+        );
       }
-      
+
       if (finalScore < 0.5) {
         debugPrint(
           '   🔴 [BlurDetection] BLURLU TESPİT EDİLDİ: Asset ${asset.id}, FinalScore=${finalScore.toStringAsFixed(3)}',
@@ -208,7 +239,9 @@ class BlurDetectionService {
 
       return finalScore;
     } catch (e) {
-      debugPrint('   ⚠️ [BlurDetection] Blur score hesaplama hatası (ID: ${asset.id}): $e');
+      debugPrint(
+        '   ⚠️ [BlurDetection] Blur score hesaplama hatası (ID: ${asset.id}): $e',
+      );
       return 0.5;
     }
   }
@@ -227,12 +260,12 @@ class BlurDetectionService {
     // 250x250 = 62500, bu yüzden sampling'i sadece daha büyük görüntüler için kullan
     final useSampling = (width * height) > 62500; // 250x250 = 62500
     final samplingStep = useSampling ? 2 : 1;
-    
+
     // Kernel'i uygula (border'ları atla)
     for (int y = 1; y < height - 1; y += samplingStep) {
       for (int x = 1; x < width - 1; x += samplingStep) {
         int sum = 0;
-        
+
         // Kernel convolution
         for (int ky = -1; ky <= 1; ky++) {
           for (int kx = -1; kx <= 1; kx++) {
@@ -247,7 +280,7 @@ class BlurDetectionService {
             sum += (gray * kernelValue);
           }
         }
-        
+
         laplacianValues.add(sum.abs());
       }
     }
@@ -260,7 +293,7 @@ class BlurDetectionService {
       sum += value;
     }
     final mean = sum / laplacianValues.length;
-    
+
     var varianceSum = 0.0;
     for (final value in laplacianValues) {
       final diff = value - mean;
@@ -303,7 +336,9 @@ class BlurDetectionService {
           for (int kx = -1; kx <= 1; kx++) {
             final pixel = image.getPixel(x + kx, y + ky);
             // Optimize: integer math kullan
-            final gray = ((299 * pixel.r + 587 * pixel.g + 114 * pixel.b) ~/ 1000).round();
+            final gray =
+                ((299 * pixel.r + 587 * pixel.g + 114 * pixel.b) ~/ 1000)
+                    .round();
             gx += gray * sobelX[ky + 1][kx + 1];
             gy += gray * sobelY[ky + 1][kx + 1];
           }
@@ -323,7 +358,7 @@ class BlurDetectionService {
       sum += value;
     }
     final mean = sum / gradientMagnitudes.length;
-    
+
     var varianceSum = 0.0;
     for (final value in gradientMagnitudes) {
       final diff = value - mean;
@@ -359,7 +394,9 @@ class BlurDetectionService {
         for (int ky = -1; ky <= 1; ky++) {
           for (int kx = -1; kx <= 1; kx++) {
             final pixel = image.getPixel(x + kx, y + ky);
-            final gray = ((299 * pixel.r + 587 * pixel.g + 114 * pixel.b) ~/ 1000).round();
+            final gray =
+                ((299 * pixel.r + 587 * pixel.g + 114 * pixel.b) ~/ 1000)
+                    .round();
             gx += gray * scharrX[ky + 1][kx + 1];
             gy += gray * scharrY[ky + 1][kx + 1];
           }
@@ -377,7 +414,7 @@ class BlurDetectionService {
       sum += value;
     }
     final mean = sum / gradientMagnitudes.length;
-    
+
     var varianceSum = 0.0;
     for (final value in gradientMagnitudes) {
       final diff = value - mean;
@@ -413,7 +450,9 @@ class BlurDetectionService {
         for (int ky = -1; ky <= 1; ky++) {
           for (int kx = -1; kx <= 1; kx++) {
             final pixel = image.getPixel(x + kx, y + ky);
-            final gray = ((299 * pixel.r + 587 * pixel.g + 114 * pixel.b) ~/ 1000).round();
+            final gray =
+                ((299 * pixel.r + 587 * pixel.g + 114 * pixel.b) ~/ 1000)
+                    .round();
             gx += gray * prewittX[ky + 1][kx + 1];
             gy += gray * prewittY[ky + 1][kx + 1];
           }
@@ -431,7 +470,7 @@ class BlurDetectionService {
       sum += value;
     }
     final mean = sum / gradientMagnitudes.length;
-    
+
     var varianceSum = 0.0;
     for (final value in gradientMagnitudes) {
       final diff = value - mean;
@@ -444,7 +483,11 @@ class BlurDetectionService {
 
   /// Gradient magnitude histogram analizi (blur detection için çok etkili)
   /// Blurlu görüntülerde yüksek gradient değerleri azalır
-  double _calculateGradientHistogramScore(img.Image image, int width, int height) {
+  double _calculateGradientHistogramScore(
+    img.Image image,
+    int width,
+    int height,
+  ) {
     final sobelX = [
       [-1, 0, 1],
       [-2, 0, 2],
@@ -458,7 +501,9 @@ class BlurDetectionService {
 
     final gradientMagnitudes = <double>[];
     final useSampling = (width * height) > 160000;
-    final samplingStep = useSampling ? 3 : 2; // Histogram için daha az sampling yeterli
+    final samplingStep = useSampling
+        ? 3
+        : 2; // Histogram için daha az sampling yeterli
 
     for (int y = 1; y < height - 1; y += samplingStep) {
       for (int x = 1; x < width - 1; x += samplingStep) {
@@ -468,7 +513,9 @@ class BlurDetectionService {
         for (int ky = -1; ky <= 1; ky++) {
           for (int kx = -1; kx <= 1; kx++) {
             final pixel = image.getPixel(x + kx, y + ky);
-            final gray = ((299 * pixel.r + 587 * pixel.g + 114 * pixel.b) ~/ 1000).round();
+            final gray =
+                ((299 * pixel.r + 587 * pixel.g + 114 * pixel.b) ~/ 1000)
+                    .round();
             gx += gray * sobelX[ky + 1][kx + 1];
             gy += gray * sobelY[ky + 1][kx + 1];
           }
@@ -484,7 +531,7 @@ class BlurDetectionService {
     // Histogram oluştur (10 bin)
     final histogram = List<int>.filled(10, 0);
     final maxMagnitude = gradientMagnitudes.reduce((a, b) => a > b ? a : b);
-    
+
     if (maxMagnitude == 0) return 0.0;
 
     for (final magnitude in gradientMagnitudes) {
@@ -501,7 +548,10 @@ class BlurDetectionService {
     // Normalize et (0.0-1.0 arası) - daha fazla blur tespit için threshold artırıldı
     // Keskin görüntülerde highGradientRatio genelde 0.15-0.30 arası
     // Blurlu görüntülerde 0.05'ten az
-    final score = (highGradientRatio * 7.0).clamp(0.0, 1.0); // 6.0'dan 7.0'a artırıldı (daha fazla blur tespit)
+    final score = (highGradientRatio * 7.0).clamp(
+      0.0,
+      1.0,
+    ); // 6.0'dan 7.0'a artırıldı (daha fazla blur tespit)
     return score;
   }
 
@@ -531,7 +581,9 @@ class BlurDetectionService {
         for (int ky = -1; ky <= 1; ky++) {
           for (int kx = -1; kx <= 1; kx++) {
             final pixel = image.getPixel(x + kx, y + ky);
-            final gray = ((299 * pixel.r + 587 * pixel.g + 114 * pixel.b) ~/ 1000).round();
+            final gray =
+                ((299 * pixel.r + 587 * pixel.g + 114 * pixel.b) ~/ 1000)
+                    .round();
             gx += gray * sobelX[ky + 1][kx + 1];
             gy += gray * sobelY[ky + 1][kx + 1];
           }
@@ -544,7 +596,8 @@ class BlurDetectionService {
       }
     }
 
-    final totalPixels = ((width - 2) / samplingStep) * ((height - 2) / samplingStep);
+    final totalPixels =
+        ((width - 2) / samplingStep) * ((height - 2) / samplingStep);
     if (totalPixels == 0) return 0.0;
 
     // Edge density (edge sayısı / toplam pixel sayısı)
@@ -553,7 +606,10 @@ class BlurDetectionService {
     // Normalize et - daha fazla blur tespit için threshold artırıldı
     // Keskin görüntülerde edge density genelde 0.15-0.35 arası
     // Blurlu görüntülerde 0.05'ten az
-    final score = (edgeDensity * 4.0).clamp(0.0, 1.0); // 3.5'ten 4.0'a artırıldı (daha fazla blur tespit)
+    final score = (edgeDensity * 4.0).clamp(
+      0.0,
+      1.0,
+    ); // 3.5'ten 4.0'a artırıldı (daha fazla blur tespit)
     return score;
   }
 
@@ -571,7 +627,9 @@ class BlurDetectionService {
         for (int y = by; y < by + blockSize && y < height; y++) {
           for (int x = bx; x < bx + blockSize && x < width; x++) {
             final pixel = image.getPixel(x, y);
-            final gray = ((299 * pixel.r + 587 * pixel.g + 114 * pixel.b) ~/ 1000).round();
+            final gray =
+                ((299 * pixel.r + 587 * pixel.g + 114 * pixel.b) ~/ 1000)
+                    .round();
             blockPixels.add(gray);
           }
         }
@@ -584,7 +642,7 @@ class BlurDetectionService {
           sum += value;
         }
         final mean = sum / blockPixels.length;
-        
+
         var varianceSum = 0.0;
         for (final value in blockPixels) {
           final diff = value - mean;
@@ -607,7 +665,8 @@ class BlurDetectionService {
     // Normalize et - daha fazla blur tespit için threshold düşürüldü
     // Yüksek local variance = keskin görüntü (detaylar var)
     // Düşük local variance = blurlu görüntü (detaylar yok)
-    const maxVariance = 1300.0; // 1500'den 1300'e düşürüldü (daha fazla blur tespit - 32x32 bloklar için)
+    const maxVariance =
+        1300.0; // 1500'den 1300'e düşürüldü (daha fazla blur tespit - 32x32 bloklar için)
     final score = (avgLocalVariance / maxVariance).clamp(0.0, 1.0);
     return score;
   }
@@ -621,9 +680,17 @@ class BlurDetectionService {
     if (width >= 100 && height >= 100) {
       final halfWidth = width ~/ 2;
       final halfHeight = height ~/ 2;
-      final resized = img.copyResize(image, width: halfWidth, height: halfHeight);
-      final halfScore = _calculateSingleScaleBlur(resized, halfWidth, halfHeight);
-      
+      final resized = img.copyResize(
+        image,
+        width: halfWidth,
+        height: halfHeight,
+      );
+      final halfScore = _calculateSingleScaleBlur(
+        resized,
+        halfWidth,
+        halfHeight,
+      );
+
       // İki skorun ortalaması (blurlu görüntüler her ölçekte düşük skor verir)
       return (originalScore + halfScore) / 2.0;
     }
@@ -639,7 +706,12 @@ class BlurDetectionService {
       [-1, 8, -1],
       [-1, -1, -1],
     ];
-    final variance = _calculateLaplacianVariance(image, laplacianKernel, width, height);
+    final variance = _calculateLaplacianVariance(
+      image,
+      laplacianKernel,
+      width,
+      height,
+    );
     return _normalizeVariance(variance);
   }
 
@@ -661,7 +733,8 @@ class BlurDetectionService {
     switch (operatorType) {
       case 'laplacian':
         minVariance = 0.0;
-        maxVariance = 350.0; // 400'den 350'ye düşürüldü (daha fazla blur tespit)
+        maxVariance =
+            350.0; // 400'den 350'ye düşürüldü (daha fazla blur tespit)
         break;
       case 'sobel':
         minVariance = 0.0;
@@ -673,7 +746,8 @@ class BlurDetectionService {
         break;
       case 'prewitt':
         minVariance = 0.0;
-        maxVariance = 450.0; // 500'den 450'ye düşürüldü (daha fazla blur tespit)
+        maxVariance =
+            450.0; // 500'den 450'ye düşürüldü (daha fazla blur tespit)
         break;
       default:
         minVariance = 0.0;
@@ -682,24 +756,36 @@ class BlurDetectionService {
 
     // Clamp variance
     final clampedVariance = variance.clamp(minVariance, maxVariance);
-    
+
     // Sigmoid mapping (daha fazla blur tespit için k değeri artırıldı)
     // Sigmoid: 1 / (1 + e^(-k*(x - midpoint)))
     // k = steepness, midpoint = maxVariance / 2
     final midpoint = maxVariance / 2.0;
-    final k = 14.0 / maxVariance; // Steepness factor artırıldı (12'den 14'e - daha fazla blur tespit)
+    final k =
+        14.0 /
+        maxVariance; // Steepness factor artırıldı (12'den 14'e - daha fazla blur tespit)
     final normalized = (clampedVariance - midpoint) * k;
     final sigmoidScore = 1.0 / (1.0 + math.exp(-normalized));
-    
+
     return sigmoidScore.clamp(0.0, 1.0);
   }
 
   /// Albüm içinde blurlu fotoğrafları tespit et
   /// Returns: ({blurryPhotos: List<BlurPhoto>, scannedPhotoCount: int})
-  Future<({List<BlurPhoto> blurryPhotos, int scannedPhotoCount})> findBlurryPhotosInAlbum(
+  Future<
+    ({List<BlurPhoto> blurryPhotos, int scannedPhotoCount, int targetCount})
+  >
+  findBlurryPhotosInAlbum(
     pm.AssetPathEntity album, {
-    double blurThreshold = 0.5, // Daha fazla blur tespit etmek için 0.4'ten 0.5'e artırıldı
-    void Function(double progress, int processedCount, int totalCount)? progressCallback,
+    double blurThreshold =
+        0.5, // Daha fazla blur tespit etmek için 0.4'ten 0.5'e artırıldı
+    void Function(
+      double progress,
+      int processedCount,
+      int sampleTarget,
+      int albumTotalCount,
+    )?
+    progressCallback,
     bool Function()? shouldCancel,
     bool isPremium = false,
     int maxScanLimit = 999999999,
@@ -711,11 +797,15 @@ class BlurDetectionService {
     final blurryPhotos = <BlurPhoto>[];
     // Optimize sayfa boyutu: daha büyük sayfa = daha az I/O = daha hızlı
     const pageSize = 500; // 500 medya/sayfa (memory-safe, daha hızlı I/O)
-    const batchSize = 20; // Paralel işlenecek asset sayısı (performans için optimize edildi)
-    int page = 0;
+    const batchSize =
+        20; // Paralel işlenecek asset sayısı (performans için optimize edildi)
     int totalProcessed = 0;
     int totalAssets = 0;
     int imageCount = 0;
+    final random = math.Random();
+    final processingStart = DateTime.now();
+    const targetMsPerPhoto = 30; // 1000 foto ≈ 30sn hedef
+    int sampleTarget = 0;
 
     try {
       // Gerçek toplam asset sayısını al
@@ -725,9 +815,16 @@ class BlurDetectionService {
         debugPrint('📊 [BlurDetection] Gerçek toplam asset: $totalAssets');
       } catch (e) {
         // Eğer assetCountAsync çalışmazsa, tahmin et
-        debugPrint('⚠️ [BlurDetection] assetCountAsync çalışmadı, tahmin ediliyor: $e');
-        final firstPage = await album.getAssetListPaged(page: 0, size: pageSize);
-        totalAssets = firstPage.length >= pageSize ? firstPage.length * 10 : firstPage.length;
+        debugPrint(
+          '⚠️ [BlurDetection] assetCountAsync çalışmadı, tahmin ediliyor: $e',
+        );
+        final firstPage = await album.getAssetListPaged(
+          page: 0,
+          size: pageSize,
+        );
+        totalAssets = firstPage.length >= pageSize
+            ? firstPage.length * 10
+            : firstPage.length;
         totalAssets = totalAssets > 0 ? totalAssets : 500;
         debugPrint('📊 [BlurDetection] Tahmini toplam asset: $totalAssets');
       }
@@ -737,57 +834,87 @@ class BlurDetectionService {
 
       // 1000 fotoğraf limit kontrolü (premium olsa bile)
       const maxPhotosPerScan = 1000;
-      final effectiveMaxLimit = isPremium 
+      final effectiveMaxLimit = isPremium
           ? maxPhotosPerScan // Premium olsa bile 1000 limit
-          : (maxScanLimit > maxPhotosPerScan ? maxPhotosPerScan : maxScanLimit);
-      
-      // Kalan scan hakkı kadar fotoğraf scan et (1000 limit ile)
-      final int maxImagesToProcess = effectiveMaxLimit;
-      
-      // Toplam sayıyı maxImagesToProcess ile sınırla
-      if (totalAssets > maxImagesToProcess) {
-        totalAssets = maxImagesToProcess;
-        debugPrint('📊 [BlurDetection] Toplam sayı 1000 limit ile sınırlandı: $totalAssets');
+          : math.min(maxScanLimit, maxPhotosPerScan);
+      sampleTarget = totalAssets > 0
+          ? math.min(totalAssets, effectiveMaxLimit)
+          : effectiveMaxLimit;
+
+      if (sampleTarget <= 0) {
+        debugPrint('⚠️ [BlurDetection] Scan limiti 0, tarama yapılmadı.');
+        return (
+          blurryPhotos: <BlurPhoto>[],
+          scannedPhotoCount: 0,
+          targetCount: 0,
+        );
       }
 
-      // Tüm asset'leri kontrol et
-      debugPrint('🔄 [BlurDetection] Blur tespiti yapılıyor (hızlı mod)...');
-      while (true) {
-        // İptal kontrolü
-        if (shouldCancel != null && shouldCancel()) {
-          debugPrint('   🛑 [BlurDetection] Tarama iptal edildi');
-          return (blurryPhotos: blurryPhotos, scannedPhotoCount: imageCount);
-        }
+      final int totalPages = totalAssets > 0
+          ? ((totalAssets + pageSize - 1) ~/ pageSize)
+          : 1;
+      final pageIndices = List.generate(totalPages, (index) => index)
+        ..shuffle(random);
 
-        // Premium olmayan kullanıcılar için limit kontrolü
-        if (!isPremium && imageCount >= maxImagesToProcess) {
-          debugPrint(
-            '   ⚠️ [BlurDetection] Premium olmayan kullanıcı için limit aşıldı: $imageCount/$maxImagesToProcess fotoğraf işlendi',
-          );
+      // Tüm asset'leri kontrol et
+      debugPrint(
+        '🔄 [BlurDetection] Rastgele blur taraması başlıyor (hedef: $sampleTarget fotoğraf, toplam albüm asset: $totalAssets)',
+      );
+      for (final pageIndex in pageIndices) {
+        if (imageCount >= sampleTarget) {
           break;
         }
 
-        final assets = await album.getAssetListPaged(page: page, size: pageSize);
-        if (assets.isEmpty) break;
+        // İptal kontrolü
+        if (shouldCancel != null && shouldCancel()) {
+          debugPrint('   🛑 [BlurDetection] Tarama iptal edildi');
+          return (
+            blurryPhotos: blurryPhotos,
+            scannedPhotoCount: imageCount,
+            targetCount: sampleTarget,
+          );
+        }
+
+        final assets = await album.getAssetListPaged(
+          page: pageIndex,
+          size: pageSize,
+        );
+        if (assets.isEmpty) continue;
 
         // Sadece image asset'leri filtrele
-        final imageAssets = assets.where((a) => a.type == pm.AssetType.image).toList();
-        
+        final imageAssets =
+            assets.where((a) => a.type == pm.AssetType.image).toList()
+              ..shuffle(random);
+        if (imageAssets.isEmpty) continue;
+
         // Paralel batch processing: asset'leri batch'ler halinde işle
         for (var i = 0; i < imageAssets.length; i += batchSize) {
-          // İptal kontrolü (her batch'te)
-          if (shouldCancel != null && shouldCancel()) {
-            debugPrint('   🛑 [BlurDetection] Tarama iptal edildi');
-            return (blurryPhotos: blurryPhotos, scannedPhotoCount: imageCount);
-          }
-
-          // Premium olmayan kullanıcılar için limit kontrolü
-          if (!isPremium && imageCount >= maxImagesToProcess) {
+          if (imageCount >= sampleTarget) {
             break;
           }
 
-          final batch = imageAssets.skip(i).take(batchSize).toList();
-          
+          // İptal kontrolü (her batch'te)
+          if (shouldCancel != null && shouldCancel()) {
+            debugPrint('   🛑 [BlurDetection] Tarama iptal edildi');
+            return (
+              blurryPhotos: blurryPhotos,
+              scannedPhotoCount: imageCount,
+              targetCount: sampleTarget,
+            );
+          }
+
+          var batch = imageAssets.skip(i).take(batchSize).toList();
+          final remainingNeeded = sampleTarget - imageCount;
+          if (remainingNeeded <= 0) {
+            break;
+          }
+          if (batch.length > remainingNeeded) {
+            batch = batch.sublist(0, remainingNeeded);
+          }
+          if (batch.isEmpty) {
+            continue;
+          }
+
           // Batch'i paralel işle
           final batchResults = await Future.wait(
             batch.map((asset) async {
@@ -797,8 +924,8 @@ class BlurDetectionService {
                   return null;
                 }
 
-                // Premium olmayan kullanıcılar için limit kontrolü
-                if (!isPremium && imageCount >= maxImagesToProcess) {
+                // Limit kontrolü
+                if (imageCount >= sampleTarget) {
                   return null;
                 }
 
@@ -807,38 +934,39 @@ class BlurDetectionService {
                   calculateBlurScore(asset),
                   calculatePixelationScore(asset),
                 ]);
-                
+
                 final blurScore = results[0];
                 final pixelationScore = results[1];
-              
-              // Blurlu veya pixelleşmiş fotoğrafları filtrele
-              final isBlurry = blurScore < blurThreshold;
-              final isPixelated = pixelationScore > 0.5; // Pixelation threshold
-              
-              // Debug: Tespit edilen problemli fotoğrafları logla
-              if (isBlurry || isPixelated) {
-                debugPrint(
-                  '   ✅ [BlurDetection] Problemli fotoğraf tespit edildi: Asset ${asset.id}, BlurScore=${blurScore.toStringAsFixed(3)} (threshold: $blurThreshold), PixelationScore=${pixelationScore.toStringAsFixed(3)}, isBlurry=$isBlurry, isPixelated=$isPixelated',
-                );
-              }
-              
-              if (isBlurry || isPixelated) {
-                  // Boyutu hesapla (metadata-based, hızlı)
-                double estimatedSizeMB = 0;
-                try {
-                  final size = asset.size;
-                  final estimatedBytes = size.width * size.height * 3;
-                  estimatedSizeMB = estimatedBytes / (1024 * 1024);
-                } catch (_) {
-                  // Hata durumunda devam et
+
+                // Blurlu veya pixelleşmiş fotoğrafları filtrele
+                final isBlurry = blurScore < blurThreshold;
+                final isPixelated =
+                    pixelationScore > 0.5; // Pixelation threshold
+
+                // Debug: Tespit edilen problemli fotoğrafları logla
+                if (isBlurry || isPixelated) {
+                  debugPrint(
+                    '   ✅ [BlurDetection] Problemli fotoğraf tespit edildi: Asset ${asset.id}, BlurScore=${blurScore.toStringAsFixed(3)} (threshold: $blurThreshold), PixelationScore=${pixelationScore.toStringAsFixed(3)}, isBlurry=$isBlurry, isPixelated=$isPixelated',
+                  );
                 }
 
+                if (isBlurry || isPixelated) {
+                  // Boyutu hesapla (metadata-based, hızlı)
+                  double estimatedSizeMB = 0;
+                  try {
+                    final size = asset.size;
+                    final estimatedBytes = size.width * size.height * 3;
+                    estimatedSizeMB = estimatedBytes / (1024 * 1024);
+                  } catch (_) {
+                    // Hata durumunda devam et
+                  }
+
                   return BlurPhoto(
-                  asset: asset,
-                  blurScore: blurScore,
-                  pixelationScore: pixelationScore,
-                  albumName: album.name,
-                  estimatedSizeMB: estimatedSizeMB,
+                    asset: asset,
+                    blurScore: blurScore,
+                    pixelationScore: pixelationScore,
+                    albumName: album.name,
+                    estimatedSizeMB: estimatedSizeMB,
                   );
                 }
                 return null;
@@ -853,27 +981,44 @@ class BlurDetectionService {
           for (final result in batchResults) {
             if (result != null) {
               blurryPhotos.add(result);
-              }
+            }
           }
 
           imageCount += batch.length;
           totalProcessed += batch.length;
 
+          // Hedef süreyi yakalamak için adaptif gecikme
+          final expectedDurationMs = imageCount * targetMsPerPhoto;
+          final elapsedMs = DateTime.now()
+              .difference(processingStart)
+              .inMilliseconds;
+          final remainingMs = expectedDurationMs - elapsedMs;
+          if (remainingMs > 3) {
+            final delayMs = remainingMs.clamp(3, 80).toInt();
+            await Future.delayed(Duration(milliseconds: delayMs));
+          }
+
           // İlerleme callback (throttled - her 50 asset'te bir veya her 500ms'de bir)
           // UI thread'i bloklamamak için callback'leri azalt
-          if (progressCallback != null && totalAssets > 0 && (totalProcessed % 50 == 0 || totalProcessed == imageAssets.length)) {
-            final progress = (totalProcessed / totalAssets).clamp(0.0, 1.0);
+          if (progressCallback != null &&
+              (totalProcessed % 50 == 0 || imageCount >= sampleTarget)) {
+            final progress = (totalProcessed / sampleTarget).clamp(0.0, 1.0);
             // Async olarak çağır (UI thread'i bloklamamak için)
             Future.microtask(() {
-              progressCallback(progress, totalProcessed, totalAssets);
+              progressCallback(
+                progress,
+                totalProcessed,
+                sampleTarget,
+                totalAssets,
+              );
             });
           }
-          
+
           // Her 100 asset'te bir yield (UI thread'e nefes vermek için)
           if (totalProcessed % 100 == 0) {
             await Future.delayed(const Duration(milliseconds: 1));
           }
-          
+
           // Her 200 asset'te bir memory temizliği (GC'yi tetikle)
           if (totalProcessed % 200 == 0) {
             // Force garbage collection hint
@@ -882,17 +1027,15 @@ class BlurDetectionService {
 
           // Debug log (her 50 fotoğrafta bir)
           if (imageCount % 50 == 0) {
-            debugPrint('   🖼️ [BlurDetection] $imageCount fotoğraf işlendi, ${blurryPhotos.length} problem bulundu...');
-            }
+            debugPrint(
+              '   🖼️ [BlurDetection] $imageCount fotoğraf işlendi, ${blurryPhotos.length} problem bulundu...',
+            );
+          }
         }
 
-        // Premium olmayan kullanıcılar için limit kontrolü (loop dışında)
-        if (!isPremium && imageCount >= maxImagesToProcess) {
+        if (imageCount >= sampleTarget) {
           break;
         }
-
-        if (assets.length < pageSize) break;
-        page++;
       }
 
       // Blur score'a göre sırala (en blurludan en az blurluya)
@@ -901,24 +1044,44 @@ class BlurDetectionService {
       debugPrint(
         '✅ [BlurDetection] ${blurryPhotos.length} blurlu fotoğraf bulundu (${album.name})',
       );
-      debugPrint(
-        '📊 [BlurDetection] Toplam scan edilen fotoğraf: $imageCount',
-      );
+      debugPrint('📊 [BlurDetection] Toplam scan edilen fotoğraf: $imageCount');
 
-      return (blurryPhotos: blurryPhotos, scannedPhotoCount: imageCount);
+      return (
+        blurryPhotos: blurryPhotos,
+        scannedPhotoCount: imageCount,
+        targetCount: sampleTarget,
+      );
     } catch (e, stackTrace) {
       debugPrint('❌ [BlurDetection] Hata: $e');
       debugPrint('❌ [BlurDetection] Stack trace: $stackTrace');
-      return (blurryPhotos: <BlurPhoto>[], scannedPhotoCount: 0);
+      return (
+        blurryPhotos: <BlurPhoto>[],
+        scannedPhotoCount: 0,
+        targetCount: sampleTarget,
+      );
     }
   }
 
   /// Birden fazla albümde blurlu fotoğrafları tespit et
-  /// Returns: ({results: Map<String, List<BlurPhoto>>, scannedPhotoCount: int})
-  Future<({Map<String, List<BlurPhoto>> results, int scannedPhotoCount})> findBlurryPhotosInAlbums(
+  /// Returns: ({results: Map<String, List<BlurPhoto>>, scannedPhotoCount: int, targetCount: int})
+  Future<
+    ({
+      Map<String, List<BlurPhoto>> results,
+      int scannedPhotoCount,
+      int targetCount,
+    })
+  >
+  findBlurryPhotosInAlbums(
     List<pm.AssetPathEntity> albums, {
     double blurThreshold = 0.5,
-    void Function(String albumName, double progress, int processedCount, int totalCount)? progressCallback,
+    void Function(
+      String albumName,
+      double progress,
+      int processedCount,
+      int sampleTarget,
+      int albumTotalCount,
+    )?
+    progressCallback,
     bool Function()? shouldCancel,
     bool isPremium = false,
     int maxScanLimit = 999999999,
@@ -928,12 +1091,17 @@ class BlurDetectionService {
     );
     final results = <String, List<BlurPhoto>>{};
     int totalScannedPhotos = 0;
+    int totalTargetPhotos = 0;
 
     for (int i = 0; i < albums.length; i++) {
       // İptal kontrolü
       if (shouldCancel != null && shouldCancel()) {
         debugPrint('   🛑 [BlurDetection] Tarama iptal edildi');
-        return (results: results, scannedPhotoCount: totalScannedPhotos);
+        return (
+          results: results,
+          scannedPhotoCount: totalScannedPhotos,
+          targetCount: totalTargetPhotos,
+        );
       }
 
       // Kalan scan limit kontrolü (premium değilse)
@@ -950,25 +1118,30 @@ class BlurDetectionService {
       );
 
       // Kalan scan limit'i hesapla
-      final remainingScanLimit = isPremium 
-          ? 999999999 
+      final remainingScanLimit = isPremium
+          ? 999999999
           : (maxScanLimit - totalScannedPhotos).clamp(0, maxScanLimit);
 
       final albumResult = await findBlurryPhotosInAlbum(
         album,
         blurThreshold: blurThreshold,
-        progressCallback: (albumProgress, albumProcessedCount, albumTotalCount) {
-          // Genel ilerleme hesapla (tüm albümler için)
-          final overallProcessedCount = totalScannedPhotos + albumProcessedCount;
-          final overallTotalCount = totalScannedPhotos + albumTotalCount;
-          final overallProgress = albums.length > 1 
-              ? (i + albumProgress) / albums.length 
-              : albumProgress;
-          
-          if (progressCallback != null) {
-            progressCallback(album.name, overallProgress, overallProcessedCount, overallTotalCount);
-          }
-        },
+        progressCallback:
+            (
+              albumProgress,
+              albumProcessedCount,
+              albumPlannedCount,
+              albumTotalCount,
+            ) {
+              if (progressCallback != null) {
+                progressCallback(
+                  album.name,
+                  albumProgress.clamp(0.0, 1.0),
+                  albumProcessedCount,
+                  albumPlannedCount,
+                  albumTotalCount,
+                );
+              }
+            },
         shouldCancel: shouldCancel,
         isPremium: isPremium,
         maxScanLimit: remainingScanLimit,
@@ -976,11 +1149,16 @@ class BlurDetectionService {
 
       final blurryPhotos = albumResult.blurryPhotos;
       final albumScannedCount = albumResult.scannedPhotoCount;
+      totalTargetPhotos += albumResult.targetCount;
 
       // İptal edildiyse sonuçları döndür
       if (shouldCancel != null && shouldCancel()) {
         debugPrint('   🛑 [BlurDetection] Tarama iptal edildi');
-        return (results: results, scannedPhotoCount: totalScannedPhotos);
+        return (
+          results: results,
+          scannedPhotoCount: totalScannedPhotos,
+          targetCount: totalTargetPhotos,
+        );
       }
 
       totalScannedPhotos += albumScannedCount;
@@ -1001,7 +1179,12 @@ class BlurDetectionService {
     debugPrint(
       '🎉 [BlurDetection] Tüm albümler taranı! Toplam sonuç: ${results.length} albüm, Toplam scan edilen: $totalScannedPhotos fotoğraf',
     );
-    return (results: results, scannedPhotoCount: totalScannedPhotos);
+    return (
+      results: results,
+      scannedPhotoCount: totalScannedPhotos,
+      targetCount: totalTargetPhotos == 0
+          ? totalScannedPhotos
+          : totalTargetPhotos,
+    );
   }
 }
-

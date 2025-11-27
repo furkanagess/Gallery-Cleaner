@@ -73,7 +73,7 @@ class _ShimmerWidgetState extends State<_ShimmerWidget>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final brightness = theme.brightness;
-    
+
     // More subtle colors for a modern look
     final baseColor = brightness == Brightness.light
         ? theme.colorScheme.surfaceContainerHighest.withOpacity(0.3)
@@ -98,23 +98,14 @@ class _ShimmerWidgetState extends State<_ShimmerWidget>
               // Subtle shimmer effect
               Positioned.fill(
                 child: ClipRRect(
-                  borderRadius: widget.borderRadius ?? BorderRadius.circular(12),
+                  borderRadius:
+                      widget.borderRadius ?? BorderRadius.circular(12),
                   child: Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        begin: Alignment(
-                          -1.0 + (animationValue * 2.0),
-                          0.0,
-                        ),
-                        end: Alignment(
-                          1.0 + (animationValue * 2.0),
-                          0.0,
-                        ),
-                        colors: [
-                          baseColor,
-                          highlightColor,
-                          baseColor,
-                        ],
+                        begin: Alignment(-1.0 + (animationValue * 2.0), 0.0),
+                        end: Alignment(1.0 + (animationValue * 2.0), 0.0),
+                        colors: [baseColor, highlightColor, baseColor],
                         stops: const [0.0, 0.5, 1.0],
                       ),
                     ),
@@ -1879,703 +1870,494 @@ class _BlurTabState extends ConsumerState<_BlurTab> {
           final hasResults =
               blurState.hasCompletedScan || blurState.totalBlurryPhotos > 0;
 
-        // Tarama yapılırken full-screen overlay göster
-        if (isScanning) {
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(32),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  SizedBox(
-                    width: 180,
-                    height: 180,
-                    child: Lottie.asset(
-                      'assets/lottie/gallery_loading.json',
-                      fit: BoxFit.contain,
-                      repeat: true,
-                      animate: true,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    l10n.scanningBlurPhotos,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: theme.colorScheme.onSurface,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    l10n.loadingMayTakeFewSeconds,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurface.withOpacity(0.7),
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 24),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 16,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.warningLight.withOpacity(0.4),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: AppColors.warning.withOpacity(0.7),
-                        width: 2,
+          // Tarama yapılırken full-screen overlay göster
+          if (isScanning) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(32),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SizedBox(
+                      width: 180,
+                      height: 180,
+                      child: Lottie.asset(
+                        'assets/lottie/gallery_loading.json',
+                        fit: BoxFit.contain,
+                        repeat: true,
+                        animate: true,
                       ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.warning.withOpacity(0.2),
-                          blurRadius: 8,
-                          spreadRadius: 1,
-                        ),
-                      ],
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.warning_amber_rounded,
-                          size: 28,
-                          color: AppColors.warning,
-                        ),
-                        const SizedBox(width: 12),
-                        Flexible(
-                          child: Text(
-                            l10n.doNotLeaveScreenDuringScan,
-                            style: theme.textTheme.bodyLarge?.copyWith(
-                              color: AppColors.warning,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 15,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Progress bilgisi - scan başladığı andan itibaren göster
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primaryContainer.withOpacity(
-                        0.3,
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      blurState.currentAlbum != null
-                          ? '${blurState.currentAlbum} • ${(blurState.progress * 100).floor()}%'
-                          : '${(blurState.progress * 100).floor()}%',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.primary,
-                        fontWeight: FontWeight.w500,
+                    const SizedBox(height: 24),
+                    Text(
+                      l10n.scanningBlurPhotos,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: theme.colorScheme.onSurface,
                       ),
                       textAlign: TextAlign.center,
                     ),
-                  ),
-                  const SizedBox(height: 24),
-                  // Durdur butonu
-                  FilledButton.icon(
-                    onPressed: () {
-                      ref.read(blurDetectionProvider.notifier).cancel();
-                    },
-                    icon: const Icon(Icons.stop),
-                    label: Text(l10n.stop),
-                    style: FilledButton.styleFrom(
+                    const SizedBox(height: 12),
+                    Text(
+                      l10n.loadingMayTakeFewSeconds,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurface.withOpacity(0.7),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 24),
+                    Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
+                        horizontal: 20,
                         vertical: 16,
                       ),
-                      backgroundColor: theme.colorScheme.error,
-                      foregroundColor: theme.colorScheme.onError,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.warningLight.withOpacity(0.4),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: AppColors.warning.withOpacity(0.7),
+                          width: 2,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.warning.withOpacity(0.2),
+                            blurRadius: 8,
+                            spreadRadius: 1,
+                          ),
+                        ],
                       ),
-                      side: BorderSide(
-                        color: AppColors.error.withOpacity(
-                          0.9,
-                        ), // Kırmızı border
-                        width: 1.5,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.warning_amber_rounded,
+                            size: 28,
+                            color: AppColors.warning,
+                          ),
+                          const SizedBox(width: 12),
+                          Flexible(
+                            child: Text(
+                              l10n.doNotLeaveScreenDuringScan,
+                              style: theme.textTheme.bodyLarge?.copyWith(
+                                color: AppColors.warning,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 15,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
+                    // Progress bilgisi - scan başladığı andan itibaren göster
+                    const SizedBox(height: 16),
+                    _ScanProgressCard(
+                      title: blurState.currentAlbum ?? l10n.scanningBlurPhotos,
+                      processed: blurState.processedCount,
+                      total: blurState.totalCount,
+                      fallbackLabel: l10n.scanningBlurPhotos,
+                    ),
+                    const SizedBox(height: 24),
+                    // Durdur butonu
+                    FilledButton.icon(
+                      onPressed: () {
+                        ref.read(blurDetectionProvider.notifier).cancel();
+                      },
+                      icon: const Icon(Icons.stop),
+                      label: Text(l10n.stop),
+                      style: FilledButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 16,
+                        ),
+                        backgroundColor: theme.colorScheme.error,
+                        foregroundColor: theme.colorScheme.onError,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        side: BorderSide(
+                          color: AppColors.error.withOpacity(
+                            0.9,
+                          ), // Kırmızı border
+                          width: 1.5,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+
+          return Stack(
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(
+                  top: 8,
+                  left: 16,
+                  right: 16,
+                  bottom: 80,
+                ),
+                child: hasResults
+                    ? _buildResultsView(context, blurState, theme, l10n)
+                    : _buildScanForm(context, theme, l10n),
+              ),
+              // Fixed bottom button
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.background,
                   ),
-                ],
-              ),
-            ),
-          );
-        }
+                  child: SafeArea(
+                    child: Consumer(
+                      builder: (context, ref, _) {
+                        // Check if there are actual photos to delete
+                        final allPhotos = <BlurPhoto>[];
+                        for (final entry
+                            in blurState.blurryPhotosByAlbum.entries) {
+                          allPhotos.addAll(entry.value);
+                        }
+                        final hasPhotosToDelete = allPhotos.isNotEmpty;
 
-        return Stack(
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(
-                top: 8,
-                left: 16,
-                right: 16,
-                bottom: 80,
-              ),
-              child: hasResults
-                  ? _buildResultsView(context, blurState, theme, l10n)
-                  : _buildScanForm(context, theme, l10n),
-            ),
-            // Fixed bottom button
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(color: theme.colorScheme.background),
-                child: SafeArea(
-                  child: Consumer(
-                    builder: (context, ref, _) {
-                      // Check if there are actual photos to delete
-                      final allPhotos = <BlurPhoto>[];
-                      for (final entry
-                          in blurState.blurryPhotosByAlbum.entries) {
-                        allPhotos.addAll(entry.value);
-                      }
-                      final hasPhotosToDelete = allPhotos.isNotEmpty;
+                        final blurScanLimitAsync = ref.watch(
+                          blurScanLimitProvider,
+                        );
+                        final isPremiumAsync = ref.watch(isPremiumProvider);
 
-                      final blurScanLimitAsync = ref.watch(
-                        blurScanLimitProvider,
-                      );
-                      final isPremiumAsync = ref.watch(isPremiumProvider);
+                        return blurScanLimitAsync.when(
+                          loading: () => hasPhotosToDelete
+                              ? FilledButton.icon(
+                                  onPressed: () async {
+                                    final allPhotos = <BlurPhoto>[];
+                                    for (final entry
+                                        in blurState
+                                            .blurryPhotosByAlbum
+                                            .entries) {
+                                      allPhotos.addAll(entry.value);
+                                    }
 
-                      return blurScanLimitAsync.when(
-                        loading: () => hasPhotosToDelete
-                            ? FilledButton.icon(
-                                onPressed: () async {
-                                  final allPhotos = <BlurPhoto>[];
-                                  for (final entry
-                                      in blurState
-                                          .blurryPhotosByAlbum
-                                          .entries) {
-                                    allPhotos.addAll(entry.value);
-                                  }
-
-                                  final l10n = AppLocalizations.of(context)!;
-                                  final confirmed = await showDialog<bool>(
-                                    context: context,
-                                    builder: (context) => AlertDialog(
-                                      title: Text(l10n.deleteAllBlurryPhotos),
-                                      content: Text(
-                                        l10n.deleteAllBlurryPhotosMessage(
-                                          allPhotos.length,
+                                    final l10n = AppLocalizations.of(context)!;
+                                    final confirmed = await showDialog<bool>(
+                                      context: context,
+                                      builder: (context) => AlertDialog(
+                                        title: Text(l10n.deleteAllBlurryPhotos),
+                                        content: Text(
+                                          l10n.deleteAllBlurryPhotosMessage(
+                                            allPhotos.length,
+                                          ),
                                         ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () => Navigator.of(
+                                              context,
+                                            ).pop(false),
+                                            child: Text(l10n.cancel),
+                                          ),
+                                          FilledButton(
+                                            onPressed: () =>
+                                                Navigator.of(context).pop(true),
+                                            style: FilledButton.styleFrom(
+                                              backgroundColor:
+                                                  theme.colorScheme.error,
+                                            ),
+                                            child: Text(l10n.delete),
+                                          ),
+                                        ],
                                       ),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () =>
-                                              Navigator.of(context).pop(false),
-                                          child: Text(l10n.cancel),
-                                        ),
-                                        FilledButton(
-                                          onPressed: () =>
-                                              Navigator.of(context).pop(true),
-                                          style: FilledButton.styleFrom(
-                                            backgroundColor:
-                                                theme.colorScheme.error,
-                                          ),
-                                          child: Text(l10n.delete),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-
-                                  if (confirmed != true || !mounted) return;
-
-                                  // Delete limit kontrolü
-                                  final deleteLimitController = ref.read(
-                                    deleteLimitProvider.notifier,
-                                  );
-                                  final deleteLimit =
-                                      await deleteLimitController
-                                          .currentLimit();
-                                  final isPremium = await PreferencesService()
-                                      .isPremium();
-
-                                  // Toplam silinecek fotoğraf sayısını kontrol et
-                                  final totalPhotosToDelete = allPhotos.length;
-
-                                  // Delete limit'e göre maksimum silinebilecek fotoğraf sayısını belirle
-                                  final maxDeleteCount =
-                                      isPremium || deleteLimit >= 999999999
-                                      ? totalPhotosToDelete
-                                      : math.min(
-                                          deleteLimit,
-                                          totalPhotosToDelete,
-                                        );
-
-                                  debugPrint(
-                                    '📊 [SwipePage] Blur tab - Toplu silme: $maxDeleteCount/$totalPhotosToDelete fotoğraf silinecek (limit: $deleteLimit)',
-                                  );
-
-                                  // Eğer limit varsa, sadece limit kadar fotoğrafı sil
-                                  int deletedCount = 0;
-                                  if (maxDeleteCount > 0) {
-                                    // Tüm fotoğrafları al ve limit kadarını sil
-                                    final photosToDelete = allPhotos
-                                        .take(maxDeleteCount)
-                                        .toList();
-                                    deletedCount = await ref
-                                        .read(blurDetectionProvider.notifier)
-                                        .deleteBlurryPhotos(photosToDelete);
-                                  }
-
-                                  if (!mounted) return;
-
-                                  if (deletedCount > 0) {
-                                    // Silme hakkını azalt
-                                    await deleteLimitController.decrease(
-                                      deletedCount,
                                     );
+
+                                    if (confirmed != true || !mounted) return;
+
+                                    // Delete limit kontrolü
+                                    final deleteLimitController = ref.read(
+                                      deleteLimitProvider.notifier,
+                                    );
+                                    final deleteLimit =
+                                        await deleteLimitController
+                                            .currentLimit();
+                                    final isPremium = await PreferencesService()
+                                        .isPremium();
+
+                                    // Toplam silinecek fotoğraf sayısını kontrol et
+                                    final totalPhotosToDelete =
+                                        allPhotos.length;
+
+                                    // Delete limit'e göre maksimum silinebilecek fotoğraf sayısını belirle
+                                    final maxDeleteCount =
+                                        isPremium || deleteLimit >= 999999999
+                                        ? totalPhotosToDelete
+                                        : math.min(
+                                            deleteLimit,
+                                            totalPhotosToDelete,
+                                          );
 
                                     debugPrint(
-                                      '✅ [SwipePage] Blur tab - $deletedCount fotoğraf silindi',
+                                      '📊 [SwipePage] Blur tab - Toplu silme: $maxDeleteCount/$totalPhotosToDelete fotoğraf silinecek (limit: $deleteLimit)',
                                     );
 
-                                    // Cleanup complete dialogunu önce göster - reload'dan önce
-                                    // Böylece dialog gösterilirken TabView rebuild olmaz
-                                    debugPrint(
-                                      '🎯 [SwipePage] Blur tab (post-scan) - About to show delete success dialog - deletedCount: $deletedCount, mounted: $mounted',
-                                    );
-                                    if (mounted) {
-                                      debugPrint(
-                                        '✅ [SwipePage] Blur tab (post-scan) - Mounted, calling _showDeleteSuccessDialog...',
-                                      );
-                                      await _showDeleteSuccessDialog(
-                                        context,
-                                        deletedCount,
-                                      );
-                                      debugPrint(
-                                        '✅ [SwipePage] Blur tab (post-scan) - _showDeleteSuccessDialog completed',
-                                      );
-                                    } else {
-                                      debugPrint(
-                                        '❌ [SwipePage] Blur tab (post-scan) - Not mounted, cannot show dialog',
-                                      );
-                                    }
-
-                                    // Reload'u dialog kapandıktan sonra yap
-                                    // Böylece dialog gösterilirken TabView rebuild olmaz
-                                    if (mounted) {
-                                      ref
-                                          .read(
-                                            galleryPagingControllerProvider
-                                                .notifier,
-                                          )
-                                          .reload();
-                                    }
-                                  } else {
-                                    debugPrint(
-                                      '⚠️ [SwipePage] Blur tab - Silme işlemi başarısız veya limit yok',
-                                    );
-                                  }
-                                },
-                                icon: const Icon(Icons.delete_outline),
-                                label: Text(l10n.deleteAllBlurryPhotos),
-                                style: FilledButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 16,
-                                  ),
-                                  minimumSize: const Size(double.infinity, 56),
-                                  backgroundColor: AppColors.error.withOpacity(
-                                    0.85,
-                                  ), // Soluk iç renk
-                                  foregroundColor: theme.colorScheme.onError,
-                                  side: BorderSide(
-                                    color: AppColors.error.withOpacity(
-                                      0.9,
-                                    ), // Kırmızı border
-                                    width: 1.5,
-                                  ),
-                                ),
-                              )
-                            : _buildModernScanButton(
-                                context: context,
-                                theme: theme,
-                                l10n: l10n,
-                                onPressed: null,
-                                icon: Icons.search_rounded,
-                                label: l10n.startScan,
-                                isEnabled: false,
-                                isError: false,
-                              ),
-                        error: (_, __) => hasPhotosToDelete
-                            ? FilledButton.icon(
-                                onPressed: () async {
-                                  final allPhotos = <BlurPhoto>[];
-                                  for (final entry
-                                      in blurState
-                                          .blurryPhotosByAlbum
-                                          .entries) {
-                                    allPhotos.addAll(entry.value);
-                                  }
-
-                                  final l10n = AppLocalizations.of(context)!;
-                                  final confirmed = await showDialog<bool>(
-                                    context: context,
-                                    builder: (context) => AlertDialog(
-                                      title: Text(l10n.deleteAllBlurryPhotos),
-                                      content: Text(
-                                        l10n.deleteAllBlurryPhotosMessage(
-                                          allPhotos.length,
-                                        ),
-                                      ),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () =>
-                                              Navigator.of(context).pop(false),
-                                          child: Text(l10n.cancel),
-                                        ),
-                                        FilledButton(
-                                          onPressed: () =>
-                                              Navigator.of(context).pop(true),
-                                          style: FilledButton.styleFrom(
-                                            backgroundColor:
-                                                theme.colorScheme.error,
-                                          ),
-                                          child: Text(l10n.delete),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-
-                                  if (confirmed != true || !mounted) return;
-
-                                  // Delete limit kontrolü
-                                  final deleteLimitController = ref.read(
-                                    deleteLimitProvider.notifier,
-                                  );
-                                  final deleteLimit =
-                                      await deleteLimitController
-                                          .currentLimit();
-                                  final isPremium = await PreferencesService()
-                                      .isPremium();
-
-                                  // Toplam silinecek fotoğraf sayısını kontrol et
-                                  final totalPhotosToDelete = allPhotos.length;
-
-                                  // Delete limit'e göre maksimum silinebilecek fotoğraf sayısını belirle
-                                  final maxDeleteCount =
-                                      isPremium || deleteLimit >= 999999999
-                                      ? totalPhotosToDelete
-                                      : math.min(
-                                          deleteLimit,
-                                          totalPhotosToDelete,
-                                        );
-
-                                  debugPrint(
-                                    '📊 [SwipePage] Blur tab - Toplu silme: $maxDeleteCount/$totalPhotosToDelete fotoğraf silinecek (limit: $deleteLimit)',
-                                  );
-
-                                  // Eğer limit varsa, sadece limit kadar fotoğrafı sil
-                                  int deletedCount = 0;
-                                  if (maxDeleteCount > 0) {
-                                    // Tüm fotoğrafları al ve limit kadarını sil
-                                    final photosToDelete = allPhotos
-                                        .take(maxDeleteCount)
-                                        .toList();
-                                    deletedCount = await ref
-                                        .read(blurDetectionProvider.notifier)
-                                        .deleteBlurryPhotos(photosToDelete);
-                                  }
-
-                                  if (!mounted) return;
-
-                                  if (deletedCount > 0) {
-                                    // Silme hakkını azalt
-                                    await deleteLimitController.decrease(
-                                      deletedCount,
-                                    );
-
-                                    debugPrint(
-                                      '✅ [SwipePage] Blur tab - $deletedCount fotoğraf silindi',
-                                    );
-
-                                    // Cleanup complete dialogunu önce göster - reload'dan önce
-                                    // Böylece dialog gösterilirken TabView rebuild olmaz
-                                    debugPrint(
-                                      '🎯 [SwipePage] Blur tab (post-scan) - About to show delete success dialog - deletedCount: $deletedCount, mounted: $mounted',
-                                    );
-                                    if (mounted) {
-                                      debugPrint(
-                                        '✅ [SwipePage] Blur tab (post-scan) - Mounted, calling _showDeleteSuccessDialog...',
-                                      );
-                                      await _showDeleteSuccessDialog(
-                                        context,
-                                        deletedCount,
-                                      );
-                                      debugPrint(
-                                        '✅ [SwipePage] Blur tab (post-scan) - _showDeleteSuccessDialog completed',
-                                      );
-                                    } else {
-                                      debugPrint(
-                                        '❌ [SwipePage] Blur tab (post-scan) - Not mounted, cannot show dialog',
-                                      );
-                                    }
-
-                                    // Reload'u dialog kapandıktan sonra yap
-                                    // Böylece dialog gösterilirken TabView rebuild olmaz
-                                    if (mounted) {
-                                      ref
-                                          .read(
-                                            galleryPagingControllerProvider
-                                                .notifier,
-                                          )
-                                          .reload();
-                                    }
-                                  } else {
-                                    debugPrint(
-                                      '⚠️ [SwipePage] Blur tab - Silme işlemi başarısız veya limit yok',
-                                    );
-                                  }
-                                },
-                                icon: const Icon(Icons.delete_outline),
-                                label: Text(l10n.deleteAllBlurryPhotos),
-                                style: FilledButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 16,
-                                  ),
-                                  minimumSize: const Size(double.infinity, 56),
-                                  backgroundColor: AppColors.error.withOpacity(
-                                    0.85,
-                                  ), // Soluk iç renk
-                                  foregroundColor: theme.colorScheme.onError,
-                                  side: BorderSide(
-                                    color: AppColors.error.withOpacity(
-                                      0.9,
-                                    ), // Kırmızı border
-                                    width: 1.5,
-                                  ),
-                                ),
-                              )
-                            : _buildModernScanButton(
-                                context: context,
-                                theme: theme,
-                                l10n: l10n,
-                                onPressed: null,
-                                icon: Icons.search_rounded,
-                                label: l10n.startScan,
-                                isEnabled: false,
-                                isError: false,
-                              ),
-                        data: (scanLimit) {
-                          return isPremiumAsync.when(
-                            loading: () => hasPhotosToDelete
-                                ? FilledButton.icon(
-                                    onPressed: () async {
-                                      final allPhotos = <BlurPhoto>[];
-                                      for (final entry
-                                          in blurState
-                                              .blurryPhotosByAlbum
-                                              .entries) {
-                                        allPhotos.addAll(entry.value);
-                                      }
-
-                                      final l10n = AppLocalizations.of(
-                                        context,
-                                      )!;
-                                      final confirmed = await showDialog<bool>(
-                                        context: context,
-                                        builder: (context) => AlertDialog(
-                                          title: Text(
-                                            l10n.deleteAllBlurryPhotos,
-                                          ),
-                                          content: Text(
-                                            l10n.deleteAllBlurryPhotosMessage(
-                                              allPhotos.length,
-                                            ),
-                                          ),
-                                          actions: [
-                                            TextButton(
-                                              onPressed: () => Navigator.of(
-                                                context,
-                                              ).pop(false),
-                                              child: Text(l10n.cancel),
-                                            ),
-                                            FilledButton(
-                                              onPressed: () => Navigator.of(
-                                                context,
-                                              ).pop(true),
-                                              style: FilledButton.styleFrom(
-                                                backgroundColor:
-                                                    theme.colorScheme.error,
-                                              ),
-                                              child: Text(l10n.delete),
-                                            ),
-                                          ],
-                                        ),
-                                      );
-
-                                      if (confirmed != true || !mounted) return;
-
-                                      final deletedCount = await ref
+                                    // Eğer limit varsa, sadece limit kadar fotoğrafı sil
+                                    int deletedCount = 0;
+                                    if (maxDeleteCount > 0) {
+                                      // Tüm fotoğrafları al ve limit kadarını sil
+                                      final photosToDelete = allPhotos
+                                          .take(maxDeleteCount)
+                                          .toList();
+                                      deletedCount = await ref
                                           .read(blurDetectionProvider.notifier)
-                                          .deleteAllBlurryPhotos();
+                                          .deleteBlurryPhotos(photosToDelete);
+                                    }
 
-                                      if (!mounted) return;
+                                    if (!mounted) return;
 
-                                      await ref
-                                          .read(deleteLimitProvider.notifier)
-                                          .decrease(deletedCount);
+                                    if (deletedCount > 0) {
+                                      // Silme hakkını azalt
+                                      await deleteLimitController.decrease(
+                                        deletedCount,
+                                      );
 
-                                      // Success dialog göster
-                                      if (deletedCount > 0 && mounted) {
+                                      debugPrint(
+                                        '✅ [SwipePage] Blur tab - $deletedCount fotoğraf silindi',
+                                      );
+
+                                      // Cleanup complete dialogunu önce göster - reload'dan önce
+                                      // Böylece dialog gösterilirken TabView rebuild olmaz
+                                      debugPrint(
+                                        '🎯 [SwipePage] Blur tab (post-scan) - About to show delete success dialog - deletedCount: $deletedCount, mounted: $mounted',
+                                      );
+                                      if (mounted) {
+                                        debugPrint(
+                                          '✅ [SwipePage] Blur tab (post-scan) - Mounted, calling _showDeleteSuccessDialog...',
+                                        );
                                         await _showDeleteSuccessDialog(
                                           context,
                                           deletedCount,
                                         );
-                                      }
-                                    },
-                                    icon: const Icon(Icons.delete_outline),
-                                    label: Text(l10n.deleteAllBlurryPhotos),
-                                    style: FilledButton.styleFrom(
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 16,
-                                      ),
-                                      minimumSize: const Size(
-                                        double.infinity,
-                                        56,
-                                      ),
-                                      backgroundColor: theme.colorScheme.error,
-                                      foregroundColor:
-                                          theme.colorScheme.onError,
-                                      side: BorderSide(
-                                        color: AppColors.error.withOpacity(
-                                          0.9,
-                                        ), // Kırmızı border
-                                        width: 1.5,
-                                      ),
-                                    ),
-                                  )
-                                : _buildModernScanButton(
-                                    context: context,
-                                    theme: theme,
-                                    l10n: l10n,
-                                    onPressed: null,
-                                    icon: Icons.search_rounded,
-                                    label: l10n.startScan,
-                                    isEnabled: false,
-                                    isError: false,
-                                  ),
-                            error: (_, __) => hasPhotosToDelete
-                                ? FilledButton.icon(
-                                    onPressed: () async {
-                                      final allPhotos = <BlurPhoto>[];
-                                      for (final entry
-                                          in blurState
-                                              .blurryPhotosByAlbum
-                                              .entries) {
-                                        allPhotos.addAll(entry.value);
+                                        debugPrint(
+                                          '✅ [SwipePage] Blur tab (post-scan) - _showDeleteSuccessDialog completed',
+                                        );
+                                      } else {
+                                        debugPrint(
+                                          '❌ [SwipePage] Blur tab (post-scan) - Not mounted, cannot show dialog',
+                                        );
                                       }
 
-                                      final l10n = AppLocalizations.of(
-                                        context,
-                                      )!;
-                                      final confirmed = await showDialog<bool>(
-                                        context: context,
-                                        builder: (context) => AlertDialog(
-                                          title: Text(
-                                            l10n.deleteAllBlurryPhotos,
+                                      // Reload'u dialog kapandıktan sonra yap
+                                      // Böylece dialog gösterilirken TabView rebuild olmaz
+                                      if (mounted) {
+                                        ref
+                                            .read(
+                                              galleryPagingControllerProvider
+                                                  .notifier,
+                                            )
+                                            .reload();
+                                      }
+                                    } else {
+                                      debugPrint(
+                                        '⚠️ [SwipePage] Blur tab - Silme işlemi başarısız veya limit yok',
+                                      );
+                                    }
+                                  },
+                                  icon: const Icon(Icons.delete_outline),
+                                  label: Text(l10n.deleteAllBlurryPhotos),
+                                  style: FilledButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 16,
+                                    ),
+                                    minimumSize: const Size(
+                                      double.infinity,
+                                      56,
+                                    ),
+                                    backgroundColor: AppColors.error
+                                        .withOpacity(0.85), // Soluk iç renk
+                                    foregroundColor: theme.colorScheme.onError,
+                                    side: BorderSide(
+                                      color: AppColors.error.withOpacity(
+                                        0.9,
+                                      ), // Kırmızı border
+                                      width: 1.5,
+                                    ),
+                                  ),
+                                )
+                              : _buildModernScanButton(
+                                  context: context,
+                                  theme: theme,
+                                  l10n: l10n,
+                                  onPressed: null,
+                                  icon: Icons.search_rounded,
+                                  label: l10n.startScan,
+                                  isEnabled: false,
+                                  isError: false,
+                                ),
+                          error: (_, __) => hasPhotosToDelete
+                              ? FilledButton.icon(
+                                  onPressed: () async {
+                                    final allPhotos = <BlurPhoto>[];
+                                    for (final entry
+                                        in blurState
+                                            .blurryPhotosByAlbum
+                                            .entries) {
+                                      allPhotos.addAll(entry.value);
+                                    }
+
+                                    final l10n = AppLocalizations.of(context)!;
+                                    final confirmed = await showDialog<bool>(
+                                      context: context,
+                                      builder: (context) => AlertDialog(
+                                        title: Text(l10n.deleteAllBlurryPhotos),
+                                        content: Text(
+                                          l10n.deleteAllBlurryPhotosMessage(
+                                            allPhotos.length,
                                           ),
-                                          content: Text(
-                                            l10n.deleteAllBlurryPhotosMessage(
-                                              allPhotos.length,
-                                            ),
-                                          ),
-                                          actions: [
-                                            TextButton(
-                                              onPressed: () => Navigator.of(
-                                                context,
-                                              ).pop(false),
-                                              child: Text(l10n.cancel),
-                                            ),
-                                            FilledButton(
-                                              onPressed: () => Navigator.of(
-                                                context,
-                                              ).pop(true),
-                                              style: FilledButton.styleFrom(
-                                                backgroundColor:
-                                                    theme.colorScheme.error,
-                                              ),
-                                              child: Text(l10n.delete),
-                                            ),
-                                          ],
                                         ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () => Navigator.of(
+                                              context,
+                                            ).pop(false),
+                                            child: Text(l10n.cancel),
+                                          ),
+                                          FilledButton(
+                                            onPressed: () =>
+                                                Navigator.of(context).pop(true),
+                                            style: FilledButton.styleFrom(
+                                              backgroundColor:
+                                                  theme.colorScheme.error,
+                                            ),
+                                            child: Text(l10n.delete),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+
+                                    if (confirmed != true || !mounted) return;
+
+                                    // Delete limit kontrolü
+                                    final deleteLimitController = ref.read(
+                                      deleteLimitProvider.notifier,
+                                    );
+                                    final deleteLimit =
+                                        await deleteLimitController
+                                            .currentLimit();
+                                    final isPremium = await PreferencesService()
+                                        .isPremium();
+
+                                    // Toplam silinecek fotoğraf sayısını kontrol et
+                                    final totalPhotosToDelete =
+                                        allPhotos.length;
+
+                                    // Delete limit'e göre maksimum silinebilecek fotoğraf sayısını belirle
+                                    final maxDeleteCount =
+                                        isPremium || deleteLimit >= 999999999
+                                        ? totalPhotosToDelete
+                                        : math.min(
+                                            deleteLimit,
+                                            totalPhotosToDelete,
+                                          );
+
+                                    debugPrint(
+                                      '📊 [SwipePage] Blur tab - Toplu silme: $maxDeleteCount/$totalPhotosToDelete fotoğraf silinecek (limit: $deleteLimit)',
+                                    );
+
+                                    // Eğer limit varsa, sadece limit kadar fotoğrafı sil
+                                    int deletedCount = 0;
+                                    if (maxDeleteCount > 0) {
+                                      // Tüm fotoğrafları al ve limit kadarını sil
+                                      final photosToDelete = allPhotos
+                                          .take(maxDeleteCount)
+                                          .toList();
+                                      deletedCount = await ref
+                                          .read(blurDetectionProvider.notifier)
+                                          .deleteBlurryPhotos(photosToDelete);
+                                    }
+
+                                    if (!mounted) return;
+
+                                    if (deletedCount > 0) {
+                                      // Silme hakkını azalt
+                                      await deleteLimitController.decrease(
+                                        deletedCount,
                                       );
 
-                                      if (confirmed != true || !mounted) return;
+                                      debugPrint(
+                                        '✅ [SwipePage] Blur tab - $deletedCount fotoğraf silindi',
+                                      );
 
-                                      final deletedCount = await ref
-                                          .read(blurDetectionProvider.notifier)
-                                          .deleteAllBlurryPhotos();
-
-                                      if (!mounted) return;
-
-                                      await ref
-                                          .read(deleteLimitProvider.notifier)
-                                          .decrease(deletedCount);
-
-                                      // Success dialog göster
-                                      if (deletedCount > 0 && mounted) {
+                                      // Cleanup complete dialogunu önce göster - reload'dan önce
+                                      // Böylece dialog gösterilirken TabView rebuild olmaz
+                                      debugPrint(
+                                        '🎯 [SwipePage] Blur tab (post-scan) - About to show delete success dialog - deletedCount: $deletedCount, mounted: $mounted',
+                                      );
+                                      if (mounted) {
+                                        debugPrint(
+                                          '✅ [SwipePage] Blur tab (post-scan) - Mounted, calling _showDeleteSuccessDialog...',
+                                        );
                                         await _showDeleteSuccessDialog(
                                           context,
                                           deletedCount,
                                         );
+                                        debugPrint(
+                                          '✅ [SwipePage] Blur tab (post-scan) - _showDeleteSuccessDialog completed',
+                                        );
+                                      } else {
+                                        debugPrint(
+                                          '❌ [SwipePage] Blur tab (post-scan) - Not mounted, cannot show dialog',
+                                        );
                                       }
-                                    },
-                                    icon: const Icon(Icons.delete_outline),
-                                    label: Text(l10n.deleteAllBlurryPhotos),
-                                    style: FilledButton.styleFrom(
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 16,
-                                      ),
-                                      minimumSize: const Size(
-                                        double.infinity,
-                                        56,
-                                      ),
-                                      backgroundColor: theme.colorScheme.error,
-                                      foregroundColor:
-                                          theme.colorScheme.onError,
-                                      side: BorderSide(
-                                        color: AppColors.error.withOpacity(
-                                          0.9,
-                                        ), // Kırmızı border
-                                        width: 1.5,
-                                      ),
+
+                                      // Reload'u dialog kapandıktan sonra yap
+                                      // Böylece dialog gösterilirken TabView rebuild olmaz
+                                      if (mounted) {
+                                        ref
+                                            .read(
+                                              galleryPagingControllerProvider
+                                                  .notifier,
+                                            )
+                                            .reload();
+                                      }
+                                    } else {
+                                      debugPrint(
+                                        '⚠️ [SwipePage] Blur tab - Silme işlemi başarısız veya limit yok',
+                                      );
+                                    }
+                                  },
+                                  icon: const Icon(Icons.delete_outline),
+                                  label: Text(l10n.deleteAllBlurryPhotos),
+                                  style: FilledButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 16,
                                     ),
-                                  )
-                                : _buildModernScanButton(
-                                    context: context,
-                                    theme: theme,
-                                    l10n: l10n,
-                                    onPressed: null,
-                                    icon: Icons.search_rounded,
-                                    label: l10n.startScan,
-                                    isEnabled: false,
-                                    isError: false,
+                                    minimumSize: const Size(
+                                      double.infinity,
+                                      56,
+                                    ),
+                                    backgroundColor: AppColors.error
+                                        .withOpacity(0.85), // Soluk iç renk
+                                    foregroundColor: theme.colorScheme.onError,
+                                    side: BorderSide(
+                                      color: AppColors.error.withOpacity(
+                                        0.9,
+                                      ), // Kırmızı border
+                                      width: 1.5,
+                                    ),
                                   ),
-                            data: (isPremium) {
-                              final hasNoScanRights =
-                                  !isPremium && scanLimit <= 0;
-
-                              // No blurry photos found durumunda hiçbir buton gösterilmez
-                              if (hasResults && !hasPhotosToDelete) {
-                                return const SizedBox.shrink();
-                              }
-
-                              return hasResults && hasPhotosToDelete
+                                )
+                              : _buildModernScanButton(
+                                  context: context,
+                                  theme: theme,
+                                  l10n: l10n,
+                                  onPressed: null,
+                                  icon: Icons.search_rounded,
+                                  label: l10n.startScan,
+                                  isEnabled: false,
+                                  isError: false,
+                                ),
+                          data: (scanLimit) {
+                            return isPremiumAsync.when(
+                              loading: () => hasPhotosToDelete
                                   ? FilledButton.icon(
                                       onPressed: () async {
                                         final allPhotos = <BlurPhoto>[];
@@ -2614,11 +2396,6 @@ class _BlurTabState extends ConsumerState<_BlurTab> {
                                                 style: FilledButton.styleFrom(
                                                   backgroundColor:
                                                       theme.colorScheme.error,
-                                                  side: BorderSide(
-                                                    color: AppColors.error
-                                                        .withOpacity(0.9),
-                                                    width: 1.5,
-                                                  ),
                                                 ),
                                                 child: Text(l10n.delete),
                                               ),
@@ -2671,205 +2448,425 @@ class _BlurTabState extends ConsumerState<_BlurTab> {
                                         ),
                                       ),
                                     )
-                                  : FutureBuilder<
-                                      ({
-                                        int estimatedSeconds,
-                                        int totalPhotoCount,
-                                        bool hasLimitWarning,
-                                      })
-                                    >(
-                                      future: _estimateScanDuration(
-                                        selectedAlbums,
-                                        true,
-                                      ),
-                                      builder: (context, snapshot) {
-                                        final estimatedTimeText =
-                                            snapshot.hasData
-                                            ? _formatEstimatedTime(
-                                                snapshot.data!.estimatedSeconds,
-                                                l10n,
-                                              )
-                                            : null;
+                                  : _buildModernScanButton(
+                                      context: context,
+                                      theme: theme,
+                                      l10n: l10n,
+                                      onPressed: null,
+                                      icon: Icons.search_rounded,
+                                      label: l10n.startScan,
+                                      isEnabled: false,
+                                      isError: false,
+                                    ),
+                              error: (_, __) => hasPhotosToDelete
+                                  ? FilledButton.icon(
+                                      onPressed: () async {
+                                        final allPhotos = <BlurPhoto>[];
+                                        for (final entry
+                                            in blurState
+                                                .blurryPhotosByAlbum
+                                                .entries) {
+                                          allPhotos.addAll(entry.value);
+                                        }
 
-                                        final hasLimitWarning =
-                                            snapshot.hasData &&
-                                            snapshot.data!.hasLimitWarning;
-                                        final totalPhotoCount = snapshot.hasData
-                                            ? snapshot.data!.totalPhotoCount
-                                            : 0;
-
-                                        return _buildModernScanButton(
+                                        final l10n = AppLocalizations.of(
+                                          context,
+                                        )!;
+                                        final confirmed = await showDialog<bool>(
                                           context: context,
-                                          theme: theme,
-                                          l10n: l10n,
-                                          onPressed:
-                                              isScanning || hasNoScanRights
-                                              ? null
-                                              : () async {
-                                                  // Seçili albüm isimlerini hazırla
-                                                  final albumNames =
-                                                      selectedAlbums
-                                                          .map((a) => a.name)
-                                                          .join(', ');
+                                          builder: (context) => AlertDialog(
+                                            title: Text(
+                                              l10n.deleteAllBlurryPhotos,
+                                            ),
+                                            content: Text(
+                                              l10n.deleteAllBlurryPhotosMessage(
+                                                allPhotos.length,
+                                              ),
+                                            ),
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () => Navigator.of(
+                                                  context,
+                                                ).pop(false),
+                                                child: Text(l10n.cancel),
+                                              ),
+                                              FilledButton(
+                                                onPressed: () => Navigator.of(
+                                                  context,
+                                                ).pop(true),
+                                                style: FilledButton.styleFrom(
+                                                  backgroundColor:
+                                                      theme.colorScheme.error,
+                                                ),
+                                                child: Text(l10n.delete),
+                                              ),
+                                            ],
+                                          ),
+                                        );
 
-                                                  // Onay dialogu göster
-                                                  final confirmed = await showDialog<bool>(
-                                                    context: context,
-                                                    builder: (dialogContext) => AlertDialog(
-                                                      title: Text(
-                                                        l10n.confirmBlurScan,
-                                                      ),
-                                                      content: Column(
-                                                        mainAxisSize:
-                                                            MainAxisSize.min,
-                                                        crossAxisAlignment:
-                                                            CrossAxisAlignment
-                                                                .start,
-                                                        children: [
-                                                          Text(
-                                                            l10n.confirmBlurScanMessage,
-                                                          ),
-                                                          const SizedBox(
-                                                            height: 12,
-                                                          ),
-                                                          Container(
-                                                            padding:
-                                                                const EdgeInsets.all(
-                                                                  12,
-                                                                ),
-                                                            decoration: BoxDecoration(
-                                                              color: theme
-                                                                  .colorScheme
-                                                                  .primaryContainer
-                                                                  .withOpacity(
-                                                                    0.3,
+                                        if (confirmed != true || !mounted)
+                                          return;
+
+                                        final deletedCount = await ref
+                                            .read(
+                                              blurDetectionProvider.notifier,
+                                            )
+                                            .deleteAllBlurryPhotos();
+
+                                        if (!mounted) return;
+
+                                        await ref
+                                            .read(deleteLimitProvider.notifier)
+                                            .decrease(deletedCount);
+
+                                        // Success dialog göster
+                                        if (deletedCount > 0 && mounted) {
+                                          await _showDeleteSuccessDialog(
+                                            context,
+                                            deletedCount,
+                                          );
+                                        }
+                                      },
+                                      icon: const Icon(Icons.delete_outline),
+                                      label: Text(l10n.deleteAllBlurryPhotos),
+                                      style: FilledButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 16,
+                                        ),
+                                        minimumSize: const Size(
+                                          double.infinity,
+                                          56,
+                                        ),
+                                        backgroundColor:
+                                            theme.colorScheme.error,
+                                        foregroundColor:
+                                            theme.colorScheme.onError,
+                                        side: BorderSide(
+                                          color: AppColors.error.withOpacity(
+                                            0.9,
+                                          ), // Kırmızı border
+                                          width: 1.5,
+                                        ),
+                                      ),
+                                    )
+                                  : _buildModernScanButton(
+                                      context: context,
+                                      theme: theme,
+                                      l10n: l10n,
+                                      onPressed: null,
+                                      icon: Icons.search_rounded,
+                                      label: l10n.startScan,
+                                      isEnabled: false,
+                                      isError: false,
+                                    ),
+                              data: (isPremium) {
+                                final hasNoScanRights =
+                                    !isPremium && scanLimit <= 0;
+
+                                // No blurry photos found durumunda hiçbir buton gösterilmez
+                                if (hasResults && !hasPhotosToDelete) {
+                                  return const SizedBox.shrink();
+                                }
+
+                                return hasResults && hasPhotosToDelete
+                                    ? FilledButton.icon(
+                                        onPressed: () async {
+                                          final allPhotos = <BlurPhoto>[];
+                                          for (final entry
+                                              in blurState
+                                                  .blurryPhotosByAlbum
+                                                  .entries) {
+                                            allPhotos.addAll(entry.value);
+                                          }
+
+                                          final l10n = AppLocalizations.of(
+                                            context,
+                                          )!;
+                                          final confirmed = await showDialog<bool>(
+                                            context: context,
+                                            builder: (context) => AlertDialog(
+                                              title: Text(
+                                                l10n.deleteAllBlurryPhotos,
+                                              ),
+                                              content: Text(
+                                                l10n.deleteAllBlurryPhotosMessage(
+                                                  allPhotos.length,
+                                                ),
+                                              ),
+                                              actions: [
+                                                TextButton(
+                                                  onPressed: () => Navigator.of(
+                                                    context,
+                                                  ).pop(false),
+                                                  child: Text(l10n.cancel),
+                                                ),
+                                                FilledButton(
+                                                  onPressed: () => Navigator.of(
+                                                    context,
+                                                  ).pop(true),
+                                                  style: FilledButton.styleFrom(
+                                                    backgroundColor:
+                                                        theme.colorScheme.error,
+                                                    side: BorderSide(
+                                                      color: AppColors.error
+                                                          .withOpacity(0.9),
+                                                      width: 1.5,
+                                                    ),
+                                                  ),
+                                                  child: Text(l10n.delete),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+
+                                          if (confirmed != true || !mounted)
+                                            return;
+
+                                          final deletedCount = await ref
+                                              .read(
+                                                blurDetectionProvider.notifier,
+                                              )
+                                              .deleteAllBlurryPhotos();
+
+                                          if (!mounted) return;
+
+                                          await ref
+                                              .read(
+                                                deleteLimitProvider.notifier,
+                                              )
+                                              .decrease(deletedCount);
+
+                                          // Success dialog göster
+                                          if (deletedCount > 0 && mounted) {
+                                            await _showDeleteSuccessDialog(
+                                              context,
+                                              deletedCount,
+                                            );
+                                          }
+                                        },
+                                        icon: const Icon(Icons.delete_outline),
+                                        label: Text(l10n.deleteAllBlurryPhotos),
+                                        style: FilledButton.styleFrom(
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 16,
+                                          ),
+                                          minimumSize: const Size(
+                                            double.infinity,
+                                            56,
+                                          ),
+                                          backgroundColor:
+                                              theme.colorScheme.error,
+                                          foregroundColor:
+                                              theme.colorScheme.onError,
+                                          side: BorderSide(
+                                            color: AppColors.error.withOpacity(
+                                              0.9,
+                                            ), // Kırmızı border
+                                            width: 1.5,
+                                          ),
+                                        ),
+                                      )
+                                    : FutureBuilder<
+                                        ({
+                                          int estimatedSeconds,
+                                          int totalPhotoCount,
+                                          bool hasLimitWarning,
+                                        })
+                                      >(
+                                        future: _estimateScanDuration(
+                                          selectedAlbums,
+                                          true,
+                                        ),
+                                        builder: (context, snapshot) {
+                                          final estimatedTimeText =
+                                              snapshot.hasData
+                                              ? _formatEstimatedTime(
+                                                  snapshot
+                                                      .data!
+                                                      .estimatedSeconds,
+                                                  l10n,
+                                                )
+                                              : null;
+
+                                          final hasLimitWarning =
+                                              snapshot.hasData &&
+                                              snapshot.data!.hasLimitWarning;
+                                          final totalPhotoCount =
+                                              snapshot.hasData
+                                              ? snapshot.data!.totalPhotoCount
+                                              : 0;
+
+                                          return _buildModernScanButton(
+                                            context: context,
+                                            theme: theme,
+                                            l10n: l10n,
+                                            onPressed:
+                                                isScanning || hasNoScanRights
+                                                ? null
+                                                : () async {
+                                                    // Seçili albüm isimlerini hazırla
+                                                    final albumNames =
+                                                        selectedAlbums
+                                                            .map((a) => a.name)
+                                                            .join(', ');
+
+                                                    // Onay dialogu göster
+                                                    final confirmed = await showDialog<bool>(
+                                                      context: context,
+                                                      builder: (dialogContext) => AlertDialog(
+                                                        title: Text(
+                                                          l10n.confirmBlurScan,
+                                                        ),
+                                                        content: Column(
+                                                          mainAxisSize:
+                                                              MainAxisSize.min,
+                                                          crossAxisAlignment:
+                                                              CrossAxisAlignment
+                                                                  .start,
+                                                          children: [
+                                                            Text(
+                                                              l10n.confirmBlurScanMessage,
+                                                            ),
+                                                            const SizedBox(
+                                                              height: 12,
+                                                            ),
+                                                            Container(
+                                                              padding:
+                                                                  const EdgeInsets.all(
+                                                                    12,
                                                                   ),
-                                                              borderRadius:
-                                                                  BorderRadius.circular(
-                                                                    8,
-                                                                  ),
-                                                              border: Border.all(
+                                                              decoration: BoxDecoration(
                                                                 color: theme
                                                                     .colorScheme
-                                                                    .primary
+                                                                    .primaryContainer
                                                                     .withOpacity(
-                                                                      0.2,
+                                                                      0.3,
                                                                     ),
-                                                                width: 1,
-                                                              ),
-                                                            ),
-                                                            child: Row(
-                                                              children: [
-                                                                Icon(
-                                                                  Icons
-                                                                      .folder_rounded,
-                                                                  size: 20,
+                                                                borderRadius:
+                                                                    BorderRadius.circular(
+                                                                      8,
+                                                                    ),
+                                                                border: Border.all(
                                                                   color: theme
                                                                       .colorScheme
-                                                                      .primary,
+                                                                      .primary
+                                                                      .withOpacity(
+                                                                        0.2,
+                                                                      ),
+                                                                  width: 1,
                                                                 ),
-                                                                const SizedBox(
-                                                                  width: 8,
-                                                                ),
-                                                                Expanded(
-                                                                  child: Text(
-                                                                    albumNames,
-                                                                    style: theme
-                                                                        .textTheme
-                                                                        .bodyMedium
-                                                                        ?.copyWith(
-                                                                          color: theme
-                                                                              .colorScheme
-                                                                              .primary,
-                                                                          fontWeight:
-                                                                              FontWeight.w600,
-                                                                        ),
-                                                                    maxLines: 3,
-                                                                    overflow:
-                                                                        TextOverflow
-                                                                            .ellipsis,
+                                                              ),
+                                                              child: Row(
+                                                                children: [
+                                                                  Icon(
+                                                                    Icons
+                                                                        .folder_rounded,
+                                                                    size: 20,
+                                                                    color: theme
+                                                                        .colorScheme
+                                                                        .primary,
                                                                   ),
-                                                                ),
-                                                              ],
+                                                                  const SizedBox(
+                                                                    width: 8,
+                                                                  ),
+                                                                  Expanded(
+                                                                    child: Text(
+                                                                      albumNames,
+                                                                      style: theme.textTheme.bodyMedium?.copyWith(
+                                                                        color: theme
+                                                                            .colorScheme
+                                                                            .primary,
+                                                                        fontWeight:
+                                                                            FontWeight.w600,
+                                                                      ),
+                                                                      maxLines:
+                                                                          3,
+                                                                      overflow:
+                                                                          TextOverflow
+                                                                              .ellipsis,
+                                                                    ),
+                                                                  ),
+                                                                ],
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                        actions: [
+                                                          TextButton(
+                                                            onPressed: () =>
+                                                                Navigator.of(
+                                                                  dialogContext,
+                                                                ).pop(false),
+                                                            child: Text(
+                                                              l10n.cancel,
+                                                            ),
+                                                          ),
+                                                          FilledButton(
+                                                            onPressed: () =>
+                                                                Navigator.of(
+                                                                  dialogContext,
+                                                                ).pop(true),
+                                                            style: FilledButton.styleFrom(
+                                                              backgroundColor:
+                                                                  theme
+                                                                      .colorScheme
+                                                                      .primary,
+                                                            ),
+                                                            child: Text(
+                                                              l10n.scan,
                                                             ),
                                                           ),
                                                         ],
                                                       ),
-                                                      actions: [
-                                                        TextButton(
-                                                          onPressed: () =>
-                                                              Navigator.of(
-                                                                dialogContext,
-                                                              ).pop(false),
-                                                          child: Text(
-                                                            l10n.cancel,
-                                                          ),
-                                                        ),
-                                                        FilledButton(
-                                                          onPressed: () =>
-                                                              Navigator.of(
-                                                                dialogContext,
-                                                              ).pop(true),
-                                                          style: FilledButton.styleFrom(
-                                                            backgroundColor:
-                                                                theme
-                                                                    .colorScheme
-                                                                    .primary,
-                                                          ),
-                                                          child: Text(
-                                                            l10n.scan,
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  );
+                                                    );
 
-                                                  // Kullanıcı onaylamadıysa veya dialog kapatıldıysa çık
-                                                  if (confirmed != true ||
-                                                      !mounted)
-                                                    return;
+                                                    // Kullanıcı onaylamadıysa veya dialog kapatıldıysa çık
+                                                    if (confirmed != true ||
+                                                        !mounted)
+                                                      return;
 
-                                                  // Scan başlat
-                                                  await ref
-                                                      .read(
-                                                        blurDetectionProvider
-                                                            .notifier,
-                                                      )
-                                                      .scanAlbums(
-                                                        selectedAlbums,
-                                                        blurThreshold:
-                                                            _blurThreshold,
-                                                      );
+                                                    // Scan başlat
+                                                    await ref
+                                                        .read(
+                                                          blurDetectionProvider
+                                                              .notifier,
+                                                        )
+                                                        .scanAlbums(
+                                                          selectedAlbums,
+                                                          blurThreshold:
+                                                              _blurThreshold,
+                                                        );
 
-                                                  if (!mounted) return;
-                                                },
-                                          icon: hasNoScanRights
-                                              ? Icons.block
-                                              : Icons.search_rounded,
-                                          label: hasNoScanRights
-                                              ? l10n.noScanRightsLeft
-                                              : l10n.scanSelectedAlbums,
-                                          isEnabled:
-                                              !isScanning && !hasNoScanRights,
-                                          isError: hasNoScanRights,
-                                          estimatedTimeText: estimatedTimeText,
-                                          hasLimitWarning: hasLimitWarning,
-                                          totalPhotoCount: totalPhotoCount,
-                                        );
-                                      },
-                                    );
-                            },
-                          );
-                        },
-                      );
-                    },
+                                                    if (!mounted) return;
+                                                  },
+                                            icon: hasNoScanRights
+                                                ? Icons.block
+                                                : Icons.search_rounded,
+                                            label: hasNoScanRights
+                                                ? l10n.noScanRightsLeft
+                                                : l10n.scanSelectedAlbums,
+                                            isEnabled:
+                                                !isScanning && !hasNoScanRights,
+                                            isError: hasNoScanRights,
+                                            estimatedTimeText:
+                                                estimatedTimeText,
+                                            hasLimitWarning: hasLimitWarning,
+                                            totalPhotoCount: totalPhotoCount,
+                                          );
+                                        },
+                                      );
+                              },
+                            );
+                          },
+                        );
+                      },
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
-        );
-      },
+            ],
+          );
+        },
       ),
     );
   }
@@ -4246,614 +4243,514 @@ class _DuplicateTabState extends ConsumerState<_DuplicateTab> {
           final hasResults =
               duplicateState.hasCompletedScan || duplicateState.totalGroups > 0;
 
-        // Tarama yapılırken full-screen overlay göster
-        if (isScanning) {
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(32),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  SizedBox(
-                    width: 180,
-                    height: 180,
-                    child: Lottie.asset(
-                      'assets/lottie/gallery_loading.json',
-                      fit: BoxFit.contain,
-                      repeat: true,
-                      animate: true,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    l10n.scanningDuplicatePhotos,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: theme.colorScheme.onSurface,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    l10n.loadingMayTakeFewSeconds,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurface.withOpacity(0.7),
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 24),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 16,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.warningLight.withOpacity(0.4),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: AppColors.warning.withOpacity(0.7),
-                        width: 2,
+          // Tarama yapılırken full-screen overlay göster
+          if (isScanning) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(32),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SizedBox(
+                      width: 180,
+                      height: 180,
+                      child: Lottie.asset(
+                        'assets/lottie/gallery_loading.json',
+                        fit: BoxFit.contain,
+                        repeat: true,
+                        animate: true,
                       ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.warning.withOpacity(0.2),
-                          blurRadius: 8,
-                          spreadRadius: 1,
-                        ),
-                      ],
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.warning_amber_rounded,
-                          size: 28,
-                          color: AppColors.warning,
-                        ),
-                        const SizedBox(width: 12),
-                        Flexible(
-                          child: Text(
-                            l10n.doNotLeaveScreenDuringScan,
-                            style: theme.textTheme.bodyLarge?.copyWith(
-                              color: AppColors.warning,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 15,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Progress bilgisi - scan başladığı andan itibaren göster
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primaryContainer.withOpacity(
-                        0.3,
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      duplicateState.currentAlbum != null
-                          ? '${duplicateState.currentAlbum} • ${(duplicateState.progress * 100).floor()}%'
-                          : '${(duplicateState.progress * 100).floor()}%',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.primary,
-                        fontWeight: FontWeight.w500,
+                    const SizedBox(height: 24),
+                    Text(
+                      l10n.scanningDuplicatePhotos,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: theme.colorScheme.onSurface,
                       ),
                       textAlign: TextAlign.center,
                     ),
-                  ),
-                  const SizedBox(height: 24),
-                  // Durdur butonu
-                  FilledButton.icon(
-                    onPressed: () {
-                      ref.read(duplicateDetectionProvider.notifier).cancel();
-                    },
-                    icon: const Icon(Icons.stop),
-                    label: Text(l10n.stop),
-                    style: FilledButton.styleFrom(
+                    const SizedBox(height: 12),
+                    Text(
+                      l10n.loadingMayTakeFewSeconds,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurface.withOpacity(0.7),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 24),
+                    Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
+                        horizontal: 20,
                         vertical: 16,
                       ),
-                      backgroundColor: theme.colorScheme.error,
-                      foregroundColor: theme.colorScheme.onError,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.warningLight.withOpacity(0.4),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: AppColors.warning.withOpacity(0.7),
+                          width: 2,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.warning.withOpacity(0.2),
+                            blurRadius: 8,
+                            spreadRadius: 1,
+                          ),
+                        ],
                       ),
-                      side: BorderSide(
-                        color: AppColors.error.withOpacity(
-                          0.9,
-                        ), // Kırmızı border
-                        width: 1.5,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.warning_amber_rounded,
+                            size: 28,
+                            color: AppColors.warning,
+                          ),
+                          const SizedBox(width: 12),
+                          Flexible(
+                            child: Text(
+                              l10n.doNotLeaveScreenDuringScan,
+                              style: theme.textTheme.bodyLarge?.copyWith(
+                                color: AppColors.warning,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 15,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
+                    // Progress bilgisi - scan başladığı andan itibaren göster
+                    const SizedBox(height: 16),
+                    _ScanProgressCard(
+                      title:
+                          duplicateState.currentAlbum ??
+                          l10n.scanningDuplicatePhotos,
+                      processed: duplicateState.processedCount,
+                      total: duplicateState.totalCount,
+                      fallbackLabel: l10n.scanningDuplicatePhotos,
+                    ),
+                    const SizedBox(height: 24),
+                    // Durdur butonu
+                    FilledButton.icon(
+                      onPressed: () {
+                        ref.read(duplicateDetectionProvider.notifier).cancel();
+                      },
+                      icon: const Icon(Icons.stop),
+                      label: Text(l10n.stop),
+                      style: FilledButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 16,
+                        ),
+                        backgroundColor: theme.colorScheme.error,
+                        foregroundColor: theme.colorScheme.onError,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        side: BorderSide(
+                          color: AppColors.error.withOpacity(
+                            0.9,
+                          ), // Kırmızı border
+                          width: 1.5,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+
+          return Stack(
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(
+                  top: 8,
+                  left: 16,
+                  right: 16,
+                  bottom: 80,
+                ),
+                child: hasResults
+                    ? _buildResultsView(context, duplicateState, theme, l10n)
+                    : _buildScanForm(context, theme, l10n),
+              ),
+              // Fixed bottom button
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.background,
                   ),
-                ],
-              ),
-            ),
-          );
-        }
+                  child: SafeArea(
+                    child: Consumer(
+                      builder: (context, ref, _) {
+                        // Check if there are actual duplicate groups to delete
+                        final hasPhotosToDelete =
+                            duplicateState.totalDuplicatePhotos > 0;
 
-        return Stack(
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(
-                top: 8,
-                left: 16,
-                right: 16,
-                bottom: 80,
-              ),
-              child: hasResults
-                  ? _buildResultsView(context, duplicateState, theme, l10n)
-                  : _buildScanForm(context, theme, l10n),
-            ),
-            // Fixed bottom button
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(color: theme.colorScheme.background),
-                child: SafeArea(
-                  child: Consumer(
-                    builder: (context, ref, _) {
-                      // Check if there are actual duplicate groups to delete
-                      final hasPhotosToDelete =
-                          duplicateState.totalDuplicatePhotos > 0;
+                        final duplicateScanLimitAsync = ref.watch(
+                          duplicateScanLimitProvider,
+                        );
+                        final isPremiumAsync = ref.watch(isPremiumProvider);
 
-                      final duplicateScanLimitAsync = ref.watch(
-                        duplicateScanLimitProvider,
-                      );
-                      final isPremiumAsync = ref.watch(isPremiumProvider);
-
-                      return duplicateScanLimitAsync.when(
-                        loading: () => hasPhotosToDelete
-                            ? FilledButton.icon(
-                                onPressed: () async {
-                                  final l10n = AppLocalizations.of(context)!;
-                                  final confirmed = await showDialog<bool>(
-                                    context: context,
-                                    builder: (context) => AlertDialog(
-                                      title: Text(l10n.deleteAllDuplicates),
-                                      content: Text(
-                                        l10n.deleteAllDuplicatesMessage(
-                                          duplicateState.totalDuplicatePhotos,
-                                        ),
-                                      ),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () =>
-                                              Navigator.of(context).pop(false),
-                                          child: Text(l10n.cancel),
-                                        ),
-                                        FilledButton(
-                                          onPressed: () =>
-                                              Navigator.of(context).pop(true),
-                                          style: FilledButton.styleFrom(
-                                            backgroundColor:
-                                                theme.colorScheme.error,
-                                            side: BorderSide(
-                                              color: AppColors.error
-                                                  .withOpacity(
-                                                    0.9,
-                                                  ), // Kırmızı border
-                                              width: 1.5,
-                                            ),
+                        return duplicateScanLimitAsync.when(
+                          loading: () => hasPhotosToDelete
+                              ? FilledButton.icon(
+                                  onPressed: () async {
+                                    final l10n = AppLocalizations.of(context)!;
+                                    final confirmed = await showDialog<bool>(
+                                      context: context,
+                                      builder: (context) => AlertDialog(
+                                        title: Text(l10n.deleteAllDuplicates),
+                                        content: Text(
+                                          l10n.deleteAllDuplicatesMessage(
+                                            duplicateState.totalDuplicatePhotos,
                                           ),
-                                          child: Text(l10n.delete),
                                         ),
-                                      ],
-                                    ),
-                                  );
-
-                                  if (confirmed != true || !mounted) return;
-
-                                  final deletedCount = await ref
-                                      .read(duplicateDetectionProvider.notifier)
-                                      .deleteAllDuplicates();
-
-                                  if (!mounted) return;
-
-                                  await ref
-                                      .read(deleteLimitProvider.notifier)
-                                      .decrease(deletedCount);
-
-                                  // Success dialog göster
-                                  if (deletedCount > 0 && mounted) {
-                                    await _showDeleteSuccessDialog(
-                                      context,
-                                      deletedCount,
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () => Navigator.of(
+                                              context,
+                                            ).pop(false),
+                                            child: Text(l10n.cancel),
+                                          ),
+                                          FilledButton(
+                                            onPressed: () =>
+                                                Navigator.of(context).pop(true),
+                                            style: FilledButton.styleFrom(
+                                              backgroundColor:
+                                                  theme.colorScheme.error,
+                                              side: BorderSide(
+                                                color: AppColors.error
+                                                    .withOpacity(
+                                                      0.9,
+                                                    ), // Kırmızı border
+                                                width: 1.5,
+                                              ),
+                                            ),
+                                            child: Text(l10n.delete),
+                                          ),
+                                        ],
+                                      ),
                                     );
-                                  }
-                                },
-                                icon: const Icon(Icons.delete_outline),
-                                label: Text(l10n.deleteAllDuplicates),
-                                style: FilledButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 16,
-                                  ),
-                                  minimumSize: const Size(double.infinity, 56),
-                                  backgroundColor: AppColors.error.withOpacity(
-                                    0.85,
-                                  ), // Soluk iç renk
-                                  foregroundColor: theme.colorScheme.onError,
-                                  side: BorderSide(
-                                    color: AppColors.error.withOpacity(
-                                      0.9,
-                                    ), // Kırmızı border
-                                    width: 1.5,
-                                  ),
-                                ),
-                              )
-                            : _DuplicateTabState._buildModernScanButton(
-                                context: context,
-                                theme: theme,
-                                l10n: l10n,
-                                onPressed: null,
-                                icon: Icons.search_rounded,
-                                label: l10n.scanSelectedAlbums,
-                                isEnabled: false,
-                                isError: false,
-                              ),
-                        error: (_, __) => hasPhotosToDelete
-                            ? FilledButton.icon(
-                                onPressed: () async {
-                                  final l10n = AppLocalizations.of(context)!;
-                                  final confirmed = await showDialog<bool>(
-                                    context: context,
-                                    builder: (context) => AlertDialog(
-                                      title: Text(l10n.deleteAllDuplicates),
-                                      content: Text(
-                                        l10n.deleteAllDuplicatesMessage(
-                                          duplicateState.totalDuplicatePhotos,
-                                        ),
-                                      ),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () =>
-                                              Navigator.of(context).pop(false),
-                                          child: Text(l10n.cancel),
-                                        ),
-                                        FilledButton(
-                                          onPressed: () =>
-                                              Navigator.of(context).pop(true),
-                                          style: FilledButton.styleFrom(
-                                            backgroundColor:
-                                                theme.colorScheme.error,
-                                            side: BorderSide(
-                                              color: AppColors.error
-                                                  .withOpacity(
-                                                    0.9,
-                                                  ), // Kırmızı border
-                                              width: 1.5,
-                                            ),
-                                          ),
-                                          child: Text(l10n.delete),
-                                        ),
-                                      ],
-                                    ),
-                                  );
 
-                                  if (confirmed != true || !mounted) return;
+                                    if (confirmed != true || !mounted) return;
 
-                                  // Delete limit kontrolü
-                                  final deleteLimitController = ref.read(
-                                    deleteLimitProvider.notifier,
-                                  );
-                                  final deleteLimit =
-                                      await deleteLimitController
-                                          .currentLimit();
-                                  final isPremium = await PreferencesService()
-                                      .isPremium();
-
-                                  // Toplam silinecek fotoğraf sayısını kontrol et
-                                  final totalPhotosToDelete =
-                                      duplicateState.totalDuplicatePhotos;
-
-                                  // Delete limit'e göre maksimum silinebilecek fotoğraf sayısını belirle
-                                  final maxDeleteCount =
-                                      isPremium || deleteLimit >= 999999999
-                                      ? totalPhotosToDelete
-                                      : math.min(
-                                          deleteLimit,
-                                          totalPhotosToDelete,
-                                        );
-
-                                  debugPrint(
-                                    '📊 [SwipePage] Duplicate tab - Toplu silme: $maxDeleteCount/$totalPhotosToDelete fotoğraf silinecek (limit: $deleteLimit)',
-                                  );
-
-                                  // Eğer limit varsa, sadece limit kadar fotoğrafı sil
-                                  int deletedCount = 0;
-                                  if (maxDeleteCount > 0) {
-                                    deletedCount = await ref
+                                    final deletedCount = await ref
                                         .read(
                                           duplicateDetectionProvider.notifier,
                                         )
-                                        .deleteAllDuplicates(
-                                          maxDeleteCount: maxDeleteCount,
-                                        );
-                                  }
+                                        .deleteAllDuplicates();
 
-                                  if (!mounted) return;
+                                    if (!mounted) return;
 
-                                  if (deletedCount > 0) {
-                                    // Silme hakkını azalt
-                                    await deleteLimitController.decrease(
-                                      deletedCount,
-                                    );
+                                    await ref
+                                        .read(deleteLimitProvider.notifier)
+                                        .decrease(deletedCount);
 
-                                    debugPrint(
-                                      '✅ [SwipePage] Duplicate tab - $deletedCount fotoğraf silindi',
-                                    );
-
-                                    // Cleanup complete dialogunu önce göster - reload'dan önce
-                                    // Böylece dialog gösterilirken TabView rebuild olmaz
-                                    debugPrint(
-                                      '🎯 [SwipePage] Duplicate tab - About to show delete success dialog - deletedCount: $deletedCount, mounted: $mounted',
-                                    );
-                                    if (mounted) {
-                                      debugPrint(
-                                        '✅ [SwipePage] Duplicate tab - Mounted, calling _showDeleteSuccessDialog...',
-                                      );
+                                    // Success dialog göster
+                                    if (deletedCount > 0 && mounted) {
                                       await _showDeleteSuccessDialog(
                                         context,
                                         deletedCount,
                                       );
-                                      debugPrint(
-                                        '✅ [SwipePage] Duplicate tab - _showDeleteSuccessDialog completed',
+                                    }
+                                  },
+                                  icon: const Icon(Icons.delete_outline),
+                                  label: Text(l10n.deleteAllDuplicates),
+                                  style: FilledButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 16,
+                                    ),
+                                    minimumSize: const Size(
+                                      double.infinity,
+                                      56,
+                                    ),
+                                    backgroundColor: AppColors.error
+                                        .withOpacity(0.85), // Soluk iç renk
+                                    foregroundColor: theme.colorScheme.onError,
+                                    side: BorderSide(
+                                      color: AppColors.error.withOpacity(
+                                        0.9,
+                                      ), // Kırmızı border
+                                      width: 1.5,
+                                    ),
+                                  ),
+                                )
+                              : _DuplicateTabState._buildModernScanButton(
+                                  context: context,
+                                  theme: theme,
+                                  l10n: l10n,
+                                  onPressed: null,
+                                  icon: Icons.search_rounded,
+                                  label: l10n.scanSelectedAlbums,
+                                  isEnabled: false,
+                                  isError: false,
+                                ),
+                          error: (_, __) => hasPhotosToDelete
+                              ? FilledButton.icon(
+                                  onPressed: () async {
+                                    final l10n = AppLocalizations.of(context)!;
+                                    final confirmed = await showDialog<bool>(
+                                      context: context,
+                                      builder: (context) => AlertDialog(
+                                        title: Text(l10n.deleteAllDuplicates),
+                                        content: Text(
+                                          l10n.deleteAllDuplicatesMessage(
+                                            duplicateState.totalDuplicatePhotos,
+                                          ),
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () => Navigator.of(
+                                              context,
+                                            ).pop(false),
+                                            child: Text(l10n.cancel),
+                                          ),
+                                          FilledButton(
+                                            onPressed: () =>
+                                                Navigator.of(context).pop(true),
+                                            style: FilledButton.styleFrom(
+                                              backgroundColor:
+                                                  theme.colorScheme.error,
+                                              side: BorderSide(
+                                                color: AppColors.error
+                                                    .withOpacity(
+                                                      0.9,
+                                                    ), // Kırmızı border
+                                                width: 1.5,
+                                              ),
+                                            ),
+                                            child: Text(l10n.delete),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+
+                                    if (confirmed != true || !mounted) return;
+
+                                    // Delete limit kontrolü
+                                    final deleteLimitController = ref.read(
+                                      deleteLimitProvider.notifier,
+                                    );
+                                    final deleteLimit =
+                                        await deleteLimitController
+                                            .currentLimit();
+                                    final isPremium = await PreferencesService()
+                                        .isPremium();
+
+                                    // Toplam silinecek fotoğraf sayısını kontrol et
+                                    final totalPhotosToDelete =
+                                        duplicateState.totalDuplicatePhotos;
+
+                                    // Delete limit'e göre maksimum silinebilecek fotoğraf sayısını belirle
+                                    final maxDeleteCount =
+                                        isPremium || deleteLimit >= 999999999
+                                        ? totalPhotosToDelete
+                                        : math.min(
+                                            deleteLimit,
+                                            totalPhotosToDelete,
+                                          );
+
+                                    debugPrint(
+                                      '📊 [SwipePage] Duplicate tab - Toplu silme: $maxDeleteCount/$totalPhotosToDelete fotoğraf silinecek (limit: $deleteLimit)',
+                                    );
+
+                                    // Eğer limit varsa, sadece limit kadar fotoğrafı sil
+                                    int deletedCount = 0;
+                                    if (maxDeleteCount > 0) {
+                                      deletedCount = await ref
+                                          .read(
+                                            duplicateDetectionProvider.notifier,
+                                          )
+                                          .deleteAllDuplicates(
+                                            maxDeleteCount: maxDeleteCount,
+                                          );
+                                    }
+
+                                    if (!mounted) return;
+
+                                    if (deletedCount > 0) {
+                                      // Silme hakkını azalt
+                                      await deleteLimitController.decrease(
+                                        deletedCount,
                                       );
+
+                                      debugPrint(
+                                        '✅ [SwipePage] Duplicate tab - $deletedCount fotoğraf silindi',
+                                      );
+
+                                      // Cleanup complete dialogunu önce göster - reload'dan önce
+                                      // Böylece dialog gösterilirken TabView rebuild olmaz
+                                      debugPrint(
+                                        '🎯 [SwipePage] Duplicate tab - About to show delete success dialog - deletedCount: $deletedCount, mounted: $mounted',
+                                      );
+                                      if (mounted) {
+                                        debugPrint(
+                                          '✅ [SwipePage] Duplicate tab - Mounted, calling _showDeleteSuccessDialog...',
+                                        );
+                                        await _showDeleteSuccessDialog(
+                                          context,
+                                          deletedCount,
+                                        );
+                                        debugPrint(
+                                          '✅ [SwipePage] Duplicate tab - _showDeleteSuccessDialog completed',
+                                        );
+                                      } else {
+                                        debugPrint(
+                                          '❌ [SwipePage] Duplicate tab - Not mounted, cannot show dialog',
+                                        );
+                                      }
+
+                                      // Reload'u dialog kapandıktan sonra yap
+                                      // Böylece dialog gösterilirken TabView rebuild olmaz
+                                      if (mounted) {
+                                        ref
+                                            .read(
+                                              galleryPagingControllerProvider
+                                                  .notifier,
+                                            )
+                                            .reload();
+                                      }
                                     } else {
                                       debugPrint(
-                                        '❌ [SwipePage] Duplicate tab - Not mounted, cannot show dialog',
+                                        '⚠️ [SwipePage] Duplicate tab - Silme işlemi başarısız veya limit yok',
                                       );
                                     }
-
-                                    // Reload'u dialog kapandıktan sonra yap
-                                    // Böylece dialog gösterilirken TabView rebuild olmaz
-                                    if (mounted) {
-                                      ref
-                                          .read(
-                                            galleryPagingControllerProvider
-                                                .notifier,
-                                          )
-                                          .reload();
-                                    }
-                                  } else {
-                                    debugPrint(
-                                      '⚠️ [SwipePage] Duplicate tab - Silme işlemi başarısız veya limit yok',
-                                    );
-                                  }
-                                },
-                                icon: const Icon(Icons.delete_outline),
-                                label: Text(l10n.deleteAllDuplicates),
-                                style: FilledButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 16,
-                                  ),
-                                  minimumSize: const Size(double.infinity, 56),
-                                  backgroundColor: AppColors.error.withOpacity(
-                                    0.85,
-                                  ), // Soluk iç renk
-                                  foregroundColor: theme.colorScheme.onError,
-                                  side: BorderSide(
-                                    color: AppColors.error.withOpacity(
-                                      0.9,
-                                    ), // Kırmızı border
-                                    width: 1.5,
-                                  ),
-                                ),
-                              )
-                            : FilledButton.icon(
-                                onPressed: null,
-                                icon: const Icon(Icons.search),
-                                label: Text(l10n.scanSelectedAlbums),
-                                style: FilledButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 16,
-                                  ),
-                                  minimumSize: const Size(double.infinity, 56),
-                                ),
-                              ),
-                        data: (scanLimit) {
-                          return isPremiumAsync.when(
-                            loading: () => hasPhotosToDelete
-                                ? FilledButton.icon(
-                                    onPressed: () async {
-                                      final l10n = AppLocalizations.of(
-                                        context,
-                                      )!;
-                                      final confirmed = await showDialog<bool>(
-                                        context: context,
-                                        builder: (context) => AlertDialog(
-                                          title: Text(l10n.deleteAllDuplicates),
-                                          content: Text(
-                                            l10n.deleteAllDuplicatesMessage(
-                                              duplicateState
-                                                  .totalDuplicatePhotos,
-                                            ),
-                                          ),
-                                          actions: [
-                                            TextButton(
-                                              onPressed: () => Navigator.of(
-                                                context,
-                                              ).pop(false),
-                                              child: Text(l10n.cancel),
-                                            ),
-                                            FilledButton(
-                                              onPressed: () => Navigator.of(
-                                                context,
-                                              ).pop(true),
-                                              style: FilledButton.styleFrom(
-                                                backgroundColor:
-                                                    theme.colorScheme.error,
-                                              ),
-                                              child: Text(l10n.delete),
-                                            ),
-                                          ],
-                                        ),
-                                      );
-
-                                      if (confirmed != true || !mounted) return;
-
-                                      final deletedCount = await ref
-                                          .read(
-                                            duplicateDetectionProvider.notifier,
-                                          )
-                                          .deleteAllDuplicates();
-
-                                      if (!mounted) return;
-
-                                      await ref
-                                          .read(deleteLimitProvider.notifier)
-                                          .decrease(deletedCount);
-
-                                      // Success dialog göster
-                                      if (deletedCount > 0 && mounted) {
-                                        await _showDeleteSuccessDialog(
-                                          context,
-                                          deletedCount,
-                                        );
-                                      }
-                                    },
-                                    icon: const Icon(Icons.delete_outline),
-                                    label: Text(l10n.deleteAllDuplicates),
-                                    style: FilledButton.styleFrom(
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 16,
-                                      ),
-                                      minimumSize: const Size(
-                                        double.infinity,
-                                        56,
-                                      ),
-                                      backgroundColor: theme.colorScheme.error,
-                                      foregroundColor:
-                                          theme.colorScheme.onError,
+                                  },
+                                  icon: const Icon(Icons.delete_outline),
+                                  label: Text(l10n.deleteAllDuplicates),
+                                  style: FilledButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 16,
                                     ),
-                                  )
-                                : _DuplicateTabState._buildModernScanButton(
-                                    context: context,
-                                    theme: theme,
-                                    l10n: l10n,
-                                    onPressed: null,
-                                    icon: Icons.search_rounded,
-                                    label: l10n.scanSelectedAlbums,
-                                    isEnabled: false,
-                                    isError: false,
+                                    minimumSize: const Size(
+                                      double.infinity,
+                                      56,
+                                    ),
+                                    backgroundColor: AppColors.error
+                                        .withOpacity(0.85), // Soluk iç renk
+                                    foregroundColor: theme.colorScheme.onError,
+                                    side: BorderSide(
+                                      color: AppColors.error.withOpacity(
+                                        0.9,
+                                      ), // Kırmızı border
+                                      width: 1.5,
+                                    ),
                                   ),
-                            error: (_, __) => hasPhotosToDelete
-                                ? FilledButton.icon(
-                                    onPressed: () async {
-                                      final l10n = AppLocalizations.of(
-                                        context,
-                                      )!;
-                                      final confirmed = await showDialog<bool>(
-                                        context: context,
-                                        builder: (context) => AlertDialog(
-                                          title: Text(l10n.deleteAllDuplicates),
-                                          content: Text(
-                                            l10n.deleteAllDuplicatesMessage(
-                                              duplicateState
-                                                  .totalDuplicatePhotos,
+                                )
+                              : FilledButton.icon(
+                                  onPressed: null,
+                                  icon: const Icon(Icons.search),
+                                  label: Text(l10n.scanSelectedAlbums),
+                                  style: FilledButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 16,
+                                    ),
+                                    minimumSize: const Size(
+                                      double.infinity,
+                                      56,
+                                    ),
+                                  ),
+                                ),
+                          data: (scanLimit) {
+                            return isPremiumAsync.when(
+                              loading: () => hasPhotosToDelete
+                                  ? FilledButton.icon(
+                                      onPressed: () async {
+                                        final l10n = AppLocalizations.of(
+                                          context,
+                                        )!;
+                                        final confirmed = await showDialog<bool>(
+                                          context: context,
+                                          builder: (context) => AlertDialog(
+                                            title: Text(
+                                              l10n.deleteAllDuplicates,
                                             ),
-                                          ),
-                                          actions: [
-                                            TextButton(
-                                              onPressed: () => Navigator.of(
-                                                context,
-                                              ).pop(false),
-                                              child: Text(l10n.cancel),
+                                            content: Text(
+                                              l10n.deleteAllDuplicatesMessage(
+                                                duplicateState
+                                                    .totalDuplicatePhotos,
+                                              ),
                                             ),
-                                            FilledButton(
-                                              onPressed: () => Navigator.of(
-                                                context,
-                                              ).pop(true),
-                                              style: FilledButton.styleFrom(
-                                                backgroundColor:
-                                                    theme.colorScheme.error,
-                                                side: BorderSide(
-                                                  color: AppColors.error
-                                                      .withOpacity(0.9),
-                                                  width: 1.5,
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () => Navigator.of(
+                                                  context,
+                                                ).pop(false),
+                                                child: Text(l10n.cancel),
+                                              ),
+                                              FilledButton(
+                                                onPressed: () => Navigator.of(
+                                                  context,
+                                                ).pop(true),
+                                                style: FilledButton.styleFrom(
+                                                  backgroundColor:
+                                                      theme.colorScheme.error,
                                                 ),
+                                                child: Text(l10n.delete),
                                               ),
-                                              child: Text(l10n.delete),
-                                            ),
-                                          ],
-                                        ),
-                                      );
-
-                                      if (confirmed != true || !mounted) return;
-
-                                      final deletedCount = await ref
-                                          .read(
-                                            duplicateDetectionProvider.notifier,
-                                          )
-                                          .deleteAllDuplicates();
-
-                                      if (!mounted) return;
-
-                                      await ref
-                                          .read(deleteLimitProvider.notifier)
-                                          .decrease(deletedCount);
-
-                                      // Success dialog göster
-                                      if (deletedCount > 0 && mounted) {
-                                        await _showDeleteSuccessDialog(
-                                          context,
-                                          deletedCount,
+                                            ],
+                                          ),
                                         );
-                                      }
-                                    },
-                                    icon: const Icon(Icons.delete_outline),
-                                    label: Text(l10n.deleteAllDuplicates),
-                                    style: FilledButton.styleFrom(
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 16,
+
+                                        if (confirmed != true || !mounted)
+                                          return;
+
+                                        final deletedCount = await ref
+                                            .read(
+                                              duplicateDetectionProvider
+                                                  .notifier,
+                                            )
+                                            .deleteAllDuplicates();
+
+                                        if (!mounted) return;
+
+                                        await ref
+                                            .read(deleteLimitProvider.notifier)
+                                            .decrease(deletedCount);
+
+                                        // Success dialog göster
+                                        if (deletedCount > 0 && mounted) {
+                                          await _showDeleteSuccessDialog(
+                                            context,
+                                            deletedCount,
+                                          );
+                                        }
+                                      },
+                                      icon: const Icon(Icons.delete_outline),
+                                      label: Text(l10n.deleteAllDuplicates),
+                                      style: FilledButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 16,
+                                        ),
+                                        minimumSize: const Size(
+                                          double.infinity,
+                                          56,
+                                        ),
+                                        backgroundColor:
+                                            theme.colorScheme.error,
+                                        foregroundColor:
+                                            theme.colorScheme.onError,
                                       ),
-                                      minimumSize: const Size(
-                                        double.infinity,
-                                        56,
-                                      ),
-                                      backgroundColor: theme.colorScheme.error,
-                                      foregroundColor:
-                                          theme.colorScheme.onError,
-                                      side: BorderSide(
-                                        color: AppColors.error.withOpacity(
-                                          0.9,
-                                        ), // Kırmızı border
-                                        width: 1.5,
-                                      ),
+                                    )
+                                  : _DuplicateTabState._buildModernScanButton(
+                                      context: context,
+                                      theme: theme,
+                                      l10n: l10n,
+                                      onPressed: null,
+                                      icon: Icons.search_rounded,
+                                      label: l10n.scanSelectedAlbums,
+                                      isEnabled: false,
+                                      isError: false,
                                     ),
-                                  )
-                                : _DuplicateTabState._buildModernScanButton(
-                                    context: context,
-                                    theme: theme,
-                                    l10n: l10n,
-                                    onPressed: null,
-                                    icon: Icons.search_rounded,
-                                    label: l10n.scanSelectedAlbums,
-                                    isEnabled: false,
-                                    isError: false,
-                                  ),
-                            data: (isPremium) {
-                              final hasNoScanRights =
-                                  !isPremium && scanLimit <= 0;
-
-                              // No duplicates found durumunda hiçbir buton gösterilmez
-                              if (hasResults && !hasPhotosToDelete) {
-                                return const SizedBox.shrink();
-                              }
-
-                              return hasResults && hasPhotosToDelete
+                              error: (_, __) => hasPhotosToDelete
                                   ? FilledButton.icon(
                                       onPressed: () async {
                                         final l10n = AppLocalizations.of(
@@ -4943,205 +4840,318 @@ class _DuplicateTabState extends ConsumerState<_DuplicateTab> {
                                         ),
                                       ),
                                     )
-                                  : FutureBuilder<
-                                      ({
-                                        int estimatedSeconds,
-                                        int totalPhotoCount,
-                                        bool hasLimitWarning,
-                                      })
-                                    >(
-                                      future:
-                                          _DuplicateTabState._estimateScanDurationStatic(
-                                            selectedAlbums,
-                                            false,
-                                          ),
-                                      builder: (context, snapshot) {
-                                        final estimatedTimeText =
-                                            snapshot.hasData
-                                            ? _DuplicateTabState._formatEstimatedTimeStatic(
-                                                snapshot.data!.estimatedSeconds,
-                                                l10n,
+                                  : _DuplicateTabState._buildModernScanButton(
+                                      context: context,
+                                      theme: theme,
+                                      l10n: l10n,
+                                      onPressed: null,
+                                      icon: Icons.search_rounded,
+                                      label: l10n.scanSelectedAlbums,
+                                      isEnabled: false,
+                                      isError: false,
+                                    ),
+                              data: (isPremium) {
+                                final hasNoScanRights =
+                                    !isPremium && scanLimit <= 0;
+
+                                // No duplicates found durumunda hiçbir buton gösterilmez
+                                if (hasResults && !hasPhotosToDelete) {
+                                  return const SizedBox.shrink();
+                                }
+
+                                return hasResults && hasPhotosToDelete
+                                    ? FilledButton.icon(
+                                        onPressed: () async {
+                                          final l10n = AppLocalizations.of(
+                                            context,
+                                          )!;
+                                          final confirmed = await showDialog<bool>(
+                                            context: context,
+                                            builder: (context) => AlertDialog(
+                                              title: Text(
+                                                l10n.deleteAllDuplicates,
+                                              ),
+                                              content: Text(
+                                                l10n.deleteAllDuplicatesMessage(
+                                                  duplicateState
+                                                      .totalDuplicatePhotos,
+                                                ),
+                                              ),
+                                              actions: [
+                                                TextButton(
+                                                  onPressed: () => Navigator.of(
+                                                    context,
+                                                  ).pop(false),
+                                                  child: Text(l10n.cancel),
+                                                ),
+                                                FilledButton(
+                                                  onPressed: () => Navigator.of(
+                                                    context,
+                                                  ).pop(true),
+                                                  style: FilledButton.styleFrom(
+                                                    backgroundColor:
+                                                        theme.colorScheme.error,
+                                                    side: BorderSide(
+                                                      color: AppColors.error
+                                                          .withOpacity(0.9),
+                                                      width: 1.5,
+                                                    ),
+                                                  ),
+                                                  child: Text(l10n.delete),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+
+                                          if (confirmed != true || !mounted)
+                                            return;
+
+                                          final deletedCount = await ref
+                                              .read(
+                                                duplicateDetectionProvider
+                                                    .notifier,
                                               )
-                                            : null;
+                                              .deleteAllDuplicates();
 
-                                        final hasLimitWarning =
-                                            snapshot.hasData &&
-                                            snapshot.data!.hasLimitWarning;
-                                        final totalPhotoCount = snapshot.hasData
-                                            ? snapshot.data!.totalPhotoCount
-                                            : 0;
+                                          if (!mounted) return;
 
-                                        return _DuplicateTabState._buildModernScanButton(
-                                          context: context,
-                                          theme: theme,
-                                          l10n: l10n,
-                                          onPressed:
-                                              isScanning || hasNoScanRights
-                                              ? null
-                                              : () async {
-                                                  // Seçili albüm isimlerini hazırla
-                                                  final albumNames =
-                                                      selectedAlbums
-                                                          .map((a) => a.name)
-                                                          .join(', ');
+                                          await ref
+                                              .read(
+                                                deleteLimitProvider.notifier,
+                                              )
+                                              .decrease(deletedCount);
 
-                                                  // Onay dialogu göster
-                                                  final confirmed = await showDialog<bool>(
-                                                    context: context,
-                                                    builder: (dialogContext) => AlertDialog(
-                                                      title: Text(
-                                                        l10n.confirmDuplicateScan,
-                                                      ),
-                                                      content: Column(
-                                                        mainAxisSize:
-                                                            MainAxisSize.min,
-                                                        crossAxisAlignment:
-                                                            CrossAxisAlignment
-                                                                .start,
-                                                        children: [
-                                                          Text(
-                                                            l10n.confirmDuplicateScanMessage,
-                                                          ),
-                                                          const SizedBox(
-                                                            height: 12,
-                                                          ),
-                                                          Container(
-                                                            padding:
-                                                                const EdgeInsets.all(
-                                                                  12,
-                                                                ),
-                                                            decoration: BoxDecoration(
-                                                              color: theme
-                                                                  .colorScheme
-                                                                  .primaryContainer
-                                                                  .withOpacity(
-                                                                    0.3,
+                                          // Success dialog göster
+                                          if (deletedCount > 0 && mounted) {
+                                            await _showDeleteSuccessDialog(
+                                              context,
+                                              deletedCount,
+                                            );
+                                          }
+                                        },
+                                        icon: const Icon(Icons.delete_outline),
+                                        label: Text(l10n.deleteAllDuplicates),
+                                        style: FilledButton.styleFrom(
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 16,
+                                          ),
+                                          minimumSize: const Size(
+                                            double.infinity,
+                                            56,
+                                          ),
+                                          backgroundColor:
+                                              theme.colorScheme.error,
+                                          foregroundColor:
+                                              theme.colorScheme.onError,
+                                          side: BorderSide(
+                                            color: AppColors.error.withOpacity(
+                                              0.9,
+                                            ), // Kırmızı border
+                                            width: 1.5,
+                                          ),
+                                        ),
+                                      )
+                                    : FutureBuilder<
+                                        ({
+                                          int estimatedSeconds,
+                                          int totalPhotoCount,
+                                          bool hasLimitWarning,
+                                        })
+                                      >(
+                                        future:
+                                            _DuplicateTabState._estimateScanDurationStatic(
+                                              selectedAlbums,
+                                              false,
+                                            ),
+                                        builder: (context, snapshot) {
+                                          final estimatedTimeText =
+                                              snapshot.hasData
+                                              ? _DuplicateTabState._formatEstimatedTimeStatic(
+                                                  snapshot
+                                                      .data!
+                                                      .estimatedSeconds,
+                                                  l10n,
+                                                )
+                                              : null;
+
+                                          final hasLimitWarning =
+                                              snapshot.hasData &&
+                                              snapshot.data!.hasLimitWarning;
+                                          final totalPhotoCount =
+                                              snapshot.hasData
+                                              ? snapshot.data!.totalPhotoCount
+                                              : 0;
+
+                                          return _DuplicateTabState._buildModernScanButton(
+                                            context: context,
+                                            theme: theme,
+                                            l10n: l10n,
+                                            onPressed:
+                                                isScanning || hasNoScanRights
+                                                ? null
+                                                : () async {
+                                                    // Seçili albüm isimlerini hazırla
+                                                    final albumNames =
+                                                        selectedAlbums
+                                                            .map((a) => a.name)
+                                                            .join(', ');
+
+                                                    // Onay dialogu göster
+                                                    final confirmed = await showDialog<bool>(
+                                                      context: context,
+                                                      builder: (dialogContext) => AlertDialog(
+                                                        title: Text(
+                                                          l10n.confirmDuplicateScan,
+                                                        ),
+                                                        content: Column(
+                                                          mainAxisSize:
+                                                              MainAxisSize.min,
+                                                          crossAxisAlignment:
+                                                              CrossAxisAlignment
+                                                                  .start,
+                                                          children: [
+                                                            Text(
+                                                              l10n.confirmDuplicateScanMessage,
+                                                            ),
+                                                            const SizedBox(
+                                                              height: 12,
+                                                            ),
+                                                            Container(
+                                                              padding:
+                                                                  const EdgeInsets.all(
+                                                                    12,
                                                                   ),
-                                                              borderRadius:
-                                                                  BorderRadius.circular(
-                                                                    8,
-                                                                  ),
-                                                              border: Border.all(
+                                                              decoration: BoxDecoration(
                                                                 color: theme
                                                                     .colorScheme
-                                                                    .primary
+                                                                    .primaryContainer
                                                                     .withOpacity(
-                                                                      0.2,
+                                                                      0.3,
                                                                     ),
-                                                                width: 1,
-                                                              ),
-                                                            ),
-                                                            child: Row(
-                                                              children: [
-                                                                Icon(
-                                                                  Icons
-                                                                      .folder_rounded,
-                                                                  size: 20,
+                                                                borderRadius:
+                                                                    BorderRadius.circular(
+                                                                      8,
+                                                                    ),
+                                                                border: Border.all(
                                                                   color: theme
                                                                       .colorScheme
-                                                                      .primary,
+                                                                      .primary
+                                                                      .withOpacity(
+                                                                        0.2,
+                                                                      ),
+                                                                  width: 1,
                                                                 ),
-                                                                const SizedBox(
-                                                                  width: 8,
-                                                                ),
-                                                                Expanded(
-                                                                  child: Text(
-                                                                    albumNames,
-                                                                    style: theme
-                                                                        .textTheme
-                                                                        .bodyMedium
-                                                                        ?.copyWith(
-                                                                          color: theme
-                                                                              .colorScheme
-                                                                              .primary,
-                                                                          fontWeight:
-                                                                              FontWeight.w600,
-                                                                        ),
-                                                                    maxLines: 3,
-                                                                    overflow:
-                                                                        TextOverflow
-                                                                            .ellipsis,
+                                                              ),
+                                                              child: Row(
+                                                                children: [
+                                                                  Icon(
+                                                                    Icons
+                                                                        .folder_rounded,
+                                                                    size: 20,
+                                                                    color: theme
+                                                                        .colorScheme
+                                                                        .primary,
                                                                   ),
-                                                                ),
-                                                              ],
+                                                                  const SizedBox(
+                                                                    width: 8,
+                                                                  ),
+                                                                  Expanded(
+                                                                    child: Text(
+                                                                      albumNames,
+                                                                      style: theme.textTheme.bodyMedium?.copyWith(
+                                                                        color: theme
+                                                                            .colorScheme
+                                                                            .primary,
+                                                                        fontWeight:
+                                                                            FontWeight.w600,
+                                                                      ),
+                                                                      maxLines:
+                                                                          3,
+                                                                      overflow:
+                                                                          TextOverflow
+                                                                              .ellipsis,
+                                                                    ),
+                                                                  ),
+                                                                ],
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                        actions: [
+                                                          TextButton(
+                                                            onPressed: () =>
+                                                                Navigator.of(
+                                                                  dialogContext,
+                                                                ).pop(false),
+                                                            child: Text(
+                                                              l10n.cancel,
+                                                            ),
+                                                          ),
+                                                          FilledButton(
+                                                            onPressed: () =>
+                                                                Navigator.of(
+                                                                  dialogContext,
+                                                                ).pop(true),
+                                                            style: FilledButton.styleFrom(
+                                                              backgroundColor:
+                                                                  theme
+                                                                      .colorScheme
+                                                                      .primary,
+                                                            ),
+                                                            child: Text(
+                                                              l10n.scan,
                                                             ),
                                                           ),
                                                         ],
                                                       ),
-                                                      actions: [
-                                                        TextButton(
-                                                          onPressed: () =>
-                                                              Navigator.of(
-                                                                dialogContext,
-                                                              ).pop(false),
-                                                          child: Text(
-                                                            l10n.cancel,
-                                                          ),
-                                                        ),
-                                                        FilledButton(
-                                                          onPressed: () =>
-                                                              Navigator.of(
-                                                                dialogContext,
-                                                              ).pop(true),
-                                                          style: FilledButton.styleFrom(
-                                                            backgroundColor:
-                                                                theme
-                                                                    .colorScheme
-                                                                    .primary,
-                                                          ),
-                                                          child: Text(
-                                                            l10n.scan,
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  );
+                                                    );
 
-                                                  // Kullanıcı onaylamadıysa veya dialog kapatıldıysa çık
-                                                  if (confirmed != true ||
-                                                      !mounted)
-                                                    return;
+                                                    // Kullanıcı onaylamadıysa veya dialog kapatıldıysa çık
+                                                    if (confirmed != true ||
+                                                        !mounted)
+                                                      return;
 
-                                                  // Scan başlat
-                                                  await ref
-                                                      .read(
-                                                        duplicateDetectionProvider
-                                                            .notifier,
-                                                      )
-                                                      .scanAlbums(
-                                                        selectedAlbums,
-                                                        mode: _duplicateMode,
-                                                      );
+                                                    // Scan başlat
+                                                    await ref
+                                                        .read(
+                                                          duplicateDetectionProvider
+                                                              .notifier,
+                                                        )
+                                                        .scanAlbums(
+                                                          selectedAlbums,
+                                                          mode: _duplicateMode,
+                                                        );
 
-                                                  if (!mounted) return;
-                                                },
-                                          icon: hasNoScanRights
-                                              ? Icons.block
-                                              : Icons.search_rounded,
-                                          label: hasNoScanRights
-                                              ? l10n.noScanRightsLeft
-                                              : l10n.scanSelectedAlbums,
-                                          isEnabled:
-                                              !isScanning && !hasNoScanRights,
-                                          isError: hasNoScanRights,
-                                          estimatedTimeText: estimatedTimeText,
-                                          hasLimitWarning: hasLimitWarning,
-                                          totalPhotoCount: totalPhotoCount,
-                                        );
-                                      },
-                                    );
-                            },
-                          );
-                        },
-                      );
-                    },
+                                                    if (!mounted) return;
+                                                  },
+                                            icon: hasNoScanRights
+                                                ? Icons.block
+                                                : Icons.search_rounded,
+                                            label: hasNoScanRights
+                                                ? l10n.noScanRightsLeft
+                                                : l10n.scanSelectedAlbums,
+                                            isEnabled:
+                                                !isScanning && !hasNoScanRights,
+                                            isError: hasNoScanRights,
+                                            estimatedTimeText:
+                                                estimatedTimeText,
+                                            hasLimitWarning: hasLimitWarning,
+                                            totalPhotoCount: totalPhotoCount,
+                                          );
+                                        },
+                                      );
+                              },
+                            );
+                          },
+                        );
+                      },
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
-        );
-      },
+            ],
+          );
+        },
       ),
     );
   }
@@ -5988,6 +5998,7 @@ class _DuplicateTabState extends ConsumerState<_DuplicateTab> {
     );
   }
 
+  // ignore: unused_element
   Widget _buildCompactStatCard(
     ThemeData theme,
     IconData icon,
@@ -5995,85 +6006,7 @@ class _DuplicateTabState extends ConsumerState<_DuplicateTab> {
     String label,
     Color accentColor,
   ) {
-    final isDark = theme.brightness == Brightness.dark;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            accentColor.withOpacity(isDark ? 0.18 : 0.1),
-            accentColor.withOpacity(isDark ? 0.12 : 0.06),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: accentColor.withOpacity(isDark ? 0.25 : 0.15),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: accentColor.withOpacity(isDark ? 0.15 : 0.1),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-            spreadRadius: 0,
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: accentColor.withOpacity(isDark ? 0.2 : 0.12),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: accentColor, size: 18),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    value,
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 18,
-                      color: theme.colorScheme.onSurface,
-                      letterSpacing: -0.4,
-                    ),
-                    maxLines: 1,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    label,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(
-                        alpha: 0.65,
-                      ),
-                      fontWeight: FontWeight.w500,
-                      fontSize: 11,
-                    ),
-                    maxLines: 1,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
+    return const SizedBox.shrink();
   }
 
   Widget _buildEnhancedStatCard(
@@ -6207,6 +6140,7 @@ class _DuplicateTabState extends ConsumerState<_DuplicateTab> {
     await ref.read(deleteLimitProvider.notifier).decrease(deletedCount);
   }
 
+  // ignore: unused_element
   Future<void> _showDuplicateGroupDetail(
     BuildContext context,
     DuplicatePhotoGroup group,
@@ -6228,6 +6162,7 @@ class _DuplicateTabState extends ConsumerState<_DuplicateTab> {
   }
 }
 
+// ignore: unused_element
 class _DuplicateGroupCard extends StatelessWidget {
   const _DuplicateGroupCard({
     required this.group,
@@ -6428,7 +6363,6 @@ class _ScanLimitInfoState extends ConsumerState<_ScanLimitInfo>
   bool _isLoadingAd = false;
   bool _isAdReady = false;
   late AnimationController _breathingController;
-  late Animation<double> _breathingAnimation;
 
   @override
   void initState() {
@@ -6436,10 +6370,6 @@ class _ScanLimitInfoState extends ConsumerState<_ScanLimitInfo>
     _breathingController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2200),
-    );
-    _breathingAnimation = CurvedAnimation(
-      parent: _breathingController,
-      curve: Curves.easeInOut,
     );
     // Reklam yüklemesi artık dialog açıldığında yapılacak
     // initState'te yükleme yapılmıyor
@@ -7584,7 +7514,7 @@ class _SwipePageState extends ConsumerState<SwipePage>
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
     _previousTabIndex = _tabController.index;
-    
+
     _historyPulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1500),
@@ -7650,7 +7580,9 @@ class _SwipePageState extends ConsumerState<SwipePage>
   Future<void> _showInterstitialAdAndNavigate(String route) async {
     if (!mounted) return;
 
-    debugPrint('📱 [SwipePage] Scan completed, showing interstitial ad before navigating to $route');
+    debugPrint(
+      '📱 [SwipePage] Scan completed, showing interstitial ad before navigating to $route',
+    );
 
     // Premium kontrolü
     final prefsService = PreferencesService();
@@ -7741,7 +7673,6 @@ class _SwipePageState extends ConsumerState<SwipePage>
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final permission = ref.watch(permissionsControllerProvider);
-    final selectedAlbum = ref.watch(selectedAlbumProvider);
     final blurState = ref.watch(blurDetectionProvider);
     final duplicateState = ref.watch(duplicateDetectionProvider);
     final isScanning = blurState.isScanning || duplicateState.isScanning;
@@ -7754,7 +7685,7 @@ class _SwipePageState extends ConsumerState<SwipePage>
         final blurState = ref.read(blurDetectionProvider);
         final duplicateState = ref.read(duplicateDetectionProvider);
         final isScanning = blurState.isScanning || duplicateState.isScanning;
-        
+
         if (isScanning && _previousTabIndex != null) {
           // Scan sırasında tab değişimini geri al
           if (_tabController.index != _previousTabIndex) {
@@ -8018,27 +7949,27 @@ class _SwipePageState extends ConsumerState<SwipePage>
                   onPressed: isScanning
                       ? null // Scan sırasında tıklanamaz
                       : isPremium
-                          ? () async {
-                              // Premium kullanıcıda premium success dialog göster
-                              await PremiumSuccessDialog.show(context);
-                            }
-                          : () {
-                              context.push('/paywall');
-                            },
+                      ? () async {
+                          // Premium kullanıcıda premium success dialog göster
+                          await PremiumSuccessDialog.show(context);
+                        }
+                      : () {
+                          context.push('/paywall');
+                        },
                   icon: Icon(
                     Icons.workspace_premium_rounded,
                     color: isScanning
                         ? theme.colorScheme.onSurface.withOpacity(0.38)
                         : isPremium
-                            ? AppColors
-                                  .warningLight // Premium kullanıcıda sarı renk
-                            : theme.colorScheme.primary,
+                        ? AppColors
+                              .warningLight // Premium kullanıcıda sarı renk
+                        : theme.colorScheme.primary,
                   ),
                   tooltip: isScanning
                       ? l10n.doNotLeaveScreenDuringScan
                       : isPremium
-                          ? 'Premium Aktif'
-                          : l10n.unlockPremiumFeatures,
+                      ? 'Premium Aktif'
+                      : l10n.unlockPremiumFeatures,
                 );
               },
             );
@@ -8057,9 +7988,12 @@ class _SwipePageState extends ConsumerState<SwipePage>
             ),
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
             child: IgnorePointer(
-              ignoring: isScanning, // Scan sırasında tüm TabBar'ı devre dışı bırak
+              ignoring:
+                  isScanning, // Scan sırasında tüm TabBar'ı devre dışı bırak
               child: Opacity(
-                opacity: isScanning ? 0.5 : 1.0, // Scan sırasında görsel olarak da belirt
+                opacity: isScanning
+                    ? 0.5
+                    : 1.0, // Scan sırasında görsel olarak da belirt
                 child: TabBar(
                   controller: _tabController,
                   onTap: (index) {
@@ -8087,42 +8021,42 @@ class _SwipePageState extends ConsumerState<SwipePage>
                       _duplicateTabPulseController.reset();
                     }
                   },
-              indicator: AppDecorations.pill(
-                color: theme.colorScheme.primary,
-                borderRadius: 16,
-              ),
-              indicatorSize: TabBarIndicatorSize.tab,
-              dividerColor: AppColors.transparent,
-              labelColor: theme.colorScheme.onPrimary,
-              unselectedLabelColor: theme.colorScheme.onSurface.withOpacity(
-                0.7,
-              ),
-              labelStyle: theme.textTheme.labelLarge?.copyWith(
-                fontWeight: FontWeight.w700,
-                fontSize: 13,
-                letterSpacing: 0.3,
-              ),
-              unselectedLabelStyle: theme.textTheme.labelMedium?.copyWith(
-                fontWeight: FontWeight.w500,
-                fontSize: 13,
-                letterSpacing: 0.2,
-              ),
-              tabs: [
-                Tab(
-                  height: 56,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.swipe_rounded, size: 20),
-                      const SizedBox(width: 6),
-                      Text(l10n.swipeTab),
-                    ],
+                  indicator: AppDecorations.pill(
+                    color: theme.colorScheme.primary,
+                    borderRadius: 16,
                   ),
-                ),
-                Tab(height: 56, child: const _BlurTabIndicator()),
-                Tab(height: 56, child: const _DuplicateTabIndicator()),
-              ],
+                  indicatorSize: TabBarIndicatorSize.tab,
+                  dividerColor: AppColors.transparent,
+                  labelColor: theme.colorScheme.onPrimary,
+                  unselectedLabelColor: theme.colorScheme.onSurface.withOpacity(
+                    0.7,
+                  ),
+                  labelStyle: theme.textTheme.labelLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                    letterSpacing: 0.3,
+                  ),
+                  unselectedLabelStyle: theme.textTheme.labelMedium?.copyWith(
+                    fontWeight: FontWeight.w500,
+                    fontSize: 13,
+                    letterSpacing: 0.2,
+                  ),
+                  tabs: [
+                    Tab(
+                      height: 56,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.swipe_rounded, size: 20),
+                          const SizedBox(width: 6),
+                          Text(l10n.swipeTab),
+                        ],
+                      ),
+                    ),
+                    Tab(height: 56, child: const _BlurTabIndicator()),
+                    Tab(height: 56, child: const _DuplicateTabIndicator()),
+                  ],
                 ),
               ),
             ),
@@ -8140,7 +8074,9 @@ class _SwipePageState extends ConsumerState<SwipePage>
                   ? theme.colorScheme.onSurface.withOpacity(0.38)
                   : null,
             ),
-            tooltip: isScanning ? l10n.doNotLeaveScreenDuringScan : l10n.settings,
+            tooltip: isScanning
+                ? l10n.doNotLeaveScreenDuringScan
+                : l10n.settings,
             onPressed: isScanning
                 ? null // Scan sırasında tıklanamaz
                 : () {
@@ -8233,10 +8169,12 @@ class _HistoryButtonState extends ConsumerState<_HistoryButton> {
               color: widget.isScanning
                   ? Theme.of(context).colorScheme.onSurface.withOpacity(0.38)
                   : shouldPulse
-                      ? Theme.of(context).colorScheme.primary
-                      : Theme.of(context).colorScheme.onSurface,
+                  ? Theme.of(context).colorScheme.primary
+                  : Theme.of(context).colorScheme.onSurface,
             ),
-            tooltip: widget.isScanning ? l10n.doNotLeaveScreenDuringScan : l10n.history,
+            tooltip: widget.isScanning
+                ? l10n.doNotLeaveScreenDuringScan
+                : l10n.history,
             onPressed: widget.isScanning
                 ? null // Scan sırasında tıklanamaz
                 : () {
@@ -8342,13 +8280,9 @@ Future<void> _showAlbumSelectionDialog(
         '✅ [SwipePage] Albüme taşıma başarılı: ${asset.id} → ${selectedAlbum.id}',
       );
 
-      // Dosya boyutunu al
-      final file = await asset.file;
-      final fileSize = file != null ? await file.length() : 0;
-
-      ref
+      await ref
           .read(reviewHistoryControllerProvider.notifier)
-          .addMove(asset.id, selectedAlbum.id, fileSizeBytes: fileSize);
+          .addMoveFromAsset(asset, selectedAlbum.id);
 
       // Başarı haptic feedback
       HapticFeedback.lightImpact();
@@ -8371,13 +8305,79 @@ class _DeleteLimitInfo extends ConsumerStatefulWidget {
   ConsumerState<_DeleteLimitInfo> createState() => _DeleteLimitInfoState();
 }
 
+class _ScanProgressCard extends StatelessWidget {
+  const _ScanProgressCard({
+    required this.title,
+    required this.processed,
+    required this.total,
+    required this.fallbackLabel,
+  });
+
+  final String title;
+  final int processed;
+  final int total;
+  final String fallbackLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final hasTotal = total > 0;
+    final progressValue = hasTotal ? (processed / total).clamp(0.0, 1.0) : null;
+    final primaryLabel = title.isEmpty ? fallbackLabel : title;
+    final statusText = hasTotal ? '$processed / $total' : fallbackLabel;
+    final helperText = hasTotal
+        ? 'Photos analyzed in this album'
+        : 'Sampling photos from this album';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primaryContainer.withOpacity(0.25),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            primaryLabel,
+            style: theme.textTheme.titleSmall?.copyWith(
+              color: theme.colorScheme.primary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: LinearProgressIndicator(value: progressValue, minHeight: 6),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            statusText,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.primary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            helperText,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.primary.withOpacity(0.8),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _DeleteLimitInfoState extends ConsumerState<_DeleteLimitInfo>
     with SingleTickerProviderStateMixin {
   final RewardedAdsService _adsService = RewardedAdsService.instance;
   bool _isLoadingAd = false;
   bool _isAdReady = false;
   late AnimationController _breathingController;
-  late Animation<double> _breathingAnimation;
 
   @override
   void initState() {
@@ -8385,10 +8385,6 @@ class _DeleteLimitInfoState extends ConsumerState<_DeleteLimitInfo>
     _breathingController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2200),
-    );
-    _breathingAnimation = CurvedAnimation(
-      parent: _breathingController,
-      curve: Curves.easeInOut,
     );
     // Reklam yüklemesi artık dialog açıldığında yapılacak
     // initState'te yükleme yapılmıyor
@@ -9208,6 +9204,7 @@ class _AnimatedSwipeInstructionsState extends State<_AnimatedSwipeInstructions>
   }
 }
 
+// ignore: unused_element
 class _PurchaseFeatureItem extends StatelessWidget {
   const _PurchaseFeatureItem({required this.icon, required this.text});
 

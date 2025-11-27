@@ -7,13 +7,15 @@ import '../../../core/services/duplicate_detection_service.dart';
 import '../../../core/models/duplicate_photo.dart';
 import '../../../core/services/preferences_service.dart';
 
-export '../../../core/services/duplicate_detection_service.dart' show DuplicateDetectionMode;
+export '../../../core/services/duplicate_detection_service.dart'
+    show DuplicateDetectionMode;
 import '../../onboarding/application/permissions_controller.dart';
 import '../../onboarding/application/onboarding_controller.dart';
 import 'gallery_providers.dart';
 
-final duplicateDetectionServiceProvider =
-    Provider<DuplicateDetectionService>((ref) {
+final duplicateDetectionServiceProvider = Provider<DuplicateDetectionService>((
+  ref,
+) {
   return DuplicateDetectionService();
 });
 
@@ -25,8 +27,10 @@ class DuplicateDetectionState {
   final String? currentAlbum;
   final Object? error;
   final bool hasCompletedScan; // Tarama tamamlandı mı?
-  final int processedCount; // İşlenen fotoğraf sayısı
-  final int totalCount; // Toplam fotoğraf sayısı
+  final int processedCount; // Mevcut albümde işlenen fotoğraf sayısı
+  final int totalCount; // Mevcut albümdeki toplam fotoğraf sayısı
+  final int
+  plannedSampleCount; // Mevcut albümde analiz edilmesi hedeflenen fotoğraf sayısı
 
   const DuplicateDetectionState({
     this.duplicatesByAlbum = const {},
@@ -37,6 +41,7 @@ class DuplicateDetectionState {
     this.hasCompletedScan = false,
     this.processedCount = 0,
     this.totalCount = 0,
+    this.plannedSampleCount = 0,
   });
 
   DuplicateDetectionState copyWith({
@@ -49,6 +54,7 @@ class DuplicateDetectionState {
     bool? hasCompletedScan,
     int? processedCount,
     int? totalCount,
+    int? plannedSampleCount,
   }) {
     return DuplicateDetectionState(
       duplicatesByAlbum: duplicatesByAlbum ?? this.duplicatesByAlbum,
@@ -59,6 +65,7 @@ class DuplicateDetectionState {
       hasCompletedScan: hasCompletedScan ?? this.hasCompletedScan,
       processedCount: processedCount ?? this.processedCount,
       totalCount: totalCount ?? this.totalCount,
+      plannedSampleCount: plannedSampleCount ?? this.plannedSampleCount,
     );
   }
 
@@ -74,7 +81,9 @@ class DuplicateDetectionState {
   int get totalDuplicatePhotos {
     return duplicatesByAlbum.values.fold<int>(
       0,
-      (sum, groups) => sum + groups.fold<int>(
+      (sum, groups) =>
+          sum +
+          groups.fold<int>(
             0,
             (groupSum, group) => groupSum + group.duplicateCount,
           ),
@@ -85,7 +94,9 @@ class DuplicateDetectionState {
   double get totalSpaceToSaveMB {
     return duplicatesByAlbum.values.fold<double>(
       0.0,
-      (sum, groups) => sum + groups.fold<double>(
+      (sum, groups) =>
+          sum +
+          groups.fold<double>(
             0.0,
             (groupSum, group) => groupSum + group.spaceToSaveMB,
           ),
@@ -93,12 +104,13 @@ class DuplicateDetectionState {
   }
 }
 
-class DuplicateDetectionNotifier extends StateNotifier<DuplicateDetectionState> {
+class DuplicateDetectionNotifier
+    extends StateNotifier<DuplicateDetectionState> {
   DuplicateDetectionNotifier(this.ref) : super(const DuplicateDetectionState());
 
   final Ref ref;
   bool _isCancelled = false;
-  
+
   // Progress callback throttling - %1 artışlarla güncelleme
   DateTime? _lastProgressUpdate;
   int _lastProgressPercent = -1; // Son gösterilen yüzde değeri
@@ -109,11 +121,13 @@ class DuplicateDetectionNotifier extends StateNotifier<DuplicateDetectionState> 
     List<pm.AssetPathEntity> albums, {
     DuplicateDetectionMode mode = DuplicateDetectionMode.balanced,
   }) async {
-    debugPrint('🚀 [DuplicateDetection] scanAlbums çağrıldı - Albüm sayısı: ${albums.length}');
-    
+    debugPrint(
+      '🚀 [DuplicateDetection] scanAlbums çağrıldı - Albüm sayısı: ${albums.length}',
+    );
+
     final permission = ref.read(permissionsControllerProvider);
     debugPrint('🔐 [DuplicateDetection] İzin durumu: $permission');
-    
+
     if (permission != GalleryPermissionStatus.authorized) {
       debugPrint('❌ [DuplicateDetection] İzin yok! Tarama durduruldu.');
       state = state.copyWith(
@@ -124,7 +138,7 @@ class DuplicateDetectionNotifier extends StateNotifier<DuplicateDetectionState> 
     }
 
     debugPrint('✅ [DuplicateDetection] İzin var, tarama başlatılıyor...');
-    
+
     _isCancelled = false;
     _lastProgressPercent = -1; // Progress takibini sıfırla
     _lastProgressUpdate = null; // Zaman takibini sıfırla
@@ -136,66 +150,89 @@ class DuplicateDetectionNotifier extends StateNotifier<DuplicateDetectionState> 
       hasCompletedScan: false, // Yeni tarama başladığında false yap
       processedCount: 0,
       totalCount: 0,
+      plannedSampleCount: 0,
       currentAlbum: null, // Başlangıçta albüm bilgisi yok
     );
 
     try {
       debugPrint('📦 [DuplicateDetection] Service alınıyor...');
       final service = ref.read(duplicateDetectionServiceProvider);
-      debugPrint('📦 [DuplicateDetection] Service alındı: ${service.runtimeType}');
-      
+      debugPrint(
+        '📦 [DuplicateDetection] Service alındı: ${service.runtimeType}',
+      );
+
       // Premium kontrolü
       final prefsService = ref.read(preferencesServiceProvider);
       final isPremium = await prefsService.isPremium();
       debugPrint('💎 [DuplicateDetection] Premium durumu: $isPremium');
-      
+
       // Kalan duplicate scan hakkını al (premium değilse)
       int remainingScanLimit = 999999999; // Premium için sınırsız
       if (!isPremium) {
         remainingScanLimit = await prefsService.getDuplicateScanLimit();
-        debugPrint('📊 [DuplicateDetection] Kalan duplicate scan hakkı: $remainingScanLimit');
+        debugPrint(
+          '📊 [DuplicateDetection] Kalan duplicate scan hakkı: $remainingScanLimit',
+        );
       }
 
-      debugPrint('🔍 [DuplicateDetection] findDuplicatesInAlbums çağrılıyor... (maxScanLimit: $remainingScanLimit, mode: $mode)');
+      debugPrint(
+        '🔍 [DuplicateDetection] findDuplicatesInAlbums çağrılıyor... (maxScanLimit: $remainingScanLimit, mode: $mode)',
+      );
       final scanResult = await service.findDuplicatesInAlbums(
         albums,
         mode: mode,
-        progressCallback: (albumName, progress, processedCount, totalCount) {
-          if (_isCancelled) return;
-          
-          // Progress'i %1 artışlarla güncelle (0%, 1%, 2%, 3% şeklinde)
-          final currentProgressPercent = (progress * 100).floor(); // Yüzdeyi tam sayıya yuvarla
-          final now = DateTime.now();
-          final timeDelta = _lastProgressUpdate != null 
-              ? now.difference(_lastProgressUpdate!).inMilliseconds 
-              : _progressThrottleMs + 1;
-          
-          // %1 artış olduğunda veya zaman aşımında güncelle
-          if (currentProgressPercent > _lastProgressPercent || timeDelta >= _progressThrottleMs) {
-            _lastProgressUpdate = now;
-            _lastProgressPercent = currentProgressPercent;
-            
-            // State güncellemesini frame callback ile yap (UI thread'i bloklamamak için)
-            SchedulerBinding.instance.scheduleFrameCallback((_) {
-              if (!_isCancelled) {
-                state = state.copyWith(
-                  progress: progress,
-                  currentAlbum: albumName,
-                  processedCount: processedCount,
-                  totalCount: totalCount,
-                );
+        progressCallback:
+            (
+              albumName,
+              progress,
+              processedCount,
+              plannedCount,
+              albumTotalCount,
+            ) {
+              if (_isCancelled) return;
+
+              // Progress'i %1 artışlarla güncelle (0%, 1%, 2%, 3% şeklinde)
+              final currentProgressPercent = (progress * 100)
+                  .floor(); // Yüzdeyi tam sayıya yuvarla
+              final now = DateTime.now();
+              final timeDelta = _lastProgressUpdate != null
+                  ? now.difference(_lastProgressUpdate!).inMilliseconds
+                  : _progressThrottleMs + 1;
+
+              // %1 artış olduğunda veya zaman aşımında güncelle
+              if (currentProgressPercent > _lastProgressPercent ||
+                  timeDelta >= _progressThrottleMs) {
+                _lastProgressUpdate = now;
+                _lastProgressPercent = currentProgressPercent;
+
+                // State güncellemesini frame callback ile yap (UI thread'i bloklamamak için)
+                SchedulerBinding.instance.scheduleFrameCallback((_) {
+                  if (!_isCancelled) {
+                    final displayTotalCount = albumTotalCount > 0
+                        ? albumTotalCount
+                        : plannedCount;
+                    final normalizedProgress = displayTotalCount > 0
+                        ? (processedCount / displayTotalCount).clamp(0.0, 1.0)
+                        : progress.clamp(0.0, 1.0);
+                    state = state.copyWith(
+                      progress: normalizedProgress,
+                      currentAlbum: albumName,
+                      processedCount: processedCount,
+                      totalCount: displayTotalCount,
+                      plannedSampleCount: plannedCount,
+                    );
+                  }
+                });
               }
-            });
-          }
-        },
+            },
         shouldCancel: () => _isCancelled,
         isPremium: isPremium,
         maxScanLimit: remainingScanLimit,
       );
-      
+
       final results = scanResult.results;
       final scannedPhotoCount = scanResult.scannedPhotoCount;
-      
+
       if (_isCancelled) {
         debugPrint('⚠️ [DuplicateDetection] Tarama iptal edildi');
         state = state.copyWith(
@@ -204,34 +241,45 @@ class DuplicateDetectionNotifier extends StateNotifier<DuplicateDetectionState> 
           currentAlbum: null,
           processedCount: 0,
           totalCount: 0,
+          plannedSampleCount: 0,
         );
         return;
       }
 
-      debugPrint('✅ [DuplicateDetection] Tarama tamamlandı! Bulunan albüm sayısı: ${results.length}, Scan edilen fotoğraf: $scannedPhotoCount');
-      
+      debugPrint(
+        '✅ [DuplicateDetection] Tarama tamamlandı! Bulunan albüm sayısı: ${results.length}, Scan edilen fotoğraf: $scannedPhotoCount',
+      );
+
       // Boş olmayan sonuçları filtrele
       final filteredResults = <String, List<DuplicatePhotoGroup>>{};
       int totalGroups = 0;
       int totalPhotos = 0;
-      
+
       for (final entry in results.entries) {
         // Boş olmayan grupları filtrele
-        final nonEmptyGroups = entry.value.where((group) => 
-          group.assets.isNotEmpty && group.assets.length > 1
-        ).toList();
-        
+        final nonEmptyGroups = entry.value
+            .where(
+              (group) => group.assets.isNotEmpty && group.assets.length > 1,
+            )
+            .toList();
+
         if (nonEmptyGroups.isNotEmpty) {
           filteredResults[entry.key] = nonEmptyGroups;
           totalGroups += nonEmptyGroups.length;
-          
-          debugPrint('   📁 ${entry.key}: ${nonEmptyGroups.length} duplicate grup');
+
+          debugPrint(
+            '   📁 ${entry.key}: ${nonEmptyGroups.length} duplicate grup',
+          );
           for (final group in nonEmptyGroups) {
             totalPhotos += group.assets.length;
-            debugPrint('      - Grup: ${group.assets.length} fotoğraf, ${group.duplicateCount} silinecek, Hash: ${group.hash.substring(0, 8)}...');
+            debugPrint(
+              '      - Grup: ${group.assets.length} fotoğraf, ${group.duplicateCount} silinecek, Hash: ${group.hash.substring(0, 8)}...',
+            );
           }
         } else {
-          debugPrint('   ⚠️ ${entry.key}: Tüm gruplar boş veya geçersiz, atlanıyor');
+          debugPrint(
+            '   ⚠️ ${entry.key}: Tüm gruplar boş veya geçersiz, atlanıyor',
+          );
         }
       }
 
@@ -248,18 +296,26 @@ class DuplicateDetectionNotifier extends StateNotifier<DuplicateDetectionState> 
           final prefsService = PreferencesService();
           await prefsService.decreaseDuplicateScanLimit(scannedPhotoCount);
           ref.invalidate(duplicateScanLimitProvider);
-          debugPrint('💾 [DuplicateDetection] Duplicate scan limit düşürüldü: $scannedPhotoCount fotoğraf (sonuç bulundu)');
+          debugPrint(
+            '💾 [DuplicateDetection] Duplicate scan limit düşürüldü: $scannedPhotoCount fotoğraf (sonuç bulundu)',
+          );
         } catch (e) {
-          debugPrint('⚠️ [DuplicateDetection] Duplicate scan limit düşürülemedi: $e');
+          debugPrint(
+            '⚠️ [DuplicateDetection] Duplicate scan limit düşürülemedi: $e',
+          );
         }
       } else if (!hasResults) {
-        debugPrint('✅ [DuplicateDetection] Sonuç bulunamadı, duplicate scan limit azaltılmadı');
+        debugPrint(
+          '✅ [DuplicateDetection] Sonuç bulunamadı, duplicate scan limit azaltılmadı',
+        );
       }
 
       // State'i güncelle - YENİ bir Map ve State objesi oluştur
       // Bu, Riverpod'ın state değişikliğini algılaması için önemli
-      final newResultsMap = Map<String, List<DuplicatePhotoGroup>>.from(filteredResults);
-      
+      final newResultsMap = Map<String, List<DuplicatePhotoGroup>>.from(
+        filteredResults,
+      );
+
       final newState = DuplicateDetectionState(
         duplicatesByAlbum: newResultsMap,
         isScanning: false,
@@ -267,24 +323,31 @@ class DuplicateDetectionNotifier extends StateNotifier<DuplicateDetectionState> 
         currentAlbum: null,
         error: null,
         hasCompletedScan: true, // Tarama tamamlandı
-        processedCount: scannedPhotoCount,
-        totalCount: scannedPhotoCount, // Tamamlandığında eşit olur
+        processedCount: 0,
+        totalCount: 0,
+        plannedSampleCount: 0,
       );
-      
+
       debugPrint('✅ [DuplicateDetection] Yeni state oluşturuldu:');
-      debugPrint('   - duplicatesByAlbum size: ${newState.duplicatesByAlbum.length}');
+      debugPrint(
+        '   - duplicatesByAlbum size: ${newState.duplicatesByAlbum.length}',
+      );
       debugPrint('   - totalGroups: ${newState.totalGroups}');
       debugPrint('   - totalDuplicatePhotos: ${newState.totalDuplicatePhotos}');
-      debugPrint('   - totalSpaceToSaveMB: ${newState.totalSpaceToSaveMB.toStringAsFixed(2)}');
-      
+      debugPrint(
+        '   - totalSpaceToSaveMB: ${newState.totalSpaceToSaveMB.toStringAsFixed(2)}',
+      );
+
       // State'i güncelle - bu Riverpod'ı notify edecek
       state = newState;
       debugPrint('✅ [DuplicateDetection] State başarıyla güncellendi!');
-      
+
       // State güncellemesinden sonra bir kez daha kontrol et
       Future.microtask(() {
         debugPrint('🔍 [DuplicateDetection] Microtask - State kontrolü:');
-        debugPrint('   - duplicatesByAlbum.length: ${state.duplicatesByAlbum.length}');
+        debugPrint(
+          '   - duplicatesByAlbum.length: ${state.duplicatesByAlbum.length}',
+        );
         debugPrint('   - totalGroups: ${state.totalGroups}');
       });
     } catch (e, stackTrace) {
@@ -296,6 +359,7 @@ class DuplicateDetectionNotifier extends StateNotifier<DuplicateDetectionState> 
         currentAlbum: null,
         processedCount: 0,
         totalCount: 0,
+        plannedSampleCount: 0,
       );
     }
   }
@@ -310,10 +374,7 @@ class DuplicateDetectionNotifier extends StateNotifier<DuplicateDetectionState> 
     final albumsAsync = ref.read(albumsProvider);
     final albums = albumsAsync.asData?.value ?? [];
     if (albums.isEmpty) {
-      state = state.copyWith(
-        error: 'No albums available',
-        isScanning: false,
-      );
+      state = state.copyWith(error: 'No albums available', isScanning: false);
       return;
     }
     await scanAlbums(albums);
@@ -325,7 +386,7 @@ class DuplicateDetectionNotifier extends StateNotifier<DuplicateDetectionState> 
     int? maxDeleteCount,
   }) async {
     if (groups.isEmpty) return 0;
-    
+
     final service = ref.read(mediaLibraryServiceProvider);
 
     // Tüm silinecek fotoğraf ID'lerini topla
@@ -336,33 +397,38 @@ class DuplicateDetectionNotifier extends StateNotifier<DuplicateDetectionState> 
         allIdsToDelete.addAll(toDelete.map((asset) => asset.id));
       }
     }
-    
+
     if (allIdsToDelete.isEmpty) {
       debugPrint('⚠️ [DuplicateDetection] Silinecek fotoğraf bulunamadı');
       return 0;
     }
-    
+
     // Eğer maxDeleteCount belirtilmişse, sadece o kadar sil
-    final idsToDelete = maxDeleteCount != null && allIdsToDelete.length > maxDeleteCount
+    final idsToDelete =
+        maxDeleteCount != null && allIdsToDelete.length > maxDeleteCount
         ? allIdsToDelete.take(maxDeleteCount).toList()
         : allIdsToDelete;
-    
-    debugPrint('🗑️ [DuplicateDetection] Toplu silme başlatılıyor: ${idsToDelete.length} fotoğraf (${groups.length} grup)');
-    
+
+    debugPrint(
+      '🗑️ [DuplicateDetection] Toplu silme başlatılıyor: ${idsToDelete.length} fotoğraf (${groups.length} grup)',
+    );
+
     try {
       // Toplu silme işlemi - tüm ID'leri tek seferde sil
       final deletedIds = await service.deleteBatch(idsToDelete);
       final deletedCount = deletedIds.length;
-      
-      debugPrint('✅ [DuplicateDetection] ${deletedCount}/${idsToDelete.length} fotoğraf başarıyla silindi');
-      
+
+      debugPrint(
+        '✅ [DuplicateDetection] ${deletedCount}/${idsToDelete.length} fotoğraf başarıyla silindi',
+      );
+
       // Silinmek istenen grupların hash'lerini topla (referans eşitliği yerine)
       final groupsToDeleteHash = groups.map((g) => g.hash).toSet();
 
-    // State'i güncelle - silinen grupları kaldır
-    final updatedMap = <String, List<DuplicatePhotoGroup>>{};
-      
-    for (final entry in state.duplicatesByAlbum.entries) {
+      // State'i güncelle - silinen grupları kaldır
+      final updatedMap = <String, List<DuplicatePhotoGroup>>{};
+
+      for (final entry in state.duplicatesByAlbum.entries) {
         final updatedGroups = entry.value.where((group) {
           // Eğer bu grup silinmek istenen gruplar içindeyse, kaldır
           if (groupsToDeleteHash.contains(group.hash)) {
@@ -371,18 +437,20 @@ class DuplicateDetectionNotifier extends StateNotifier<DuplicateDetectionState> 
           // Grup hala geçerli
           return true;
         }).toList();
-        
+
         if (updatedGroups.isNotEmpty) {
           updatedMap[entry.key] = updatedGroups;
+        }
       }
-    }
 
       // State'i güncelle
-    state = state.copyWith(duplicatesByAlbum: updatedMap);
-      
-      debugPrint('💾 [DuplicateDetection] State güncellendi: ${updatedMap.length} albüm kaldı');
+      state = state.copyWith(duplicatesByAlbum: updatedMap);
 
-    return deletedCount;
+      debugPrint(
+        '💾 [DuplicateDetection] State güncellendi: ${updatedMap.length} albüm kaldı',
+      );
+
+      return deletedCount;
     } catch (e) {
       debugPrint('❌ [DuplicateDetection] Toplu silme hatası: $e');
       return 0;
@@ -407,6 +475,7 @@ class DuplicateDetectionNotifier extends StateNotifier<DuplicateDetectionState> 
       currentAlbum: null,
       processedCount: 0,
       totalCount: 0,
+      plannedSampleCount: 0,
     );
   }
 
@@ -417,8 +486,9 @@ class DuplicateDetectionNotifier extends StateNotifier<DuplicateDetectionState> 
   }
 }
 
-final duplicateDetectionProvider = StateNotifierProvider<
-    DuplicateDetectionNotifier, DuplicateDetectionState>((ref) {
-  return DuplicateDetectionNotifier(ref);
-});
-
+final duplicateDetectionProvider =
+    StateNotifierProvider<DuplicateDetectionNotifier, DuplicateDetectionState>((
+      ref,
+    ) {
+      return DuplicateDetectionNotifier(ref);
+    });
