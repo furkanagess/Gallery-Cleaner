@@ -1,30 +1,32 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:photo_manager/photo_manager.dart' as pm;
 import 'package:lottie/lottie.dart';
 
 import '../../application/folder_targets_provider.dart';
 import '../../application/gallery_providers.dart';
 import '../../../../app/theme/app_theme.dart';
+import 'package:gallery_cleaner/src/core/utils/view_refresh_cubit.dart';
 
-class FolderTargetSelectorSheet extends ConsumerStatefulWidget {
+class FolderTargetSelectorSheet extends StatefulWidget {
   const FolderTargetSelectorSheet({super.key});
 
   @override
-  ConsumerState<FolderTargetSelectorSheet> createState() => _FolderTargetSelectorSheetState();
+  State<FolderTargetSelectorSheet> createState() => _FolderTargetSelectorSheetState();
 }
 
-class _FolderTargetSelectorSheetState extends ConsumerState<FolderTargetSelectorSheet> {
+class _FolderTargetSelectorSheetState extends State<FolderTargetSelectorSheet>
+    with CubitStateMixin<FolderTargetSelectorSheet> {
   String _query = '';
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final sem = theme.extension<AppSemanticColors>();
-    final albumsAsync = ref.watch(albumsProvider);
-    final selectedIds = ref.watch(folderTargetsProvider);
+    final albumsAsync = context.watch<AlbumsCubit>().state;
+    final selectedIds = context.watch<FolderTargetsCubit>().state;
 
-    return SafeArea(
+    return buildWithCubit(() => SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
         child: Column(
@@ -49,7 +51,7 @@ class _FolderTargetSelectorSheetState extends ConsumerState<FolderTargetSelector
                 hintText: 'Klasör ara...',
                 prefixIcon: Icon(Icons.search),
               ),
-              onChanged: (v) => setState(() => _query = v.toLowerCase()),
+              onChanged: (v) => cubitSetState(() => _query = v.toLowerCase()),
             ),
             const SizedBox(height: 12),
             albumsAsync.when(
@@ -97,7 +99,7 @@ class _FolderTargetSelectorSheetState extends ConsumerState<FolderTargetSelector
                       return _SelectableChip(
                         label: album.name,
                         selected: isSelected,
-                        onTap: () => ref.read(folderTargetsProvider.notifier).toggle(album.id),
+                        onTap: () => context.read<FolderTargetsCubit>().toggle(album.id),
                       );
                     },
                   ),
@@ -109,12 +111,13 @@ class _FolderTargetSelectorSheetState extends ConsumerState<FolderTargetSelector
               children: [
                 OutlinedButton.icon(
                   onPressed: () {
-                    final all = ref.read(albumsProvider).maybeWhen(data: (a) => a, orElse: () => <pm.AssetPathEntity>[]);
+                    final all = context.read<AlbumsCubit>().state.valueOrNull ?? <pm.AssetPathEntity>[];
                     if (all.isEmpty) return;
                     final firstFour = all.take(4).map((e) => e.id).toList();
+                    final folderTargetsCubit = context.read<FolderTargetsCubit>();
                     for (final id in firstFour) {
                       if (!selectedIds.contains(id)) {
-                        ref.read(folderTargetsProvider.notifier).toggle(id);
+                        folderTargetsCubit.toggle(id);
                       }
                     }
                   },
@@ -124,8 +127,9 @@ class _FolderTargetSelectorSheetState extends ConsumerState<FolderTargetSelector
                 const SizedBox(width: 8),
                 TextButton(
                   onPressed: () {
-                    for (final id in List<String>.from(ref.read(folderTargetsProvider))) {
-                      ref.read(folderTargetsProvider.notifier).toggle(id);
+                    final folderTargetsCubit = context.read<FolderTargetsCubit>();
+                    for (final id in List<String>.from(selectedIds)) {
+                      folderTargetsCubit.toggle(id);
                     }
                   },
                   child: const Text('Temizle'),
@@ -135,7 +139,7 @@ class _FolderTargetSelectorSheetState extends ConsumerState<FolderTargetSelector
           ],
         ),
       ),
-    );
+    ));
   }
 }
 
@@ -186,5 +190,4 @@ class _SelectableChip extends StatelessWidget {
     );
   }
 }
-
 

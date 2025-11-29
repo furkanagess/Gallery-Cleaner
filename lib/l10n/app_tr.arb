@@ -702,7 +702,7 @@
   "@sensitivityDescription": {
     "description": "Sensitivity description"
   },
-  "sensitivityLevelsDescription": "• Düşük: Hafif bulanık fotoğrafları da tespit eder (daha fazla sonuç)\n• Orta: Orta seviye bulanık fotoğrafları tespit eder (dengeli)\n• Yüksek: Sadece çok bulanık fotoğrafları tespit eder (daha az sonuç)\n• Yüksek Hassasiyet: Maksimum hassasiyet, sadece çok bulanık fotoğrafları tespit eder",
+  "sensitivityLevelsDescription": "Düşük: Hafif bulanık fotoğrafları da tespit eder (daha fazla sonuç)\nOrta: Orta seviye bulanık fotoğrafları tespit eder (dengeli)\nYüksek: Sadece çok bulanık fotoğrafları tespit eder (daha az sonuç)",
   "@sensitivityLevelsDescription": {
     "description": "Detailed description of sensitivity levels"
   },
@@ -1045,7 +1045,7 @@
   "@duplicateModeHighSpeedLowAccuracy": {
     "description": "High speed low accuracy mode label for duplicate detection"
   },
-  "duplicateModeLevelsDescription": "• Düşük Hız/Yüksek Hassasiyet: En doğru sonuçlar, daha uzun sürer\n• Dengeli: Hız ve hassasiyet dengesi\n• Yüksek Hız/Düşük Hassasiyet: Hızlı sonuçlar, daha az doğru\n• Yüksek Hız: Hızlı tarama için optimize edilmiş, görselleri daha hızlı işler",
+  "duplicateModeLevelsDescription": "Düşük Hız/Yüksek Hassasiyet: En doğru sonuçlar, daha uzun sürer\nDengeli: Hız ve hassasiyet dengesi\nYüksek Hız/Düşük Hassasiyet: Hızlı sonuçlar, daha az doğru",
   "@duplicateModeLevelsDescription": {
     "description": "Detailed description of duplicate detection mode levels"
   },
@@ -1068,6 +1068,122 @@
   "doNotLeaveScreenDuringScan": "Lütfen tarama işlemi devam ederken bu ekrandan ayrılmayın.",
   "@doNotLeaveScreenDuringScan": {
     "description": "Warning message shown when user tries to navigate away during scan"
+  },
+  "viewResults": "Sonuçları Görüntüle",
+  "@viewResults": {
+    "description": "Button text to view scan results"
+  },
+  "viewLastResults": "Son Sonuçları Görüntüle",
+  "@viewLastResults": {
+    "description": "Button text to view last scan results"
+  },
+  "albumSelection": "Albüm Seçimi",
+  "@albumSelection": {
+    "description": "Album selection bottom sheet title"
+  },
+  "selectAlbumToView": "Görmek istediğiniz albümü seçin",
+  "@selectAlbumToView": {
+    "description": "Album selection bottom sheet description"
+  },
+  "filterAndSort": "Filtre ve Sıralama",
+  "@filterAndSort": {
+    "description": "Filter and sort bottom sheet title"
+  },
+  "filterAndSortDescription": "Tarih aralığı ve sıralama seçenekleri",
+  "@filterAndSortDescription": {
+    "description": "Filter and sort bottom sheet description"
+  },
+  "dateRange": "Tarih Aralığı",
+  "@dateRange": {
+    "description": "Date range section title"
+  },
+  "startDate": "Başlangıç",
+  "@startDate": {
+    "description": "Start date label"
+  },
+  "endDate": "Bitiş",
+  "@endDate": {
+    "description": "End date label"
+  },
+  "notSelected": "Seçilmedi",
+  "@notSelected": {
+    "description": "Not selected state text"
+  },
+  "clearDateFilter": "Tarih Filtresini Temizle",
+  "@clearDateFilter": {
+    "description": "Button to clear date filter"
+  },
+  "sort": "Sıralama",
+  "@sort": {
+    "description": "Sort section title"
+  },
+  "newest": "En Yeniler",
+  "@newest": {
+    "description": "Newest sort option"
+  },
+  "oldest": "En Eskiler",
+  "@oldest": {
+    "description": "Oldest sort option"
+  },
+  "apply": "Uygula",
+  "@apply": {
+    "description": "Apply button text"
+  },
+  "albumSettings": "Albüm Ayarları",
+  "@albumSettings": {
+    "description": "Album settings button label"
+  },
+  "getUnlimitedScans": "Sınırsız Tarama Al",
+  "@getUnlimitedScans": {
+    "description": "Button text to get unlimited scans"
+  },
+  "noRightsLeft": "Hakkın Kalmadı",
+  "@noRightsLeft": {
+    "description": "Message when scan rights are exhausted"
+  },
+  "getUnlimitedDeletions": "Sınırsız Silme Al",
+  "@getUnlimitedDeletions": {
+    "description": "Button text to get unlimited deletions"
+  },
+  "scanTip1": "Biz görsellerinizi scan ederken siz reels kaydırabilirsiniz.",
+  "@scanTip1": {
+    "description": "Tip shown during scan"
+  },
+  "scanTip2": "Biz scan ederken yarım sayfa kitap okuyabilirsiniz.",
+  "@scanTip2": {
+    "description": "Tip shown during scan"
+  },
+  "scanTip3": "Biz scan ederken sevgilinizin mesajına dönüş yapabilirsiniz.",
+  "@scanTip3": {
+    "description": "Tip shown during scan"
+  },
+  "scanTip4": "Biz scan ederken bildirimlerinizi kontrol edebilirsiniz.",
+  "@scanTip4": {
+    "description": "Tip shown during scan"
+  },
+  "scanTip5": "Biz scan ederken kısa bir mola verebilirsiniz.",
+  "@scanTip5": {
+    "description": "Tip shown during scan"
+  },
+  "scanTip6": "Uygulamayı arka plana alabilirsiniz, ancak tamamen kapatmayın.",
+  "@scanTip6": {
+    "description": "Tip shown during scan"
+  },
+  "scanTip7": "Biz scan ederken bu uygulamayı kapatmadan diğer uygulamalara bakabilirsiniz.",
+  "@scanTip7": {
+    "description": "Tip shown during scan"
+  },
+  "scanTip8": "Biz scan ederken kısa bir telefon görüşmesi yapabilirsiniz.",
+  "@scanTip8": {
+    "description": "Tip shown during scan"
+  },
+  "scanTip9": "Biz scan ederken sosyal medyanızı kontrol edebilirsiniz.",
+  "@scanTip9": {
+    "description": "Tip shown during scan"
+  },
+  "scanTip10": "Biz scan ederken bir fincan kahve alabilirsiniz.",
+  "@scanTip10": {
+    "description": "Tip shown during scan"
   }
 }
 

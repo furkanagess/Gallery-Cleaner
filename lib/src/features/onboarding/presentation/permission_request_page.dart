@@ -1,8 +1,9 @@
+import 'dart:async';
 import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lottie/lottie.dart';
 
@@ -12,23 +13,25 @@ import '../../gallery/application/gallery_providers.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../app/theme/app_colors.dart';
 
-class PermissionRequestPage extends ConsumerStatefulWidget {
+class PermissionRequestPage extends StatefulWidget {
   const PermissionRequestPage({super.key});
 
   @override
-  ConsumerState<PermissionRequestPage> createState() =>
-      _PermissionRequestPageState();
+  State<PermissionRequestPage> createState() => _PermissionRequestPageState();
 }
 
-class _PermissionRequestPageState extends ConsumerState<PermissionRequestPage> {
+class _PermissionRequestPageState extends State<PermissionRequestPage> {
   bool _hasRequestedPermission = false;
+  StreamSubscription<GalleryPermissionStatus>? _permissionSubscription;
+  GalleryPermissionStatus? _lastPermission;
 
   @override
   void initState() {
     super.initState();
     // İzin durumunu kontrol et ve eğer izin verilmemişse otomatik olarak izin iste
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final permission = ref.read(permissionsControllerProvider);
+      final permission = context.read<PermissionsCubit>().state;
+      _lastPermission = permission;
       if (permission != GalleryPermissionStatus.authorized) {
         // Onboarding bittikten sonra 500ms sonra otomatik olarak izin iste
         Future.delayed(const Duration(milliseconds: 500), () {
@@ -38,13 +41,29 @@ class _PermissionRequestPageState extends ConsumerState<PermissionRequestPage> {
         });
       }
     });
+    _permissionSubscription =
+        context.read<PermissionsCubit>().stream.listen((next) {
+      final previous = _lastPermission;
+      _lastPermission = next;
+      if (next == GalleryPermissionStatus.authorized &&
+          context.mounted &&
+          previous != next) {
+        _waitForPhotosAndNavigate(context);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _permissionSubscription?.cancel();
+    super.dispose();
   }
 
   Future<void> _requestPermission() async {
     if (_hasRequestedPermission) return;
 
     // İzin durumunu tekrar kontrol et
-    final currentPermission = ref.read(permissionsControllerProvider);
+    final currentPermission = context.read<PermissionsCubit>().state;
     if (currentPermission == GalleryPermissionStatus.authorized) {
       // İzin zaten verilmişse işlem yapma
       return;
@@ -53,7 +72,7 @@ class _PermissionRequestPageState extends ConsumerState<PermissionRequestPage> {
     _hasRequestedPermission = true;
 
     // OS'un native izin dialog'unu göster
-    final ok = await ref.read(permissionsControllerProvider.notifier).request();
+    final ok = await context.read<PermissionsCubit>().request();
 
     if (!ok && mounted) {
       // İzin reddedildiyse tekrar deneme için flag'i sıfırla
@@ -78,7 +97,7 @@ class _PermissionRequestPageState extends ConsumerState<PermissionRequestPage> {
     for (int attempt = 0; attempt < 17; attempt++) {
       if (!mounted || !context.mounted) return;
 
-      final albumsAsync = ref.read(albumsProvider);
+      final albumsAsync = context.read<AlbumsCubit>().state;
       final albums = albumsAsync.maybeWhen(
         data: (albums) => albums,
         orElse: () => <dynamic>[],
@@ -114,7 +133,7 @@ class _PermissionRequestPageState extends ConsumerState<PermissionRequestPage> {
     for (int attempt = 0; attempt < 17; attempt++) {
       if (!mounted || !context.mounted) return;
 
-      final assetsAsync = ref.read(galleryPagingControllerProvider);
+      final assetsAsync = context.read<GalleryPagingCubit>().state;
       final assets = assetsAsync.maybeWhen(
         data: (assets) => assets,
         orElse: () => <dynamic>[],
@@ -132,7 +151,7 @@ class _PermissionRequestPageState extends ConsumerState<PermissionRequestPage> {
       } else if (assetsAsync.hasError) {
         debugPrint('⚠️ [PermissionRequestPage] Fotoğraf yükleme hatası, yeniden deniyor... (attempt ${attempt + 1})');
         // Hata varsa reload'u tetikle
-        ref.read(galleryPagingControllerProvider.notifier).reload();
+        context.read<GalleryPagingCubit>().reload();
       } else {
         debugPrint('⚠️ [PermissionRequestPage] Fotoğraflar boş, yeniden deniyor... (attempt ${attempt + 1})');
       }
@@ -158,20 +177,8 @@ class _PermissionRequestPageState extends ConsumerState<PermissionRequestPage> {
 
   @override
   Widget build(BuildContext context) {
-    final permission = ref.watch(permissionsControllerProvider);
-    final statsState = ref.watch(galleryStatsProvider);
-
-    ref.listen<GalleryPermissionStatus>(permissionsControllerProvider, (
-      prev,
-      next,
-    ) {
-      if (next == GalleryPermissionStatus.authorized &&
-          context.mounted &&
-          prev != next) {
-        // İzin yeni verildiyse fotoğrafların yüklendiğinden emin ol ve swipe page'e yönlendir
-        _waitForPhotosAndNavigate(context);
-      }
-    });
+    final permission = context.watch<PermissionsCubit>().state;
+    final statsState = context.watch<GalleryStatsCubit>().state;
 
     final theme = Theme.of(context);
 
@@ -308,8 +315,8 @@ class _PermissionRequestPageState extends ConsumerState<PermissionRequestPage> {
                                   const SizedBox(height: 16),
                                   FilledButton(
                                     onPressed: () {
-                                      ref
-                                          .read(galleryStatsProvider.notifier)
+                                      context
+                                          .read<GalleryStatsCubit>()
                                           .refresh();
                                     },
                                     child: Text(l10n.tryAgain),
@@ -542,8 +549,8 @@ class _PermissionRequestPageState extends ConsumerState<PermissionRequestPage> {
                         child: SizedBox(
                           width: double.infinity,
                           child: TextButton(
-                            onPressed: () => ref
-                                .read(permissionsControllerProvider.notifier)
+                            onPressed: () => context
+                                .read<PermissionsCubit>()
                                 .openSettings(),
                             child: Text(l10n.openSettings),
                           ),

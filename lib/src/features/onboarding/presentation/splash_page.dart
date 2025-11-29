@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lottie/lottie.dart';
 
@@ -7,14 +7,14 @@ import '../../../core/services/preferences_service.dart';
 import '../application/permissions_controller.dart';
 import '../../../app/theme/app_colors.dart';
 
-class SplashPage extends ConsumerStatefulWidget {
+class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
 
   @override
-  ConsumerState<SplashPage> createState() => _SplashPageState();
+  State<SplashPage> createState() => _SplashPageState();
 }
 
-class _SplashPageState extends ConsumerState<SplashPage> {
+class _SplashPageState extends State<SplashPage> {
   bool _isAnimationCompleted = false;
 
   void _onAnimationComplete() {
@@ -28,7 +28,7 @@ class _SplashPageState extends ConsumerState<SplashPage> {
     if (!mounted) return;
     
     // Onboarding durumunu kontrol et
-    final preferencesService = PreferencesService();
+    final preferencesService = context.read<PreferencesService>();
     final onboardingCompleted = await preferencesService.isOnboardingCompleted();
     
     if (!mounted) return;
@@ -40,12 +40,12 @@ class _SplashPageState extends ConsumerState<SplashPage> {
     }
     
     // Onboarding tamamlanmışsa izin durumunu kontrol et
-    final permissionController = ref.read(permissionsControllerProvider.notifier);
+    final permissionController = context.read<PermissionsCubit>();
     await permissionController.refresh();
     
     if (!mounted) return;
     
-    final permissionStatus = ref.read(permissionsControllerProvider);
+    final permissionStatus = permissionController.state;
     
     if (permissionStatus == GalleryPermissionStatus.authorized) {
       // İzin verilmişse swipe page'e git
@@ -225,4 +225,3 @@ class _SplashPageState extends ConsumerState<SplashPage> {
     );
   }
 }
-

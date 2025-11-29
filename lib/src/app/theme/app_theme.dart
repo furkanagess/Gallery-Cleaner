@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'app_colors.dart';
 
 class AppThemeData {
@@ -73,7 +72,7 @@ extension AppSemanticColorsExtension on ThemeData {
       );
 }
 
-final appThemeProvider = Provider<AppThemeData>((ref) {
+AppThemeData buildAppTheme() {
   ThemeData themed(Brightness brightness) {
     final isLight = brightness == Brightness.light;
 
@@ -383,5 +382,4 @@ final appThemeProvider = Provider<AppThemeData>((ref) {
   final light = themed(Brightness.light);
   final dark = themed(Brightness.dark);
   return AppThemeData(light: light, dark: dark);
-});
-
+}

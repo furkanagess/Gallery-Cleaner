@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:photo_manager/photo_manager.dart' as pm;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -78,8 +78,8 @@ class ReviewActionItem {
   }
 }
 
-class ReviewHistoryController extends StateNotifier<List<ReviewActionItem>> {
-  ReviewHistoryController() : super(const []) {
+class ReviewHistoryCubit extends Cubit<List<ReviewActionItem>> {
+  ReviewHistoryCubit() : super(const []) {
     _load();
   }
 
@@ -135,7 +135,7 @@ class ReviewHistoryController extends StateNotifier<List<ReviewActionItem>> {
   }
 
   void clear() {
-    state = const [];
+    emit(const []);
   }
 
   void _push(ReviewActionItem item) {
@@ -143,7 +143,7 @@ class ReviewHistoryController extends StateNotifier<List<ReviewActionItem>> {
     if (next.length > maxItems) {
       next.removeRange(maxItems, next.length);
     }
-    state = next;
+    emit(next);
     _persist();
   }
 
@@ -152,7 +152,7 @@ class ReviewHistoryController extends StateNotifier<List<ReviewActionItem>> {
     if (idx == -1) return;
     final copy = [...state];
     copy[idx] = update(copy[idx]);
-    state = copy;
+    emit(copy);
     _persist();
   }
 
@@ -198,15 +198,9 @@ class ReviewHistoryController extends StateNotifier<List<ReviewActionItem>> {
           .cast<Map<String, dynamic>>()
           .map(ReviewActionItem.fromJson)
           .toList();
-      state = items;
+      emit(items);
     } catch (_) {
       // ignore
     }
   }
 }
-
-final reviewHistoryControllerProvider = StateNotifierProvider<ReviewHistoryController, List<ReviewActionItem>>((ref) {
-  return ReviewHistoryController();
-});
-
-

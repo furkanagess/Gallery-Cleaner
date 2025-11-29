@@ -1,157 +1,345 @@
-import 'dart:io' show Platform;
+import 'dart:async';
+import 'dart:io';
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:photo_manager/photo_manager.dart' as pm;
 
 import '../../../core/services/media_library_service.dart';
 import '../../../core/services/preferences_service.dart';
 import '../../../core/services/revenuecat_service.dart';
+import '../../../core/utils/async_value.dart';
 import '../../onboarding/application/permissions_controller.dart';
 
-final mediaLibraryServiceProvider = Provider<MediaLibraryService>((ref) {
-  return MediaLibraryService();
-});
+class SelectedAlbumCubit extends Cubit<pm.AssetPathEntity?> {
+  SelectedAlbumCubit() : super(null);
 
-final selectedAlbumProvider = StateProvider<pm.AssetPathEntity?>((ref) => null);
+  void select(pm.AssetPathEntity? album) => emit(album);
+}
 
-final albumsProvider = FutureProvider<List<pm.AssetPathEntity>>((ref) async {
-  final permission = ref.watch(permissionsControllerProvider);
-  // Unknown veya denied durumunda boş liste döndür
-  if (permission != GalleryPermissionStatus.authorized) {
-    debugPrint('📁 [albumsProvider] Permission not authorized (status: $permission) → returning empty album list');
-    return [];
+class AlbumsCubit extends Cubit<AsyncValue<List<pm.AssetPathEntity>>> {
+  AlbumsCubit({
+    required MediaLibraryService mediaLibraryService,
+    required PermissionsCubit permissionsCubit,
+  })  : _mediaLibraryService = mediaLibraryService,
+        _permissionsCubit = permissionsCubit,
+        super(const AsyncValue.loading()) {
+    _permissionSubscription =
+        _permissionsCubit.stream.listen(_handlePermissionChange);
+    _handlePermissionChange(_permissionsCubit.state);
   }
-  
-  try {
-    // iOS'ta izin verildikten hemen sonra albums fetch edilirken race condition olmaması için kısa delay
-    await Future.delayed(const Duration(milliseconds: 100));
-    
-    final service = ref.watch(mediaLibraryServiceProvider);
-    debugPrint('📁 [albumsProvider] Fetching albums (images only)...');
-    final albums = await service.fetchAlbums(onlyAll: false, type: pm.RequestType.image);
-    debugPrint('📁 [albumsProvider] Albums fetched: count=${albums.length}');
-    for (final a in albums) {
-      debugPrint('   • ${a.name} (${a.id}) isAll=${a.isAll}');
+
+  final MediaLibraryService _mediaLibraryService;
+  final PermissionsCubit _permissionsCubit;
+  StreamSubscription<GalleryPermissionStatus>? _permissionSubscription;
+  bool _isFetching = false;
+
+  Future<void> refresh() async {
+    if (_permissionsCubit.state != GalleryPermissionStatus.authorized) {
+      emit(const AsyncValue.data([]));
+      return;
     }
-    return albums;
-  } catch (e, st) {
-    debugPrint('❌ [albumsProvider] Error fetching albums: $e');
-    debugPrint('   Stack trace: $st');
-    // Hata durumunda boş liste döndür
-    return [];
+    await _fetchAlbums();
   }
-});
 
-class GalleryPagingController extends StateNotifier<AsyncValue<List<pm.AssetEntity>>> {
-  GalleryPagingController(this._ref)
-      : _page = 0,
-        _canLoadMore = true,
-        super(const AsyncValue.data([]));
-
-  final Ref _ref;
-  int _page;
-  bool _canLoadMore;
-  static const int _pageSize = 60;
-
-  Future<void> reload() async {
-    _page = 0;
-    _canLoadMore = true;
-    state = const AsyncLoading();
+  Future<void> _fetchAlbums() async {
+    if (_isFetching) return;
+    _isFetching = true;
+    emit(const AsyncValue.loading());
     try {
-      final service = _ref.read(mediaLibraryServiceProvider);
-      final album = _ref.read(selectedAlbumProvider);
-      debugPrint('📸 [GalleryPagingController.reload] page=$_page size=$_pageSize album=${album?.name ?? 'All'}');
-      final items = await service.fetchRecentAssets(page: _page, pageSize: _pageSize, album: album);
-      debugPrint('📸 [GalleryPagingController.reload] fetched ${items.length} items');
-      state = AsyncValue.data(items);
-      _canLoadMore = items.length == _pageSize;
+      await Future.delayed(const Duration(milliseconds: 100));
+      final albums = await _mediaLibraryService.fetchAlbums(
+        onlyAll: false,
+        type: pm.RequestType.image,
+      );
+      emit(AsyncValue.data(albums));
     } catch (e, st) {
-      debugPrint('🛑 [GalleryPagingController.reload] error: $e');
-      state = AsyncValue.error(e, st);
+      emit(AsyncValue.error(e, st));
+    } finally {
+      _isFetching = false;
     }
   }
 
-  Future<void> loadMore() async {
-    if (!_canLoadMore || state.isLoading) return;
-    final current = state.value ?? [];
-    state = AsyncValue.data(current);
-    try {
-      _page += 1;
-      final service = _ref.read(mediaLibraryServiceProvider);
-      final album = _ref.read(selectedAlbumProvider);
-      debugPrint('📸 [GalleryPagingController.loadMore] page=$_page size=$_pageSize album=${album?.name ?? 'All'}');
-      final next = await service.fetchRecentAssets(page: _page, pageSize: _pageSize, album: album);
-      final combined = [...current, ...next];
-      debugPrint('📸 [GalleryPagingController.loadMore] fetched ${next.length} (combined ${combined.length})');
-      state = AsyncValue.data(combined);
-      _canLoadMore = next.length == _pageSize;
-    } catch (e, st) {
-      debugPrint('🛑 [GalleryPagingController.loadMore] error: $e');
-      state = AsyncValue.error(e, st);
+  void _handlePermissionChange(GalleryPermissionStatus status) {
+    if (status == GalleryPermissionStatus.authorized) {
+      _fetchAlbums();
+    } else {
+      emit(const AsyncValue.data([]));
     }
+  }
+
+  @override
+  Future<void> close() {
+    _permissionSubscription?.cancel();
+    return super.close();
   }
 }
 
-final galleryPagingControllerProvider =
-    StateNotifierProvider<GalleryPagingController, AsyncValue<List<pm.AssetEntity>>>((ref) {
-  final permission = ref.watch(permissionsControllerProvider);
-  final controller = GalleryPagingController(ref);
+class GalleryPagingCubit extends Cubit<AsyncValue<List<pm.AssetEntity>>> {
+  GalleryPagingCubit({
+    required MediaLibraryService mediaLibraryService,
+    required SelectedAlbumCubit selectedAlbumCubit,
+    required PermissionsCubit permissionsCubit,
+    required AlbumFilterCubit albumFilterCubit,
+    required AlbumSortOrderCubit albumSortOrderCubit,
+  })  : _mediaLibraryService = mediaLibraryService,
+        _selectedAlbumCubit = selectedAlbumCubit,
+        _permissionsCubit = permissionsCubit,
+        _albumFilterCubit = albumFilterCubit,
+        _albumSortOrderCubit = albumSortOrderCubit,
+        super(const AsyncLoading()) {
+    _albumSubscription = _selectedAlbumCubit.stream.listen((_) {
+      _scheduleReload(const Duration(milliseconds: 100));
+    });
+    _filterSubscription = _albumFilterCubit.stream.listen((_) {
+      _scheduleReload(const Duration(milliseconds: 100));
+    });
+    _sortSubscription = _albumSortOrderCubit.stream.listen((_) {
+      _scheduleReload(const Duration(milliseconds: 100));
+    });
+    _permissionSubscription =
+        _permissionsCubit.stream.listen((status) {
+      final previous = _lastPermission;
+      _lastPermission = status;
+      if (status == GalleryPermissionStatus.authorized &&
+          previous != GalleryPermissionStatus.authorized) {
+        final delay = Platform.isIOS
+            ? const Duration(milliseconds: 800)
+            : const Duration(milliseconds: 300);
+        _scheduleReload(delay);
+      } else if (status != GalleryPermissionStatus.authorized) {
+        emit(const AsyncValue.data([]));
+      }
+    });
 
-  // Auto-reload when permission granted or album changes
-  ref.listen<GalleryPermissionStatus>(permissionsControllerProvider, (prev, next) {
-    if (next == GalleryPermissionStatus.authorized && prev != next) {
-      debugPrint('🔄 [GalleryPagingController] Permission granted → reload (with delay)');
-      // iOS'ta izin verildikten hemen sonra PhotoManager hazır olmayabilir
-      // Daha uzun bir gecikme ekle ve PhotoManager'ın hazır olmasını bekle
-      final delay = Platform.isIOS ? const Duration(milliseconds: 800) : const Duration(milliseconds: 300);
-      Future.delayed(delay, () {
-        if (ref.read(permissionsControllerProvider) == GalleryPermissionStatus.authorized) {
-          controller.reload();
+    if (_permissionsCubit.state == GalleryPermissionStatus.authorized) {
+      final delay = Platform.isIOS
+          ? const Duration(milliseconds: 800)
+          : const Duration(milliseconds: 300);
+      _scheduleReload(delay);
+    }
+  }
+
+  final MediaLibraryService _mediaLibraryService;
+  final SelectedAlbumCubit _selectedAlbumCubit;
+  final PermissionsCubit _permissionsCubit;
+  final AlbumFilterCubit _albumFilterCubit;
+  final AlbumSortOrderCubit _albumSortOrderCubit;
+  StreamSubscription<pm.AssetPathEntity?>? _albumSubscription;
+  StreamSubscription<DateRangeFilter>? _filterSubscription;
+  StreamSubscription<SortOrder>? _sortSubscription;
+  StreamSubscription<GalleryPermissionStatus>? _permissionSubscription;
+  Timer? _reloadTimer;
+  GalleryPermissionStatus? _lastPermission;
+  bool _canLoadMore = true;
+  static const int _pageSize = 60;
+
+  List<pm.AssetEntity> _applyFilters(List<pm.AssetEntity> assets) {
+    final dateFilter = _albumFilterCubit.state;
+    final sortOrder = _albumSortOrderCubit.state;
+
+    // Apply date filter
+    if (dateFilter.hasFilter) {
+      assets = assets.where((asset) {
+        final createDate = asset.createDateTime;
+        if (dateFilter.startDate != null &&
+            createDate.isBefore(dateFilter.startDate!)) {
+          return false;
         }
-      });
+        if (dateFilter.endDate != null &&
+            createDate.isAfter(dateFilter.endDate!.add(const Duration(days: 1)))) {
+          return false;
+        }
+        return true;
+      }).toList();
     }
-  });
-  ref.listen<pm.AssetPathEntity?>(selectedAlbumProvider, (prev, next) {
-    if (prev != next) {
-      debugPrint('🔄 [GalleryPagingController] Selected album changed: prev=${prev?.name} next=${next?.name}');
-      // Album değiştiğinde reload yaparken kısa delay
-      Future.delayed(const Duration(milliseconds: 100), () {
-        controller.reload();
-      });
-    }
-  });
 
-  if (permission == GalleryPermissionStatus.authorized) {
-    debugPrint('🔄 [GalleryPagingController] Initial authorized state → initial reload (with delay)');
-    // İlk yüklemede de delay ekle - iOS'ta PhotoManager hazır olması için daha uzun bekle
-    final delay = Platform.isIOS ? const Duration(milliseconds: 800) : const Duration(milliseconds: 300);
-    Future.delayed(delay, () {
-      if (ref.read(permissionsControllerProvider) == GalleryPermissionStatus.authorized) {
-        controller.reload();
+    // Apply sort order
+    assets.sort((a, b) {
+      final comparison = a.createDateTime.compareTo(b.createDateTime);
+      return sortOrder == SortOrder.newest ? -comparison : comparison;
+    });
+
+    return assets;
+  }
+
+  void _scheduleReload(Duration delay) {
+    _reloadTimer?.cancel();
+    _reloadTimer = Timer(delay, () {
+      if (_permissionsCubit.state == GalleryPermissionStatus.authorized) {
+        reload();
       }
     });
   }
 
-  return controller;
-});
+  Future<void> reload() async {
+    _canLoadMore = true;
+    _allFilteredAssets.clear();
+    _loadedPages.clear();
+    emit(const AsyncLoading());
+    
+    try {
+      final dateFilter = _albumFilterCubit.state;
+      
+      // Optimize: Load only first few pages initially for faster response
+      // If no date filter, we can load incrementally
+      // If date filter exists, we need to load more to find matching items
+      final initialPageCount = dateFilter.hasFilter ? 10 : 3;
+      
+      final allItems = <pm.AssetEntity>[];
+      int page = 0;
+      
+      // Load initial pages
+      while (page < initialPageCount) {
+        final items = await _mediaLibraryService.fetchRecentAssets(
+          page: page,
+          pageSize: _pageSize,
+          album: _selectedAlbumCubit.state,
+        );
+        if (items.isEmpty) break;
+        allItems.addAll(items);
+        _loadedPages.add(page);
+        if (items.length < _pageSize) break;
+        page++;
+      }
 
-class DeleteLimitController extends StateNotifier<AsyncValue<int>> {
-  DeleteLimitController()
-      : _prefs = PreferencesService(),
-        super(const AsyncValue.loading()) {
+      // Apply filters and sorting
+      var filtered = _applyFilters(allItems);
+
+      // If we have date filter and not enough items, load more pages
+      if (dateFilter.hasFilter && filtered.length < _pageSize && page < 50) {
+        // Load more pages until we have enough filtered items or reach limit
+        while (filtered.length < _pageSize * 2 && page < 50) {
+          final items = await _mediaLibraryService.fetchRecentAssets(
+            page: page,
+            pageSize: _pageSize,
+            album: _selectedAlbumCubit.state,
+          );
+          if (items.isEmpty) break;
+          allItems.addAll(items);
+          _loadedPages.add(page);
+          filtered = _applyFilters(allItems);
+          if (items.length < _pageSize) break;
+          page++;
+        }
+      }
+
+      // Take first page
+      final firstPage = filtered.take(_pageSize).toList();
+      _canLoadMore = filtered.length > _pageSize || page < 50;
+      _allFilteredAssets = filtered;
+      _lastLoadedPage = page - 1;
+      emit(AsyncValue.data(firstPage));
+    } catch (e, st) {
+      emit(AsyncValue.error(e, st));
+    }
+  }
+
+  List<pm.AssetEntity> _allFilteredAssets = [];
+  Set<int> _loadedPages = {};
+  int _lastLoadedPage = -1;
+
+  Future<void> loadMore() async {
+    if (!_canLoadMore || state.isLoading) return;
+    final current = state.value ?? [];
+    emit(AsyncValue.data(current));
+    
+    try {
+      // If we have cached filtered assets, use them
+      if (_allFilteredAssets.length > current.length) {
+        final startIndex = current.length;
+        final endIndex = startIndex + _pageSize;
+        final next = _allFilteredAssets.skip(startIndex).take(_pageSize).toList();
+        final combined = [...current, ...next];
+        _canLoadMore = endIndex < _allFilteredAssets.length;
+        emit(AsyncValue.data(combined));
+        return;
+      }
+      
+      // Otherwise, load more pages and filter
+      final allItems = <pm.AssetEntity>[];
+      int page = _lastLoadedPage + 1;
+      int loadedCount = 0;
+      
+      // Load a few more pages
+      while (loadedCount < 3 && page < 100) {
+        if (_loadedPages.contains(page)) {
+          page++;
+          continue;
+        }
+        
+        final items = await _mediaLibraryService.fetchRecentAssets(
+          page: page,
+          pageSize: _pageSize,
+          album: _selectedAlbumCubit.state,
+        );
+        if (items.isEmpty) break;
+        allItems.addAll(items);
+        _loadedPages.add(page);
+        _lastLoadedPage = page;
+        loadedCount++;
+        if (items.length < _pageSize) break;
+        page++;
+      }
+      
+      if (allItems.isNotEmpty) {
+        // Add new items to existing filtered list
+        final newFiltered = _applyFilters(allItems);
+        _allFilteredAssets.addAll(newFiltered);
+        
+        // Re-sort entire list
+        _allFilteredAssets.sort((a, b) {
+          final comparison = a.createDateTime.compareTo(b.createDateTime);
+          final sortOrder = _albumSortOrderCubit.state;
+          return sortOrder == SortOrder.newest ? -comparison : comparison;
+        });
+        
+        // Remove duplicates
+        final seen = <String>{};
+        _allFilteredAssets = _allFilteredAssets.where((asset) {
+          if (seen.contains(asset.id)) return false;
+          seen.add(asset.id);
+          return true;
+        }).toList();
+      }
+      
+      // Get next page from filtered assets
+      final startIndex = current.length;
+      final endIndex = startIndex + _pageSize;
+      final next = _allFilteredAssets.skip(startIndex).take(_pageSize).toList();
+      final combined = [...current, ...next];
+      _canLoadMore = endIndex < _allFilteredAssets.length || page < 100;
+      emit(AsyncValue.data(combined));
+    } catch (e, st) {
+      emit(AsyncValue.error(e, st));
+    }
+  }
+
+  @override
+  Future<void> close() {
+    _albumSubscription?.cancel();
+    _filterSubscription?.cancel();
+    _sortSubscription?.cancel();
+    _permissionSubscription?.cancel();
+    _reloadTimer?.cancel();
+    return super.close();
+  }
+}
+
+class DeleteLimitCubit extends Cubit<AsyncValue<int>> {
+  DeleteLimitCubit(this._prefs) : super(const AsyncValue.loading()) {
     refresh();
   }
 
   final PreferencesService _prefs;
 
   Future<int> refresh() async {
+    emit(const AsyncValue.loading());
     try {
       final limit = await _prefs.getDeleteLimit();
-      state = AsyncValue.data(limit);
+      emit(AsyncValue.data(limit));
       return limit;
     } catch (e, st) {
-      state = AsyncValue.error(e, st);
+      emit(AsyncValue.error(e, st));
       rethrow;
     }
   }
@@ -164,55 +352,146 @@ class DeleteLimitController extends StateNotifier<AsyncValue<int>> {
 
   Future<int> decrease(int amount) async {
     final newLimit = await _prefs.decreaseDeleteLimit(amount);
-    state = AsyncValue.data(newLimit);
+    emit(AsyncValue.data(newLimit));
     return newLimit;
   }
 
   Future<int> increase(int amount) async {
     final newLimit = await _prefs.increaseDeleteLimit(amount);
-    state = AsyncValue.data(newLimit);
+    emit(AsyncValue.data(newLimit));
     return newLimit;
   }
 
   Future<void> set(int value) async {
     await _prefs.setDeleteLimit(value);
-    state = AsyncValue.data(value);
+    emit(AsyncValue.data(value));
   }
 }
 
-/// Silme hakkı provider'ı (StateNotifier tabanlı)
-final deleteLimitProvider =
-    StateNotifierProvider<DeleteLimitController, AsyncValue<int>>(
-  (ref) => DeleteLimitController(),
-);
+class PremiumCubit extends Cubit<AsyncValue<bool>> {
+  PremiumCubit(this._prefs) : super(const AsyncValue.loading()) {
+    refresh();
+  }
 
-/// Premium durumu provider'ı
-final isPremiumProvider = FutureProvider<bool>((ref) async {
-  // Prefer RevenueCat entitlement; fallback to local pref if RC not active
-  final rc = RevenueCatService.instance;
-  await rc.initialize();
-  final rcPremium = await rc.isPremium();
-  if (rcPremium) return true;
-  // backward compatibility
-  final prefsService = PreferencesService();
-  return await prefsService.isPremium();
-});
+  final PreferencesService _prefs;
 
-/// Tarama limiti provider'ı (Premium olmayan kullanıcılar için 1000)
-/// Backward compatibility için korunuyor
-final scanLimitProvider = FutureProvider<int>((ref) async {
-  final prefsService = PreferencesService();
-  return await prefsService.getScanLimit();
-});
+  Future<void> refresh() async {
+    emit(const AsyncValue.loading());
+    try {
+      final rc = RevenueCatService.instance;
+      await rc.initialize();
+      final rcPremium = await rc.isPremium();
+      if (rcPremium) {
+        emit(const AsyncValue.data(true));
+        return;
+      }
+      final prefPremium = await _prefs.isPremium();
+      emit(AsyncValue.data(prefPremium));
+    } catch (e, st) {
+      emit(AsyncValue.error(e, st));
+    }
+  }
+}
 
-/// Duplicate tarama limiti provider'ı (azalır)
-final duplicateScanLimitProvider = FutureProvider<int>((ref) async {
-  final prefsService = PreferencesService();
-  return await prefsService.getDuplicateScanLimit();
-});
+abstract class BaseScanLimitCubit extends Cubit<AsyncValue<int>> {
+  BaseScanLimitCubit() : super(const AsyncValue.loading());
 
-/// Blur tarama limiti provider'ı (sabit - azalmaz)
-final blurScanLimitProvider = FutureProvider<int>((ref) async {
-  final prefsService = PreferencesService();
-  return await prefsService.getBlurScanLimit();
-});
+  Future<int> loadLimit();
+
+  Future<void> refresh() async {
+    emit(const AsyncValue.loading());
+    try {
+      final value = await loadLimit();
+      emit(AsyncValue.data(value));
+    } catch (e, st) {
+      emit(AsyncValue.error(e, st));
+    }
+  }
+}
+
+class GeneralScanLimitCubit extends BaseScanLimitCubit {
+  GeneralScanLimitCubit(this._prefs) {
+    refresh();
+  }
+
+  final PreferencesService _prefs;
+
+  @override
+  Future<int> loadLimit() => _prefs.getScanLimit();
+}
+
+class DuplicateScanLimitCubit extends BaseScanLimitCubit {
+  DuplicateScanLimitCubit(this._prefs) {
+    refresh();
+  }
+
+  final PreferencesService _prefs;
+
+  @override
+  Future<int> loadLimit() => _prefs.getDuplicateScanLimit();
+}
+
+class BlurScanLimitCubit extends BaseScanLimitCubit {
+  BlurScanLimitCubit(this._prefs) {
+    refresh();
+  }
+
+  final PreferencesService _prefs;
+
+  @override
+  Future<int> loadLimit() => _prefs.getBlurScanLimit();
+}
+
+class TabSelectionCubit extends Cubit<int> {
+  TabSelectionCubit() : super(0);
+
+  void selectTab(int index) {
+    if (index != state) {
+      emit(index);
+    }
+  }
+}
+
+enum SortOrder { newest, oldest }
+
+class DateRangeFilter {
+  final DateTime? startDate;
+  final DateTime? endDate;
+
+  const DateRangeFilter({
+    this.startDate,
+    this.endDate,
+  });
+
+  bool get hasFilter => startDate != null || endDate != null;
+
+  DateRangeFilter copyWith({
+    DateTime? startDate,
+    DateTime? endDate,
+  }) {
+    return DateRangeFilter(
+      startDate: startDate ?? this.startDate,
+      endDate: endDate ?? this.endDate,
+    );
+  }
+}
+
+class AlbumFilterCubit extends Cubit<DateRangeFilter> {
+  AlbumFilterCubit() : super(const DateRangeFilter());
+
+  void setDateRange(DateTime? startDate, DateTime? endDate) {
+    emit(DateRangeFilter(startDate: startDate, endDate: endDate));
+  }
+
+  void clearDateRange() {
+    emit(const DateRangeFilter());
+  }
+}
+
+class AlbumSortOrderCubit extends Cubit<SortOrder> {
+  AlbumSortOrderCubit() : super(SortOrder.newest);
+
+  void setSortOrder(SortOrder order) {
+    emit(order);
+  }
+}

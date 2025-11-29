@@ -5,7 +5,8 @@
 **Gallery Stats Page**, kullanıcıya galeri istatistiklerini, albüm listesini ve temizleme geçmişini gösteren detaylı bir analiz ekranıdır. İlk analiz otomatik olarak başlatılabilir.
 
 **Yol (Route)**: `/gallery/stats`  
-**Ana Özellikler**: 
+**Ana Özellikler**:
+
 - Galeri genel istatistikleri
 - Albüm bazlı istatistikler
 - Temizleme geçmişi
@@ -25,6 +26,7 @@
 ## Layout Yapısı
 
 ### 1. AppBar
+
 - **Başlık**: "Gallery Stats" (lokalize)
 - **Hizalama**: Ortalanmış
 - **Geri Butonu**: iOS'ta `chevron_left`, Android'de varsayılan
@@ -32,6 +34,7 @@
 ### 2. Ana İçerik (Scrollable)
 
 #### 2.1. Genel İstatistikler Kartı
+
 - **Container**:
   - Padding: `20px` (tüm yönler)
   - Arka plan: `surface`
@@ -45,6 +48,7 @@
 - **Stil**: Her satır ikon + label + değer formatında
 
 #### 2.2. Albüm Listesi Bölümü
+
 - **Başlık**: "Albums" (lokalize)
 - **Scroll**: Yatay scrollable liste
   - Scroll controller ile kontrol
@@ -66,6 +70,7 @@
   - Stil: Floating action button benzeri, yarı saydam
 
 #### 2.3. Temizleme Geçmişi Bölümü
+
 - **Başlık**: "Recent Activity" veya "Cleaning History" (lokalize)
 - **Liste**: Dikey liste
   - Her öğe: Tarih + İşlem tipi + Detaylar
@@ -77,12 +82,13 @@
     - Silinen fotoğraf sayısı
     - Tutulan fotoğraf sayısı
     - Boşaltılan alan
-- **Stil**: 
+- **Stil**:
   - Her öğe: Kart veya list tile
   - Border radius: `12-16px`
   - Padding: `16px`
 
 #### 2.4. İlk Analiz Bölümü (Opsiyonel)
+
 - **Durum**: İlk analiz yapılmamışsa görünür
 - **İçerik**:
   - Başlık: "First Analysis" (lokalize)
@@ -95,17 +101,20 @@
 ## Animasyonlar
 
 ### 1. İlk Analiz Başlatma
+
 - **Otomatik**: Sayfa açıldığında kontrol edilir
 - **Manuel**: Buton ile başlatılabilir
 - **Progress**: Lottie animasyonu veya progress bar
 - **Ses**: Scanner sesi (opsiyonel)
 
 ### 2. Albüm Scroll
+
 - **Smooth Scroll**: 300ms, easeOut
 - **Ok Butonları**: Fade in/out animasyonu
 - **Kartlar**: Hover/press scale efekti
 
 ### 3. Geçmiş Listesi
+
 - **Fade In**: Her öğe sırayla görünür
 - **Slide**: Sağdan sola slide efekti (opsiyonel)
 
@@ -114,20 +123,24 @@
 ## Durumlar
 
 ### 1. Loading Durumu
+
 - **Genel İstatistikler**: Shimmer skeleton
 - **Albüm Listesi**: Shimmer skeleton kartlar
 - **Geçmiş**: Shimmer skeleton list items
 
 ### 2. Boş Durum
+
 - **Albüm Yok**: "No albums found" mesajı
 - **Geçmiş Yok**: "No cleaning history" mesajı
 - **İllüstrasyon**: Boş durum ikonu/illüstrasyonu
 
 ### 3. Error Durumu
+
 - **Hata Mesajı**: Kırmızı, ortalanmış
 - **Retry Butonu**: "Try Again" butonu
 
 ### 4. Normal Durum
+
 - Tüm veriler görünür
 - Tüm butonlar aktif
 
@@ -136,16 +149,19 @@
 ## Renk Sistemi
 
 ### İstatistik Kartları
+
 - **Arka Plan**: `surface` veya `primaryContainer`
 - **İkon**: `primary` rengi
 - **Metin**: `onSurface`
 
 ### Albüm Kartları
+
 - **Arka Plan**: `surface`
 - **Border**: `outline` %20
 - **Thumbnail**: Fotoğraf veya placeholder
 
 ### Geçmiş Öğeleri
+
 - **Arka Plan**: `surface` veya `surfaceContainerHighest`
 - **Vurgu**: İşlem tipine göre (primary, error, success)
 
@@ -172,6 +188,7 @@
 ## Teknik Detaylar
 
 ### Widget Yapısı
+
 ```
 Scaffold
 └── SafeArea
@@ -192,6 +209,7 @@ Scaffold
 ```
 
 ### Önemli Notlar
+
 - `galleryStatsProvider` ile istatistikler yüklenir
 - `reviewHistoryController` ile geçmiş yüklenir
 - İlk analiz kontrolü `_checkAndStartFirstAnalysis` ile yapılır
@@ -203,6 +221,7 @@ Scaffold
 ## Örnek Görsel Açıklama
 
 **Genel Görünüm:**
+
 - Üstte AppBar
 - Genel istatistikler kartı (büyük, vurgulu)
 - Albüm listesi (yatay scroll, ok butonları ile)
@@ -210,11 +229,13 @@ Scaffold
 - İlk analiz bölümü (opsiyonel, vurgulu)
 
 **Albüm Kartı:**
+
 - Üstte thumbnail (160x160px, yuvarlatılmış)
 - Altında albüm adı (bold)
 - En altta fotoğraf sayısı (küçük, secondary renk)
 
 **Geçmiş Öğesi:**
+
 - Sol tarafta ikon (işlem tipine göre)
 - Ortada tarih ve işlem detayları
 - Sağda chevron (opsiyonel)

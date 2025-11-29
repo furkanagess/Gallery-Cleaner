@@ -208,10 +208,10 @@ abstract class AppLocalizations {
   /// **'Select Album'**
   String get selectAlbum;
 
-  /// Album selector label
+  /// Album selection bottom sheet description
   ///
   /// In en, this message translates to:
-  /// **'Select Album to View'**
+  /// **'Select the album you want to view'**
   String get selectAlbumToView;
 
   /// All photos option
@@ -1429,7 +1429,7 @@ abstract class AppLocalizations {
   /// Detailed description of sensitivity levels
   ///
   /// In en, this message translates to:
-  /// **'• Low: Detects slightly blurry photos as well (more results)\n• Medium: Detects moderately blurry photos (balanced)\n• High: Only detects very blurry photos (fewer results)\n• High Sensitivity: Maximum precision, detects only very blurry photos'**
+  /// **'Low: Detects slightly blurry photos as well (more results)\nMedium: Detects moderately blurry photos (balanced)\nHigh: Only detects very blurry photos (fewer results)'**
   String get sensitivityLevelsDescription;
 
   /// Current sensitivity label
@@ -1444,7 +1444,7 @@ abstract class AppLocalizations {
   /// **'No Scan Rights Left'**
   String get noScanRightsLeft;
 
-  /// Album selection label
+  /// Album selection bottom sheet title
   ///
   /// In en, this message translates to:
   /// **'Album Selection'**
@@ -1849,7 +1849,7 @@ abstract class AppLocalizations {
   /// Detailed description of duplicate detection mode levels
   ///
   /// In en, this message translates to:
-  /// **'• Low Speed/High Accuracy: Most accurate results, takes longer\n• Balanced: Speed and accuracy balance\n• High Speed/Low Accuracy: Fast results, less accurate\n• High Speed: Optimized for quick scanning, processes images faster'**
+  /// **'Low Speed/High Accuracy: Most accurate results, takes longer\nBalanced: Speed and accuracy balance\nHigh Speed/Low Accuracy: Fast results, less accurate'**
   String get duplicateModeLevelsDescription;
 
   /// Title shown when all photos have been reviewed
@@ -1881,6 +1881,168 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Please do not leave this screen while the scan is in progress.'**
   String get doNotLeaveScreenDuringScan;
+
+  /// Button text to view scan results
+  ///
+  /// In en, this message translates to:
+  /// **'View Results'**
+  String get viewResults;
+
+  /// Button text to view last scan results
+  ///
+  /// In en, this message translates to:
+  /// **'View Last Results'**
+  String get viewLastResults;
+
+  /// Filter and sort bottom sheet title
+  ///
+  /// In en, this message translates to:
+  /// **'Filter and Sort'**
+  String get filterAndSort;
+
+  /// Filter and sort bottom sheet description
+  ///
+  /// In en, this message translates to:
+  /// **'Date range and sort options'**
+  String get filterAndSortDescription;
+
+  /// Date range section title
+  ///
+  /// In en, this message translates to:
+  /// **'Date Range'**
+  String get dateRange;
+
+  /// Start date label
+  ///
+  /// In en, this message translates to:
+  /// **'Start'**
+  String get startDate;
+
+  /// End date label
+  ///
+  /// In en, this message translates to:
+  /// **'End'**
+  String get endDate;
+
+  /// Not selected state text
+  ///
+  /// In en, this message translates to:
+  /// **'Not Selected'**
+  String get notSelected;
+
+  /// Button to clear date filter
+  ///
+  /// In en, this message translates to:
+  /// **'Clear Date Filter'**
+  String get clearDateFilter;
+
+  /// Sort section title
+  ///
+  /// In en, this message translates to:
+  /// **'Sort'**
+  String get sort;
+
+  /// Newest sort option
+  ///
+  /// In en, this message translates to:
+  /// **'Newest'**
+  String get newest;
+
+  /// Oldest sort option
+  ///
+  /// In en, this message translates to:
+  /// **'Oldest'**
+  String get oldest;
+
+  /// Apply button text
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get apply;
+
+  /// Album settings button label
+  ///
+  /// In en, this message translates to:
+  /// **'Album Settings'**
+  String get albumSettings;
+
+  /// Button text to get unlimited scans
+  ///
+  /// In en, this message translates to:
+  /// **'Get Unlimited Scans'**
+  String get getUnlimitedScans;
+
+  /// Message when scan rights are exhausted
+  ///
+  /// In en, this message translates to:
+  /// **'No rights left'**
+  String get noRightsLeft;
+
+  /// Button text to get unlimited deletions
+  ///
+  /// In en, this message translates to:
+  /// **'Get Unlimited Deletions'**
+  String get getUnlimitedDeletions;
+
+  /// Tip shown during scan
+  ///
+  /// In en, this message translates to:
+  /// **'While we scan your photos, you can scroll through reels.'**
+  String get scanTip1;
+
+  /// Tip shown during scan
+  ///
+  /// In en, this message translates to:
+  /// **'While we scan, you can read half a page of a book.'**
+  String get scanTip2;
+
+  /// Tip shown during scan
+  ///
+  /// In en, this message translates to:
+  /// **'While we scan, you can reply to your partner\'s message.'**
+  String get scanTip3;
+
+  /// Tip shown during scan
+  ///
+  /// In en, this message translates to:
+  /// **'While we scan, you can check your notifications.'**
+  String get scanTip4;
+
+  /// Tip shown during scan
+  ///
+  /// In en, this message translates to:
+  /// **'While we scan, you can take a short break.'**
+  String get scanTip5;
+
+  /// Tip shown during scan
+  ///
+  /// In en, this message translates to:
+  /// **'You can minimize the app to background, but don\'t close it completely.'**
+  String get scanTip6;
+
+  /// Tip shown during scan
+  ///
+  /// In en, this message translates to:
+  /// **'While we scan, you can browse other apps without closing this one.'**
+  String get scanTip7;
+
+  /// Tip shown during scan
+  ///
+  /// In en, this message translates to:
+  /// **'While we scan, you can make a quick phone call.'**
+  String get scanTip8;
+
+  /// Tip shown during scan
+  ///
+  /// In en, this message translates to:
+  /// **'While we scan, you can check your social media.'**
+  String get scanTip9;
+
+  /// Tip shown during scan
+  ///
+  /// In en, this message translates to:
+  /// **'While we scan, you can grab a cup of coffee.'**
+  String get scanTip10;
 }
 
 class _AppLocalizationsDelegate

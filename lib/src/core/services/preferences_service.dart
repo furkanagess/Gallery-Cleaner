@@ -42,6 +42,7 @@ class PreferencesService {
   static const String _swipeAlbumIdKey = 'swipe_album_id';
   static const String _autoAnalyzeOnLaunchKey = 'auto_analyze_on_launch';
   static const String _interstitialAdCountKey = 'interstitial_ad_count';
+  static const String _scanSoundEnabledKey = 'scan_sound_enabled';
   static const int _defaultDeleteLimit = 100;
   static const int _defaultScanLimit = 1000;
   static const int _premiumDialogThreshold = 3; // 3 reklam sonrası premium dialog göster
@@ -702,6 +703,18 @@ class PreferencesService {
   Future<void> resetInterstitialAdCount() async {
     await _setSecureInt(_interstitialAdCountKey, 0);
     debugPrint('💾 [PreferencesService] Interstisial ad sayısı sıfırlandı');
+  }
+
+  /// Scan sesinin açık olup olmadığını kontrol et (varsayılan: true)
+  Future<bool> isScanSoundEnabled() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_scanSoundEnabledKey) ?? true;
+  }
+
+  /// Scan sesini aç/kapa
+  Future<void> setScanSoundEnabled(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_scanSoundEnabledKey, enabled);
   }
 }
 

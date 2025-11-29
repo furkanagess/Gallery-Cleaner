@@ -1,29 +1,25 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/services/preferences_service.dart';
 
 enum AppLocale { tr, en, es }
 
-final localeProvider = StateNotifierProvider<LocaleController, Locale>((ref) {
-  return LocaleController();
-});
-
-class LocaleController extends StateNotifier<Locale> {
+class LocaleCubit extends Cubit<Locale> {
   final _prefsService = PreferencesService();
 
-  LocaleController() : super(const Locale('en')) {
+  LocaleCubit() : super(const Locale('en')) {
     _loadLocale();
   }
 
   Future<void> _loadLocale() async {
     final saved = await _prefsService.getLocale();
     if (saved != null) {
-      state = saved;
+      emit(saved);
     }
   }
 
   Future<void> setLocale(Locale locale) async {
-    state = locale;
+    emit(locale);
     await _prefsService.saveLocale(locale);
   }
 
@@ -49,4 +45,3 @@ class LocaleController extends StateNotifier<Locale> {
     await setLocale(newLocale);
   }
 }
-

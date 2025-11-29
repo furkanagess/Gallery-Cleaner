@@ -1,9 +1,10 @@
 import 'dart:math' as math;
 import 'package:crypto/crypto.dart';
-import 'package:flutter/foundation.dart';
 import 'package:image/image.dart' as img;
 import 'package:photo_manager/photo_manager.dart' as pm;
 import '../models/duplicate_photo.dart';
+import '../utils/app_logger.dart';
+import 'duplicate_detection_isolate.dart';
 
 /// Duplicate detection modu - hız ve hassasiyet dengesi
 enum DuplicateDetectionMode {
@@ -52,8 +53,9 @@ class DuplicateDetectionService {
   /// Histogram: Renk dağılımı analizi (direkt karşılaştırma için)
   Future<_AssetHashes> _calculateThumbnailHashes(
     pm.AssetEntity asset, {
-    int thumbnailSize = 800, // Doğruluk için artırıldı (600'den 800'e)
-    int quality = 95, // Kalite (80-95 arası)
+    int thumbnailSize =
+        256, // Performans optimizasyonu - task 1 (800'den 256'ya)
+    int quality = 85, // Kalite (80-95 arası)
     bool useCache = true,
   }) async {
     // Cache kontrolü
@@ -68,33 +70,22 @@ class DuplicateDetectionService {
       );
 
       if (thumbnail == null || thumbnail.isEmpty) {
-        debugPrint(
-          '   ⚠️ [DuplicateDetection] Thumbnail alınamadı (ID: ${asset.id}), fallback kullanılıyor',
+        AppLogger.w(
+          '⚠️ [DuplicateDetection] Thumbnail alınamadı (ID: ${asset.id}), fallback kullanılıyor',
         );
         return _fallbackHashes(asset);
       }
 
-      // Image decode et
-      final image = img.decodeImage(thumbnail);
-      if (image == null) {
-        return _fallbackHashes(asset);
-      }
-
-      // Her hash algoritmasını ayrı hesapla
-      final dHash = _calculateDHash(image);
-      final dHashVertical = _calculateDHashVertical(image);
-      final pHash = _calculatePHash(image);
-      final aHash = _calculateAHash(image);
-      final md5Hash = md5.convert(thumbnail).toString();
-      final histogram = _calculateHistogram(image);
+      // Task 2: Isolate içinde hash hesapla
+      final result = await calculateHashesInIsolate(thumbnail, thumbnailSize);
 
       final hashes = _AssetHashes(
-        dHash: dHash,
-        dHashVertical: dHashVertical,
-        pHash: pHash,
-        aHash: aHash,
-        md5Hash: md5Hash,
-        histogram: histogram,
+        dHash: result.dHash,
+        dHashVertical: result.dHashVertical,
+        pHash: result.pHash,
+        aHash: result.aHash,
+        md5Hash: result.md5Hash,
+        histogram: result.histogram,
       );
 
       // Cache'e kaydet
@@ -104,40 +95,17 @@ class DuplicateDetectionService {
 
       return hashes;
     } catch (e) {
-      debugPrint(
-        '   ⚠️ [DuplicateDetection] Hash hesaplama hatası (ID: ${asset.id}): $e',
+      AppLogger.w(
+        '⚠️ [DuplicateDetection] Hash hesaplama hatası (ID: ${asset.id}): $e',
       );
       return _fallbackHashes(asset);
     }
   }
 
   /// Hamming distance hesapla (iki hex string arasındaki farklı bit sayısı)
+  /// Task 4: duplicate_detection_isolate.dart'dan kullan
   int _hammingDistance(String hash1, String hash2) {
-    if (hash1.length != hash2.length) {
-      // Farklı uzunlukta hash'ler için maksimum distance döndür
-      return hash1.length * 4; // Her hex karakter 4 bit
-    }
-
-    int distance = 0;
-    for (int i = 0; i < hash1.length; i++) {
-      final char1 = hash1[i];
-      final char2 = hash2[i];
-      if (char1 != char2) {
-        // Hex karakterler arasındaki farkı hesapla
-        final val1 = int.parse(char1, radix: 16);
-        final val2 = int.parse(char2, radix: 16);
-        final xor = val1 ^ val2;
-        // XOR sonucundaki set bit sayısını say (manuel)
-        int bitCount = 0;
-        int n = xor;
-        while (n > 0) {
-          bitCount += n & 1;
-          n >>= 1;
-        }
-        distance += bitCount;
-      }
-    }
-    return distance;
+    return hammingDistanceHex(hash1, hash2);
   }
 
   /// İki hash'in benzer olup olmadığını kontrol et
@@ -189,20 +157,20 @@ class DuplicateDetectionService {
   ) {
     switch (mode) {
       case DuplicateDetectionMode.lowSpeedHighAccuracy:
-        // Düşük hız - Yüksek hassasiyet: Büyük thumbnail, yüksek kalite
-        return (1000, 98);
+        // Düşük hız - Yüksek hassasiyet: Orta thumbnail, yüksek kalite
+        return (256, 90); // Performans optimizasyonu - task 1
 
       case DuplicateDetectionMode.highSpeedLowAccuracy:
         // Yüksek hız - Düşük hassasiyet: Küçük thumbnail, düşük kalite
-        return (400, 80);
+        return (128, 75); // Performans optimizasyonu - task 1
 
       case DuplicateDetectionMode.balanced:
         // Dengeli: Orta boyut ve kalite
-        return (800, 95);
+        return (256, 85); // Performans optimizasyonu - task 1
     }
   }
 
-  /// Duplicate grupları bul (benzerlik kontrolü ile)
+  /// Duplicate grupları bul (Task 4: Hash bucket kullan - O(n²) yerine)
   List<DuplicatePhotoGroup> _findDuplicateGroups(
     Map<pm.AssetEntity, _AssetHashes> assetHashesMap,
     String albumName,
@@ -222,108 +190,203 @@ class DuplicateDetectionService {
       mode,
     );
 
-    final assetList = assetHashesMap.keys.toList();
+    // Task 4: Hash bucket oluştur (Map<int, List<Photo>>)
+    // aHash'i int'e çevirip bucket'lara koy
+    final hashBuckets = <int, List<pm.AssetEntity>>{};
+    final assetToHash = <pm.AssetEntity, int>{};
 
-    for (int i = 0; i < assetList.length; i++) {
-      final asset1 = assetList[i];
-      if (processedAssets.contains(asset1)) continue;
+    for (final entry in assetHashesMap.entries) {
+      final asset = entry.key;
+      final hashes = entry.value;
 
-      final hashes1 = assetHashesMap[asset1]!;
-      final duplicateGroup = <pm.AssetEntity>[asset1];
+      // aHash'i int'e çevir (bucket key olarak kullan)
+      try {
+        // aHash hex string'ini int'e çevir (ilk 8 karakter yeterli)
+        final hashStr = hashes.aHash.length >= 8
+            ? hashes.aHash.substring(0, 8)
+            : hashes.aHash;
+        final hashInt = int.parse(hashStr, radix: 16);
+        final bucketKey = hashInt;
 
-      for (int j = i + 1; j < assetList.length; j++) {
-        final asset2 = assetList[j];
-        if (processedAssets.contains(asset2)) continue;
-
-        final hashes2 = assetHashesMap[asset2]!;
-
-        // Benzerlik kontrolü: Orta seviye kriterler - önceki ve şu anki arasında
-        // Önceki: en az 2 algoritma | Şu anki: en az 3 algoritma (veya MD5 + 1)
-        // Orta nokta: en az 2 algoritma (veya MD5 + 1 algoritma) - biraz daha esnek
-        int similarCount = 0;
-        bool hasMD5Match = false;
-
-        // MD5 tam eşleşme kontrolü (en güvenilir - otomatik duplicate)
-        if (hashes1.md5Hash == hashes2.md5Hash) {
-          hasMD5Match = true;
-          similarCount += 3; // MD5 tam eşleşme kesin duplicate (yüksek ağırlık)
-        }
-
-        // dHash yatay benzerlik kontrolü
-        if (_areHashesSimilar(hashes1.dHash, hashes2.dHash, dHashThreshold)) {
-          similarCount++;
-        }
-
-        // dHash dikey benzerlik kontrolü
-        if (_areHashesSimilar(
-          hashes1.dHashVertical,
-          hashes2.dHashVertical,
-          dHashVerticalThreshold,
-        )) {
-          similarCount++;
-        }
-
-        // pHash benzerlik kontrolü
-        if (_areHashesSimilar(hashes1.pHash, hashes2.pHash, pHashThreshold)) {
-          similarCount++;
-        }
-
-        // aHash benzerlik kontrolü
-        if (_areHashesSimilar(hashes1.aHash, hashes2.aHash, aHashThreshold)) {
-          similarCount++;
-        }
-
-        // Histogram benzerlik kontrolü (cosine similarity)
-        final histogramSimilarity = _calculateHistogramSimilarity(
-          hashes1.histogram,
-          hashes2.histogram,
-        );
-        if (histogramSimilarity >= histogramSimilarityThreshold) {
-          similarCount++;
-        }
-
-        // Orta seviye kriterler:
-        // 1. MD5 tam eşleşme varsa + en az 1 algoritma benzer olmalı (toplam >= 4)
-        // 2. MD5 eşleşme yoksa en az 2 algoritma benzer olmalı (toplam >= 2) - önceki gibi
-        final isDuplicate = hasMD5Match
-            ? (similarCount >= 4) // MD5 + en az 1 algoritma
-            : (similarCount >= 2); // En az 2 algoritma (önceki gibi)
-
-        if (isDuplicate) {
-          duplicateGroup.add(asset2);
-          processedAssets.add(asset2);
-        }
+        assetToHash[asset] = bucketKey;
+        hashBuckets.putIfAbsent(bucketKey, () => []).add(asset);
+      } catch (e) {
+        // Parse hatası, fallback bucket kullan
+        final fallbackKey = hashes.aHash.hashCode;
+        assetToHash[asset] = fallbackKey;
+        hashBuckets.putIfAbsent(fallbackKey, () => []).add(asset);
       }
+    }
 
-      // Eğer duplicate grup varsa (2 veya daha fazla asset)
-      if (duplicateGroup.length > 1) {
-        processedAssets.add(asset1);
+    // Her bucket için duplicate kontrolü yap
+    for (final bucketEntry in hashBuckets.entries) {
+      final bucketAssets = bucketEntry.value;
 
-        // Toplam boyutu hesapla
-        double totalSizeMB = 0;
-        for (final asset in duplicateGroup) {
-          try {
-            final size = asset.size;
-            final estimatedBytes = size.width * size.height * 3;
-            totalSizeMB += estimatedBytes / (1024 * 1024);
-          } catch (_) {
-            // Hata olsa bile devam et
+      // Aynı bucket içindeki asset'leri karşılaştır
+      for (int i = 0; i < bucketAssets.length; i++) {
+        final asset1 = bucketAssets[i];
+        if (processedAssets.contains(asset1)) continue;
+
+        final hashes1 = assetHashesMap[asset1]!;
+        final duplicateGroup = <pm.AssetEntity>[asset1];
+
+        // Aynı bucket içindeki diğer asset'lerle karşılaştır
+        for (int j = i + 1; j < bucketAssets.length; j++) {
+          final asset2 = bucketAssets[j];
+          if (processedAssets.contains(asset2)) continue;
+
+          final hashes2 = assetHashesMap[asset2]!;
+
+          // Benzerlik kontrolü
+          int similarCount = 0;
+          bool hasMD5Match = false;
+
+          // MD5 tam eşleşme kontrolü
+          if (hashes1.md5Hash == hashes2.md5Hash) {
+            hasMD5Match = true;
+            similarCount += 3;
+          }
+
+          // Diğer hash benzerlik kontrolleri
+          if (_areHashesSimilar(hashes1.dHash, hashes2.dHash, dHashThreshold)) {
+            similarCount++;
+          }
+          if (_areHashesSimilar(
+            hashes1.dHashVertical,
+            hashes2.dHashVertical,
+            dHashVerticalThreshold,
+          )) {
+            similarCount++;
+          }
+          if (_areHashesSimilar(hashes1.pHash, hashes2.pHash, pHashThreshold)) {
+            similarCount++;
+          }
+          if (_areHashesSimilar(hashes1.aHash, hashes2.aHash, aHashThreshold)) {
+            similarCount++;
+          }
+
+          final histogramSimilarity = _calculateHistogramSimilarity(
+            hashes1.histogram,
+            hashes2.histogram,
+          );
+          if (histogramSimilarity >= histogramSimilarityThreshold) {
+            similarCount++;
+          }
+
+          final isDuplicate = hasMD5Match
+              ? (similarCount >= 4)
+              : (similarCount >= 2);
+
+          if (isDuplicate) {
+            duplicateGroup.add(asset2);
+            processedAssets.add(asset2);
           }
         }
 
-        // Hash string oluştur (grup için)
-        final groupHash = md5
-            .convert(duplicateGroup.map((a) => a.id).join('|').codeUnits)
-            .toString();
+        // Yakın bucket'ları kontrol et (Hamming distance <= 5 için)
+        final currentHash = assetToHash[asset1]!;
+        for (final otherBucketEntry in hashBuckets.entries) {
+          if (otherBucketEntry.key == bucketEntry.key)
+            continue; // Aynı bucket'ı atla
 
-        duplicateGroups.add(
-          DuplicatePhotoGroup(
-            hash: groupHash,
-            assets: duplicateGroup,
-            totalSizeMB: totalSizeMB,
-            albumName: albumName,
-          ),
-        );
+          // Yakın hash kontrolü (basit fark kontrolü)
+          final hashDiff = (currentHash - otherBucketEntry.key).abs();
+          if (hashDiff <= 1000) {
+            // Yakın hash'ler (threshold ayarlanabilir)
+            for (final asset2 in otherBucketEntry.value) {
+              if (processedAssets.contains(asset2)) continue;
+
+              final hashes2 = assetHashesMap[asset2]!;
+
+              // Sadece aHash Hamming distance kontrolü (yakın bucket'lar için)
+              final hammingDist = hammingDistanceHex(
+                hashes1.aHash,
+                hashes2.aHash,
+              );
+              if (hammingDist <= 5) {
+                // Task 4: distance <= 5 threshold
+                // Diğer kontrolleri de yap
+                int similarCount = 0;
+                bool hasMD5Match = false;
+
+                if (hashes1.md5Hash == hashes2.md5Hash) {
+                  hasMD5Match = true;
+                  similarCount += 3;
+                }
+
+                if (_areHashesSimilar(
+                  hashes1.dHash,
+                  hashes2.dHash,
+                  dHashThreshold,
+                )) {
+                  similarCount++;
+                }
+                if (_areHashesSimilar(
+                  hashes1.dHashVertical,
+                  hashes2.dHashVertical,
+                  dHashVerticalThreshold,
+                )) {
+                  similarCount++;
+                }
+                if (_areHashesSimilar(
+                  hashes1.pHash,
+                  hashes2.pHash,
+                  pHashThreshold,
+                )) {
+                  similarCount++;
+                }
+
+                final histogramSimilarity = _calculateHistogramSimilarity(
+                  hashes1.histogram,
+                  hashes2.histogram,
+                );
+                if (histogramSimilarity >= histogramSimilarityThreshold) {
+                  similarCount++;
+                }
+
+                final isDuplicate = hasMD5Match
+                    ? (similarCount >= 4)
+                    : (similarCount >= 2);
+
+                if (isDuplicate && !duplicateGroup.contains(asset2)) {
+                  duplicateGroup.add(asset2);
+                  processedAssets.add(asset2);
+                }
+              }
+            }
+          }
+        }
+
+        // Eğer duplicate grup varsa (2 veya daha fazla asset)
+        if (duplicateGroup.length > 1) {
+          processedAssets.add(asset1);
+
+          // Toplam boyutu hesapla
+          double totalSizeMB = 0;
+          for (final asset in duplicateGroup) {
+            try {
+              final size = asset.size;
+              final estimatedBytes = size.width * size.height * 3;
+              totalSizeMB += estimatedBytes / (1024 * 1024);
+            } catch (_) {
+              // Hata olsa bile devam et
+            }
+          }
+
+          // Hash string oluştur (grup için)
+          final groupHash = md5
+              .convert(duplicateGroup.map((a) => a.id).join('|').codeUnits)
+              .toString();
+
+          duplicateGroups.add(
+            DuplicatePhotoGroup(
+              hash: groupHash,
+              assets: duplicateGroup,
+              totalSizeMB: totalSizeMB,
+              albumName: albumName,
+            ),
+          );
+        }
       }
     }
 
@@ -420,7 +483,7 @@ class DuplicateDetectionService {
 
       return hashParts.join('');
     } catch (e) {
-      debugPrint('   ⚠️ [DuplicateDetection] dHash hesaplama hatası: $e');
+      AppLogger.w('⚠️ [DuplicateDetection] dHash hesaplama hatası: $e');
       // Fallback: basit hash
       return md5.convert('${image.width}_${image.height}'.codeUnits).toString();
     }
@@ -483,9 +546,7 @@ class DuplicateDetectionService {
       }
       return hashParts.join('');
     } catch (e) {
-      debugPrint(
-        '   ⚠️ [DuplicateDetection] dHashVertical hesaplama hatası: $e',
-      );
+      AppLogger.w('⚠️ [DuplicateDetection] dHashVertical hesaplama hatası: $e');
       // Fallback: basit hash
       return md5
           .convert('${image.width}_${image.height}_v'.codeUnits)
@@ -579,7 +640,7 @@ class DuplicateDetectionService {
       }
       return hashParts.join('');
     } catch (e) {
-      debugPrint('   ⚠️ [DuplicateDetection] pHash hesaplama hatası: $e');
+      AppLogger.w('⚠️ [DuplicateDetection] pHash hesaplama hatası: $e');
       // Fallback: basit hash
       return md5
           .convert('${image.width}_${image.height}_p'.codeUnits)
@@ -684,7 +745,7 @@ class DuplicateDetectionService {
       }
       return hashParts.join('');
     } catch (e) {
-      debugPrint('   ⚠️ [DuplicateDetection] aHash hesaplama hatası: $e');
+      AppLogger.w('⚠️ [DuplicateDetection] aHash hesaplama hatası: $e');
       // Fallback: basit hash
       return md5
           .convert('${image.width}_${image.height}_a'.codeUnits)
@@ -753,7 +814,7 @@ class DuplicateDetectionService {
 
       return normalized;
     } catch (e) {
-      debugPrint('   ⚠️ [DuplicateDetection] Histogram hesaplama hatası: $e');
+      AppLogger.w('⚠️ [DuplicateDetection] Histogram hesaplama hatası: $e');
       // Fallback: boş histogram
       return List<double>.filled(192, 0.0);
     }
@@ -788,7 +849,7 @@ class DuplicateDetectionService {
         histogram: emptyHistogram,
       );
     } catch (e) {
-      debugPrint('   ⚠️ [DuplicateDetection] Fallback hash hatası: $e');
+      AppLogger.w('⚠️ [DuplicateDetection] Fallback hash hatası: $e');
       // Son çare: sadece ID kullan
       final idHash = md5.convert(asset.id.codeUnits).toString();
       final emptyHistogram = List<double>.filled(192, 0.0);
@@ -833,7 +894,7 @@ class DuplicateDetectionService {
     int maxScanLimit = 999999999,
     DuplicateDetectionMode mode = DuplicateDetectionMode.balanced,
   }) async {
-    debugPrint(
+    AppLogger.i(
       '🔍 [DuplicateDetection] findDuplicatesInAlbum başladı: ${album.name} (ID: ${album.id})',
     );
 
@@ -852,13 +913,15 @@ class DuplicateDetectionService {
 
     try {
       // Gerçek toplam asset sayısını al
-      debugPrint('📊 [DuplicateDetection] Toplam asset sayısı alınıyor...');
+      AppLogger.d('📊 [DuplicateDetection] Toplam asset sayısı alınıyor...');
       try {
         totalAssets = await album.assetCountAsync;
-        debugPrint('📊 [DuplicateDetection] Gerçek toplam asset: $totalAssets');
+        AppLogger.d(
+          '📊 [DuplicateDetection] Gerçek toplam asset: $totalAssets',
+        );
       } catch (e) {
         // Eğer assetCountAsync çalışmazsa, tahmin et
-        debugPrint(
+        AppLogger.w(
           '⚠️ [DuplicateDetection] assetCountAsync çalışmadı, tahmin ediliyor: $e',
         );
         final firstPage = await album.getAssetListPaged(
@@ -869,13 +932,13 @@ class DuplicateDetectionService {
             ? firstPage.length * 10
             : firstPage.length;
         totalAssets = totalAssets > 0 ? totalAssets : 1000;
-        debugPrint(
+        AppLogger.d(
           '📊 [DuplicateDetection] Tahmini toplam asset: $totalAssets',
         );
       }
 
-      debugPrint('💎 [DuplicateDetection] Premium durumu: $isPremium');
-      debugPrint('📊 [DuplicateDetection] Max scan limit: $maxScanLimit');
+      AppLogger.d('💎 [DuplicateDetection] Premium durumu: $isPremium');
+      AppLogger.d('📊 [DuplicateDetection] Max scan limit: $maxScanLimit');
 
       // 1000 fotoğraf limit kontrolü (premium olsa bile)
       const maxPhotosPerScan = 1000;
@@ -887,7 +950,7 @@ class DuplicateDetectionService {
           : effectiveMaxLimit;
 
       if (sampleTarget <= 0) {
-        debugPrint('⚠️ [DuplicateDetection] Scan limiti 0, tarama yapılmadı.');
+        AppLogger.w('⚠️ [DuplicateDetection] Scan limiti 0, tarama yapılmadı.');
         return (
           duplicateGroups: <DuplicatePhotoGroup>[],
           scannedPhotoCount: 0,
@@ -901,7 +964,7 @@ class DuplicateDetectionService {
       final pageIndices = List.generate(totalPages, (index) => index)
         ..shuffle(random);
 
-      debugPrint(
+      AppLogger.i(
         '🔄 [DuplicateDetection] Assetler hashleniyor (rastgele seçilen en fazla $sampleTarget fotoğraf)...',
       );
 
@@ -916,7 +979,7 @@ class DuplicateDetectionService {
 
         // İptal kontrolü
         if (shouldCancel != null && shouldCancel()) {
-          debugPrint('   🛑 [DuplicateDetection] Tarama iptal edildi');
+          AppLogger.w('🛑 [DuplicateDetection] Tarama iptal edildi');
           final cancelDuplicateGroups = _findDuplicateGroups(
             assetHashesMap,
             album.name,
@@ -957,7 +1020,7 @@ class DuplicateDetectionService {
 
           // İptal kontrolü (her batch'te)
           if (shouldCancel != null && shouldCancel()) {
-            debugPrint('   🛑 [DuplicateDetection] Tarama iptal edildi');
+            AppLogger.w('🛑 [DuplicateDetection] Tarama iptal edildi');
             break;
           }
 
@@ -997,8 +1060,8 @@ class DuplicateDetectionService {
                 );
                 return (hashes: hashes, asset: asset);
               } catch (e) {
-                debugPrint(
-                  '   ⚠️ [DuplicateDetection] Hash hesaplama hatası: $e',
+                AppLogger.w(
+                  '⚠️ [DuplicateDetection] Hash hesaplama hatası: $e',
                 );
                 return null;
               }
@@ -1055,8 +1118,8 @@ class DuplicateDetectionService {
 
           // Debug log (her 100 fotoğrafta bir)
           if (imageCount % 100 == 0) {
-            debugPrint(
-              '   🖼️ [DuplicateDetection] $imageCount fotoğraf işlendi, ${assetHashesMap.length} asset hash\'lendi...',
+            AppLogger.d(
+              '🖼️ [DuplicateDetection] $imageCount fotoğraf işlendi, ${assetHashesMap.length} asset hash\'lendi...',
             );
           }
         }
@@ -1066,16 +1129,16 @@ class DuplicateDetectionService {
         }
       }
 
-      debugPrint('📊 [DuplicateDetection] Hash işleme tamamlandı:');
-      debugPrint('   - Toplam işlenen: $totalProcessed');
-      debugPrint('   - Toplam fotoğraf: $imageCount');
-      debugPrint('   - Hash\'lenen asset: ${assetHashesMap.length}');
-      debugPrint(
+      AppLogger.d('📊 [DuplicateDetection] Hash işleme tamamlandı:');
+      AppLogger.d('   - Toplam işlenen: $totalProcessed');
+      AppLogger.d('   - Toplam fotoğraf: $imageCount');
+      AppLogger.d('   - Hash\'lenen asset: ${assetHashesMap.length}');
+      AppLogger.i(
         '📊 [DuplicateDetection] Toplam scan edilen fotoğraf: $imageCount',
       );
 
       // Duplicate grupları oluştur (benzerlik kontrolü ile)
-      debugPrint(
+      AppLogger.i(
         '🔍 [DuplicateDetection] Duplicate grupları oluşturuluyor (benzerlik kontrolü ile)...',
       );
       final duplicateGroups = _findDuplicateGroups(
@@ -1084,16 +1147,16 @@ class DuplicateDetectionService {
         mode,
       );
 
-      debugPrint('📊 [DuplicateDetection] Duplicate analizi:');
-      debugPrint('   - Duplicate grup sayısı: ${duplicateGroups.length}');
+      AppLogger.d('📊 [DuplicateDetection] Duplicate analizi:');
+      AppLogger.d('   - Duplicate grup sayısı: ${duplicateGroups.length}');
 
       // Boyuta göre sırala (büyükten küçüğe)
       duplicateGroups.sort((a, b) => b.totalSizeMB.compareTo(a.totalSizeMB));
 
-      debugPrint(
+      AppLogger.i(
         '✅ [DuplicateDetection] ${duplicateGroups.length} duplicate grup bulundu (${album.name})',
       );
-      debugPrint(
+      AppLogger.i(
         '📊 [DuplicateDetection] Toplam scan edilen fotoğraf: $imageCount',
       );
 
@@ -1103,8 +1166,7 @@ class DuplicateDetectionService {
         targetCount: sampleTarget,
       );
     } catch (e, stackTrace) {
-      debugPrint('❌ [DuplicateDetection] Hata: $e');
-      debugPrint('❌ [DuplicateDetection] Stack trace: $stackTrace');
+      AppLogger.e('❌ [DuplicateDetection] Hata: $e', e, stackTrace);
       return (
         duplicateGroups: <DuplicatePhotoGroup>[],
         scannedPhotoCount: 0,
@@ -1137,7 +1199,7 @@ class DuplicateDetectionService {
     int maxScanLimit = 999999999,
     DuplicateDetectionMode mode = DuplicateDetectionMode.balanced,
   }) async {
-    debugPrint(
+    AppLogger.i(
       '🔍 [DuplicateDetection] findDuplicatesInAlbums başladı - ${albums.length} albüm',
     );
     final results = <String, List<DuplicatePhotoGroup>>{};
@@ -1147,7 +1209,7 @@ class DuplicateDetectionService {
     for (int i = 0; i < albums.length; i++) {
       // İptal kontrolü
       if (shouldCancel != null && shouldCancel()) {
-        debugPrint('   🛑 [DuplicateDetection] Tarama iptal edildi');
+        AppLogger.w('🛑 [DuplicateDetection] Tarama iptal edildi');
         return (
           results: results,
           scannedPhotoCount: totalScannedPhotos,
@@ -1157,14 +1219,14 @@ class DuplicateDetectionService {
 
       // Kalan scan limit kontrolü (premium değilse)
       if (!isPremium && totalScannedPhotos >= maxScanLimit) {
-        debugPrint(
-          '   ⚠️ [DuplicateDetection] Scan limit aşıldı: $totalScannedPhotos/$maxScanLimit fotoğraf scan edildi',
+        AppLogger.w(
+          '⚠️ [DuplicateDetection] Scan limit aşıldı: $totalScannedPhotos/$maxScanLimit fotoğraf scan edildi',
         );
         break;
       }
 
       final album = albums[i];
-      debugPrint(
+      AppLogger.d(
         '📁 [DuplicateDetection] Albüm ${i + 1}/${albums.length}: ${album.name} (ID: ${album.id})',
       );
 
@@ -1173,7 +1235,9 @@ class DuplicateDetectionService {
           ? 999999999
           : (maxScanLimit - totalScannedPhotos).clamp(0, maxScanLimit);
 
-      debugPrint('🔍 [DuplicateDetection] findDuplicatesInAlbum çağrılıyor...');
+      AppLogger.d(
+        '🔍 [DuplicateDetection] findDuplicatesInAlbum çağrılıyor...',
+      );
       final albumResult = await findDuplicatesInAlbum(
         album,
         mode: mode,
@@ -1184,7 +1248,7 @@ class DuplicateDetectionService {
               albumPlannedCount,
               albumTotalCount,
             ) {
-              debugPrint(
+              AppLogger.d(
                 '📊 [DuplicateDetection] Albüm ilerlemesi: $albumProgress ($albumProcessedCount/$albumTotalCount)',
               );
               if (progressCallback != null) {
@@ -1208,7 +1272,7 @@ class DuplicateDetectionService {
 
       // İptal edildiyse sonuçları döndür
       if (shouldCancel != null && shouldCancel()) {
-        debugPrint('   🛑 [DuplicateDetection] Tarama iptal edildi');
+        AppLogger.w('🛑 [DuplicateDetection] Tarama iptal edildi');
         return (
           results: results,
           scannedPhotoCount: totalScannedPhotos,
@@ -1218,29 +1282,29 @@ class DuplicateDetectionService {
 
       totalScannedPhotos += albumScannedCount;
 
-      debugPrint(
+      AppLogger.i(
         '✅ [DuplicateDetection] Albüm taraması tamamlandı: ${album.name} - ${duplicates.length} duplicate grup bulundu',
       );
 
       if (duplicates.isNotEmpty) {
         results[album.name] = duplicates;
-        debugPrint('   💾 [DuplicateDetection] Sonuçlar kaydedildi');
+        AppLogger.d('💾 [DuplicateDetection] Sonuçlar kaydedildi');
       } else {
-        debugPrint(
-          '   ⚠️ [DuplicateDetection] Duplicate bulunamadı, sonuçlar kaydedilmedi',
+        AppLogger.d(
+          '⚠️ [DuplicateDetection] Duplicate bulunamadı, sonuçlar kaydedilmedi',
         );
       }
 
       // Scan limit aşıldıysa dur
       if (!isPremium && totalScannedPhotos >= maxScanLimit) {
-        debugPrint(
-          '   ⚠️ [DuplicateDetection] Scan limit aşıldı: $totalScannedPhotos/$maxScanLimit fotoğraf scan edildi',
+        AppLogger.w(
+          '⚠️ [DuplicateDetection] Scan limit aşıldı: $totalScannedPhotos/$maxScanLimit fotoğraf scan edildi',
         );
         break;
       }
     }
 
-    debugPrint(
+    AppLogger.i(
       '🎉 [DuplicateDetection] Tüm albümler taranı! Toplam sonuç: ${results.length} albüm, Toplam scan edilen: $totalScannedPhotos fotoğraf',
     );
     return (

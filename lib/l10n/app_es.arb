@@ -570,7 +570,7 @@
   "@sensitivityDescription": {
     "description": "Sensitivity description"
   },
-  "sensitivityLevelsDescription": "• Baja: Detecta fotos ligeramente borrosas también (más resultados)\n• Media: Detecta fotos moderadamente borrosas (equilibrado)\n• Alta: Solo detecta fotos muy borrosas (menos resultados)\n• Alta Sensibilidad: Máxima precisión, detecta solo fotos muy borrosas",
+  "sensitivityLevelsDescription": "Baja: Detecta fotos ligeramente borrosas también (más resultados)\nMedia: Detecta fotos moderadamente borrosas (equilibrado)\nAlta: Solo detecta fotos muy borrosas (menos resultados)",
   "@sensitivityLevelsDescription": {
     "description": "Detailed description of sensitivity levels"
   },
@@ -978,7 +978,7 @@
   "@duplicateModeHighSpeedLowAccuracy": {
     "description": "High speed low accuracy mode label for duplicate detection"
   },
-  "duplicateModeLevelsDescription": "• Baja Velocidad/Alta Precisión: Resultados más precisos, toma más tiempo\n• Equilibrado: Equilibrio entre velocidad y precisión\n• Alta Velocidad/Baja Precisión: Resultados rápidos, menos precisos\n• Alta Velocidad: Optimizado para escaneo rápido, procesa imágenes más rápido",
+  "duplicateModeLevelsDescription": "Baja Velocidad/Alta Precisión: Resultados más precisos, toma más tiempo\nEquilibrado: Equilibrio entre velocidad y precisión\nAlta Velocidad/Baja Precisión: Resultados rápidos, menos precisos",
   "@duplicateModeLevelsDescription": {
     "description": "Detailed description of duplicate detection mode levels"
   },
@@ -1001,6 +1001,122 @@
   "doNotLeaveScreenDuringScan": "Por favor, no abandone esta pantalla mientras el escaneo está en progreso.",
   "@doNotLeaveScreenDuringScan": {
     "description": "Warning message shown when user tries to navigate away during scan"
+  },
+  "viewResults": "Ver Resultados",
+  "@viewResults": {
+    "description": "Button text to view scan results"
+  },
+  "viewLastResults": "Ver Últimos Resultados",
+  "@viewLastResults": {
+    "description": "Button text to view last scan results"
+  },
+  "albumSelection": "Selección de Álbum",
+  "@albumSelection": {
+    "description": "Album selection bottom sheet title"
+  },
+  "selectAlbumToView": "Selecciona el álbum que deseas ver",
+  "@selectAlbumToView": {
+    "description": "Album selection bottom sheet description"
+  },
+  "filterAndSort": "Filtro y Orden",
+  "@filterAndSort": {
+    "description": "Filter and sort bottom sheet title"
+  },
+  "filterAndSortDescription": "Opciones de rango de fechas y orden",
+  "@filterAndSortDescription": {
+    "description": "Filter and sort bottom sheet description"
+  },
+  "dateRange": "Rango de Fechas",
+  "@dateRange": {
+    "description": "Date range section title"
+  },
+  "startDate": "Inicio",
+  "@startDate": {
+    "description": "Start date label"
+  },
+  "endDate": "Fin",
+  "@endDate": {
+    "description": "End date label"
+  },
+  "notSelected": "No Seleccionado",
+  "@notSelected": {
+    "description": "Not selected state text"
+  },
+  "clearDateFilter": "Limpiar Filtro de Fecha",
+  "@clearDateFilter": {
+    "description": "Button to clear date filter"
+  },
+  "sort": "Ordenar",
+  "@sort": {
+    "description": "Sort section title"
+  },
+  "newest": "Más Recientes",
+  "@newest": {
+    "description": "Newest sort option"
+  },
+  "oldest": "Más Antiguos",
+  "@oldest": {
+    "description": "Oldest sort option"
+  },
+  "apply": "Aplicar",
+  "@apply": {
+    "description": "Apply button text"
+  },
+  "albumSettings": "Configuración de Álbum",
+  "@albumSettings": {
+    "description": "Album settings button label"
+  },
+  "getUnlimitedScans": "Obtener Escaneos Ilimitados",
+  "@getUnlimitedScans": {
+    "description": "Button text to get unlimited scans"
+  },
+  "noRightsLeft": "No quedan derechos",
+  "@noRightsLeft": {
+    "description": "Message when scan rights are exhausted"
+  },
+  "getUnlimitedDeletions": "Obtener Eliminaciones Ilimitadas",
+  "@getUnlimitedDeletions": {
+    "description": "Button text to get unlimited deletions"
+  },
+  "scanTip1": "Mientras escaneamos tus fotos, puedes desplazarte por los reels.",
+  "@scanTip1": {
+    "description": "Tip shown during scan"
+  },
+  "scanTip2": "Mientras escaneamos, puedes leer media página de un libro.",
+  "@scanTip2": {
+    "description": "Tip shown during scan"
+  },
+  "scanTip3": "Mientras escaneamos, puedes responder al mensaje de tu pareja.",
+  "@scanTip3": {
+    "description": "Tip shown during scan"
+  },
+  "scanTip4": "Mientras escaneamos, puedes revisar tus notificaciones.",
+  "@scanTip4": {
+    "description": "Tip shown during scan"
+  },
+  "scanTip5": "Mientras escaneamos, puedes tomar un breve descanso.",
+  "@scanTip5": {
+    "description": "Tip shown during scan"
+  },
+  "scanTip6": "Puedes minimizar la app al fondo, pero no la cierres completamente.",
+  "@scanTip6": {
+    "description": "Tip shown during scan"
+  },
+  "scanTip7": "Mientras escaneamos, puedes navegar por otras apps sin cerrar esta.",
+  "@scanTip7": {
+    "description": "Tip shown during scan"
+  },
+  "scanTip8": "Mientras escaneamos, puedes hacer una llamada rápida.",
+  "@scanTip8": {
+    "description": "Tip shown during scan"
+  },
+  "scanTip9": "Mientras escaneamos, puedes revisar tus redes sociales.",
+  "@scanTip9": {
+    "description": "Tip shown during scan"
+  },
+  "scanTip10": "Mientras escaneamos, puedes tomar una taza de café.",
+  "@scanTip10": {
+    "description": "Tip shown during scan"
   }
 }
 

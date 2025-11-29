@@ -5,7 +5,8 @@
 **Permission Request Page**, kullanıcıdan fotoğraf galerisi erişim izni isteyen ekrandır. İki farklı durumda görüntülenir: izin verilmeden önce (izin isteme) ve izin verildikten sonra (başarı ekranı).
 
 **Yol (Route)**: `/permission`  
-**Durumlar**: 
+**Durumlar**:
+
 1. İzin isteniyor (permission request)
 2. İzin verildi (authorized - success screen)
 
@@ -33,6 +34,7 @@
 ### 2. Ana İçerik (Ortalanmış)
 
 #### 2.1. Ana İkon
+
 - **İkon**: `photo_library_outlined`
 - **Boyut**: 120px
 - **Renk**: `primary`
@@ -40,6 +42,7 @@
 - **Spacing**: Altında 32px boşluk
 
 #### 2.2. Başlık
+
 - **Metin**: "We Need Your Access" (lokalize)
 - **Stil**:
   - Font: `headlineLarge`
@@ -49,6 +52,7 @@
 - **Spacing**: İkonun 32px altında, açıklamanın 16px üstünde
 
 #### 2.3. Açıklama Metni
+
 - **Metin**: İzin açıklaması (lokalize)
 - **Stil**:
   - Font: `bodyLarge`
@@ -58,6 +62,7 @@
 - **Spacing**: Başlığın 16px altında, özellik kartının 24px üstünde
 
 #### 2.4. Özellik Kartı
+
 - **Container**:
   - Maksimum genişlik: 400px
   - Padding: `24px` (tüm yönler)
@@ -69,21 +74,25 @@
   - Aralarında 16px boşluk
 
 **Özellik 1: Quick Cleanup**
+
 - İkon: `swipe`, `primaryContainer` içinde
 - Başlık: "Quick Cleanup" (lokalize)
 - Açıklama: Swipe özelliği açıklaması (lokalize)
 
 **Özellik 2: Blur Detection**
+
 - İkon: `blur_on`, `primaryContainer` içinde
 - Başlık: "Blur Photo Detection - AI Powered" (lokalize)
 - Açıklama: Blur detection açıklaması (lokalize)
 
 **Özellik 3: Duplicate Detection**
+
 - İkon: `content_copy`, `primaryContainer` içinde
 - Başlık: "Duplicate Photo Detection - AI Powered" (lokalize)
 - Açıklama: Duplicate detection açıklaması (lokalize)
 
 #### 2.5. İzin İsteme Butonu
+
 - **Buton**: `FilledButton.icon`
 - **İkon**: `lock_open`
 - **Metin**: "Allow Access" (lokalize)
@@ -95,6 +104,7 @@
 - **Spacing**: Özellik kartının 32px altında
 
 #### 2.6. Ayarlar Butonu
+
 - **Buton**: `TextButton`
 - **Metin**: "Open Settings" (lokalize)
 - **Stil**: Varsayılan TextButton stili
@@ -106,6 +116,7 @@
 ## Layout Yapısı - İzin Verildi Durumu
 
 ### 1. AppBar
+
 - **Başlık**: Uygulama adı (lokalize)
 - **Hizalama**: Ortalanmış
 - **Arka plan**: Şeffaf (`transparent`)
@@ -114,6 +125,7 @@
 ### 2. Ana İçerik
 
 #### 2.1. Başlık Bölümü
+
 - **Başlık**: "Start Cleaning" (lokalize)
 - **Stil**:
   - Font: `displaySmall`
@@ -122,6 +134,7 @@
 - **Spacing**: Üstte 16px, altında 12px
 
 #### 2.2. Açıklama Metni
+
 - **Metin**: Swipe kartları açıklaması (lokalize)
 - **Stil**:
   - Font: `bodyLarge`
@@ -129,6 +142,7 @@
 - **Spacing**: Başlığın 12px altında, özellik chip'lerinin 20px üstünde
 
 #### 2.3. Özellik Chip'leri
+
 - **Layout**: `Wrap` widget'ı
 - **Spacing**: 8px (yatay ve dikey)
 - **Chip'ler**:
@@ -143,6 +157,7 @@
   - İçerik: İkon (16px, primary) + Metin (bodySmall)
 
 #### 2.4. İstatistik Kartı
+
 - **Container**:
   - Maksimum genişlik: 560px
   - Padding: `20px` (tüm yönler)
@@ -152,16 +167,19 @@
 - **İçerik Durumları**:
 
 **Loading Durumu:**
+
 - Lottie animasyonu: `loading.json`
 - Boyut: 100x100px
 - Tekrar: Evet
 
 **Error Durumu:**
+
 - İkon: `error_outline`, 72px, `error` rengi
 - Hata mesajı (lokalize)
 - "Try Again" butonu
 
 **Success Durumu:**
+
 - İkon: `photo_library`, 72px, `primary` rengi
 - Başlık: "Gallery Info" (lokalize)
 - İstatistikler:
@@ -175,16 +193,19 @@
 ## Animasyonlar
 
 ### 1. İzin İsteme
+
 - **Otomatik İstek**: Sayfa yüklendikten 500ms sonra otomatik olarak izin istenir
 - **Buton Tıklama**: Manuel izin isteği
 
 ### 2. İzin Verildi Geçişi
+
 - **Yönlendirme**: İzin verildikten sonra:
   1. Album listesi yüklenene kadar beklenir (max 5 saniye)
   2. Fotoğraflar yüklenene kadar beklenir (max 5 saniye)
   3. `/swipe` sayfasına yönlendirilir
 
 ### 3. Loading Animasyonu
+
 - Lottie animasyonu: `loading.json`
 - Sürekli tekrar eder
 
@@ -193,6 +214,7 @@
 ## Durumlar
 
 ### 1. İzin İsteniyor
+
 - Ana ikon görünür
 - Başlık ve açıklama görünür
 - Özellik kartı görünür
@@ -200,18 +222,21 @@
 - Ayarlar butonu görünür
 
 ### 2. İzin Verildi (Loading)
+
 - AppBar görünür
 - Başlık ve açıklama görünür
 - Özellik chip'leri görünür
 - İstatistik kartında loading animasyonu
 
 ### 3. İzin Verildi (Error)
+
 - AppBar görünür
 - Başlık ve açıklama görünür
 - Özellik chip'leri görünür
 - İstatistik kartında hata mesajı ve "Try Again" butonu
 
 ### 4. İzin Verildi (Success)
+
 - AppBar görünür
 - Başlık ve açıklama görünür
 - Özellik chip'leri görünür
@@ -222,12 +247,14 @@
 ## Renk Sistemi
 
 ### Light Mode
+
 - **Arka Plan**: Açık `background`
 - **Kartlar**: Açık `surface`
 - **Metin**: Koyu `onSurface`
 - **Vurgu**: `primary` rengi
 
 ### Dark Mode
+
 - **Arka Plan**: Koyu `background`
 - **Kartlar**: Koyu `surface`
 - **Metin**: Açık `onSurface`
@@ -256,6 +283,7 @@
 ## Teknik Detaylar
 
 ### Widget Yapısı - İzin İsteniyor
+
 ```
 Scaffold
 └── Stack
@@ -273,6 +301,7 @@ Scaffold
 ```
 
 ### Widget Yapısı - İzin Verildi
+
 ```
 Scaffold
 └── Stack
@@ -287,6 +316,7 @@ Scaffold
 ```
 
 ### Önemli Notlar
+
 - İzin durumu `permissionsControllerProvider` ile takip edilir
 - İzin verildiğinde `_waitForPhotosAndNavigate` fonksiyonu çalışır
 - Album ve fotoğraf yükleme durumları kontrol edilir
@@ -297,6 +327,7 @@ Scaffold
 ## Örnek Görsel Açıklama
 
 **İzin İsteniyor:**
+
 - Ortada büyük fotoğraf kütüphanesi ikonu
 - Altında başlık ve açıklama
 - Ortada özellik kartı (3 özellik satırı)
@@ -304,6 +335,7 @@ Scaffold
 - En altta "Open Settings" butonu
 
 **İzin Verildi:**
+
 - Üstte AppBar
 - Başlık ve açıklama
 - Özellik chip'leri (3 adet)

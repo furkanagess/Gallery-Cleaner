@@ -3,10 +3,10 @@ import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:photo_manager/photo_manager.dart' as pm;
 
-import 'gallery_providers.dart';
+import '../../../core/services/media_library_service.dart';
 import 'review_history_controller.dart';
 import 'asset_size_helper.dart';
 
@@ -15,17 +15,23 @@ class PendingDeleteAction {
   final pm.AssetEntity asset;
 }
 
-class ReviewActionsController extends StateNotifier<List<PendingDeleteAction>> {
-  ReviewActionsController(this._ref) : super(const []);
+class ReviewActionsCubit extends Cubit<List<PendingDeleteAction>> {
+  ReviewActionsCubit({
+    required MediaLibraryService mediaLibraryService,
+    required ReviewHistoryCubit reviewHistoryCubit,
+  })  : _mediaLibraryService = mediaLibraryService,
+        _historyCubit = reviewHistoryCubit,
+        super(const []);
 
-  final Ref _ref;
+  final MediaLibraryService _mediaLibraryService;
+  final ReviewHistoryCubit _historyCubit;
   final List<String> _pendingDeleteIds = [];
   bool _isApplying = false;
 
   Future<void> onKeep(pm.AssetEntity asset) async {
     HapticFeedback.lightImpact();
     final fileSize = await estimateAssetSize(asset);
-    _ref.read(reviewHistoryControllerProvider.notifier).addKeep(
+    _historyCubit.addKeep(
       asset.id,
       fileSizeBytes: fileSize,
     );
@@ -36,11 +42,11 @@ class ReviewActionsController extends StateNotifier<List<PendingDeleteAction>> {
     // Only queue delete - visual is immediate via card animation
     // Real deletion happens when user taps "Apply"
     final fileSize = await estimateAssetSize(asset);
-    _ref.read(reviewHistoryControllerProvider.notifier).addDeletePending(
+    _historyCubit.addDeletePending(
       asset.id,
       fileSizeBytes: fileSize,
     );
-    state = [...state, PendingDeleteAction(asset: asset)];
+    emit([...state, PendingDeleteAction(asset: asset)]);
     
     // Add to batch queue (no automatic deletion)
     _pendingDeleteIds.add(asset.id);
@@ -50,9 +56,9 @@ class ReviewActionsController extends StateNotifier<List<PendingDeleteAction>> {
     if (state.isEmpty) return;
     final last = state.last;
     _pendingDeleteIds.remove(last.asset.id);
-    state = [...state]..removeLast();
+    emit([...state]..removeLast());
     HapticFeedback.selectionClick();
-    _ref.read(reviewHistoryControllerProvider.notifier).undoDelete(last.asset.id);
+    _historyCubit.undoDelete(last.asset.id);
   }
 
   Future<int> _applyBatchDelete({int? maxDeleteCount}) async {
@@ -82,8 +88,7 @@ class ReviewActionsController extends StateNotifier<List<PendingDeleteAction>> {
       debugPrint('🗑️ [ReviewActionsController] State length: ${state.length}');
       
       // Use batch delete - Android may still show dialogs per item due to OS restrictions
-      final service = _ref.read(mediaLibraryServiceProvider);
-      final deletedIds = await service.deleteBatch(idsToDelete);
+      final deletedIds = await _mediaLibraryService.deleteBatch(idsToDelete);
       
       debugPrint('📊 [ReviewActionsController] deleteBatch sonucu: ${deletedIds.length}/${idsToDelete.length} fotoğraf silindi');
       debugPrint('📊 [ReviewActionsController] Silinen ID\'ler: ${deletedIds.join(", ")}');
@@ -160,7 +165,7 @@ class ReviewActionsController extends StateNotifier<List<PendingDeleteAction>> {
       debugPrint('📊 [ReviewActionsController] State güncelleniyor: ${state.length} -> ${updatedState.length} (${successfulIds.length} fotoğraf silindi)');
       
       // State'i güncelle
-      state = updatedState;
+      emit(updatedState);
       
       // Mark successfully deleted items as applied and save thumbnails
       // Thumbnail alma işlemini async olarak yap, ancak silme işlemini engellemesin
@@ -187,7 +192,7 @@ class ReviewActionsController extends StateNotifier<List<PendingDeleteAction>> {
         _pendingDeleteIds.addAll(rejectedIds);
         // Mark rejected items as undone so they remain in queue
         for (final id in rejectedIds) {
-          _ref.read(reviewHistoryControllerProvider.notifier).undoDelete(id);
+          _historyCubit.undoDelete(id);
         }
         
         // Rejected items zaten state'te kalmalı (henüz silinmediler)
@@ -225,7 +230,7 @@ class ReviewActionsController extends StateNotifier<List<PendingDeleteAction>> {
       _pendingDeleteIds.addAll(remainingIds);
       // Mark as undone so they can be retried
       for (final id in idsToDelete) {
-        _ref.read(reviewHistoryControllerProvider.notifier).undoDelete(id);
+        _historyCubit.undoDelete(id);
       }
       debugPrint('❌ [ReviewActionsController] Silme hatası: $e');
       return 0;
@@ -268,7 +273,7 @@ class ReviewActionsController extends StateNotifier<List<PendingDeleteAction>> {
         
         // Thumbnail olsa da olmasa da kaydet
     try {
-        await _ref.read(reviewHistoryControllerProvider.notifier).markDeleteApplied(
+        await _historyCubit.markDeleteApplied(
           id,
           thumbnailBytes: thumbnailBytes,
         );
@@ -278,10 +283,3 @@ class ReviewActionsController extends StateNotifier<List<PendingDeleteAction>> {
     }
   }
 }
-
-final reviewActionsControllerProvider =
-    StateNotifierProvider<ReviewActionsController, List<PendingDeleteAction>>((ref) {
-  return ReviewActionsController(ref);
-});
-
-

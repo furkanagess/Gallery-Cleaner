@@ -1,17 +1,14 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:photo_manager/photo_manager.dart' as pm;
 
 import '../../../core/services/blur_detection_service.dart';
 import '../../../core/models/blur_photo.dart';
+import '../../../core/services/media_library_service.dart';
+import '../../../core/services/preferences_service.dart';
 import '../../onboarding/application/permissions_controller.dart';
-import '../../onboarding/application/onboarding_controller.dart';
 import 'gallery_providers.dart';
-
-final blurDetectionServiceProvider = Provider<BlurDetectionService>((ref) {
-  return BlurDetectionService();
-});
 
 /// Blur detection state
 class BlurDetectionState {
@@ -90,10 +87,25 @@ class BlurDetectionState {
   }
 }
 
-class BlurDetectionNotifier extends StateNotifier<BlurDetectionState> {
-  BlurDetectionNotifier(this.ref) : super(const BlurDetectionState());
+class BlurDetectionCubit extends Cubit<BlurDetectionState> {
+  BlurDetectionCubit({
+    required BlurDetectionService blurDetectionService,
+    required PreferencesService preferencesService,
+    required MediaLibraryService mediaLibraryService,
+    required PermissionsCubit permissionsCubit,
+    VoidCallback? onScanLimitChanged,
+  })  : _blurDetectionService = blurDetectionService,
+        _preferencesService = preferencesService,
+        _mediaLibraryService = mediaLibraryService,
+        _permissionsCubit = permissionsCubit,
+        _onScanLimitChanged = onScanLimitChanged,
+        super(const BlurDetectionState());
 
-  final Ref ref;
+  final BlurDetectionService _blurDetectionService;
+  final PreferencesService _preferencesService;
+  final MediaLibraryService _mediaLibraryService;
+  final PermissionsCubit _permissionsCubit;
+  final VoidCallback? _onScanLimitChanged;
   bool _isCancelled = false;
 
   // Progress callback throttling - %1 artışlarla güncelleme
@@ -110,14 +122,16 @@ class BlurDetectionNotifier extends StateNotifier<BlurDetectionState> {
       '🚀 [BlurDetection] scanAlbums çağrıldı - Albüm sayısı: ${albums.length}',
     );
 
-    final permission = ref.read(permissionsControllerProvider);
+    final permission = _permissionsCubit.state;
     debugPrint('🔐 [BlurDetection] İzin durumu: $permission');
 
     if (permission != GalleryPermissionStatus.authorized) {
       debugPrint('❌ [BlurDetection] İzin yok! Tarama durduruldu.');
-      state = state.copyWith(
+      emit(
+        state.copyWith(
         error: 'Permission not granted',
         isScanning: false,
+        ),
       );
       return;
     }
@@ -129,33 +143,35 @@ class BlurDetectionNotifier extends StateNotifier<BlurDetectionState> {
     _isCancelled = false;
     _lastProgressPercent = -1; // Progress takibini sıfırla
     _lastProgressUpdate = null; // Zaman takibini sıfırla
-    state = state.copyWith(
-      isScanning: true,
-      progress: 0.0,
-      clearError: true,
-      blurryPhotosByAlbum: {},
-      blurThreshold: threshold,
-      hasCompletedScan: false, // Yeni tarama başladığında false yap
-      processedCount: 0,
-      totalCount: 0,
-      plannedSampleCount: 0,
-      currentAlbum: null, // Başlangıçta albüm bilgisi yok
+    emit(
+      state.copyWith(
+        isScanning: true,
+        progress: 0.0,
+        clearError: true,
+        blurryPhotosByAlbum: {},
+        blurThreshold: threshold,
+        hasCompletedScan: false,
+        processedCount: 0,
+        totalCount: 0,
+        plannedSampleCount: 0,
+        currentAlbum: null,
+      ),
     );
 
     try {
       debugPrint('📦 [BlurDetection] Service alınıyor...');
-      final service = ref.read(blurDetectionServiceProvider);
-      debugPrint('📦 [BlurDetection] Service alındı: ${service.runtimeType}');
+      debugPrint(
+        '📦 [BlurDetection] Service alındı: ${_blurDetectionService.runtimeType}',
+      );
 
       // Premium kontrolü
-      final prefsService = ref.read(preferencesServiceProvider);
-      final isPremium = await prefsService.isPremium();
+      final isPremium = await _preferencesService.isPremium();
       debugPrint('💎 [BlurDetection] Premium durumu: $isPremium');
 
       // Kalan blur scan hakkını al (premium değilse)
       int remainingScanLimit = 999999999; // Premium için sınırsız
       if (!isPremium) {
-        remainingScanLimit = await prefsService.getBlurScanLimit();
+        remainingScanLimit = await _preferencesService.getBlurScanLimit();
         debugPrint(
           '📊 [BlurDetection] Kalan blur scan hakkı: $remainingScanLimit',
         );
@@ -164,7 +180,7 @@ class BlurDetectionNotifier extends StateNotifier<BlurDetectionState> {
       debugPrint(
         '🔍 [BlurDetection] findBlurryPhotosInAlbums çağrılıyor... (threshold: $threshold, maxScanLimit: $remainingScanLimit)',
       );
-      final scanResult = await service.findBlurryPhotosInAlbums(
+      final scanResult = await _blurDetectionService.findBlurryPhotosInAlbums(
         albums,
         blurThreshold: threshold,
         maxScanLimit: remainingScanLimit,
@@ -201,12 +217,14 @@ class BlurDetectionNotifier extends StateNotifier<BlurDetectionState> {
                     final normalizedProgress = displayTotalCount > 0
                         ? (processedCount / displayTotalCount).clamp(0.0, 1.0)
                         : progress.clamp(0.0, 1.0);
-                    state = state.copyWith(
-                      progress: normalizedProgress,
-                      currentAlbum: albumName,
-                      processedCount: processedCount,
-                      totalCount: displayTotalCount,
-                      plannedSampleCount: plannedCount,
+                    emit(
+                      state.copyWith(
+                        progress: normalizedProgress,
+                        currentAlbum: albumName,
+                        processedCount: processedCount,
+                        totalCount: displayTotalCount,
+                        plannedSampleCount: plannedCount,
+                      ),
                     );
                   }
                 });
@@ -221,13 +239,15 @@ class BlurDetectionNotifier extends StateNotifier<BlurDetectionState> {
 
       if (_isCancelled) {
         debugPrint('⚠️ [BlurDetection] Tarama iptal edildi');
-        state = state.copyWith(
-          isScanning: false,
-          progress: 0.0,
-          currentAlbum: null,
-          processedCount: 0,
-          totalCount: 0,
-          plannedSampleCount: 0,
+        emit(
+          state.copyWith(
+            isScanning: false,
+            progress: 0.0,
+            currentAlbum: null,
+            processedCount: 0,
+            totalCount: 0,
+            plannedSampleCount: 0,
+          ),
         );
         return;
       }
@@ -265,8 +285,8 @@ class BlurDetectionNotifier extends StateNotifier<BlurDetectionState> {
       final hasResults = filteredResults.isNotEmpty && totalPhotos > 0;
       if (!isPremium && scannedPhotoCount > 0 && hasResults) {
         try {
-          await prefsService.decreaseBlurScanLimit(scannedPhotoCount);
-          ref.invalidate(blurScanLimitProvider);
+          await _preferencesService.decreaseBlurScanLimit(scannedPhotoCount);
+          _onScanLimitChanged?.call();
           debugPrint(
             '💾 [BlurDetection] Blur scan limit düşürüldü: $scannedPhotoCount fotoğraf (sonuç bulundu)',
           );
@@ -331,7 +351,7 @@ class BlurDetectionNotifier extends StateNotifier<BlurDetectionState> {
       }
 
       // State'i güncelle - bu Riverpod'ı notify edecek
-      state = newState;
+      emit(newState);
       debugPrint('✅ [BlurDetection] State başarıyla güncellendi!');
 
       // State güncellemesinden sonra bir kez daha kontrol et
@@ -350,13 +370,15 @@ class BlurDetectionNotifier extends StateNotifier<BlurDetectionState> {
     } catch (e, stackTrace) {
       debugPrint('❌ [BlurDetection] Hata: $e');
       debugPrint('❌ [BlurDetection] Stack trace: $stackTrace');
-      state = state.copyWith(
-        error: e,
-        isScanning: false,
-        currentAlbum: null,
-        processedCount: 0,
-        totalCount: 0,
-        plannedSampleCount: 0,
+      emit(
+        state.copyWith(
+          error: e,
+          isScanning: false,
+          currentAlbum: null,
+          processedCount: 0,
+          totalCount: 0,
+          plannedSampleCount: 0,
+        ),
       );
     }
   }
@@ -364,8 +386,6 @@ class BlurDetectionNotifier extends StateNotifier<BlurDetectionState> {
   /// Blurlu fotoğrafları topluca sil
   Future<int> deleteBlurryPhotos(List<BlurPhoto> photos) async {
     if (photos.isEmpty) return 0;
-
-    final service = ref.read(mediaLibraryServiceProvider);
 
     // Tüm fotoğraf ID'lerini topla
     final photoIds = photos.map((photo) => photo.asset.id).toList();
@@ -376,7 +396,7 @@ class BlurDetectionNotifier extends StateNotifier<BlurDetectionState> {
 
     try {
       // Toplu silme işlemi
-      final deletedIds = await service.deleteBatch(photoIds);
+      final deletedIds = await _mediaLibraryService.deleteBatch(photoIds);
       final deletedCount = deletedIds.length;
 
       debugPrint(
@@ -397,7 +417,7 @@ class BlurDetectionNotifier extends StateNotifier<BlurDetectionState> {
       }
 
       // State'i güncelle
-      state = state.copyWith(blurryPhotosByAlbum: updatedMap);
+      emit(state.copyWith(blurryPhotosByAlbum: updatedMap));
 
       debugPrint(
         '💾 [BlurDetection] State güncellendi: ${updatedMap.length} albüm kaldı',
@@ -422,24 +442,21 @@ class BlurDetectionNotifier extends StateNotifier<BlurDetectionState> {
   void cancel() {
     debugPrint('🛑 [BlurDetection] Tarama iptal ediliyor...');
     _isCancelled = true;
-    state = state.copyWith(
-      isScanning: false,
-      progress: 0.0,
-      currentAlbum: null,
-      processedCount: 0,
-      totalCount: 0,
-      plannedSampleCount: 0,
+    emit(
+      state.copyWith(
+        isScanning: false,
+        progress: 0.0,
+        currentAlbum: null,
+        processedCount: 0,
+        totalCount: 0,
+        plannedSampleCount: 0,
+      ),
     );
   }
 
   /// State'i temizle
   void clear() {
     _isCancelled = false;
-    state = const BlurDetectionState();
+    emit(const BlurDetectionState());
   }
 }
-
-final blurDetectionProvider =
-    StateNotifierProvider<BlurDetectionNotifier, BlurDetectionState>((ref) {
-      return BlurDetectionNotifier(ref);
-    });

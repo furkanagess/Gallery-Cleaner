@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../features/onboarding/presentation/splash_page.dart';
@@ -11,7 +10,7 @@ import '../features/gallery/presentation/pages/results_page.dart';
 import '../features/settings/presentation/settings_page.dart';
 import '../features/settings/presentation/paywall_page.dart';
 
-final appRouterProvider = Provider<GoRouter>((ref) {
+GoRouter createAppRouter() {
   return GoRouter(
     initialLocation: '/splash',
     redirect: (context, state) async {
@@ -52,7 +51,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/splash',
         name: 'splash',
-        builder: (context, state) => const SplashPage(),
+        builder: (context, state) => SplashPage(),
       ),
       GoRoute(
         path: '/onboarding',
@@ -67,7 +66,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/swipe',
         name: 'swipe',
-        builder: (context, state) => const SwipePage(),
+        builder: (BuildContext context, GoRouterState state) {
+          return const SwipePage() as Widget;
+        },
       ),
       GoRoute(
         path: '/settings',
@@ -77,7 +78,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/paywall',
         name: 'paywall',
-        builder: (context, state) => const PaywallPage(),
+        builder: (BuildContext context, GoRouterState state) {
+          return const PaywallPage() as Widget;
+        },
       ),
 
       GoRoute(
@@ -88,16 +91,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/results/:type',
         name: 'results',
-        builder: (context, state) {
+        builder: (BuildContext context, GoRouterState state) {
           final type = state.pathParameters['type'] ?? 'blur';
-          return ResultsPage(resultType: type);
+          return ResultsPage(resultType: type) as Widget;
         },
       ),
       // Fallback route for /results without type parameter
-      GoRoute(
-        path: '/results',
-        redirect: (context, state) => '/results/blur',
-      ),
+      GoRoute(path: '/results', redirect: (context, state) => '/results/blur'),
     ],
     errorBuilder: (context, state) => Scaffold(
       body: Center(
@@ -108,4 +108,4 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
     ),
   );
-});
+}

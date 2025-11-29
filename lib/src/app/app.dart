@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:go_router/go_router.dart';
 
 import 'router.dart';
 import 'theme/app_theme.dart';
@@ -8,28 +9,28 @@ import '../features/settings/application/theme_controller.dart';
 import '../features/settings/application/locale_controller.dart';
 import '../../l10n/app_localizations.dart';
 
-class App extends ConsumerWidget {
+class App extends StatelessWidget {
   const App({super.key});
 
+  static final GoRouter _router = createAppRouter();
+  static final AppThemeData _appTheme = buildAppTheme();
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final router = ref.watch(appRouterProvider);
-    final theme = ref.watch(appThemeProvider);
-    final themeModeState = ref.watch(themeModeProvider);
-    final locale = ref.watch(localeProvider);
-    
-    // Convert AppThemeMode to ThemeMode
+  Widget build(BuildContext context) {
+    final themeModeState = context.watch<ThemeCubit>().state;
+    final locale = context.watch<LocaleCubit>().state;
+
     final themeMode = themeModeState == AppThemeMode.light
         ? ThemeMode.light
         : themeModeState == AppThemeMode.dark
             ? ThemeMode.dark
             : ThemeMode.system;
-    
+
     return MaterialApp.router(
       title: 'Gallery Cleaner',
       debugShowCheckedModeBanner: false,
-      theme: theme.light,
-      darkTheme: theme.dark,
+      theme: _appTheme.light,
+      darkTheme: _appTheme.dark,
       themeMode: themeMode,
       locale: locale,
       supportedLocales: const [
@@ -43,8 +44,7 @@ class App extends ConsumerWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      routerConfig: router,
+      routerConfig: _router,
     );
   }
 }
-

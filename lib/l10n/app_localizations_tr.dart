@@ -63,7 +63,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get selectAlbum => 'Albüm Seç';
 
   @override
-  String get selectAlbumToView => 'Görüntülenecek Albüm Seç';
+  String get selectAlbumToView => 'Görmek istediğiniz albümü seçin';
 
   @override
   String get allPhotos => 'Tüm Fotoğraflar';
@@ -759,7 +759,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get sensitivityLevelsDescription =>
-      '• Düşük: Hafif bulanık fotoğrafları da tespit eder (daha fazla sonuç)\n• Orta: Orta seviye bulanık fotoğrafları tespit eder (dengeli)\n• Yüksek: Sadece çok bulanık fotoğrafları tespit eder (daha az sonuç)\n• Yüksek Hassasiyet: Maksimum hassasiyet, sadece çok bulanık fotoğrafları tespit eder';
+      'Düşük: Hafif bulanık fotoğrafları da tespit eder (daha fazla sonuç)\nOrta: Orta seviye bulanık fotoğrafları tespit eder (dengeli)\nYüksek: Sadece çok bulanık fotoğrafları tespit eder (daha az sonuç)';
 
   @override
   String get currentSensitivity => 'Mevcut Hassasiyet';
@@ -1009,7 +1009,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get duplicateModeLevelsDescription =>
-      '• Düşük Hız/Yüksek Hassasiyet: En doğru sonuçlar, daha uzun sürer\n• Dengeli: Hız ve hassasiyet dengesi\n• Yüksek Hız/Düşük Hassasiyet: Hızlı sonuçlar, daha az doğru\n• Yüksek Hız: Hızlı tarama için optimize edilmiş, görselleri daha hızlı işler';
+      'Düşük Hız/Yüksek Hassasiyet: En doğru sonuçlar, daha uzun sürer\nDengeli: Hız ve hassasiyet dengesi\nYüksek Hız/Düşük Hassasiyet: Hızlı sonuçlar, daha az doğru';
 
   @override
   String get allPhotosReviewedTitle => 'Tüm Fotoğraflar Gözden Geçirildi!';
@@ -1029,4 +1029,93 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get doNotLeaveScreenDuringScan =>
       'Lütfen tarama işlemi devam ederken bu ekrandan ayrılmayın.';
+
+  @override
+  String get viewResults => 'Sonuçları Görüntüle';
+
+  @override
+  String get viewLastResults => 'Son Sonuçları Görüntüle';
+
+  @override
+  String get filterAndSort => 'Filtre ve Sıralama';
+
+  @override
+  String get filterAndSortDescription =>
+      'Tarih aralığı ve sıralama seçenekleri';
+
+  @override
+  String get dateRange => 'Tarih Aralığı';
+
+  @override
+  String get startDate => 'Başlangıç';
+
+  @override
+  String get endDate => 'Bitiş';
+
+  @override
+  String get notSelected => 'Seçilmedi';
+
+  @override
+  String get clearDateFilter => 'Tarih Filtresini Temizle';
+
+  @override
+  String get sort => 'Sıralama';
+
+  @override
+  String get newest => 'En Yeniler';
+
+  @override
+  String get oldest => 'En Eskiler';
+
+  @override
+  String get apply => 'Uygula';
+
+  @override
+  String get albumSettings => 'Albüm Ayarları';
+
+  @override
+  String get getUnlimitedScans => 'Sınırsız Tarama Al';
+
+  @override
+  String get noRightsLeft => 'Hakkın Kalmadı';
+
+  @override
+  String get getUnlimitedDeletions => 'Sınırsız Silme Al';
+
+  @override
+  String get scanTip1 =>
+      'Biz görsellerinizi scan ederken siz reels kaydırabilirsiniz.';
+
+  @override
+  String get scanTip2 => 'Biz scan ederken yarım sayfa kitap okuyabilirsiniz.';
+
+  @override
+  String get scanTip3 =>
+      'Biz scan ederken sevgilinizin mesajına dönüş yapabilirsiniz.';
+
+  @override
+  String get scanTip4 =>
+      'Biz scan ederken bildirimlerinizi kontrol edebilirsiniz.';
+
+  @override
+  String get scanTip5 => 'Biz scan ederken kısa bir mola verebilirsiniz.';
+
+  @override
+  String get scanTip6 =>
+      'Uygulamayı arka plana alabilirsiniz, ancak tamamen kapatmayın.';
+
+  @override
+  String get scanTip7 =>
+      'Biz scan ederken bu uygulamayı kapatmadan diğer uygulamalara bakabilirsiniz.';
+
+  @override
+  String get scanTip8 =>
+      'Biz scan ederken kısa bir telefon görüşmesi yapabilirsiniz.';
+
+  @override
+  String get scanTip9 =>
+      'Biz scan ederken sosyal medyanızı kontrol edebilirsiniz.';
+
+  @override
+  String get scanTip10 => 'Biz scan ederken bir fincan kahve alabilirsiniz.';
 }

@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../l10n/app_localizations.dart';
@@ -10,14 +10,14 @@ import '../application/locale_controller.dart';
 import '../../gallery/application/gallery_providers.dart';
 import '../../../app/theme/app_colors.dart';
 
-class SettingsPage extends ConsumerWidget {
+class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final themeMode = ref.watch(themeModeProvider);
-    final locale = ref.watch(localeProvider);
+    final themeMode = context.watch<ThemeCubit>().state;
+    final locale = context.watch<LocaleCubit>().state;
 
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.background,
@@ -84,7 +84,7 @@ class SettingsPage extends ConsumerWidget {
                   _CompactThemeSelector(
                     themeMode: themeMode,
                     onThemeChanged: (mode) {
-                      ref.read(themeModeProvider.notifier).setThemeMode(mode);
+                      context.read<ThemeCubit>().setThemeMode(mode);
                     },
                   ),
                   const SizedBox(height: 16),
@@ -121,7 +121,7 @@ class SettingsPage extends ConsumerWidget {
                   _CompactLanguageSelector(
                     locale: locale,
                     onLocaleChanged: (loc) {
-                      ref.read(localeProvider.notifier).setAppLocale(loc);
+                      context.read<LocaleCubit>().setAppLocale(loc);
                     },
                   ),
                 ],
@@ -158,19 +158,14 @@ class SettingsPage extends ConsumerWidget {
   }
 }
 
-class _PremiumSection extends ConsumerStatefulWidget {
+class _PremiumSection extends StatelessWidget {
   const _PremiumSection();
 
-  @override
-  ConsumerState<_PremiumSection> createState() => _PremiumSectionState();
-}
-
-class _PremiumSectionState extends ConsumerState<_PremiumSection> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
-    final isPremiumAsync = ref.watch(isPremiumProvider);
+    final isPremiumAsync = context.watch<PremiumCubit>().state;
 
     return isPremiumAsync.when(
       loading: () => const SizedBox.shrink(),

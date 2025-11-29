@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:photo_manager/photo_manager.dart' as pm;
 
 enum GalleryPermissionStatus {
@@ -9,18 +9,18 @@ enum GalleryPermissionStatus {
   permanentlyDenied, // Not distinguished currently; treated as denied in logic
 }
 
-class PermissionsController extends StateNotifier<GalleryPermissionStatus> {
-  PermissionsController() : super(GalleryPermissionStatus.unknown);
+class PermissionsCubit extends Cubit<GalleryPermissionStatus> {
+  PermissionsCubit() : super(GalleryPermissionStatus.unknown);
 
   Future<void> refresh() async {
     try {
       final status = await _readCurrentStatus();
-      state = status;
+      emit(status);
     } catch (e) {
       // iOS'ta ilk girişte PhotoManager henüz hazır olmayabilir
       debugPrint('⚠️ [PermissionsController] refresh error: $e');
       // Hata durumunda denied olarak işaretle
-      state = GalleryPermissionStatus.denied;
+      emit(GalleryPermissionStatus.denied);
     }
   }
 
@@ -47,11 +47,11 @@ class PermissionsController extends StateNotifier<GalleryPermissionStatus> {
     try {
       final result = await pm.PhotoManager.requestPermissionExtend();
       final ok = result.isAuth || result.hasAccess == true;
-      state = ok ? GalleryPermissionStatus.authorized : GalleryPermissionStatus.denied;
+      emit(ok ? GalleryPermissionStatus.authorized : GalleryPermissionStatus.denied);
       return ok;
     } catch (e) {
       debugPrint('⚠️ [PermissionsController] request error: $e');
-      state = GalleryPermissionStatus.denied;
+      emit(GalleryPermissionStatus.denied);
       return false;
     }
   }
@@ -60,10 +60,3 @@ class PermissionsController extends StateNotifier<GalleryPermissionStatus> {
     await pm.PhotoManager.openSetting();
   }
 }
-
-final permissionsControllerProvider =
-    StateNotifierProvider<PermissionsController, GalleryPermissionStatus>((ref) {
-  return PermissionsController();
-});
-
-

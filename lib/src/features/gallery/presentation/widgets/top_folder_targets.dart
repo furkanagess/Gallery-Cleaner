@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photo_manager/photo_manager.dart' as pm;
 import '../../../../app/theme/app_theme.dart';
 
-class TopFolderTargets extends ConsumerWidget {
+class TopFolderTargets extends StatelessWidget {
   const TopFolderTargets({super.key, required this.albums, required this.hoverIndex});
   final List<pm.AssetPathEntity> albums;
   final int? hoverIndex;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     return SizedBox(
       height: 96,
       child: ListView.separated(

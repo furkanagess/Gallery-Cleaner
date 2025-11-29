@@ -63,7 +63,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get selectAlbum => 'Seleccionar Álbum';
 
   @override
-  String get selectAlbumToView => 'Seleccionar Álbum para Ver';
+  String get selectAlbumToView => 'Selecciona el álbum que deseas ver';
 
   @override
   String get allPhotos => 'Todas las Fotos';
@@ -762,7 +762,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get sensitivityLevelsDescription =>
-      '• Baja: Detecta fotos ligeramente borrosas también (más resultados)\n• Media: Detecta fotos moderadamente borrosas (equilibrado)\n• Alta: Solo detecta fotos muy borrosas (menos resultados)\n• Alta Sensibilidad: Máxima precisión, detecta solo fotos muy borrosas';
+      'Baja: Detecta fotos ligeramente borrosas también (más resultados)\nMedia: Detecta fotos moderadamente borrosas (equilibrado)\nAlta: Solo detecta fotos muy borrosas (menos resultados)';
 
   @override
   String get currentSensitivity => 'Sensibilidad Actual';
@@ -1012,7 +1012,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get duplicateModeLevelsDescription =>
-      '• Baja Velocidad/Alta Precisión: Resultados más precisos, toma más tiempo\n• Equilibrado: Equilibrio entre velocidad y precisión\n• Alta Velocidad/Baja Precisión: Resultados rápidos, menos precisos\n• Alta Velocidad: Optimizado para escaneo rápido, procesa imágenes más rápido';
+      'Baja Velocidad/Alta Precisión: Resultados más precisos, toma más tiempo\nEquilibrado: Equilibrio entre velocidad y precisión\nAlta Velocidad/Baja Precisión: Resultados rápidos, menos precisos';
 
   @override
   String get allPhotosReviewedTitle => '¡Todas las Fotos Revisadas!';
@@ -1032,4 +1032,93 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get doNotLeaveScreenDuringScan =>
       'Por favor, no abandone esta pantalla mientras el escaneo está en progreso.';
+
+  @override
+  String get viewResults => 'Ver Resultados';
+
+  @override
+  String get viewLastResults => 'Ver Últimos Resultados';
+
+  @override
+  String get filterAndSort => 'Filtro y Orden';
+
+  @override
+  String get filterAndSortDescription => 'Opciones de rango de fechas y orden';
+
+  @override
+  String get dateRange => 'Rango de Fechas';
+
+  @override
+  String get startDate => 'Inicio';
+
+  @override
+  String get endDate => 'Fin';
+
+  @override
+  String get notSelected => 'No Seleccionado';
+
+  @override
+  String get clearDateFilter => 'Limpiar Filtro de Fecha';
+
+  @override
+  String get sort => 'Ordenar';
+
+  @override
+  String get newest => 'Más Recientes';
+
+  @override
+  String get oldest => 'Más Antiguos';
+
+  @override
+  String get apply => 'Aplicar';
+
+  @override
+  String get albumSettings => 'Configuración de Álbum';
+
+  @override
+  String get getUnlimitedScans => 'Obtener Escaneos Ilimitados';
+
+  @override
+  String get noRightsLeft => 'No quedan derechos';
+
+  @override
+  String get getUnlimitedDeletions => 'Obtener Eliminaciones Ilimitadas';
+
+  @override
+  String get scanTip1 =>
+      'Mientras escaneamos tus fotos, puedes desplazarte por los reels.';
+
+  @override
+  String get scanTip2 =>
+      'Mientras escaneamos, puedes leer media página de un libro.';
+
+  @override
+  String get scanTip3 =>
+      'Mientras escaneamos, puedes responder al mensaje de tu pareja.';
+
+  @override
+  String get scanTip4 =>
+      'Mientras escaneamos, puedes revisar tus notificaciones.';
+
+  @override
+  String get scanTip5 => 'Mientras escaneamos, puedes tomar un breve descanso.';
+
+  @override
+  String get scanTip6 =>
+      'Puedes minimizar la app al fondo, pero no la cierres completamente.';
+
+  @override
+  String get scanTip7 =>
+      'Mientras escaneamos, puedes navegar por otras apps sin cerrar esta.';
+
+  @override
+  String get scanTip8 =>
+      'Mientras escaneamos, puedes hacer una llamada rápida.';
+
+  @override
+  String get scanTip9 =>
+      'Mientras escaneamos, puedes revisar tus redes sociales.';
+
+  @override
+  String get scanTip10 => 'Mientras escaneamos, puedes tomar una taza de café.';
 }

@@ -5,7 +5,8 @@
 **Settings Page**, uygulama ayarlarını, tema ve dil seçeneklerini, premium durumunu ve uygulama değerlendirmesini içeren kapsamlı bir ayarlar ekranıdır.
 
 **Yol (Route)**: `/settings`  
-**Ana Özellikler**: 
+**Ana Özellikler**:
+
 - Tema seçimi (Light/Dark/System)
 - Dil seçimi (Türkçe/English/Spanish)
 - Uygulama değerlendirme
@@ -25,9 +26,10 @@
 ## Layout Yapısı
 
 ### 1. AppBar
+
 - **Başlık**: "Settings" (lokalize)
 - **Hizalama**: Ortalanmış
-- **Geri Butonu**: 
+- **Geri Butonu**:
   - iOS: `chevron_left` (Cupertino)
   - Android: Varsayılan back arrow
 - **Stil**: Varsayılan AppBar stili
@@ -35,6 +37,7 @@
 ### 2. Ana İçerik (Scrollable)
 
 #### 2.1. Tema ve Dil Kartı
+
 - **Container**:
   - Padding: `16px` (tüm yönler)
   - Arka plan: `surfaceContainerHighest` %30
@@ -43,17 +46,19 @@
 - **İçerik**: 2 bölüm (divider ile ayrılmış)
 
 **Tema Bölümü:**
+
 - **Başlık**: İkon (`palette_outlined`, 18px) + "Theme" (lokalize)
 - **Seçici**: 3 chip (yan yana)
   1. **Light**: `light_mode` ikonu + "Light" (lokalize)
   2. **Dark**: `dark_mode` ikonu + "Dark" (lokalize)
   3. **System**: `brightness_auto` ikonu + "System" (lokalize)
-- **Stil**: 
+- **Stil**:
   - Container: `surfaceContainerHighest` %50, 12px radius
   - Seçili chip: `primary` %15 arka plan, border
   - Pasif chip: Şeffaf
 
 **Dil Bölümü:**
+
 - **Başlık**: İkon (`language_outlined`, 18px) + "Language" (lokalize)
 - **Seçici**: 3 chip (yan yana)
   1. **Türkçe**: 🇹🇷 bayrak + "Turkish" (lokalize)
@@ -62,13 +67,14 @@
 - **Stil**: Tema seçici ile aynı
 
 #### 2.2. Uygulama Değerlendirme Bölümü
+
 - **Container**:
   - Padding: `16px` (tüm yönler)
   - Gradient arka plan: `primaryContainer` → `secondaryContainer`
   - Border radius: `20px`
   - Border: `primary` %15, 1.5px
   - Gölge: Yumuşak
-- **İçerik**: 
+- **İçerik**:
   - Sol: İkon container (48x48px)
     - Gradient: `primary` → `secondary`
     - İkon: `star_rounded` (Android) veya `star_fill` (iOS), 24px, beyaz
@@ -81,6 +87,7 @@
 #### 2.3. Premium Bölümü
 
 **Premium Olmayan Kullanıcı:**
+
 - **Container**:
   - Padding: `20px` (tüm yönler)
   - Gradient arka plan: `surfaceContainerHighest` → `primaryContainer`
@@ -101,6 +108,7 @@
 - **Fonksiyon**: Tıklanınca `/paywall` sayfasına gider
 
 **Premium Kullanıcı:**
+
 - **Container**:
   - Padding: `20px` (tüm yönler)
   - Arka plan: `surface`
@@ -118,12 +126,13 @@
     2. "Ad Free" (`block_rounded`)
     3. "Priority" (`verified_rounded`)
     - Her satır: İkon container + Metin + Check ikonu
-  - **Bilgi Notu**: 
+  - **Bilgi Notu**:
     - Container: `primaryContainer` %40, 12px radius
     - İkon: `auto_awesome_rounded`
     - Metin: "Lifetime access to all premium features" (lokalize)
 
 #### 2.4. Versiyon Bilgisi
+
 - **Konum**: Ekranın en altında
 - **Metin**: "v1.0.0"
 - **Stil**: `bodySmall`, `onSurface` %50, 12px
@@ -134,14 +143,17 @@
 ## Animasyonlar
 
 ### 1. Chip Seçimi
+
 - **Animasyon**: 200-300ms, easeInOut
 - **Efekt**: Arka plan ve border değişimi
 
 ### 2. Premium Kartı
+
 - **Hover/Press**: Hafif scale efekti (1.02)
 - **Ripple**: Material ripple efekti
 
 ### 3. Rate App Kartı
+
 - **Hover/Press**: Hafif scale efekti
 - **Ripple**: Material ripple efekti
 
@@ -150,14 +162,17 @@
 ## Durumlar
 
 ### 1. Normal Durum
+
 - Tüm ayarlar görünür
 - Tüm butonlar aktif
 - Seçili değerler vurgulu
 
 ### 2. Premium Yükleniyor
+
 - Premium bölümü: Shimmer skeleton veya gizli
 
 ### 3. Premium Hata
+
 - Premium bölümü: Gizli veya hata mesajı
 
 ---
@@ -165,21 +180,25 @@
 ## Renk Sistemi
 
 ### Tema/Dil Kartı
+
 - **Arka Plan**: `surfaceContainerHighest` %30
 - **Seçili Chip**: `primary` %15 arka plan, `primary` border
 - **Pasif Chip**: Şeffaf
 
 ### Rate App Kartı
+
 - **Gradient**: `primaryContainer` → `secondaryContainer`
 - **İkon**: `primary` → `secondary` gradient
 - **Metin**: `onSurface`
 
 ### Premium Kartı (Free)
+
 - **Gradient**: `surfaceContainerHighest` → `primaryContainer`
 - **İkon**: `primary` → `accent` gradient
 - **Buton**: `primary` renk
 
 ### Premium Kartı (Premium)
+
 - **Arka Plan**: `surface`
 - **İkon**: `primary` gradient
 - **Status**: `success` rengi
@@ -208,6 +227,7 @@
 ## Teknik Detaylar
 
 ### Widget Yapısı
+
 ```
 Scaffold
 └── SafeArea
@@ -225,6 +245,7 @@ Scaffold
 ```
 
 ### Önemli Notlar
+
 - `themeModeProvider` ile tema durumu yönetilir
 - `localeProvider` ile dil durumu yönetilir
 - `isPremiumProvider` ile premium durumu kontrol edilir
@@ -236,6 +257,7 @@ Scaffold
 ## Örnek Görsel Açıklama
 
 **Genel Görünüm:**
+
 - Üstte AppBar
 - Tema ve dil kartı (2 bölüm, divider ile)
 - Rate app kartı (gradient, vurgulu)
@@ -243,6 +265,7 @@ Scaffold
 - Versiyon bilgisi (en altta, küçük)
 
 **Premium Kartı (Free):**
+
 - Gradient arka plan
 - Büyük premium ikonu (gradient daire)
 - "Go Premium" başlığı
@@ -250,6 +273,7 @@ Scaffold
 - Büyük "Upgrade" butonu
 
 **Premium Kartı (Premium):**
+
 - Sade arka plan
 - Premium ikonu (gradient kare)
 - "You are Premium" başlığı

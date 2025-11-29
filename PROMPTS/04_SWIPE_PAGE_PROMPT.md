@@ -24,11 +24,13 @@
 ### 1. AppBar
 
 #### 1.1. Başlık
+
 - **Metin**: Uygulama adı (lokalize)
 - **Hizalama**: Ortalanmış
 - **Stil**: `titleLarge`, `w800`
 
 #### 1.2. Tab Bar
+
 - **Sekmeler**: 3 adet
   1. **Swipe Tab**: `swipe_rounded` ikonu + "Swipe" metni
   2. **Blur Tab**: Blur detection indicator (özel widget)
@@ -40,7 +42,8 @@
   - Letter spacing: `0.3` (seçili), `0.2` (seçili değil)
 
 #### 1.3. Actions
-- **History Button**: 
+
+- **History Button**:
   - Pulse animasyonu ile
   - Scan sırasında devre dışı
 - **Settings Button**:
@@ -50,6 +53,7 @@
 ### 2. Swipe Tab İçeriği
 
 #### 2.1. Üst Bilgi Çubuğu (Status Card)
+
 - **Layout**: Yatay satır
 - **Sol Taraf**: Silme hakkı göstergesi
   - Free kullanıcı: "X deletes left today" + progress bar
@@ -66,7 +70,8 @@
   - Gölge: Hafif, yumuşak
 
 #### 2.2. Ana Fotoğraf Kartı Alanı
-- **Kart Boyutu**: 
+
+- **Kart Boyutu**:
   - Genişlik: Maksimum `480px`
   - Oran: `3:4` (dikey fotoğraf)
   - Konum: Yatayda ortalanmış, dikeyde ortada
@@ -82,6 +87,7 @@
   - **Overlay**: Sürükleme mesafesine göre görünürlük artar
 
 #### 2.3. Swipe İpuçları
+
 - **Konum**: Kartın hemen altında
 - **İçerik**: Küçük chip'ler
   - "Swipe left to delete" (kırmızı ikon)
@@ -90,6 +96,7 @@
 - **Stil**: Küçük, dikkat dağıtmayan
 
 #### 2.4. Alt Aksiyon Satırı
+
 - **Layout**: Yatay satır
 - **Sol Buton**: Delete
   - İkon: `trash`
@@ -111,11 +118,13 @@
 ### 3. Blur Tab İçeriği
 
 #### 3.1. Başlık ve Açıklama
+
 - **Başlık**: "Find Blurry Photos" (lokalize)
 - **Açıklama**: Blur detection açıklaması (lokalize)
 - **Stil**: Ortalanmış, büyük font
 
 #### 3.2. Scan Butonu
+
 - **Buton**: Büyük, belirgin
 - **Metin**: "Scan for Blurry Photos" (lokalize)
 - **Stil**: Filled button, primary renk
@@ -124,22 +133,26 @@
   - Scanning: Devre dışı, loading indicator
 
 #### 3.3. İlerleme Göstergesi
+
 - **Progress Bar**: Linear veya circular
 - **Metin**: "Analyzing X of Y photos"
 - **Lottie**: Tarama animasyonu (opsiyonel)
 
 #### 3.4. Sonuçlar
+
 - **Boş Durum**: "No blurry photos found" mesajı
 - **Sonuçlar Varsa**: Results page'e yönlendirme butonu
 
 ### 4. Duplicate Tab İçeriği
 
 #### 4.1. Başlık ve Açıklama
+
 - **Başlık**: "Find Duplicates" (lokalize)
 - **Açıklama**: Duplicate detection açıklaması (lokalize)
 - **Stil**: Ortalanmış, büyük font
 
 #### 4.2. Scan Butonu
+
 - **Buton**: Büyük, belirgin
 - **Metin**: "Scan for Duplicates" (lokalize)
 - **Stil**: Filled button, primary renk
@@ -148,11 +161,13 @@
   - Scanning: Devre dışı, loading indicator
 
 #### 4.3. İlerleme Göstergesi
+
 - **Progress Bar**: Linear veya circular
 - **Metin**: "Analyzing X of Y photos"
 - **Lottie**: Tarama animasyonu (opsiyonel)
 
 #### 4.4. Sonuçlar
+
 - **Boş Durum**: "No duplicates found" mesajı
 - **Sonuçlar Varsa**: Results page'e yönlendirme butonu
 
@@ -161,23 +176,27 @@
 ## Animasyonlar
 
 ### 1. Swipe Animasyonu
+
 - **Sürükleme**: Parmak hareketiyle kart takip eder
 - **Rotasyon**: Sürükleme mesafesine göre rotasyon (max 15-20 derece)
 - **Overlay**: Sürükleme mesafesine göre fade in/out
-- **Bırakma**: 
+- **Bırakma**:
   - Eşik geçildiyse: Hızlanarak ekrandan çıkar
   - Eşik geçilmediyse: Spring animasyonu ile geri döner
 
 ### 2. Kart Geçişi
+
 - **Yeni Kart**: Aşağıdan yukarı fade + slide
 - **Eski Kart**: Yukarıdan aşağı fade + slide (silme) veya sağa kayma (keep)
 
 ### 3. Buton Animasyonları
+
 - **Press**: Scale down (0.98)
 - **Release**: Scale up (1.0)
 - **Ripple**: Material ripple efekti
 
 ### 4. Loading Animasyonu
+
 - **Shimmer**: Kart, butonlar ve status bar için
 - **Lottie**: Tarama sırasında
 
@@ -186,26 +205,31 @@
 ## Durumlar
 
 ### 1. Normal Durum
+
 - Fotoğraf kartı görünür
 - Butonlar aktif
 - Status bar güncel bilgileri gösterir
 
 ### 2. Loading Durumu
+
 - Shimmer skeleton'lar görünür
 - Butonlar devre dışı
 - Status bar shimmer
 
 ### 3. Boş Durum
+
 - "No photos to review" mesajı
 - "Change album" butonu
 - İllüstrasyon (opsiyonel)
 
 ### 4. Limit Aşıldı
+
 - Uyarı mesajı
 - Premium veya rewarded ad butonu
 - Limit bilgisi
 
 ### 5. Tarama Durumu
+
 - Progress bar görünür
 - Butonlar devre dışı
 - Settings butonu devre dışı (tooltip ile uyarı)
@@ -215,15 +239,18 @@
 ## Renk Sistemi
 
 ### Swipe Overlay'leri
+
 - **Keep (Sağ)**: Yeşil (`success`), %60-80 opaklık
 - **Delete (Sol)**: Kırmızı (`error`), %60-80 opaklık
 
 ### Butonlar
+
 - **Keep**: Primary veya success rengi
 - **Delete**: Error rengi
 - **Undo**: Tonal veya secondary
 
 ### Status Bar
+
 - **Normal**: `surfaceContainerHighest`
 - **Warning**: Amber/yellow tonları
 - **Premium**: Primary gradient
@@ -251,6 +278,7 @@
 ## Teknik Detaylar
 
 ### Widget Yapısı
+
 ```
 Scaffold
 └── SafeArea
@@ -274,6 +302,7 @@ Scaffold
 ```
 
 ### Önemli Notlar
+
 - `PhotoSwipeDeck` widget'ı swipe mekanizmasını yönetir
 - Swipe index'i kaydedilir (her albüm için ayrı)
 - "Reset to Start" butonu görünebilir (index > 0 ise)
@@ -285,12 +314,14 @@ Scaffold
 ## Örnek Görsel Açıklama
 
 **Swipe Tab:**
+
 - Üstte status bar (limit + albüm)
 - Ortada büyük fotoğraf kartı
 - Kartın altında küçük ipuçları
 - Altta 2-3 buton (Delete, Keep, Undo)
 
 **Blur/Duplicate Tab:**
+
 - Üstte başlık ve açıklama
 - Ortada büyük scan butonu
 - Tarama sırasında progress bar

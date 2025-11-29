@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../core/services/revenuecat_service.dart';
 import '../../gallery/application/gallery_providers.dart';
 import 'premium_success_dialog.dart';
 import '../../../app/theme/app_colors.dart';
+import 'package:gallery_cleaner/src/core/utils/view_refresh_cubit.dart';
 
 /// Premium dialog shown after 3 interstitial ads
-class PremiumAfterAdsDialog extends ConsumerStatefulWidget {
+class PremiumAfterAdsDialog extends StatefulWidget {
   const PremiumAfterAdsDialog({super.key});
 
   static Future<void> show(BuildContext context) {
@@ -21,13 +22,13 @@ class PremiumAfterAdsDialog extends ConsumerStatefulWidget {
   }
 
   @override
-  ConsumerState<PremiumAfterAdsDialog> createState() =>
+  State<PremiumAfterAdsDialog> createState() =>
       _PremiumAfterAdsDialogState();
 }
 
 class _PremiumAfterAdsDialogState
-    extends ConsumerState<PremiumAfterAdsDialog>
-    with SingleTickerProviderStateMixin {
+    extends State<PremiumAfterAdsDialog>
+    with SingleTickerProviderStateMixin, CubitStateMixin<PremiumAfterAdsDialog> {
   bool _isLoading = false;
   String? _errorMessage;
   String? _productPrice;
@@ -67,7 +68,7 @@ class _PremiumAfterAdsDialogState
       final product = await rc.fetchLifetimeProduct();
       if (product == null) {
         if (mounted) {
-          setState(() {
+          cubitSetState(() {
             _productPrice = 'N/A';
             _originalPrice = null;
           });
@@ -81,7 +82,7 @@ class _PremiumAfterAdsDialogState
         final increasedPrice = priceValue * 1.25;
         final currencySymbol = _extractCurrencySymbol(priceString);
         if (mounted) {
-          setState(() {
+          cubitSetState(() {
             _originalPrice =
                 '$currencySymbol${increasedPrice.toStringAsFixed(2)}';
             _productPrice = priceString;
@@ -89,7 +90,7 @@ class _PremiumAfterAdsDialogState
         }
       } else {
         if (mounted) {
-          setState(() {
+          cubitSetState(() {
             _originalPrice = null;
             _productPrice = priceString;
           });
@@ -98,7 +99,7 @@ class _PremiumAfterAdsDialogState
     } catch (e) {
       debugPrint('❌ [PremiumAfterAdsDialog] Error loading product price: $e');
       if (mounted) {
-        setState(() {
+        cubitSetState(() {
           _productPrice = 'N/A';
           _originalPrice = null;
         });
@@ -124,7 +125,7 @@ class _PremiumAfterAdsDialogState
     if (!mounted) return;
     final l10n = AppLocalizations.of(context)!;
 
-    setState(() {
+    cubitSetState(() {
       _isLoading = true;
       _errorMessage = null;
     });
@@ -149,7 +150,7 @@ class _PremiumAfterAdsDialogState
         if (premiumNow) {
           await _handlePremiumUnlocked();
         } else {
-          setState(() {
+          cubitSetState(() {
             _errorMessage = l10n.failedToInitiatePurchase;
             _isLoading = false;
           });
@@ -157,7 +158,7 @@ class _PremiumAfterAdsDialogState
       }
     } catch (e) {
       if (!mounted) return;
-      setState(() {
+      cubitSetState(() {
         _errorMessage = '${l10n.purchaseError}: $e';
         _isLoading = false;
       });
@@ -166,14 +167,14 @@ class _PremiumAfterAdsDialogState
 
   Future<void> _handlePremiumUnlocked() async {
     if (!mounted) return;
-    setState(() {
+    cubitSetState(() {
       _isLoading = false;
       _errorMessage = null;
     });
 
-    ref.invalidate(isPremiumProvider);
-    ref.invalidate(scanLimitProvider);
-    await ref.read(deleteLimitProvider.notifier).refresh();
+    context.read<PremiumCubit>().refresh();
+    context.read<GeneralScanLimitCubit>().refresh();
+    await context.read<DeleteLimitCubit>().refresh();
 
     if (!mounted) return;
     final navigator = Navigator.of(context, rootNavigator: true);
@@ -198,10 +199,10 @@ class _PremiumAfterAdsDialogState
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final isPremiumAsync = ref.watch(isPremiumProvider);
-    final isPremium = isPremiumAsync.asData?.value ?? false;
+    final isPremiumAsync = context.watch<PremiumCubit>().state;
+    final isPremium = isPremiumAsync.valueOrNull ?? false;
 
-    return Dialog(
+    return buildWithCubit(() => Dialog(
       backgroundColor: AppColors.transparent,
       elevation: 0,
       insetPadding: const EdgeInsets.symmetric(horizontal: 24),
@@ -565,7 +566,7 @@ class _PremiumAfterAdsDialogState
           ),
         ),
       ),
-    );
+    ));
   }
 }
 
@@ -603,4 +604,3 @@ class _FeatureRow extends StatelessWidget {
     );
   }
 }
-

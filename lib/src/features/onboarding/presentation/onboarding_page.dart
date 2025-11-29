@@ -1,19 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../../l10n/app_localizations.dart';
 
 import '../application/onboarding_controller.dart';
 import '../../../app/theme/app_colors.dart';
+import 'package:gallery_cleaner/src/core/utils/view_refresh_cubit.dart';
 
-class OnboardingPage extends ConsumerStatefulWidget {
+class OnboardingPage extends StatefulWidget {
   const OnboardingPage({super.key});
 
   @override
-  ConsumerState<OnboardingPage> createState() => _OnboardingPageState();
+  State<OnboardingPage> createState() => _OnboardingPageState();
 }
 
-class _OnboardingPageState extends ConsumerState<OnboardingPage> {
+class _OnboardingPageState extends State<OnboardingPage>
+    with CubitStateMixin<OnboardingPage> {
   static const int _totalPages = 3;
   final PageController _pageController = PageController();
   int _currentPage = 0;
@@ -36,7 +38,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
   }
 
   void _completeOnboarding() async {
-    await ref.read(onboardingControllerProvider).completeOnboarding();
+    await context.read<OnboardingController>().completeOnboarding();
     if (mounted) {
       context.go('/permission');
     }
@@ -46,7 +48,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Scaffold(
+    return buildWithCubit(() => Scaffold(
       backgroundColor: theme.colorScheme.background,
       body: SafeArea(
         child: Column(
@@ -75,7 +77,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
               child: PageView(
                 controller: _pageController,
                 onPageChanged: (index) {
-                  setState(() {
+                  cubitSetState(() {
                     _currentPage = index;
                   });
                 },
@@ -128,7 +130,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
           ],
         ),
       ),
-    );
+    ));
   }
 }
 
@@ -641,4 +643,3 @@ class _ModernActionButton extends StatelessWidget {
     );
   }
 }
-

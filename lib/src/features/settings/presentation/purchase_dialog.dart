@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../core/services/revenuecat_service.dart';
 import '../../gallery/application/gallery_providers.dart';
@@ -8,17 +8,18 @@ import 'premium_success_dialog.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_decorations.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
+import 'package:gallery_cleaner/src/core/utils/view_refresh_cubit.dart';
 
 /// Purchase dialog widget for in-app purchases
-class PurchaseDialog extends ConsumerStatefulWidget {
+class PurchaseDialog extends StatefulWidget {
   const PurchaseDialog({super.key});
 
   @override
-  ConsumerState<PurchaseDialog> createState() => _PurchaseDialogState();
+  State<PurchaseDialog> createState() => _PurchaseDialogState();
 }
 
-class _PurchaseDialogState extends ConsumerState<PurchaseDialog>
-    with TickerProviderStateMixin {
+class _PurchaseDialogState extends State<PurchaseDialog>
+    with TickerProviderStateMixin, CubitStateMixin<PurchaseDialog> {
   bool _isLoading = false;
   bool _isRestoring = false;
   String? _errorMessage;
@@ -69,7 +70,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog>
       if (offerings == null || offerings.current == null) {
         debugPrint('⚠️ [PurchaseDialog] Offerings not available');
         if (mounted) {
-          setState(() {
+          cubitSetState(() {
             _productPrice = 'N/A';
             _originalPrice = null;
           });
@@ -90,7 +91,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog>
       final product = package?.storeProduct;
       if (product == null || !mounted) {
         if (mounted) {
-          setState(() {
+          cubitSetState(() {
             _productPrice = 'N/A';
             _originalPrice = null;
           });
@@ -104,14 +105,14 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog>
         final discountedPrice = priceValue * 0.75;
         final currencySymbol = _extractCurrencySymbol(priceString);
         if (mounted) {
-          setState(() {
+          cubitSetState(() {
             _originalPrice = priceString;
             _productPrice = '$currencySymbol${discountedPrice.toStringAsFixed(2)}';
           });
         }
       } else {
         if (mounted) {
-          setState(() {
+          cubitSetState(() {
             _productPrice = priceString;
           });
         }
@@ -119,7 +120,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog>
     } catch (e) {
       debugPrint('❌ [PurchaseDialog] Error loading product price: $e');
       if (mounted) {
-        setState(() {
+        cubitSetState(() {
           _productPrice = 'N/A';
           _originalPrice = null;
         });
@@ -145,7 +146,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog>
     if (!mounted) return;
     final l10n = AppLocalizations.of(context)!;
 
-    setState(() {
+    cubitSetState(() {
       _isLoading = true;
       _errorMessage = null;
     });
@@ -176,7 +177,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog>
           debugPrint('✅ [PurchaseDialog] Premium activated after retry check.');
           await _handlePremiumUnlocked();
         } else {
-          setState(() {
+          cubitSetState(() {
             _errorMessage = l10n.failedToInitiatePurchase;
             _isLoading = false;
           });
@@ -201,7 +202,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog>
         }
       }
       
-      setState(() {
+      cubitSetState(() {
         _errorMessage = l10n.failedToInitiatePurchase;
         _isLoading = false;
       });
@@ -219,7 +220,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog>
         return;
       }
       
-      setState(() {
+      cubitSetState(() {
         _errorMessage = '${l10n.purchaseError}: ${e.toString()}';
         _isLoading = false;
       });
@@ -232,7 +233,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog>
     if (!mounted) return;
     final l10n = AppLocalizations.of(context)!;
 
-    setState(() {
+    cubitSetState(() {
       _isRestoring = true;
       _errorMessage = null;
       _successMessage = null;
@@ -251,7 +252,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog>
         if (premiumNow) {
           await _handlePremiumUnlocked(isFromRestore: true);
         } else {
-          setState(() {
+          cubitSetState(() {
             _errorMessage = contextL10n.noPreviousPurchases;
             _isRestoring = false;
           });
@@ -259,7 +260,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog>
       }
     } catch (e) {
       if (!mounted) return;
-      setState(() {
+      cubitSetState(() {
         _errorMessage = '${l10n.restoreError}: $e';
         _isRestoring = false;
       });
@@ -268,7 +269,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog>
 
   Future<void> _handlePremiumUnlocked({bool isFromRestore = false}) async {
     if (!mounted) return;
-    setState(() {
+    cubitSetState(() {
       _isLoading = false;
       if (isFromRestore) {
         _isRestoring = false;
@@ -277,9 +278,9 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog>
       _successMessage = null;
     });
 
-    ref.invalidate(isPremiumProvider);
-    ref.invalidate(scanLimitProvider);
-    await ref.read(deleteLimitProvider.notifier).refresh();
+    context.read<PremiumCubit>().refresh();
+    context.read<GeneralScanLimitCubit>().refresh();
+    await context.read<DeleteLimitCubit>().refresh();
 
     if (!mounted) return;
     final navigator = Navigator.of(context, rootNavigator: true);
@@ -303,10 +304,10 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog>
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
-    final isPremiumAsync = ref.watch(isPremiumProvider);
-    final isPremium = isPremiumAsync.asData?.value ?? false;
+    final isPremiumAsync = context.watch<PremiumCubit>().state;
+    final isPremium = isPremiumAsync.valueOrNull ?? false;
 
-    return Dialog(
+    return buildWithCubit(() => Dialog(
       backgroundColor: AppColors.transparent,
       elevation: 0,
       insetPadding: const EdgeInsets.symmetric(horizontal: 24),
@@ -831,7 +832,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog>
           ),
         ),
       ),
-    );
+    ));
   }
 }
 

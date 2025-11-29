@@ -1,14 +1,17 @@
 import 'dart:collection';
 import 'dart:math' as math;
 import 'dart:typed_data';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lottie/lottie.dart';
 import 'package:photo_manager/photo_manager.dart' as pm;
+import 'package:image/image.dart' as img;
 import '../../../../app/theme/app_theme.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../../l10n/app_localizations.dart';
 import '../../../../core/services/sound_service.dart';
+import 'package:gallery_cleaner/src/core/utils/view_refresh_cubit.dart';
 
 enum SwipeDecision { keep, delete }
 
@@ -83,7 +86,7 @@ class PhotoSwipeDeck extends StatefulWidget {
 }
 
 class _PhotoSwipeDeckState extends State<PhotoSwipeDeck>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, CubitStateMixin<PhotoSwipeDeck> {
   static const double _swipeThreshold = 120;
   static const double _rotationMaxDeg = 15;
   static const int _stackSize = 2;
@@ -107,19 +110,19 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck>
       vsync: this,
       duration: const Duration(milliseconds: 400),
     );
-    
+
     _slideAnimation =
         Tween<Offset>(begin: Offset.zero, end: Offset.zero).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
+            CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
           )
           ..addListener(_onSlideAnimationUpdate)
-      ..addStatusListener((status) {
+          ..addStatusListener((status) {
             if (status == AnimationStatus.completed &&
                 _pendingDecision != null) {
-          _finalizeSwipe(_pendingDecision!);
-        }
-      });
-    
+              _finalizeSwipe(_pendingDecision!);
+            }
+          });
+
     // Reset callback'i hazır olduğunda bildir
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
@@ -132,7 +135,7 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck>
 
   void _onSlideAnimationUpdate() {
     if (mounted) {
-      setState(() {
+      cubitSetState(() {
         _dragOffset = _slideAnimation.value;
       });
     }
@@ -157,7 +160,7 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck>
       if (_topIndex != safeIndex ||
           _dragOffset != Offset.zero ||
           _dragRotation != 0) {
-        setState(() {
+        cubitSetState(() {
           _topIndex = safeIndex;
           _dragOffset = Offset.zero;
           _dragRotation = 0;
@@ -185,7 +188,7 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck>
   /// Galeriyi başa al
   void resetToStart() {
     if (mounted) {
-      setState(() {
+      cubitSetState(() {
         _topIndex = 0;
         _dragOffset = Offset.zero;
         _dragRotation = 0;
@@ -206,7 +209,7 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck>
     _controller
       ..reset()
       ..forward();
-    setState(() {
+    cubitSetState(() {
       _dragRotation = 0;
       _didHapticForKeep = false;
       _didHapticForDelete = false;
@@ -231,7 +234,7 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck>
   void _finalizeSwipe(SwipeDecision decision) {
     if (_topIndex >= widget.assets.length) return;
     final asset = widget.assets[_topIndex];
-    
+
     // Ses efekti çal
     final soundService = SoundService();
     if (decision == SwipeDecision.delete) {
@@ -239,17 +242,17 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck>
     } else {
       soundService.playKeepSound();
     }
-    
-    setState(() {
+
+    cubitSetState(() {
       _topIndex += 1;
       _dragOffset = Offset.zero;
       _dragRotation = 0;
       _pendingDecision = null;
     });
-    
+
     // Index değişikliğini bildir
     widget.onIndexChanged?.call(_topIndex);
-    
+
     widget.onDecision(asset, decision);
 
     _prefetchThumbnails();
@@ -269,39 +272,46 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck>
       asset
           .thumbnailDataWithSize(size, quality: 75)
           .then((data) {
-        if (data != null) {
-          _ThumbnailMemoryCache.put(asset.id, data);
-        }
+            if (data != null) {
+              _ThumbnailMemoryCache.put(asset.id, data);
+            }
           })
           .catchError((error) {
-        debugPrint(
-          '⚠️ [PhotoSwipeDeck] Prefetch failed for ${asset.id}: $error',
-        );
-      });
+            debugPrint(
+              '⚠️ [PhotoSwipeDeck] Prefetch failed for ${asset.id}: $error',
+            );
+          });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_topIndex >= widget.assets.length) {
-      return _buildAllPhotosReviewedWidget(context);
-    }
+    return buildWithCubit(() {
+      if (_topIndex >= widget.assets.length) {
+        return _buildAllPhotosReviewedWidget(context);
+      }
 
-    final cards = <Widget>[];
-    final count = math.min(_stackSize, widget.assets.length - _topIndex);
-    for (int i = 0; i < count; i++) {
-      final idx = _topIndex + i;
-      final isTop = i == 0;
-      cards.add(
-        _buildCard(context, widget.assets[idx], indexFromTop: i, isTop: isTop),
+      final cards = <Widget>[];
+      final count = math.min(_stackSize, widget.assets.length - _topIndex);
+      for (int i = 0; i < count; i++) {
+        final idx = _topIndex + i;
+        final isTop = i == 0;
+        cards.add(
+          _buildCard(
+            context,
+            widget.assets[idx],
+            indexFromTop: i,
+            isTop: isTop,
+          ),
+        );
+      }
+
+      // Stack'e şeffaf arka plan ekle - siyah alan sorununu önlemek için
+      return Container(
+        color: AppColors.transparent,
+        child: Stack(children: cards.reversed.toList()),
       );
-    }
-
-    // Stack'e şeffaf arka plan ekle - siyah alan sorununu önlemek için
-    return Container(
-      color: AppColors.transparent,
-      child: Stack(children: cards.reversed.toList()),
-    );
+    });
   }
 
   Widget _buildCard(
@@ -314,23 +324,23 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck>
     const baseOffsetY = 0.0;
 
     final rotation = isTop ? _dragRotation : 0.0;
-    
+
     // Only top card moves, background cards stay fixed
-    final offset = isTop 
-        ? _dragOffset 
+    final offset = isTop
+        ? _dragOffset
         : Offset(0, baseOffsetY); // Background cards remain static
-    
+
     // Animasyon kaldırıldı - kartlar sabit scale ve opacity ile görünür
-    final cardScale = isTop 
-        ? 1.0 
+    final cardScale = isTop
+        ? 1.0
         : baseScale; // Background cards maintain fixed scale
 
     // Border ve badge hesaplamaları sadece top kart için yapılacak
     final decisionStrength = isTop && widget.canDelete
         ? (_dragOffset.dx / _swipeThreshold).clamp(-1.0, 1.0)
         : 0.0;
-    final keepOpacity = isTop && widget.canDelete && decisionStrength > 0 
-        ? decisionStrength.abs().clamp(0.0, 1.0) 
+    final keepOpacity = isTop && widget.canDelete && decisionStrength > 0
+        ? decisionStrength.abs().clamp(0.0, 1.0)
         : 0.0;
     final deleteOpacity = isTop && widget.canDelete && decisionStrength < 0
         ? decisionStrength.abs().clamp(0.0, 1.0)
@@ -338,8 +348,8 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck>
     final sem = Theme.of(context).extension<AppSemanticColors>()!;
     final borderColor = isTop
         ? (decisionStrength >= 0
-            ? sem.keep.withOpacity(keepOpacity * 0.8)
-            : sem.delete.withOpacity(deleteOpacity * 0.8))
+              ? sem.keep.withOpacity(keepOpacity * 0.8)
+              : sem.delete.withOpacity(deleteOpacity * 0.8))
         : AppColors.transparent;
     final borderWidth = isTop
         ? ((keepOpacity > deleteOpacity ? keepOpacity : deleteOpacity) * 3.5 +
@@ -403,25 +413,25 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck>
             widget.onNoRightsLeft?.call();
             return;
           }
-          
+
           final newOffset = _dragOffset + details.delta;
           final isDraggingUpward = newOffset.dy < _verticalDragThreshold;
-          
-          // Optimize: Sadece değişiklik varsa setState çağır
+
+          // Optimize: Sadece değişiklik varsa cubitSetState çağır
           final newRotation = isDraggingUpward
               ? (newOffset.dx / 20).clamp(
                   -_rotationMaxDeg * 0.5,
                   _rotationMaxDeg * 0.5,
                 )
               : (newOffset.dx / 12).clamp(-_rotationMaxDeg, _rotationMaxDeg);
-          
+
           if (_dragOffset != newOffset || _dragRotation != newRotation) {
-            setState(() {
+            cubitSetState(() {
               _dragOffset = newOffset;
               _dragRotation = newRotation;
             });
           }
-          
+
           // Yukarı sürüklenmiyorsa haptik feedback
           if (!isDraggingUpward) {
             if (newOffset.dx > _swipeThreshold && !_didHapticForKeep) {
@@ -433,7 +443,7 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck>
               _didHapticForDelete = true;
             }
           }
-          
+
           // Global pozisyonu sakla ve albüm hedeflerine ilet
           _lastGlobalPosition = details.globalPosition;
           if (widget.onDragUpdate != null) {
@@ -447,10 +457,10 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck>
             _animateBack();
             return;
           }
-          
+
           final dx = _dragOffset.dx;
           final dy = _dragOffset.dy;
-          
+
           final wasDraggingToAlbum = widget.isDraggingToAlbum?.call() ?? false;
           final isUpwardDrag = dy < _verticalDragThreshold;
           final releasePosition =
@@ -460,13 +470,13 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck>
               ) ??
               Offset.zero;
           final currentAsset = widget.assets[_topIndex];
-          
+
           // Önce albüm hedefi kontrolü
           if (widget.onDragEnd != null) {
             debugPrint(
               '🔄 [PhotoSwipeDeck] onPanEnd: dy=$dy, wasDraggingToAlbum=$wasDraggingToAlbum, isUpwardDrag=$isUpwardDrag, releasePosition=$releasePosition',
             );
-            
+
             // Eğer yukarı sürüklenmişse veya albüme sürüklenmişse, onDragEnd'i çağır
             if (wasDraggingToAlbum || isUpwardDrag) {
               debugPrint(
@@ -479,7 +489,7 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck>
               return;
             }
           }
-          
+
           // Yukarı sürüklenmemişse ve albüme taşınmamışsa normal swipe kontrolü
           if (dx.abs() >= _swipeThreshold && dy >= _verticalDragThreshold) {
             debugPrint(
@@ -492,7 +502,7 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck>
             );
             _animateBack();
           }
-          
+
           _lastGlobalPosition = null;
         },
         onPanCancel: () {
@@ -531,73 +541,73 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck>
                     ignoring: true,
                     child: Stack(
                       children: [
-                    // Delete badge (bottom-left) - sol alt köşede sabit
-                    Positioned(
-                      left: 16,
-                      bottom: 16,
-                      child: AnimatedOpacity(
+                        // Delete badge (bottom-left) - sol alt köşede sabit
+                        Positioned(
+                          left: 16,
+                          bottom: 16,
+                          child: AnimatedOpacity(
                             opacity: deleteOpacity > 0.08
                                 ? deleteOpacity.clamp(0.5, 1.0)
                                 : 0.0,
-                        duration: const Duration(milliseconds: 200),
-                        curve: Curves.easeOut,
-                        child: AnimatedScale(
+                            duration: const Duration(milliseconds: 200),
+                            curve: Curves.easeOut,
+                            child: AnimatedScale(
                               scale: deleteOpacity > 0.08
                                   ? (0.92 + deleteOpacity * 0.08).clamp(
                                       0.92,
                                       1.0,
                                     )
                                   : 0.88,
-                          duration: const Duration(milliseconds: 200),
-                          curve: Curves.easeOutCubic,
-                          child: AnimatedRotation(
-                            turns: deleteOpacity > 0.5 ? 0.0 : 0.025,
-                            duration: const Duration(milliseconds: 200),
-                            curve: Curves.easeOutCubic,
-                            child: _BadgeWithArrow(
-                              color: sem.delete,
-                              icon: Icons.delete,
-                              label: l10n.delete,
-                              arrowDirection: _ArrowDirection.topRight,
-                              isDelete: true,
-                              shouldAnimate: deleteOpacity > 0.3,
+                              duration: const Duration(milliseconds: 200),
+                              curve: Curves.easeOutCubic,
+                              child: AnimatedRotation(
+                                turns: deleteOpacity > 0.5 ? 0.0 : 0.025,
+                                duration: const Duration(milliseconds: 200),
+                                curve: Curves.easeOutCubic,
+                                child: _BadgeWithArrow(
+                                  color: sem.delete,
+                                  icon: Icons.delete,
+                                  label: l10n.delete,
+                                  arrowDirection: _ArrowDirection.topRight,
+                                  isDelete: true,
+                                  shouldAnimate: deleteOpacity > 0.3,
+                                ),
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ),
-                    // Keep/Library badge (bottom-right) - sağ alt köşede sabit
-                    Positioned(
-                      right: 16,
-                      bottom: 16,
-                      child: AnimatedOpacity(
+                        // Keep/Library badge (bottom-right) - sağ alt köşede sabit
+                        Positioned(
+                          right: 16,
+                          bottom: 16,
+                          child: AnimatedOpacity(
                             opacity: keepOpacity > 0.08
                                 ? keepOpacity.clamp(0.5, 1.0)
                                 : 0.0,
-                        duration: const Duration(milliseconds: 200),
-                        curve: Curves.easeOut,
-                        child: AnimatedScale(
+                            duration: const Duration(milliseconds: 200),
+                            curve: Curves.easeOut,
+                            child: AnimatedScale(
                               scale: keepOpacity > 0.08
                                   ? (0.92 + keepOpacity * 0.08).clamp(0.92, 1.0)
                                   : 0.88,
-                          duration: const Duration(milliseconds: 200),
-                          curve: Curves.easeOutCubic,
-                          child: AnimatedRotation(
-                            turns: keepOpacity > 0.5 ? 0.0 : -0.025,
-                            duration: const Duration(milliseconds: 200),
-                            curve: Curves.easeOutCubic,
-                            child: _BadgeWithArrow(
-                              color: sem.keep,
-                              icon: Icons.photo_library_outlined,
-                              label: l10n.keep,
-                              arrowDirection: _ArrowDirection.topLeft,
-                              isKeep: true,
-                              shouldAnimate: keepOpacity > 0.3,
+                              duration: const Duration(milliseconds: 200),
+                              curve: Curves.easeOutCubic,
+                              child: AnimatedRotation(
+                                turns: keepOpacity > 0.5 ? 0.0 : -0.025,
+                                duration: const Duration(milliseconds: 200),
+                                curve: Curves.easeOutCubic,
+                                child: _BadgeWithArrow(
+                                  color: sem.keep,
+                                  icon: Icons.photo_library_outlined,
+                                  label: l10n.keep,
+                                  arrowDirection: _ArrowDirection.topLeft,
+                                  isKeep: true,
+                                  shouldAnimate: keepOpacity > 0.3,
+                                ),
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ),
                       ],
                     ),
                   ),
@@ -733,7 +743,7 @@ class _BadgeWithArrowState extends State<_BadgeWithArrow>
   void initState() {
     super.initState();
     // Keep ve delete animasyonları daha yavaş
-    final duration = widget.isKeep 
+    final duration = widget.isKeep
         ? const Duration(milliseconds: 1000) // Keep için yavaş
         : const Duration(milliseconds: 1500); // Delete için daha yavaş
     _animationController = AnimationController(vsync: this, duration: duration);
@@ -792,7 +802,7 @@ class _BadgeWithArrowState extends State<_BadgeWithArrow>
         color: bg,
         borderRadius: borderRadius,
         border: Border.all(
-          color: widget.isDelete 
+          color: widget.isDelete
               ? AppColors.error.withOpacity(
                   0.8,
                 ) // Silme butonu için daha belirgin kırmızı border
@@ -818,69 +828,69 @@ class _BadgeWithArrowState extends State<_BadgeWithArrow>
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-        widget.isDelete
-            ? SizedBox(
-                width: 22,
-                height: 22,
-                child: ColorFiltered(
-                  colorFilter: const ColorFilter.mode(
-                    AppColors.white,
-                    BlendMode.srcATop,
-                  ),
-                  child: Lottie.asset(
-                    'assets/lottie/trash.json',
-                    width: 22,
-                    height: 22,
-                    fit: BoxFit.contain,
-                    controller: _animationController,
-                    repeat: widget.shouldAnimate,
-                      options: LottieOptions(enableMergePaths: true),
-                  ),
-                ),
-              )
-            : widget.isKeep
-                ? SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: ColorFiltered(
-                      colorFilter: const ColorFilter.mode(
-                        AppColors.white,
-                        BlendMode.srcATop,
-                      ),
-                      child: Lottie.asset(
-                        'assets/lottie/keep_photo.json',
-                        width: 22,
-                        height: 22,
-                        fit: BoxFit.contain,
-                        controller: _animationController,
-                        repeat: widget.shouldAnimate,
-                      options: LottieOptions(enableMergePaths: true),
-                      ),
+          widget.isDelete
+              ? SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: ColorFiltered(
+                    colorFilter: const ColorFilter.mode(
+                      AppColors.white,
+                      BlendMode.srcATop,
                     ),
-                  )
-                : Icon(widget.icon, color: AppColors.white, size: 22),
-        const SizedBox(width: 10),
-        Text(
-          widget.label.toUpperCase(),
-          style: const TextStyle(
-            color: AppColors.white,
-            fontWeight: FontWeight.w900,
-            fontSize: 16,
-            letterSpacing: 1.2,
-            shadows: [
-              Shadow(
-                color: AppColors.black54,
-                blurRadius: 6,
-                offset: Offset(0, 2),
-              ),
-              Shadow(
-                color: AppColors.black38,
-                blurRadius: 10,
-                offset: Offset(0, 1),
-              ),
-            ],
+                    child: Lottie.asset(
+                      'assets/lottie/trash.json',
+                      width: 22,
+                      height: 22,
+                      fit: BoxFit.contain,
+                      controller: _animationController,
+                      repeat: widget.shouldAnimate,
+                      options: LottieOptions(enableMergePaths: true),
+                    ),
+                  ),
+                )
+              : widget.isKeep
+              ? SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: ColorFiltered(
+                    colorFilter: const ColorFilter.mode(
+                      AppColors.white,
+                      BlendMode.srcATop,
+                    ),
+                    child: Lottie.asset(
+                      'assets/lottie/keep_photo.json',
+                      width: 22,
+                      height: 22,
+                      fit: BoxFit.contain,
+                      controller: _animationController,
+                      repeat: widget.shouldAnimate,
+                      options: LottieOptions(enableMergePaths: true),
+                    ),
+                  ),
+                )
+              : Icon(widget.icon, color: AppColors.white, size: 22),
+          const SizedBox(width: 10),
+          Text(
+            widget.label.toUpperCase(),
+            style: const TextStyle(
+              color: AppColors.white,
+              fontWeight: FontWeight.w900,
+              fontSize: 16,
+              letterSpacing: 1.2,
+              shadows: [
+                Shadow(
+                  color: AppColors.black54,
+                  blurRadius: 6,
+                  offset: Offset(0, 2),
+                ),
+                Shadow(
+                  color: AppColors.black38,
+                  blurRadius: 10,
+                  offset: Offset(0, 1),
+                ),
+              ],
+            ),
           ),
-        ),
         ],
       ),
     );
@@ -951,16 +961,16 @@ class _PhotoCardState extends State<_PhotoCard> {
     _thumbFuture = _getThumbnailFuture();
     _thumbFuture
         .then((data) {
-      if (!mounted || data == null) return;
-      if (_currentImageData == data) return;
-      setState(() {
-        _currentImageData = data;
-        _previousImageData ??= data;
-      });
+          if (!mounted || data == null) return;
+          if (_currentImageData == data) return;
+          setState(() {
+            _currentImageData = data;
+            _previousImageData ??= data;
+          });
         })
         .catchError((error) {
-      debugPrint('❌ [PhotoCard] Error loading thumbnail: $error');
-    });
+          debugPrint('❌ [PhotoCard] Error loading thumbnail: $error');
+        });
   }
 
   Future<Uint8List?> _getThumbnailFuture() async {
@@ -1016,39 +1026,190 @@ class _PhotoCardState extends State<_PhotoCard> {
                 return placeholder;
               }
 
-              return AnimatedSwitcher(
-                duration: const Duration(milliseconds: 220),
-                switchInCurve: Curves.easeOutCubic,
-                switchOutCurve: Curves.easeInCubic,
-                child: Image.memory(
-                  imageData,
-                  key: ObjectKey(imageData),
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                  height: double.infinity,
-                  gaplessPlayback: true,
-                  filterQuality: FilterQuality.medium,
-                  cacheWidth: thumbSize.width,
-                  cacheHeight: thumbSize.height,
-                  errorBuilder: (context, error, stackTrace) {
-                    if (_previousImageData != null) {
-                      return Image.memory(
-                        _previousImageData!,
-                        fit: BoxFit.cover,
-                        width: double.infinity,
-                        height: double.infinity,
-                        gaplessPlayback: true,
-                        filterQuality: FilterQuality.medium,
-                      );
-                    }
-                    return placeholder;
-                  },
-                ),
-              );
+                  return AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 220),
+                    switchInCurve: Curves.easeOutCubic,
+                    switchOutCurve: Curves.easeInCubic,
+                    child: Image.memory(
+                      imageData,
+                      key: ObjectKey(imageData),
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      height: double.infinity,
+                      gaplessPlayback: true,
+                      filterQuality: FilterQuality.medium,
+                      cacheWidth: thumbSize.width,
+                      cacheHeight: thumbSize.height,
+                      errorBuilder: (context, error, stackTrace) {
+                        if (_previousImageData != null) {
+                          return Image.memory(
+                            _previousImageData!,
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            height: double.infinity,
+                            gaplessPlayback: true,
+                            filterQuality: FilterQuality.medium,
+                          );
+                        }
+                        return placeholder;
+                      },
+                    ),
+                  );
             },
           ),
         ),
       ),
+    );
+  }
+}
+
+// Fotoğrafın renklerine göre parlama efekti
+class _ColorBasedGlowEffect extends StatefulWidget {
+  const _ColorBasedGlowEffect({required this.imageData});
+
+  final Uint8List imageData;
+
+  @override
+  State<_ColorBasedGlowEffect> createState() => _ColorBasedGlowEffectState();
+}
+
+class _ColorBasedGlowEffectState extends State<_ColorBasedGlowEffect>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  Color? _dominantColor;
+  bool _isAnalyzing = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 3000),
+    )..repeat();
+    _analyzeImageColors();
+  }
+
+  @override
+  void didUpdateWidget(_ColorBasedGlowEffect oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.imageData != widget.imageData) {
+      _isAnalyzing = true;
+      _analyzeImageColors();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _analyzeImageColors() async {
+    try {
+      final image = img.decodeImage(widget.imageData);
+      if (image == null) {
+        setState(() {
+          _isAnalyzing = false;
+        });
+        return;
+      }
+
+      // Fotoğrafın kenarlarından örnekleme yap (parlama efekti için)
+      final sampleSize = math.min(50, math.min(image.width, image.height));
+      final samples = <img.Color>[];
+
+      // Üst kenar
+      for (int x = 0; x < image.width; x += image.width ~/ sampleSize) {
+        if (x < image.width) {
+          samples.add(image.getPixel(x, 0));
+        }
+      }
+      // Alt kenar
+      for (int x = 0; x < image.width; x += image.width ~/ sampleSize) {
+        if (x < image.width) {
+          samples.add(image.getPixel(x, image.height - 1));
+        }
+      }
+      // Sol kenar
+      for (int y = 0; y < image.height; y += image.height ~/ sampleSize) {
+        if (y < image.height) {
+          samples.add(image.getPixel(0, y));
+        }
+      }
+      // Sağ kenar
+      for (int y = 0; y < image.height; y += image.height ~/ sampleSize) {
+        if (y < image.height) {
+          samples.add(image.getPixel(image.width - 1, y));
+        }
+      }
+
+      if (samples.isEmpty) {
+        setState(() {
+          _isAnalyzing = false;
+        });
+        return;
+      }
+
+      // Ortalama renk hesapla
+      int rSum = 0, gSum = 0, bSum = 0;
+      for (final color in samples) {
+        rSum += color.r.toInt();
+        gSum += color.g.toInt();
+        bSum += color.b.toInt();
+      }
+      final avgR = (rSum / samples.length).round();
+      final avgG = (gSum / samples.length).round();
+      final avgB = (bSum / samples.length).round();
+
+      // Parlama için renkleri biraz parlaklaştır
+      final brightR = math.min(255, (avgR * 1.3).round()).toInt();
+      final brightG = math.min(255, (avgG * 1.3).round()).toInt();
+      final brightB = math.min(255, (avgB * 1.3).round()).toInt();
+
+      if (mounted) {
+        setState(() {
+          _dominantColor = Color.fromRGBO(brightR, brightG, brightB, 1.0);
+          _isAnalyzing = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isAnalyzing = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isAnalyzing || _dominantColor == null) {
+      return const SizedBox.shrink();
+    }
+
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        final animationValue = _controller.value;
+        final opacity = 0.15 + (math.sin(animationValue * 2 * math.pi) * 0.1);
+
+        return IgnorePointer(
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: RadialGradient(
+                center: Alignment.center,
+                radius: 1.2,
+                colors: [
+                  _dominantColor!.withOpacity(opacity),
+                  _dominantColor!.withOpacity(opacity * 0.5),
+                  _dominantColor!.withOpacity(0),
+                ],
+                stops: const [0.0, 0.7, 1.0],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

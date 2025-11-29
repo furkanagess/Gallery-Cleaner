@@ -981,7 +981,7 @@
   "@sensitivityDescription": {
     "description": "Sensitivity description"
   },
-  "sensitivityLevelsDescription": "• Low: Detects slightly blurry photos as well (more results)\n• Medium: Detects moderately blurry photos (balanced)\n• High: Only detects very blurry photos (fewer results)\n• High Sensitivity: Maximum precision, detects only very blurry photos",
+  "sensitivityLevelsDescription": "Low: Detects slightly blurry photos as well (more results)\nMedium: Detects moderately blurry photos (balanced)\nHigh: Only detects very blurry photos (fewer results)",
   "@sensitivityLevelsDescription": {
     "description": "Detailed description of sensitivity levels"
   },
@@ -1328,7 +1328,7 @@
   "@duplicateModeHighSpeedLowAccuracy": {
     "description": "High speed low accuracy mode label for duplicate detection"
   },
-  "duplicateModeLevelsDescription": "• Low Speed/High Accuracy: Most accurate results, takes longer\n• Balanced: Speed and accuracy balance\n• High Speed/Low Accuracy: Fast results, less accurate\n• High Speed: Optimized for quick scanning, processes images faster",
+  "duplicateModeLevelsDescription": "Low Speed/High Accuracy: Most accurate results, takes longer\nBalanced: Speed and accuracy balance\nHigh Speed/Low Accuracy: Fast results, less accurate",
   "@duplicateModeLevelsDescription": {
     "description": "Detailed description of duplicate detection mode levels"
   },
@@ -1351,6 +1351,122 @@
   "doNotLeaveScreenDuringScan": "Please do not leave this screen while the scan is in progress.",
   "@doNotLeaveScreenDuringScan": {
     "description": "Warning message shown when user tries to navigate away during scan"
+  },
+  "viewResults": "View Results",
+  "@viewResults": {
+    "description": "Button text to view scan results"
+  },
+  "viewLastResults": "View Last Results",
+  "@viewLastResults": {
+    "description": "Button text to view last scan results"
+  },
+  "albumSelection": "Album Selection",
+  "@albumSelection": {
+    "description": "Album selection bottom sheet title"
+  },
+  "selectAlbumToView": "Select the album you want to view",
+  "@selectAlbumToView": {
+    "description": "Album selection bottom sheet description"
+  },
+  "filterAndSort": "Filter and Sort",
+  "@filterAndSort": {
+    "description": "Filter and sort bottom sheet title"
+  },
+  "filterAndSortDescription": "Date range and sort options",
+  "@filterAndSortDescription": {
+    "description": "Filter and sort bottom sheet description"
+  },
+  "dateRange": "Date Range",
+  "@dateRange": {
+    "description": "Date range section title"
+  },
+  "startDate": "Start",
+  "@startDate": {
+    "description": "Start date label"
+  },
+  "endDate": "End",
+  "@endDate": {
+    "description": "End date label"
+  },
+  "notSelected": "Not Selected",
+  "@notSelected": {
+    "description": "Not selected state text"
+  },
+  "clearDateFilter": "Clear Date Filter",
+  "@clearDateFilter": {
+    "description": "Button to clear date filter"
+  },
+  "sort": "Sort",
+  "@sort": {
+    "description": "Sort section title"
+  },
+  "newest": "Newest",
+  "@newest": {
+    "description": "Newest sort option"
+  },
+  "oldest": "Oldest",
+  "@oldest": {
+    "description": "Oldest sort option"
+  },
+  "apply": "Apply",
+  "@apply": {
+    "description": "Apply button text"
+  },
+  "albumSettings": "Album Settings",
+  "@albumSettings": {
+    "description": "Album settings button label"
+  },
+  "getUnlimitedScans": "Get Unlimited Scans",
+  "@getUnlimitedScans": {
+    "description": "Button text to get unlimited scans"
+  },
+  "noRightsLeft": "No rights left",
+  "@noRightsLeft": {
+    "description": "Message when scan rights are exhausted"
+  },
+  "getUnlimitedDeletions": "Get Unlimited Deletions",
+  "@getUnlimitedDeletions": {
+    "description": "Button text to get unlimited deletions"
+  },
+  "scanTip1": "While we scan your photos, you can scroll through reels.",
+  "@scanTip1": {
+    "description": "Tip shown during scan"
+  },
+  "scanTip2": "While we scan, you can read half a page of a book.",
+  "@scanTip2": {
+    "description": "Tip shown during scan"
+  },
+  "scanTip3": "While we scan, you can reply to your partner's message.",
+  "@scanTip3": {
+    "description": "Tip shown during scan"
+  },
+  "scanTip4": "While we scan, you can check your notifications.",
+  "@scanTip4": {
+    "description": "Tip shown during scan"
+  },
+  "scanTip5": "While we scan, you can take a short break.",
+  "@scanTip5": {
+    "description": "Tip shown during scan"
+  },
+  "scanTip6": "You can minimize the app to background, but don't close it completely.",
+  "@scanTip6": {
+    "description": "Tip shown during scan"
+  },
+  "scanTip7": "While we scan, you can browse other apps without closing this one.",
+  "@scanTip7": {
+    "description": "Tip shown during scan"
+  },
+  "scanTip8": "While we scan, you can make a quick phone call.",
+  "@scanTip8": {
+    "description": "Tip shown during scan"
+  },
+  "scanTip9": "While we scan, you can check your social media.",
+  "@scanTip9": {
+    "description": "Tip shown during scan"
+  },
+  "scanTip10": "While we scan, you can grab a cup of coffee.",
+  "@scanTip10": {
+    "description": "Tip shown during scan"
   }
 }
 

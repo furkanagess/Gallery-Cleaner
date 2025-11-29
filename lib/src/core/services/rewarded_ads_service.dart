@@ -40,17 +40,24 @@ class RewardedAdsService {
   final Map<AdUnitType, bool> _rewardEarned = {};
   bool _isDisposed = false;
   final Set<AdUnitType> _forceStandardRewarded = {};
+  final Map<AdUnitType, Timer?> _retryTimers = {}; // Retry timer'ları sakla
 
   /// Preload all ad types when app starts
   static Future<void> preloadAllAds() async {
     try {
       debugPrint('📱 [RewardedAdsService] Preloading all ad types...');
       final service = instance;
+      if (service._isDisposed) return;
       await service.loadRewardedAd(AdUnitType.deleteLimit);
+      if (service._isDisposed) return;
       await Future.delayed(const Duration(milliseconds: 500));
+      if (service._isDisposed) return;
       await service.loadRewardedAd(AdUnitType.blurScanLimit);
+      if (service._isDisposed) return;
       await Future.delayed(const Duration(milliseconds: 500));
+      if (service._isDisposed) return;
       await service.loadRewardedAd(AdUnitType.duplicateScanLimit);
+      if (service._isDisposed) return;
       debugPrint('✅ [RewardedAdsService] All ad types preload initiated');
     } catch (e) {
       debugPrint('❌ [RewardedAdsService] Error preloading ads: $e');
@@ -180,107 +187,150 @@ class RewardedAdsService {
     AdUnitType type,
     String adUnitId,
   ) async {
-    await RewardedInterstitialAd.load(
-      adUnitId: adUnitId,
-      request: const AdRequest(),
-      rewardedInterstitialAdLoadCallback: RewardedInterstitialAdLoadCallback(
-        onAdLoaded: (RewardedInterstitialAd ad) {
-          if (_isDisposed) {
-            ad.dispose();
-            return;
-          }
-          debugPrint(
-            '✅ [RewardedAdsService] Rewarded interstitial ad loaded successfully for type: $type',
-          );
-          final wrapper = _RewardedAdWrapper.interstitial(ad);
-          _ads[type]?.dispose();
-          _ads[type] = wrapper;
-          _isLoading[type] = false;
-          _rewardEarned[type] = false;
-        },
-        onAdFailedToLoad: (LoadAdError error) {
-          if (_isDisposed) return;
-          debugPrint(
-            '❌ [RewardedAdsService] Failed to load rewarded interstitial ad for type: $type',
-          );
-          debugPrint(
-            '❌ [RewardedAdsService] Error code: ${error.code}, message: ${error.message}',
-          );
-          debugPrint('❌ [RewardedAdsService] Domain: ${error.domain}');
-          if (error.responseInfo != null) {
+    if (_isDisposed) return;
+    
+    try {
+      await RewardedInterstitialAd.load(
+        adUnitId: adUnitId,
+        request: const AdRequest(),
+        rewardedInterstitialAdLoadCallback: RewardedInterstitialAdLoadCallback(
+          onAdLoaded: (RewardedInterstitialAd ad) {
+            if (_isDisposed) {
+              try {
+                ad.dispose();
+              } catch (e) {
+                // Ad zaten dispose edilmiş olabilir, sessizce yok say
+              }
+              return;
+            }
             debugPrint(
-              '❌ [RewardedAdsService] Response ID: ${error.responseInfo?.responseId}',
+              '✅ [RewardedAdsService] Rewarded interstitial ad loaded successfully for type: $type',
+            );
+            final wrapper = _RewardedAdWrapper.interstitial(ad);
+            _ads[type]?.dispose();
+            _ads[type] = wrapper;
+            _isLoading[type] = false;
+            _rewardEarned[type] = false;
+          },
+          onAdFailedToLoad: (LoadAdError error) {
+            if (_isDisposed) return;
+            debugPrint(
+              '❌ [RewardedAdsService] Failed to load rewarded interstitial ad for type: $type',
             );
             debugPrint(
-              '❌ [RewardedAdsService] Mediation adapter: ${error.responseInfo?.mediationAdapterClassName}',
+              '❌ [RewardedAdsService] Error code: ${error.code}, message: ${error.message}',
             );
-          }
-          _isLoading[type] = false;
-          _ads[type]?.dispose();
-          _ads[type] = null;
+            debugPrint('❌ [RewardedAdsService] Domain: ${error.domain}');
+            if (error.responseInfo != null) {
+              debugPrint(
+                '❌ [RewardedAdsService] Response ID: ${error.responseInfo?.responseId}',
+              );
+              debugPrint(
+                '❌ [RewardedAdsService] Mediation adapter: ${error.responseInfo?.mediationAdapterClassName}',
+              );
+            }
+            if (_isDisposed) return;
+            _isLoading[type] = false;
+            _ads[type]?.dispose();
+            _ads[type] = null;
 
-          if (Platform.isIOS) {
-            debugPrint(
-              'ℹ️ [RewardedAdsService] Falling back to standard rewarded ad for type: $type (iOS)',
-            );
-            _forceStandardRewarded.add(type);
-            _loadStandardRewardedAd(type, adUnitId);
-          } else {
-            _scheduleRetry(type);
-          }
-        },
-      ),
-    );
+            if (_isDisposed) return;
+            if (Platform.isIOS) {
+              debugPrint(
+                'ℹ️ [RewardedAdsService] Falling back to standard rewarded ad for type: $type (iOS)',
+              );
+              _forceStandardRewarded.add(type);
+              _loadStandardRewardedAd(type, adUnitId);
+            } else {
+              _scheduleRetry(type);
+            }
+          },
+        ),
+      );
+    } catch (e) {
+      if (_isDisposed) return;
+      debugPrint(
+        '❌ [RewardedAdsService] Exception in _loadRewardedInterstitial for type: $type, error: $e',
+      );
+      _isLoading[type] = false;
+      _ads[type]?.dispose();
+      _ads[type] = null;
+    }
   }
 
   Future<void> _loadStandardRewardedAd(AdUnitType type, String adUnitId) async {
+    if (_isDisposed) return;
     _isLoading[type] = true;
-    await RewardedAd.load(
-      adUnitId: adUnitId,
-      request: const AdRequest(),
-      rewardedAdLoadCallback: RewardedAdLoadCallback(
-        onAdLoaded: (RewardedAd ad) {
-          if (_isDisposed) {
-            ad.dispose();
-            return;
-          }
-          debugPrint(
-            '✅ [RewardedAdsService] Standard rewarded ad loaded successfully for type: $type',
-          );
-          final wrapper = _RewardedAdWrapper.rewarded(ad);
-          _ads[type]?.dispose();
-          _ads[type] = wrapper;
-          _isLoading[type] = false;
-          _rewardEarned[type] = false;
-        },
-        onAdFailedToLoad: (LoadAdError error) {
-          if (_isDisposed) return;
-          debugPrint(
-            '❌ [RewardedAdsService] Failed to load standard rewarded ad for type: $type',
-          );
-          debugPrint(
-            '❌ [RewardedAdsService] Error code: ${error.code}, message: ${error.message}',
-          );
-          debugPrint('❌ [RewardedAdsService] Domain: ${error.domain}');
-          _isLoading[type] = false;
-          _ads[type]?.dispose();
-          _ads[type] = null;
-          _scheduleRetry(type);
-        },
-      ),
-    );
+    
+    try {
+      await RewardedAd.load(
+        adUnitId: adUnitId,
+        request: const AdRequest(),
+        rewardedAdLoadCallback: RewardedAdLoadCallback(
+          onAdLoaded: (RewardedAd ad) {
+            if (_isDisposed) {
+              try {
+                ad.dispose();
+              } catch (e) {
+                // Ad zaten dispose edilmiş olabilir, sessizce yok say
+              }
+              return;
+            }
+            debugPrint(
+              '✅ [RewardedAdsService] Standard rewarded ad loaded successfully for type: $type',
+            );
+            final wrapper = _RewardedAdWrapper.rewarded(ad);
+            _ads[type]?.dispose();
+            _ads[type] = wrapper;
+            _isLoading[type] = false;
+            _rewardEarned[type] = false;
+          },
+          onAdFailedToLoad: (LoadAdError error) {
+            if (_isDisposed) return;
+            debugPrint(
+              '❌ [RewardedAdsService] Failed to load standard rewarded ad for type: $type',
+            );
+            debugPrint(
+              '❌ [RewardedAdsService] Error code: ${error.code}, message: ${error.message}',
+            );
+            debugPrint('❌ [RewardedAdsService] Domain: ${error.domain}');
+            if (_isDisposed) return;
+            _isLoading[type] = false;
+            _ads[type]?.dispose();
+            _ads[type] = null;
+            _scheduleRetry(type);
+          },
+        ),
+      );
+    } catch (e) {
+      if (_isDisposed) return;
+      debugPrint(
+        '❌ [RewardedAdsService] Exception in _loadStandardRewardedAd for type: $type, error: $e',
+      );
+      _isLoading[type] = false;
+      _ads[type]?.dispose();
+      _ads[type] = null;
+    }
   }
 
   void _scheduleRetry(AdUnitType type) {
     if (_isDisposed) return;
-    Future.delayed(const Duration(seconds: 10), () {
-      if (_isDisposed) return;
+    
+    // Önceki timer'ı iptal et
+    _retryTimers[type]?.cancel();
+    
+    _retryTimers[type] = Timer(const Duration(seconds: 10), () {
+      if (_isDisposed) {
+        _retryTimers[type] = null;
+        return;
+      }
       if (_ads[type] == null && _isLoading[type] != true) {
         debugPrint(
           '🔄 [RewardedAdsService] Retrying to load ad for type: $type',
         );
         loadRewardedAd(type);
       }
+      _retryTimers[type] = null;
     });
   }
 
@@ -412,8 +462,10 @@ class RewardedAdsService {
       }
       _showCompleters[type] = null;
 
-      // Load next ad for this type
-      loadRewardedAd(type);
+      // Load next ad for this type (sadece dispose edilmediyse)
+      if (!_isDisposed) {
+        loadRewardedAd(type);
+      }
     } catch (e) {
       debugPrint(
         '❌ [RewardedAdsService] Error handling ad dismissal for type: $type, error: $e',
@@ -441,8 +493,10 @@ class RewardedAdsService {
 
       onError?.call('Failed to show ad: ${error.message}');
 
-      // Try to load next ad for this type
-      loadRewardedAd(type);
+      // Try to load next ad for this type (sadece dispose edilmediyse)
+      if (!_isDisposed) {
+        loadRewardedAd(type);
+      }
     } catch (e) {
       debugPrint(
         '❌ [RewardedAdsService] Error handling ad failure for type: $type, error: $e',
@@ -467,6 +521,12 @@ class RewardedAdsService {
     _isDisposed = true;
 
     try {
+      // Tüm retry timer'ları iptal et
+      for (var timer in _retryTimers.values) {
+        timer?.cancel();
+      }
+      _retryTimers.clear();
+
       // Dispose all ads
       for (var entry in _ads.entries) {
         entry.value?.dispose();

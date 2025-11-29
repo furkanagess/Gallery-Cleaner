@@ -63,7 +63,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get selectAlbum => 'Select Album';
 
   @override
-  String get selectAlbumToView => 'Select Album to View';
+  String get selectAlbumToView => 'Select the album you want to view';
 
   @override
   String get allPhotos => 'All Photos';
@@ -754,7 +754,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sensitivityLevelsDescription =>
-      '• Low: Detects slightly blurry photos as well (more results)\n• Medium: Detects moderately blurry photos (balanced)\n• High: Only detects very blurry photos (fewer results)\n• High Sensitivity: Maximum precision, detects only very blurry photos';
+      'Low: Detects slightly blurry photos as well (more results)\nMedium: Detects moderately blurry photos (balanced)\nHigh: Only detects very blurry photos (fewer results)';
 
   @override
   String get currentSensitivity => 'Current Sensitivity';
@@ -1002,7 +1002,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get duplicateModeLevelsDescription =>
-      '• Low Speed/High Accuracy: Most accurate results, takes longer\n• Balanced: Speed and accuracy balance\n• High Speed/Low Accuracy: Fast results, less accurate\n• High Speed: Optimized for quick scanning, processes images faster';
+      'Low Speed/High Accuracy: Most accurate results, takes longer\nBalanced: Speed and accuracy balance\nHigh Speed/Low Accuracy: Fast results, less accurate';
 
   @override
   String get allPhotosReviewedTitle => 'All Photos Reviewed!';
@@ -1022,4 +1022,89 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get doNotLeaveScreenDuringScan =>
       'Please do not leave this screen while the scan is in progress.';
+
+  @override
+  String get viewResults => 'View Results';
+
+  @override
+  String get viewLastResults => 'View Last Results';
+
+  @override
+  String get filterAndSort => 'Filter and Sort';
+
+  @override
+  String get filterAndSortDescription => 'Date range and sort options';
+
+  @override
+  String get dateRange => 'Date Range';
+
+  @override
+  String get startDate => 'Start';
+
+  @override
+  String get endDate => 'End';
+
+  @override
+  String get notSelected => 'Not Selected';
+
+  @override
+  String get clearDateFilter => 'Clear Date Filter';
+
+  @override
+  String get sort => 'Sort';
+
+  @override
+  String get newest => 'Newest';
+
+  @override
+  String get oldest => 'Oldest';
+
+  @override
+  String get apply => 'Apply';
+
+  @override
+  String get albumSettings => 'Album Settings';
+
+  @override
+  String get getUnlimitedScans => 'Get Unlimited Scans';
+
+  @override
+  String get noRightsLeft => 'No rights left';
+
+  @override
+  String get getUnlimitedDeletions => 'Get Unlimited Deletions';
+
+  @override
+  String get scanTip1 =>
+      'While we scan your photos, you can scroll through reels.';
+
+  @override
+  String get scanTip2 => 'While we scan, you can read half a page of a book.';
+
+  @override
+  String get scanTip3 =>
+      'While we scan, you can reply to your partner\'s message.';
+
+  @override
+  String get scanTip4 => 'While we scan, you can check your notifications.';
+
+  @override
+  String get scanTip5 => 'While we scan, you can take a short break.';
+
+  @override
+  String get scanTip6 =>
+      'You can minimize the app to background, but don\'t close it completely.';
+
+  @override
+  String get scanTip7 =>
+      'While we scan, you can browse other apps without closing this one.';
+
+  @override
+  String get scanTip8 => 'While we scan, you can make a quick phone call.';
+
+  @override
+  String get scanTip9 => 'While we scan, you can check your social media.';
+
+  @override
+  String get scanTip10 => 'While we scan, you can grab a cup of coffee.';
 }

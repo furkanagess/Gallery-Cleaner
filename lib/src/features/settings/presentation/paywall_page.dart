@@ -1,22 +1,23 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../core/services/revenuecat_service.dart';
 import '../../gallery/application/gallery_providers.dart';
 import 'premium_success_dialog.dart';
 import '../../../app/theme/app_colors.dart';
+import 'package:gallery_cleaner/src/core/utils/view_refresh_cubit.dart';
 
 /// Full-screen paywall page for in-app purchases
-class PaywallPage extends ConsumerStatefulWidget {
+class PaywallPage extends StatefulWidget {
   const PaywallPage({super.key});
 
   @override
-  ConsumerState<PaywallPage> createState() => _PaywallPageState();
+  State<PaywallPage> createState() => _PaywallPageState();
 }
 
-class _PaywallPageState extends ConsumerState<PaywallPage>
-    with TickerProviderStateMixin {
+class _PaywallPageState extends State<PaywallPage>
+    with TickerProviderStateMixin, CubitStateMixin<PaywallPage> {
   bool _isLoading = false;
   bool _isRestoring = false;
   String? _errorMessage;
@@ -66,7 +67,7 @@ class _PaywallPageState extends ConsumerState<PaywallPage>
       if (product == null) {
         debugPrint('⚠️ [Paywall] Lifetime product not available');
         if (mounted) {
-          setState(() {
+          cubitSetState(() {
             _productPrice = 'N/A';
             _originalPrice = null;
           });
@@ -81,7 +82,7 @@ class _PaywallPageState extends ConsumerState<PaywallPage>
         final increasedPrice = priceValue * 1.25;
         final currencySymbol = _extractCurrencySymbol(priceString);
         if (mounted) {
-          setState(() {
+          cubitSetState(() {
             _originalPrice = '$currencySymbol${increasedPrice.toStringAsFixed(2)}';
             _productPrice = priceString;
           });
@@ -89,7 +90,7 @@ class _PaywallPageState extends ConsumerState<PaywallPage>
       } else {
         // Fallback: show only current price without strikethrough section
         if (mounted) {
-          setState(() {
+          cubitSetState(() {
             _originalPrice = null;
             _productPrice = priceString;
           });
@@ -98,7 +99,7 @@ class _PaywallPageState extends ConsumerState<PaywallPage>
     } catch (e) {
       debugPrint('❌ [Paywall] Error loading product price: $e');
       if (mounted) {
-        setState(() {
+        cubitSetState(() {
           _productPrice = 'N/A';
           _originalPrice = null;
         });
@@ -124,7 +125,7 @@ class _PaywallPageState extends ConsumerState<PaywallPage>
     if (!mounted) return;
     final l10n = AppLocalizations.of(context)!;
 
-    setState(() {
+    cubitSetState(() {
       _isLoading = true;
       _errorMessage = null;
     });
@@ -148,7 +149,7 @@ class _PaywallPageState extends ConsumerState<PaywallPage>
         if (premiumNow) {
           await _handlePremiumUnlocked();
         } else {
-          setState(() {
+          cubitSetState(() {
             _errorMessage = l10n.failedToInitiatePurchase;
             _isLoading = false;
           });
@@ -156,7 +157,7 @@ class _PaywallPageState extends ConsumerState<PaywallPage>
       }
     } catch (e) {
       if (!mounted) return;
-      setState(() {
+      cubitSetState(() {
         _errorMessage = '${l10n.purchaseError}: $e';
         _isLoading = false;
       });
@@ -169,7 +170,7 @@ class _PaywallPageState extends ConsumerState<PaywallPage>
     if (!mounted) return;
     final l10n = AppLocalizations.of(context)!;
 
-    setState(() {
+    cubitSetState(() {
       _isRestoring = true;
       _errorMessage = null;
       _successMessage = null;
@@ -188,7 +189,7 @@ class _PaywallPageState extends ConsumerState<PaywallPage>
         if (premiumNow) {
           await _handlePremiumUnlocked(isFromRestore: true);
         } else {
-          setState(() {
+          cubitSetState(() {
             _errorMessage = contextL10n.noPreviousPurchases;
             _isRestoring = false;
           });
@@ -196,7 +197,7 @@ class _PaywallPageState extends ConsumerState<PaywallPage>
       }
     } catch (e) {
       if (!mounted) return;
-      setState(() {
+      cubitSetState(() {
         _errorMessage = '${l10n.restoreError}: $e';
         _isRestoring = false;
       });
@@ -205,7 +206,7 @@ class _PaywallPageState extends ConsumerState<PaywallPage>
 
   Future<void> _handlePremiumUnlocked({bool isFromRestore = false}) async {
     if (!mounted) return;
-    setState(() {
+    cubitSetState(() {
       _isLoading = false;
       if (isFromRestore) {
         _isRestoring = false;
@@ -214,9 +215,9 @@ class _PaywallPageState extends ConsumerState<PaywallPage>
       _successMessage = null;
     });
 
-    ref.invalidate(isPremiumProvider);
-    ref.invalidate(scanLimitProvider);
-    await ref.read(deleteLimitProvider.notifier).refresh();
+    context.read<PremiumCubit>().refresh();
+    context.read<GeneralScanLimitCubit>().refresh();
+    await context.read<DeleteLimitCubit>().refresh();
 
     if (!mounted) return;
     final navigator = Navigator.of(context, rootNavigator: true);
@@ -244,11 +245,11 @@ class _PaywallPageState extends ConsumerState<PaywallPage>
     final pricePrimaryTextColor = AppColors.textPrimary(theme.brightness);
     final priceSecondaryTextColor =
         AppColors.textSecondary(theme.brightness);
-    final isPremiumAsync = ref.watch(isPremiumProvider);
+    final isPremiumAsync = context.watch<PremiumCubit>().state;
     final isPremium =
-        isPremiumAsync.asData?.value ?? false;
+        isPremiumAsync.valueOrNull ?? false;
 
-    return Scaffold(
+    return buildWithCubit(() => Scaffold(
       backgroundColor: theme.colorScheme.background,
       body: SafeArea(
         child: Column(
@@ -817,7 +818,7 @@ class _PaywallPageState extends ConsumerState<PaywallPage>
           ],
         ),
       ),
-    );
+    ));
   }
 }
 

@@ -1,29 +1,25 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/services/preferences_service.dart';
 
 enum AppThemeMode { light, dark, system }
 
-final themeModeProvider = StateNotifierProvider<ThemeController, AppThemeMode>((ref) {
-  return ThemeController();
-});
-
-class ThemeController extends StateNotifier<AppThemeMode> {
+class ThemeCubit extends Cubit<AppThemeMode> {
   final _prefsService = PreferencesService();
 
-  ThemeController() : super(AppThemeMode.system) {
+  ThemeCubit() : super(AppThemeMode.system) {
     _loadThemeMode();
   }
 
   Future<void> _loadThemeMode() async {
     final saved = await _prefsService.getThemeMode();
     if (saved != null) {
-      state = saved;
+      emit(saved);
     }
   }
 
   Future<void> setThemeMode(AppThemeMode mode) async {
-    state = mode;
+    emit(mode);
     await _prefsService.saveThemeMode(mode);
   }
 
@@ -38,4 +34,3 @@ class ThemeController extends StateNotifier<AppThemeMode> {
     }
   }
 }
-

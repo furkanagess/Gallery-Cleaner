@@ -84,7 +84,11 @@ class InterstitialAdsService {
         adLoadCallback: InterstitialAdLoadCallback(
           onAdLoaded: (InterstitialAd ad) {
             if (_isDisposed) {
-              ad.dispose();
+              try {
+                ad.dispose();
+              } catch (e) {
+                // Ad zaten dispose edilmiş olabilir, sessizce yok say
+              }
               return;
             }
             debugPrint('✅ [InterstitialAdsService] Interstitial ad loaded successfully');
@@ -101,6 +105,7 @@ class InterstitialAdsService {
             if (error.responseInfo != null) {
               debugPrint('❌ [InterstitialAdsService] Response ID: ${error.responseInfo?.responseId}');
             }
+            if (_isDisposed) return;
             _isLoading = false;
             _ad = null;
           },
@@ -224,8 +229,10 @@ class InterstitialAdsService {
       debugPrint('❌ [InterstitialAdsService] Ad sayacı güncellenirken hata: $e');
     }
     
-    // Preload next ad
-    loadAd();
+    // Preload next ad (sadece dispose edilmediyse)
+    if (!_isDisposed) {
+      loadAd();
+    }
   }
   
   void _handleAdFailed(InterstitialAd ad, AdError error) {

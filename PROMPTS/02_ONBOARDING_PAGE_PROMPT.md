@@ -41,6 +41,7 @@
 - **Sayfalar**: 3 adet slide
 
 #### Slide 1: Swipe Özelliği
+
 - **İllüstrasyon**:
   - Container: 200x300px, `primaryContainer` rengi
   - Border radius: `20px`
@@ -52,6 +53,7 @@
 - **Açıklama**: Swipe özelliğinin açıklaması (lokalize)
 
 #### Slide 2: Blur Detection
+
 - **İllüstrasyon**:
   - Container: 220x220px, `errorContainer` %30 opaklık
   - Border radius: `20px`
@@ -64,6 +66,7 @@
 - **Açıklama**: Blur detection özelliğinin açıklaması (lokalize)
 
 #### Slide 3: Duplicate Detection
+
 - **İllüstrasyon**:
   - Container: 220x220px, `tertiaryContainer` %30 opaklık
   - Border radius: `20px`
@@ -110,16 +113,19 @@
 ## Animasyonlar
 
 ### 1. Sayfa Geçişi
+
 - **Süre**: 300ms
 - **Eğri**: `easeInOut`
 - **Yön**: Yatay kaydırma
 
 ### 2. Indicator Animasyonu
+
 - **Süre**: 300ms
 - **Eğri**: `easeInOut`
 - **Efekt**: Genişlik değişimi (8px ↔ 24px)
 
 ### 3. Buton Animasyonu
+
 - **Hover/Press**: Hafif scale efekti (1.02)
 - **Ripple**: Material ripple efekti
 
@@ -128,16 +134,19 @@
 ## Durumlar
 
 ### 1. İlk Sayfa
+
 - Skip butonu görünür
 - Continue butonu aktif
 - İlk indicator aktif
 
 ### 2. Orta Sayfalar
+
 - Skip butonu görünür
 - Continue butonu aktif
 - İlgili indicator aktif
 
 ### 3. Son Sayfa
+
 - Skip butonu gizli
 - Start butonu aktif (farklı gradient)
 - Son indicator aktif
@@ -147,12 +156,14 @@
 ## Renk Sistemi
 
 ### Light Mode
+
 - **Arka Plan**: Açık `background`
 - **Kartlar**: `surface` veya `primaryContainer`
 - **Metin**: Koyu `onSurface`
 - **Vurgu**: `primary` ve `secondary`
 
 ### Dark Mode
+
 - **Arka Plan**: Koyu `background`
 - **Kartlar**: Koyu `surface` veya `primaryContainer`
 - **Metin**: Açık `onSurface`
@@ -181,6 +192,7 @@
 ## Teknik Detaylar
 
 ### Widget Yapısı
+
 ```
 Scaffold
 └── SafeArea
@@ -192,6 +204,7 @@ Scaffold
 ```
 
 ### Önemli Notlar
+
 - `PageController` kullanılır
 - `_currentPage` state ile takip edilir
 - Son sayfada "Start" butonuna tıklanınca onboarding tamamlanır
@@ -203,18 +216,21 @@ Scaffold
 ## Örnek Görsel Açıklama
 
 **Slide 1 (Swipe):**
+
 - Ortada büyük bir fotoğraf kartı
 - Solunda kırmızı X işareti (delete)
 - Sağında yeşil check işareti (keep)
 - Altında başlık ve açıklama
 
 **Slide 2 (Blur):**
+
 - Ortada bulanık bir fotoğraf illüstrasyonu
 - Üzerinde blur ikonu
 - Sağ üstte uyarı badge'i
 - Altında başlık ve açıklama
 
 **Slide 3 (Duplicate):**
+
 - Ortada üst üste binen 2 fotoğraf
 - Sağda link ikonu
 - Alt sağda "2x" badge'i

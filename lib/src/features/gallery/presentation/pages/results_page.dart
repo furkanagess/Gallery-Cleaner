@@ -1,5 +1,6 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../../l10n/app_localizations.dart';
@@ -9,17 +10,17 @@ import '../../application/duplicate_detection_provider.dart';
 import '../../../../core/models/blur_photo.dart';
 import 'results_page_helpers.dart';
 
-class ResultsPage extends ConsumerWidget {
+class ResultsPage extends StatelessWidget {
   final String resultType;
 
   const ResultsPage({super.key, required this.resultType});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
-    final blurState = ref.watch(blurDetectionProvider);
-    final duplicateState = ref.watch(duplicateDetectionProvider);
+    final blurState = context.watch<BlurDetectionCubit>().state;
+    final duplicateState = context.watch<DuplicateDetectionCubit>().state;
 
     // resultType'a göre hangi sonuçları göstereceğimizi belirle
     final isBlur = resultType == 'blur';
@@ -30,7 +31,16 @@ class ResultsPage extends ConsumerWidget {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
-          onPressed: () => context.pop(),
+          onPressed: () {
+            // Scan state'ini temizle
+            if (isBlur) {
+              context.read<BlurDetectionCubit>().clear();
+            } else {
+              context.read<DuplicateDetectionCubit>().clear();
+            }
+            // Normal geri dönüş
+            context.pop();
+          },
         ),
         title: Text(
           isBlur ? l10n.blurTab : l10n.duplicateTab,
@@ -53,13 +63,13 @@ class ResultsPage extends ConsumerWidget {
   }
 }
 
-class _BlurResultsTab extends ConsumerWidget {
+class _BlurResultsTab extends StatelessWidget {
   final BlurDetectionState state;
 
   const _BlurResultsTab({required this.state});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final allPhotos = <BlurPhoto>[];
@@ -72,93 +82,92 @@ class _BlurResultsTab extends ConsumerWidget {
       return _buildNoResultsView(context, theme, l10n, true);
     }
 
-    return Column(
+    return Stack(
       children: [
-        // Compact Stats Cards
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-          child: Row(
-            children: [
-              Expanded(
-                child: _buildCompactStatCard(
-                  theme,
-                  Icons.photo_library_rounded,
-                  '${allPhotos.length}',
-                  l10n.photo,
-                  AppColors.primary,
+        // Main content with padding for floating button - scrollable
+        CustomScrollView(
+          slivers: [
+            // Compact Stats Cards
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _buildCompactStatCard(
+                        theme,
+                        Icons.photo_library_rounded,
+                        '${allPhotos.length}',
+                        l10n.photo,
+                        AppColors.primary,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _buildCompactStatCard(
+                        theme,
+                        Icons.storage_rounded,
+                        '${state.totalSpaceToSaveMB.toStringAsFixed(1)} MB',
+                        l10n.spaceToSave,
+                        AppColors.accent,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _buildCompactStatCard(
+            ),
+            // Photos Grid with bottom padding for floating button
+            SliverPadding(
+              padding: const EdgeInsets.only(bottom: 100),
+              sliver: SliverToBoxAdapter(
+                child: buildBlurGridView(
+                  context,
+                  allPhotos,
                   theme,
-                  Icons.storage_rounded,
-                  '${state.totalSpaceToSaveMB.toStringAsFixed(1)} MB',
-                  l10n.spaceToSave,
-                  AppColors.accent,
+                  l10n,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
-        // Photos Grid
-        Expanded(
-          child: buildBlurGridView(context, allPhotos, theme, l10n, ref),
-        ),
-        // Delete Button
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.background,
-          ),
+        // Floating Delete Button
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: 0,
           child: SafeArea(
-            child: Consumer(
-              builder: (context, ref, _) {
+            child: Builder(
+              builder: (context) {
                 final hasPhotosToDelete = allPhotos.isNotEmpty;
-                final blurScanLimitAsync = ref.watch(blurScanLimitProvider);
-                final isPremiumAsync = ref.watch(isPremiumProvider);
-
-                return blurScanLimitAsync.when(
-                  loading: () => hasPhotosToDelete
-                      ? _buildDeleteButton(context, theme, l10n, allPhotos, ref)
-                      : const SizedBox.shrink(),
-                  error: (_, __) => hasPhotosToDelete
-                      ? _buildDeleteButton(context, theme, l10n, allPhotos, ref)
-                      : const SizedBox.shrink(),
-                  data: (scanLimit) {
-                    return isPremiumAsync.when(
-                      loading: () => hasPhotosToDelete
-                          ? _buildDeleteButton(
-                              context,
-                              theme,
-                              l10n,
-                              allPhotos,
-                              ref,
-                            )
-                          : const SizedBox.shrink(),
-                      error: (_, __) => hasPhotosToDelete
-                          ? _buildDeleteButton(
-                              context,
-                              theme,
-                              l10n,
-                              allPhotos,
-                              ref,
-                            )
-                          : const SizedBox.shrink(),
-                      data: (isPremium) {
-                        if (!hasPhotosToDelete) {
-                          return const SizedBox.shrink();
-                        }
-                        return _buildDeleteButton(
-                          context,
-                          theme,
-                          l10n,
-                          allPhotos,
-                          ref,
-                        );
-                      },
-                    );
-                  },
+                if (!hasPhotosToDelete) {
+                  return const SizedBox.shrink();
+                }
+                return ClipRRect(
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                    child: Container(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            theme.colorScheme.background.withOpacity(0.7),
+                            theme.colorScheme.background.withOpacity(0.95),
+                            theme.colorScheme.background,
+                          ],
+                        ),
+                      ),
+                      child: _buildDeleteButton(
+                        context,
+                        theme,
+                        l10n,
+                        allPhotos,
+                      ),
+                    ),
+                  ),
                 );
               },
             ),
@@ -261,12 +270,29 @@ class _BlurResultsTab extends ConsumerWidget {
     ThemeData theme,
     AppLocalizations l10n,
     List<BlurPhoto> allPhotos,
-    WidgetRef ref,
   ) {
-    return SizedBox(
-      width: double.infinity,
-      child: FilledButton.icon(
-        onPressed: () async {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.error.withOpacity(0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+            spreadRadius: 0,
+          ),
+          BoxShadow(
+            color: AppColors.black.withOpacity(0.15),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+            spreadRadius: 0,
+          ),
+        ],
+      ),
+      child: SizedBox(
+        width: double.infinity,
+        child: FilledButton.icon(
+          onPressed: () async {
           final confirmed = await showDialog<bool>(
             context: context,
             builder: (context) => AlertDialog(
@@ -296,16 +322,18 @@ class _BlurResultsTab extends ConsumerWidget {
 
           if (confirmed != true || !context.mounted) return;
 
-          final deletedCount = await ref
-              .read(blurDetectionProvider.notifier)
-              .deleteAllBlurryPhotos();
+          // BLoC kullanarak blur fotoğraflarını sil
+          final blurCubit = context.read<BlurDetectionCubit>();
+          final deletedCount = await blurCubit.deleteAllBlurryPhotos();
 
           if (!context.mounted) return;
 
           // Root navigator context'ini kaydet - widget rebuild edilirse context kaybolabilir
           final rootNavigatorContext = Navigator.of(context, rootNavigator: true).context;
           
-          await ref.read(deleteLimitProvider.notifier).decrease(deletedCount);
+          // Delete limit'i azalt
+          final deleteLimitCubit = context.read<DeleteLimitCubit>();
+          await deleteLimitCubit.decrease(deletedCount);
 
           // Cleanup complete dialogunu göster
           debugPrint(
@@ -345,14 +373,18 @@ class _BlurResultsTab extends ConsumerWidget {
             );
           }
         },
-        icon: const Icon(Icons.delete_outline),
-        label: Text(l10n.deleteAllBlurryPhotos),
-        style: FilledButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          minimumSize: const Size(double.infinity, 56),
-          backgroundColor: AppColors.error.withOpacity(0.85),
-          foregroundColor: theme.colorScheme.onError,
-          side: BorderSide(color: AppColors.error.withOpacity(0.9), width: 1.5),
+          icon: const Icon(Icons.delete_outline),
+          label: Text(l10n.deleteAllBlurryPhotos),
+          style: FilledButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            minimumSize: const Size(double.infinity, 56),
+            backgroundColor: AppColors.error.withOpacity(0.85),
+            foregroundColor: theme.colorScheme.onError,
+            side: BorderSide(color: AppColors.error.withOpacity(0.9), width: 1.5),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
         ),
       ),
     );
@@ -496,8 +528,8 @@ class _BlurResultsTab extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 40),
-            Consumer(
-              builder: (context, ref, _) {
+            Builder(
+              builder: (context) {
                 return Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(20),
@@ -524,9 +556,9 @@ class _BlurResultsTab extends ConsumerWidget {
                   child: FilledButton.icon(
                     onPressed: () {
                       if (isBlur) {
-                        ref.read(blurDetectionProvider.notifier).clear();
+                        context.read<BlurDetectionCubit>().clear();
                       } else {
-                        ref.read(duplicateDetectionProvider.notifier).clear();
+                        context.read<DuplicateDetectionCubit>().clear();
                       }
                       context.pop();
                     },
@@ -560,13 +592,13 @@ class _BlurResultsTab extends ConsumerWidget {
   }
 }
 
-class _DuplicateResultsTab extends ConsumerWidget {
+class _DuplicateResultsTab extends StatelessWidget {
   final DuplicateDetectionState state;
 
   const _DuplicateResultsTab({required this.state});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final albumEntries = state.duplicatesByAlbum.entries
@@ -577,91 +609,102 @@ class _DuplicateResultsTab extends ConsumerWidget {
       return _buildNoResultsView(context, theme, l10n, false);
     }
 
-    return Column(
+    return Stack(
       children: [
-        // Modern Stats Cards with gradient
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-          child: Row(
-            children: [
-              Expanded(
-                child: _buildEnhancedStatCard(
-                  theme,
-                  Icons.collections_rounded,
-                  '${state.totalGroups}',
-                  l10n.group,
-                  AppColors.secondary,
+        // Main content with padding for floating button - scrollable
+        CustomScrollView(
+          slivers: [
+            // Modern Stats Cards with gradient
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _buildEnhancedStatCard(
+                        theme,
+                        Icons.collections_rounded,
+                        '${state.totalGroups}',
+                        l10n.group,
+                        AppColors.secondary,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _buildEnhancedStatCard(
+                        theme,
+                        Icons.photo_library_rounded,
+                        '${state.totalDuplicatePhotos}',
+                        l10n.photo,
+                        AppColors.primary,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _buildEnhancedStatCard(
+                        theme,
+                        Icons.storage_rounded,
+                        '${state.totalSpaceToSaveMB.toStringAsFixed(1)} MB',
+                        l10n.spaceToSave,
+                        AppColors.accent,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _buildEnhancedStatCard(
+            ),
+            // Duplicate Grid with bottom padding for floating button
+            SliverPadding(
+              padding: const EdgeInsets.only(bottom: 100),
+              sliver: SliverToBoxAdapter(
+                child: buildDuplicateGrid(
+                  context,
+                  state,
                   theme,
-                  Icons.photo_library_rounded,
-                  '${state.totalDuplicatePhotos}',
-                  l10n.photo,
-                  AppColors.primary,
+                  l10n,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
                 ),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _buildEnhancedStatCard(
-                  theme,
-                  Icons.storage_rounded,
-                  '${state.totalSpaceToSaveMB.toStringAsFixed(1)} MB',
-                  l10n.spaceToSave,
-                  AppColors.accent,
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
-        // Duplicate Grid
-        Expanded(child: buildDuplicateGrid(context, state, theme, l10n, ref)),
-        // Delete Button
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.background,
-          ),
+        // Floating Delete Button
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: 0,
           child: SafeArea(
-            child: Consumer(
-              builder: (context, ref, _) {
+            child: Builder(
+              builder: (context) {
                 final hasPhotosToDelete = state.totalDuplicatePhotos > 0;
-                final duplicateScanLimitAsync = ref.watch(
-                  duplicateScanLimitProvider,
-                );
-                final isPremiumAsync = ref.watch(isPremiumProvider);
-
-                return duplicateScanLimitAsync.when(
-                  loading: () => hasPhotosToDelete
-                      ? _buildDeleteButton(context, theme, l10n, state, ref)
-                      : const SizedBox.shrink(),
-                  error: (_, __) => hasPhotosToDelete
-                      ? _buildDeleteButton(context, theme, l10n, state, ref)
-                      : const SizedBox.shrink(),
-                  data: (scanLimit) {
-                    return isPremiumAsync.when(
-                      loading: () => hasPhotosToDelete
-                          ? _buildDeleteButton(context, theme, l10n, state, ref)
-                          : const SizedBox.shrink(),
-                      error: (_, __) => hasPhotosToDelete
-                          ? _buildDeleteButton(context, theme, l10n, state, ref)
-                          : const SizedBox.shrink(),
-                      data: (isPremium) {
-                        if (!hasPhotosToDelete) {
-                          return const SizedBox.shrink();
-                        }
-                        return _buildDeleteButton(
-                          context,
-                          theme,
-                          l10n,
-                          state,
-                          ref,
-                        );
-                      },
-                    );
-                  },
+                if (!hasPhotosToDelete) {
+                  return const SizedBox.shrink();
+                }
+                return ClipRRect(
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                    child: Container(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            theme.colorScheme.background.withOpacity(0.7),
+                            theme.colorScheme.background.withOpacity(0.95),
+                            theme.colorScheme.background,
+                          ],
+                        ),
+                      ),
+                      child: _buildDeleteButton(
+                        context,
+                        theme,
+                        l10n,
+                        state,
+                      ),
+                    ),
+                  ),
                 );
               },
             ),
@@ -763,12 +806,29 @@ class _DuplicateResultsTab extends ConsumerWidget {
     ThemeData theme,
     AppLocalizations l10n,
     DuplicateDetectionState state,
-    WidgetRef ref,
   ) {
-    return SizedBox(
-      width: double.infinity,
-      child: FilledButton.icon(
-        onPressed: () async {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.error.withOpacity(0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+            spreadRadius: 0,
+          ),
+          BoxShadow(
+            color: AppColors.black.withOpacity(0.15),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+            spreadRadius: 0,
+          ),
+        ],
+      ),
+      child: SizedBox(
+        width: double.infinity,
+        child: FilledButton.icon(
+          onPressed: () async {
           final confirmed = await showDialog<bool>(
             context: context,
             builder: (context) => AlertDialog(
@@ -798,16 +858,18 @@ class _DuplicateResultsTab extends ConsumerWidget {
 
           if (confirmed != true || !context.mounted) return;
 
-          final deletedCount = await ref
-              .read(duplicateDetectionProvider.notifier)
-              .deleteAllDuplicates();
+          // BLoC kullanarak duplicate fotoğrafları sil
+          final duplicateCubit = context.read<DuplicateDetectionCubit>();
+          final deletedCount = await duplicateCubit.deleteAllDuplicates();
 
           if (!context.mounted) return;
 
           // Root navigator context'ini kaydet - widget rebuild edilirse context kaybolabilir
           final rootNavigatorContext = Navigator.of(context, rootNavigator: true).context;
           
-          await ref.read(deleteLimitProvider.notifier).decrease(deletedCount);
+          // Delete limit'i azalt
+          final deleteLimitCubit = context.read<DeleteLimitCubit>();
+          await deleteLimitCubit.decrease(deletedCount);
 
           // Cleanup complete dialogunu göster
           debugPrint(
@@ -847,14 +909,18 @@ class _DuplicateResultsTab extends ConsumerWidget {
             );
           }
         },
-        icon: const Icon(Icons.delete_outline),
-        label: Text(l10n.deleteAllDuplicates),
-        style: FilledButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          minimumSize: const Size(double.infinity, 56),
-          backgroundColor: AppColors.error.withOpacity(0.85),
-          foregroundColor: theme.colorScheme.onError,
-          side: BorderSide(color: AppColors.error.withOpacity(0.9), width: 1.5),
+          icon: const Icon(Icons.delete_outline),
+          label: Text(l10n.deleteAllDuplicates),
+          style: FilledButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            minimumSize: const Size(double.infinity, 56),
+            backgroundColor: AppColors.error.withOpacity(0.85),
+            foregroundColor: theme.colorScheme.onError,
+            side: BorderSide(color: AppColors.error.withOpacity(0.9), width: 1.5),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
         ),
       ),
     );
@@ -998,8 +1064,8 @@ class _DuplicateResultsTab extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 40),
-            Consumer(
-              builder: (context, ref, _) {
+            Builder(
+              builder: (context) {
                 return Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(20),
@@ -1026,9 +1092,9 @@ class _DuplicateResultsTab extends ConsumerWidget {
                   child: FilledButton.icon(
                     onPressed: () {
                       if (isBlur) {
-                        ref.read(blurDetectionProvider.notifier).clear();
+                        context.read<BlurDetectionCubit>().clear();
                       } else {
-                        ref.read(duplicateDetectionProvider.notifier).clear();
+                        context.read<DuplicateDetectionCubit>().clear();
                       }
                       context.pop();
                     },
