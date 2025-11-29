@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -16,6 +17,7 @@ import 'src/core/services/preferences_service.dart';
 import 'src/core/services/media_library_service.dart';
 import 'src/core/services/blur_detection_service.dart';
 import 'src/core/services/duplicate_detection_service.dart';
+import 'src/core/services/fcm_service.dart';
 import 'src/features/onboarding/application/onboarding_controller.dart';
 import 'src/features/onboarding/application/permissions_controller.dart';
 import 'src/features/settings/application/theme_controller.dart';
@@ -27,6 +29,18 @@ import 'src/features/gallery/application/review_actions_controller.dart';
 import 'src/features/gallery/application/blur_detection_provider.dart';
 import 'src/features/gallery/application/duplicate_detection_provider.dart';
 import 'src/features/gallery/application/gallery_stats_provider.dart';
+
+/// Background message handler
+/// Bu fonksiyon top-level olmalı (class dışında)
+@pragma('vm:entry-point')
+Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp();
+  AppLogger.i('📱 [FCMService] Background message received');
+  AppLogger.i('📱 [FCMService] Message data: ${message.data}');
+  AppLogger.i(
+    '📱 [FCMService] Message notification: ${message.notification?.title}',
+  );
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -50,6 +64,29 @@ void main() async {
     };
     await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(true);
     AppLogger.i('✅ [main] Firebase initialized');
+
+    // Initialize Firebase Cloud Messaging
+    try {
+      // Background message handler'ı register et
+      FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+
+      // FCM servisini initialize et
+      await FCMService.instance.initialize();
+      AppLogger.i('✅ [main] FCM initialized');
+
+      // FCM token'ı al ve logla (test için)
+      final fcmToken = await FCMService.instance.getToken();
+      if (fcmToken != null) {
+        print('═══════════════════════════════════════════════════════════');
+        print('📱 FCM TOKEN (Main.dart - Test için)');
+        print('═══════════════════════════════════════════════════════════');
+        print('Token: $fcmToken');
+        print('═══════════════════════════════════════════════════════════');
+        AppLogger.i('📱 [main] FCM Token: $fcmToken');
+      }
+    } catch (e) {
+      AppLogger.e('⚠️ [main] Failed to initialize FCM: $e');
+    }
   } catch (e) {
     AppLogger.e('⚠️ [main] Failed to initialize Firebase: $e');
   }

@@ -5,7 +5,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lottie/lottie.dart';
-import 'package:intl/intl.dart';
 import 'package:photo_manager/photo_manager.dart';
 
 import '../../../../../l10n/app_localizations.dart';
@@ -32,8 +31,6 @@ class _GalleryStatsPageState extends State<GalleryStatsPage>
   bool _isScannerPlaying = false;
   bool _hasCheckedFirstAnalysis = false;
   final ScrollController _albumScrollController = ScrollController();
-  bool _showLeftArrow = false;
-  bool _showRightArrow = false;
 
   @override
   void initState() {
@@ -41,58 +38,7 @@ class _GalleryStatsPageState extends State<GalleryStatsPage>
     // Sayfa açıldığında ilk analiz kontrolü yap
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkAndStartFirstAnalysis();
-      // GridView render edildikten sonra okları kontrol et
-      Future.delayed(const Duration(milliseconds: 100), () {
-        if (mounted) {
-          _updateArrowVisibility();
-        }
-      });
     });
-
-    // Scroll controller listener
-    _albumScrollController.addListener(_updateArrowVisibility);
-  }
-
-  void _updateArrowVisibility() {
-    if (!mounted) return;
-
-    if (!_albumScrollController.hasClients) {
-      if (mounted) {
-        cubitSetState(() {
-          _showLeftArrow = false;
-          _showRightArrow = false;
-        });
-      }
-      return;
-    }
-
-    final position = _albumScrollController.position;
-    if (mounted) {
-      cubitSetState(() {
-        _showLeftArrow = position.pixels > 0;
-        _showRightArrow = position.pixels < position.maxScrollExtent - 1;
-      });
-    }
-  }
-
-  void _scrollLeft() {
-    if (_albumScrollController.hasClients) {
-      _albumScrollController.animateTo(
-        _albumScrollController.offset - 220,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
-      );
-    }
-  }
-
-  void _scrollRight() {
-    if (_albumScrollController.hasClients) {
-      _albumScrollController.animateTo(
-        _albumScrollController.offset + 220,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
-      );
-    }
   }
 
   /// İlk analiz kontrolü yap ve gerekirse başlat
@@ -130,93 +76,11 @@ class _GalleryStatsPageState extends State<GalleryStatsPage>
     if (_isScannerPlaying) {
       _soundService.stopScannerSound();
     }
-    _albumScrollController.removeListener(_updateArrowVisibility);
     _albumScrollController.dispose();
     super.dispose();
   }
 
-  /// Yüzdelik fark hesapla
-  double? _calculatePercentageChange(int? current, int? previous) {
-    if (current == null || previous == null || previous == 0) {
-      return null;
-    }
-    return ((current - previous) / previous) * 100;
-  }
 
-  /// Tarihi formatla (locale'e göre)
-  String _formatDate(BuildContext context, DateTime date) {
-    try {
-      final locale = Localizations.localeOf(context);
-      final dateFormat = DateFormat('d MMMM yyyy, HH:mm', locale.toString());
-      return dateFormat.format(date);
-    } catch (e) {
-      // Fallback: Sistem locale'i
-      final dateFormat = DateFormat('d MMMM yyyy, HH:mm');
-      return dateFormat.format(date);
-    }
-  }
-
-  /// Değişiklik chip'i oluştur
-  Widget _buildChangeChip(
-    BuildContext context,
-    String label,
-    double change,
-    ThemeData theme, {
-    int? absoluteDiff,
-    double? absoluteDiffDouble,
-  }) {
-    final isPositive = change > 0;
-    final isNegative = change < 0;
-    final color = isPositive
-        ? AppColors.success
-        : isNegative
-        ? AppColors.error
-        : theme.colorScheme.onSurface.withOpacity(0.7);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.3), width: 1),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            isPositive
-                ? Icons.trending_up
-                : isNegative
-                ? Icons.trending_down
-                : Icons.remove,
-            size: 12,
-            color: color,
-          ),
-          const SizedBox(width: 4),
-          Text(
-            absoluteDiff != null
-                ? '$label: ${absoluteDiff > 0
-                      ? '+'
-                      : absoluteDiff < 0
-                      ? '-'
-                      : ''}${absoluteDiff.abs()} (${change > 0 ? '+' : ''}${change.toStringAsFixed(1)}%)'
-                : absoluteDiffDouble != null
-                ? '$label: ${absoluteDiffDouble > 0
-                      ? '+'
-                      : absoluteDiffDouble < 0
-                      ? '-'
-                      : ''}${absoluteDiffDouble.abs().toStringAsFixed(1)} MB (${change > 0 ? '+' : ''}${change.toStringAsFixed(1)}%)'
-                : '$label: ${change > 0 ? '+' : ''}${change.toStringAsFixed(1)}%',
-            style: theme.textTheme.labelSmall?.copyWith(
-              fontSize: 10,
-              color: color,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -280,7 +144,6 @@ class _GalleryStatsPageState extends State<GalleryStatsPage>
             : Builder(
                 builder: (context) {
                   final stats = statsState.stats;
-                  final previousStats = statsState.previousStats;
                   final isScanning = statsState.isScanning;
                   final error = statsState.error;
 
@@ -354,45 +217,6 @@ class _GalleryStatsPageState extends State<GalleryStatsPage>
                         totalSizeMB: 0.0,
                       );
 
-                  // Stats değiştiğinde scroll oklarını güncelle
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    if (context.mounted &&
-                        displayStats.albumDetails.isNotEmpty) {
-                      Future.delayed(const Duration(milliseconds: 150), () {
-                        if (context.mounted) {
-                          _updateArrowVisibility();
-                        }
-                      });
-                    }
-                  });
-
-                  // Yüzdelik farkları hesapla
-                  final albumChange = _calculatePercentageChange(
-                    displayStats.albumCount,
-                    previousStats?.albumCount,
-                  );
-                  final mediaChange = _calculatePercentageChange(
-                    displayStats.mediaCount,
-                    previousStats?.mediaCount,
-                  );
-                  final sizeChange =
-                      previousStats != null && previousStats.totalSizeMB > 0
-                      ? ((displayStats.totalSizeMB -
-                                    previousStats.totalSizeMB) /
-                                previousStats.totalSizeMB) *
-                            100
-                      : null;
-
-                  // Mutlak değer farkları hesapla
-                  final albumDiff = previousStats != null
-                      ? displayStats.albumCount - previousStats.albumCount
-                      : null;
-                  final mediaDiff = previousStats != null
-                      ? displayStats.mediaCount - previousStats.mediaCount
-                      : null;
-                  final sizeDiff = previousStats != null
-                      ? displayStats.totalSizeMB - previousStats.totalSizeMB
-                      : null;
 
                   // History'den sil/tut istatistiklerini al
                   final history = context.read<ReviewHistoryCubit>().state;
@@ -516,17 +340,11 @@ class _GalleryStatsPageState extends State<GalleryStatsPage>
                     );
                   }
 
-                  return Stack(
+                  return Column(
                     children: [
-                      SingleChildScrollView(
-                        padding: EdgeInsets.only(
-                          left: 16,
-                          right: 16,
-                          top: 16,
-                          bottom: !isScanning
-                              ? 180
-                              : 16, // Toggle ve buton için alt padding
-                        ),
+                      Expanded(
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
@@ -556,36 +374,19 @@ class _GalleryStatsPageState extends State<GalleryStatsPage>
                               l10n,
                               displayStats,
                             ),
-                            const SizedBox(height: 24),
-                            // Recent Activity Section
-                            _buildRecentActivitySection(
-                              context,
-                              theme,
-                              l10n,
-                              history,
-                              appliedDeletes,
-                            ),
+                              // Bottom padding for fixed buttons
+                              if (!isScanning) const SizedBox(height: 180),
                           ],
+                          ),
                         ),
                       ),
                       // Otomatik analiz toggle ve Tekrardan Analiz Et butonu (ekranın en altında - sabit)
                       if (!isScanning)
-                        Positioned(
-                          bottom: 0,
-                          left: 0,
-                          right: 0,
-                          child: Container(
+                        Container(
                             width: double.infinity,
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
                               color: theme.colorScheme.background,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppColors.black.withOpacity(0.1),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, -2),
-                                ),
-                              ],
                             ),
                             child: SafeArea(
                               top: false,
@@ -709,7 +510,6 @@ class _GalleryStatsPageState extends State<GalleryStatsPage>
                                     ),
                                   ),
                                 ],
-                              ),
                             ),
                           ),
                         ),
@@ -730,7 +530,7 @@ class _GalleryStatsPageState extends State<GalleryStatsPage>
     return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(2)} GB';
   }
 
-  /// Keep/Delete Stats Section (en üstte)
+  /// Keep/Delete Stats Section (en üstte) - Görsel olarak kuvvetli ve kullanıcı dostu
   Widget _buildKeepDeleteStatsSection(
     BuildContext context,
     ThemeData theme,
@@ -743,252 +543,147 @@ class _GalleryStatsPageState extends State<GalleryStatsPage>
     return Row(
       children: [
         Expanded(
-          child: SizedBox(
-            height: 100, // Sabit yükseklik
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    (semanticColors?.keep ?? AppColors.success).withOpacity(
-                      0.15,
-                    ),
-                    (semanticColors?.keep ?? AppColors.success).withOpacity(
-                      0.1,
-                    ),
+          child: _buildStatCardEnhanced(
+            context: context,
+            theme: theme,
+            label: l10n.keep,
+            value: '$keepCount',
+            iconColor: semanticColors?.keep ?? AppColors.success,
+            gradientColors: [
+              (semanticColors?.keep ?? AppColors.success).withOpacity(0.25),
+              (semanticColors?.keep ?? AppColors.success).withOpacity(0.15),
                   ],
-                ),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: (semanticColors?.keep ?? AppColors.success)
-                      .withOpacity(0.3),
-                  width: 1,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: (semanticColors?.keep ?? AppColors.success)
-                        .withOpacity(0.1),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
-                    spreadRadius: 0,
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.check_circle_outline,
-                        size: 16,
-                        color: semanticColors?.keep ?? AppColors.success,
-                      ),
-                      const SizedBox(width: 6),
-                      Flexible(
-                        child: Text(
-                          l10n.keep,
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 11,
-                            color: theme.colorScheme.onSurface.withOpacity(0.8),
-                            letterSpacing: 0.3,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Spacer(),
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      '$keepCount',
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w900,
-                        fontSize: 24,
-                        color: theme.colorScheme.onSurface,
-                        letterSpacing: -1.2,
-                        height: 1,
-                      ),
-                      maxLines: 1,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            borderColor: (semanticColors?.keep ?? AppColors.success).withOpacity(0.4),
+            shadowColor: (semanticColors?.keep ?? AppColors.success).withOpacity(0.15),
           ),
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: SizedBox(
-            height: 100, // Sabit yükseklik
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    (semanticColors?.delete ?? AppColors.error).withOpacity(
-                      0.15,
-                    ),
-                    (semanticColors?.delete ?? AppColors.error).withOpacity(
-                      0.1,
-                    ),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: (semanticColors?.delete ?? AppColors.error)
-                      .withOpacity(0.3),
-                  width: 1,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: (semanticColors?.delete ?? AppColors.error)
-                        .withOpacity(0.1),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
-                    spreadRadius: 0,
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.delete_outline,
-                        size: 16,
-                        color: semanticColors?.delete ?? AppColors.error,
+          child: _buildStatCardEnhanced(
+            context: context,
+            theme: theme,
+            label: l10n.delete,
+            value: '$deleteCount',
+            iconColor: semanticColors?.delete ?? AppColors.error,
+            gradientColors: [
+              (semanticColors?.delete ?? AppColors.error).withOpacity(0.25),
+              (semanticColors?.delete ?? AppColors.error).withOpacity(0.15),
+            ],
+            borderColor: (semanticColors?.delete ?? AppColors.error).withOpacity(0.4),
+            shadowColor: (semanticColors?.delete ?? AppColors.error).withOpacity(0.15),
                       ),
-                      const SizedBox(width: 6),
-                      Flexible(
-                        child: Text(
-                          l10n.delete,
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 11,
-                            color: theme.colorScheme.onSurface.withOpacity(0.8),
-                            letterSpacing: 0.3,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
                   ),
-                  const Spacer(),
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      '$deleteCount',
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w900,
-                        fontSize: 24,
-                        color: theme.colorScheme.onSurface,
-                        letterSpacing: -1.2,
-                        height: 1,
-                      ),
-                      maxLines: 1,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
         const SizedBox(width: 12),
         Expanded(
-          child: SizedBox(
-            height: 100, // Sabit yükseklik
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    AppColors.blurTab.withOpacity(0.15),
-                    AppColors.blurTab.withOpacity(0.1),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: AppColors.blurTab.withOpacity(0.3),
-                  width: 1,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.blurTab.withOpacity(0.1),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
-                    spreadRadius: 0,
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.data_saver_on_outlined,
-                        size: 16,
-                        color: AppColors.blurTab,
-                      ),
-                      const SizedBox(width: 6),
-                      Flexible(
-                        child: Text(
-                          l10n.spaceSaved,
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 11,
-                            color: theme.colorScheme.onSurface.withOpacity(0.8),
-                            letterSpacing: 0.3,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Spacer(),
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      _formatBytes(totalBytesFreed),
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w900,
-                        fontSize: 20,
-                        color: theme.colorScheme.onSurface,
-                        letterSpacing: -1.0,
-                        height: 1,
-                      ),
-                      maxLines: 1,
+          child: _buildStatCardEnhanced(
+            context: context,
+            theme: theme,
+            label: l10n.spaceSaved,
+            value: _formatBytes(totalBytesFreed),
+            iconColor: AppColors.blurTab,
+            gradientColors: [
+              AppColors.blurTab.withOpacity(0.25),
+              AppColors.blurTab.withOpacity(0.15),
+            ],
+            borderColor: AppColors.blurTab.withOpacity(0.4),
+            shadowColor: AppColors.blurTab.withOpacity(0.15),
                     ),
                   ),
                 ],
-              ),
-            ),
-          ),
-        ),
-      ],
     );
   }
 
-  /// General Statistics Section - 2 cards (Total Photos and Total Size)
+  /// Enhanced Stat Card Widget - Görsel olarak kuvvetli tasarım
+  Widget _buildStatCardEnhanced({
+    required BuildContext context,
+    required ThemeData theme,
+    required String label,
+    required String value,
+    required Color iconColor,
+    required List<Color> gradientColors,
+    required Color borderColor,
+    required Color shadowColor,
+  }) {
+    return Container(
+      height: 120,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+          colors: gradientColors,
+                ),
+        borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+          color: borderColor,
+          width: 2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+            color: shadowColor,
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+                    spreadRadius: 0,
+                  ),
+                ],
+              ),
+      child: Stack(
+                children: [
+          // Dekoratif arka plan daire
+          Positioned(
+            top: -20,
+            right: -20,
+            child: Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: iconColor.withOpacity(0.1),
+              ),
+                ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                // Label
+                Text(
+                  label,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 11,
+                            color: theme.colorScheme.onSurface.withOpacity(0.8),
+                            letterSpacing: 0.3,
+                          ),
+                  maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                // Değer
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                    value,
+                    style: theme.textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.w900,
+                      fontSize: 28,
+                        color: theme.colorScheme.onSurface,
+                      letterSpacing: -1.5,
+                        height: 1,
+                      ),
+                      maxLines: 1,
+                    ),
+                  ),
+                ],
+          ),
+        ),
+      ],
+      ),
+    );
+  }
+
+  /// General Statistics Section - 2 cards (Total Photos and Total Size) - Kullanıcı dostu tasarım
   Widget _buildGeneralStatisticsSection(
     BuildContext context,
     ThemeData theme,
@@ -1002,7 +697,7 @@ class _GalleryStatsPageState extends State<GalleryStatsPage>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'General Statistics',
+          l10n.generalStatistics,
           style: theme.textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.bold,
           ),
@@ -1011,68 +706,39 @@ class _GalleryStatsPageState extends State<GalleryStatsPage>
         Row(
           children: [
             Expanded(
-              child: _buildStatCard(
-                context,
-                theme,
-                'Total Photos',
-                _formatNumber(totalPhotos),
-                Icons.photo,
+              child: _buildStatCardEnhanced(
+                context: context,
+                theme: theme,
+                label: l10n.totalPhotos,
+                value: _formatNumber(totalPhotos),
+                iconColor: theme.colorScheme.primary,
+                gradientColors: [
+                  theme.colorScheme.primary.withOpacity(0.25),
+                  theme.colorScheme.primary.withOpacity(0.15),
+                ],
+                borderColor: theme.colorScheme.primary.withOpacity(0.4),
+                shadowColor: theme.colorScheme.primary.withOpacity(0.15),
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: _buildStatCard(
-                context,
-                theme,
-                l10n.totalSize,
-                _formatSizeMB(stats.totalSizeMB),
-                Icons.folder,
+              child: _buildStatCardEnhanced(
+                context: context,
+                theme: theme,
+                label: l10n.totalSize,
+                value: _formatSizeMB(stats.totalSizeMB),
+                iconColor: AppColors.blurTab,
+                gradientColors: [
+                  AppColors.blurTab.withOpacity(0.25),
+                  AppColors.blurTab.withOpacity(0.15),
+                ],
+                borderColor: AppColors.blurTab.withOpacity(0.4),
+                shadowColor: AppColors.blurTab.withOpacity(0.15),
               ),
             ),
           ],
         ),
       ],
-    );
-  }
-
-  /// Stat Card Widget
-  Widget _buildStatCard(
-    BuildContext context,
-    ThemeData theme,
-    String label,
-    String value,
-    IconData icon,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: theme.colorScheme.outline.withOpacity(0.1),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 24, color: theme.colorScheme.primary),
-          const SizedBox(height: 12),
-          Text(
-            value,
-            style: theme.textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurface.withOpacity(0.7),
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -1091,7 +757,7 @@ class _GalleryStatsPageState extends State<GalleryStatsPage>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Albums',
+          l10n.album,
           style: theme.textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.bold,
           ),
@@ -1181,7 +847,7 @@ class _GalleryStatsPageState extends State<GalleryStatsPage>
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${album.mediaCount} items',
+                  '${album.mediaCount} ${l10n.items}',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurface.withOpacity(0.7),
                   ),
@@ -1302,112 +968,6 @@ class _GalleryStatsPageState extends State<GalleryStatsPage>
     );
   }
 
-  /// Recent Activity Section
-  Widget _buildRecentActivitySection(
-    BuildContext context,
-    ThemeData theme,
-    AppLocalizations l10n,
-    List<ReviewActionItem> history,
-    List<ReviewActionItem> appliedDeletes,
-  ) {
-    // Get recent activities (last 3 applied deletes)
-    final recentActivities = appliedDeletes.take(3).toList();
-
-    if (recentActivities.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Recent Activity',
-          style: theme.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 16),
-        ...recentActivities.map(
-          (action) => _buildActivityCard(context, theme, l10n, action),
-        ),
-      ],
-    );
-  }
-
-  /// Activity Card Widget
-  Widget _buildActivityCard(
-    BuildContext context,
-    ThemeData theme,
-    AppLocalizations l10n,
-    ReviewActionItem action,
-  ) {
-    final dateTime = DateTime.fromMillisecondsSinceEpoch(action.timestampMs);
-    final timeAgo = _formatTimeAgo(context, dateTime);
-    final spaceSaved = _formatBytes(action.fileSizeBytes);
-
-    String title;
-    IconData icon;
-    if (action.type == ReviewActionType.delete) {
-      title = 'Duplicates Cleaned';
-      icon = Icons.delete;
-    } else {
-      title = 'Blurry Review';
-      icon = Icons.grid_view;
-    }
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: theme.colorScheme.outline.withOpacity(0.1),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.primaryContainer.withOpacity(0.3),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: theme.colorScheme.primary),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  timeAgo,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.7),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Text(
-            '+$spaceSaved',
-            style: theme.textTheme.titleSmall?.copyWith(
-              color: AppColors.success,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   /// Format number with commas
   String _formatNumber(int number) {
@@ -1425,22 +985,4 @@ class _GalleryStatsPageState extends State<GalleryStatsPage>
     return '${sizeMB.toStringAsFixed(1)} MB';
   }
 
-  /// Format time ago
-  String _formatTimeAgo(BuildContext context, DateTime dateTime) {
-    final now = DateTime.now();
-    final difference = now.difference(dateTime);
-
-    if (difference.inDays > 0) {
-      if (difference.inDays == 1) {
-        return 'Yesterday, ${DateFormat('h:mm a').format(dateTime)}';
-      }
-      return DateFormat('MMM d, h:mm a').format(dateTime);
-    } else if (difference.inHours > 0) {
-      return '${difference.inHours}h ago';
-    } else if (difference.inMinutes > 0) {
-      return '${difference.inMinutes}m ago';
-    } else {
-      return 'Just now';
-    }
-  }
 }

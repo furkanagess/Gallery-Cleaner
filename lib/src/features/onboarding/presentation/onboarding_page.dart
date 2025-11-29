@@ -48,89 +48,91 @@ class _OnboardingPageState extends State<OnboardingPage>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return buildWithCubit(() => Scaffold(
-      backgroundColor: theme.colorScheme.background,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Skip button
-            if (_currentPage < _totalPages - 1)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
-                child: Align(
-                  alignment: Alignment.topRight,
-                  child: Builder(
-                    builder: (ctx) {
-                      final l10n = AppLocalizations.of(ctx)!;
-                      return _ModernSkipButton(
-                        onPressed: _completeOnboarding,
-                        theme: theme,
-                        l10n: l10n,
-                      );
-                    },
+    return buildWithCubit(
+      () => Scaffold(
+        backgroundColor: theme.colorScheme.background,
+        body: SafeArea(
+          child: Column(
+            children: [
+              // Skip button
+              if (_currentPage < _totalPages - 1)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
+                  child: Align(
+                    alignment: Alignment.topRight,
+                    child: Builder(
+                      builder: (ctx) {
+                        final l10n = AppLocalizations.of(ctx)!;
+                        return _ModernSkipButton(
+                          onPressed: _completeOnboarding,
+                          theme: theme,
+                          l10n: l10n,
+                        );
+                      },
+                    ),
                   ),
                 ),
-              ),
-            
-            // Page View
-            Expanded(
-              child: PageView(
-                controller: _pageController,
-                onPageChanged: (index) {
-                  cubitSetState(() {
-                    _currentPage = index;
-                  });
-                },
-                children: const [
-                  _OnboardingSlide1(),
-                  _OnboardingSlide4(), // Blur tespit
-                  _OnboardingSlide5(), // Duplicate tespit
-                ],
-              ),
-            ),
 
-            // Page Indicators
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 24),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(_totalPages, (index) {
-                  return AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeInOut,
-                    width: _currentPage == index ? 24 : 8,
-                    height: 8,
-                    margin: const EdgeInsets.symmetric(horizontal: 4),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(4),
-                      color: _currentPage == index
-                          ? theme.colorScheme.primary
-                          : theme.colorScheme.primary.withOpacity(0.3),
-                    ),
-                  );
-                }),
+              // Page View
+              Expanded(
+                child: PageView(
+                  controller: _pageController,
+                  onPageChanged: (index) {
+                    cubitSetState(() {
+                      _currentPage = index;
+                    });
+                  },
+                  children: const [
+                    _OnboardingSlide1(),
+                    _OnboardingSlide4(), // Blur tespit
+                    _OnboardingSlide5(), // Duplicate tespit
+                  ],
+                ),
               ),
-            ),
 
-            // Next/Start button
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-              child: Builder(
-                builder: (ctx) {
-                  final l10n = AppLocalizations.of(ctx)!;
-                  return _ModernActionButton(
-                    onPressed: _nextPage,
-                    isLastPage: _currentPage == _totalPages - 1,
-                    theme: theme,
-                    l10n: l10n,
-                  );
-                },
+              // Page Indicators
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 24),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(_totalPages, (index) {
+                    return AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                      width: _currentPage == index ? 24 : 8,
+                      height: 8,
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(4),
+                        color: _currentPage == index
+                            ? theme.colorScheme.primary
+                            : theme.colorScheme.primary.withOpacity(0.3),
+                      ),
+                    );
+                  }),
+                ),
               ),
-            ),
-          ],
+
+              // Next/Start button
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                child: Builder(
+                  builder: (ctx) {
+                    final l10n = AppLocalizations.of(ctx)!;
+                    return _ModernActionButton(
+                      onPressed: _nextPage,
+                      isLastPage: _currentPage == _totalPages - 1,
+                      theme: theme,
+                      l10n: l10n,
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
         ),
       ),
-    ));
+    );
   }
 }
 
@@ -187,7 +189,11 @@ class _OnboardingSlide1 extends StatelessWidget {
                       color: AppColors.error.withOpacity(0.9),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.close, color: AppColors.white, size: 24),
+                    child: const Icon(
+                      Icons.close,
+                      color: AppColors.white,
+                      size: 24,
+                    ),
                   ),
                 ),
                 Positioned(
@@ -198,7 +204,11 @@ class _OnboardingSlide1 extends StatelessWidget {
                       color: AppColors.success.withOpacity(0.9),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.check, color: AppColors.white, size: 24),
+                    child: const Icon(
+                      Icons.check,
+                      color: AppColors.white,
+                      size: 24,
+                    ),
                   ),
                 ),
               ],
@@ -210,10 +220,10 @@ class _OnboardingSlide1 extends StatelessWidget {
               final l10n = AppLocalizations.of(ctx)!;
               return Text(
                 l10n.swipeLeftToDeleteTitle,
-            textAlign: TextAlign.center,
-            style: theme.textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+                textAlign: TextAlign.center,
+                style: theme.textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
               );
             },
           ),
@@ -223,10 +233,10 @@ class _OnboardingSlide1 extends StatelessWidget {
               final l10n = AppLocalizations.of(ctx)!;
               return Text(
                 l10n.swipeLeftToDeleteDescription,
-            textAlign: TextAlign.center,
-            style: theme.textTheme.bodyLarge?.copyWith(
-              color: theme.textTheme.bodyMedium?.color?.withOpacity(0.8),
-            ),
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: theme.textTheme.bodyMedium?.color?.withOpacity(0.8),
+                ),
               );
             },
           ),
@@ -249,6 +259,7 @@ class _ModernSkipButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final brightness = theme.brightness;
     return Material(
       color: AppColors.transparent,
       child: InkWell(
@@ -257,15 +268,11 @@ class _ModernSkipButton extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           decoration: BoxDecoration(
-            color: theme.colorScheme.surface.withOpacity(0.8),
+            color: AppColors.card(brightness).withOpacity(0.8),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: theme.colorScheme.outline.withOpacity(0.2),
-              width: 1,
-            ),
             boxShadow: [
               BoxShadow(
-                color: AppColors.black.withOpacity(0.04),
+                color: AppColors.shadow(brightness),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -277,14 +284,14 @@ class _ModernSkipButton extends StatelessWidget {
               Icon(
                 Icons.arrow_forward,
                 size: 16,
-                color: theme.colorScheme.onSurface.withOpacity(0.7),
+                color: AppColors.textSecondary(brightness),
               ),
               const SizedBox(width: 6),
               Text(
                 l10n.skip,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   fontWeight: FontWeight.w500,
-                  color: theme.colorScheme.onSurface.withOpacity(0.8),
+                  color: AppColors.textPrimary(brightness),
                 ),
               ),
             ],
@@ -386,10 +393,10 @@ class _OnboardingSlide4 extends StatelessWidget {
               final l10n = AppLocalizations.of(ctx)!;
               return Text(
                 l10n.blurDetectionOnboardingTitle,
-            textAlign: TextAlign.center,
-            style: theme.textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+                textAlign: TextAlign.center,
+                style: theme.textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
               );
             },
           ),
@@ -399,10 +406,10 @@ class _OnboardingSlide4 extends StatelessWidget {
               final l10n = AppLocalizations.of(ctx)!;
               return Text(
                 l10n.blurDetectionOnboardingDescription,
-            textAlign: TextAlign.center,
-            style: theme.textTheme.bodyLarge?.copyWith(
-              color: theme.textTheme.bodyMedium?.color?.withOpacity(0.8),
-            ),
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: theme.textTheme.bodyMedium?.color?.withOpacity(0.8),
+                ),
               );
             },
           ),
@@ -548,10 +555,10 @@ class _OnboardingSlide5 extends StatelessWidget {
               final l10n = AppLocalizations.of(ctx)!;
               return Text(
                 l10n.duplicateDetectionOnboardingTitle,
-            textAlign: TextAlign.center,
-            style: theme.textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+                textAlign: TextAlign.center,
+                style: theme.textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
               );
             },
           ),
@@ -561,10 +568,10 @@ class _OnboardingSlide5 extends StatelessWidget {
               final l10n = AppLocalizations.of(ctx)!;
               return Text(
                 l10n.duplicateDetectionOnboardingDescription,
-            textAlign: TextAlign.center,
-            style: theme.textTheme.bodyLarge?.copyWith(
-              color: theme.textTheme.bodyMedium?.color?.withOpacity(0.8),
-            ),
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: theme.textTheme.bodyMedium?.color?.withOpacity(0.8),
+                ),
               );
             },
           ),
@@ -589,54 +596,23 @@ class _ModernActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return SizedBox(
       width: double.infinity,
       height: 56,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        gradient: LinearGradient(
-          colors: isLastPage
-              ? [
-                  theme.colorScheme.primary.withOpacity(0.85), // Soluk iç renk
-                  theme.colorScheme.primary.withOpacity(0.75), // Soluk iç renk
-                ]
-              : [
-                  theme.colorScheme.primary.withOpacity(0.85), // Soluk iç renk
-                  theme.colorScheme.secondary.withOpacity(0.75), // Soluk iç renk
-                ],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-        ),
-        border: Border.all(
-          color: theme.colorScheme.primary.withOpacity(0.9), // Koyu border
-          width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: theme.colorScheme.primary.withOpacity(0.2),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
-            spreadRadius: 0,
+      child: FilledButton(
+        onPressed: onPressed,
+        style: FilledButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          foregroundColor: AppColors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
           ),
-        ],
-      ),
-      child: Material(
-        color: AppColors.transparent,
-        child: InkWell(
-          onTap: onPressed,
-          borderRadius: BorderRadius.circular(16),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Center(
-              child: Text(
-                isLastPage ? l10n.startButton : l10n.continueButton,
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: theme.colorScheme.onPrimary,
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ),
+        ),
+        child: Text(
+          isLastPage ? l10n.startButton : l10n.continueButton,
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.5,
           ),
         ),
       ),

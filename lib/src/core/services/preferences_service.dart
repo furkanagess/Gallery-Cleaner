@@ -23,6 +23,7 @@ class PreferencesService {
   static const String _migrationCompletedKey = 'secure_storage_migration_completed';
 
   static const String _onboardingCompletedKey = 'onboarding_completed';
+  static const String _firstPaywallShownKey = 'first_paywall_shown';
   static const String _themeModeKey = 'theme_mode';
   static const String _localeKey = 'locale';
   static const String _galleryStatsCacheKey = 'gallery_stats_cache';
@@ -43,9 +44,11 @@ class PreferencesService {
   static const String _autoAnalyzeOnLaunchKey = 'auto_analyze_on_launch';
   static const String _interstitialAdCountKey = 'interstitial_ad_count';
   static const String _scanSoundEnabledKey = 'scan_sound_enabled';
+  static const String _deleteCountForPaywallKey = 'delete_count_for_paywall';
   static const int _defaultDeleteLimit = 100;
   static const int _defaultScanLimit = 1000;
   static const int _premiumDialogThreshold = 3; // 3 reklam sonrası premium dialog göster
+  static const int _paywallAfterDeleteThreshold = 3; // 3 silme sonrası paywall dialog göster
 
   /// Secure storage'dan integer değer oku
   Future<int?> _getSecureInt(String key) async {
@@ -170,6 +173,18 @@ class PreferencesService {
   Future<void> setOnboardingCompleted(bool completed) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_onboardingCompletedKey, completed);
+  }
+
+  /// İlk paywall gösterildi mi kontrol et
+  Future<bool> isFirstPaywallShown() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_firstPaywallShownKey) ?? false;
+  }
+
+  /// İlk paywall gösterildi olarak işaretle
+  Future<void> setFirstPaywallShown(bool shown) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_firstPaywallShownKey, shown);
   }
 
   Future<AppThemeMode?> getThemeMode() async {
@@ -715,6 +730,36 @@ class PreferencesService {
   Future<void> setScanSoundEnabled(bool enabled) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_scanSoundEnabledKey, enabled);
+  }
+
+  /// Silme sayacını al (paywall dialog için)
+  Future<int> getDeleteCountForPaywall() async {
+    final count = await _getSecureInt(_deleteCountForPaywallKey);
+    return count ?? 0;
+  }
+
+  /// Silme sayacını artır ve paywall dialog gösterilmesi gerekip gerekmediğini kontrol et
+  /// Returns true if paywall dialog should be shown (after 3 deletes)
+  Future<bool> incrementDeleteCountForPaywall() async {
+    final currentCount = await getDeleteCountForPaywall();
+    final newCount = currentCount + 1;
+    await _setSecureInt(_deleteCountForPaywallKey, newCount);
+    debugPrint('💾 [PreferencesService] Silme sayacı artırıldı: $currentCount -> $newCount');
+    
+    // 3 silme işleminden sonra paywall dialog göster
+    if (newCount >= _paywallAfterDeleteThreshold) {
+      // Sayacı sıfırla (bir sonraki 3 silme için)
+      await _setSecureInt(_deleteCountForPaywallKey, 0);
+      debugPrint('💾 [PreferencesService] Paywall dialog gösterilecek (3 silme tamamlandı)');
+      return true;
+    }
+    return false;
+  }
+
+  /// Silme sayacını sıfırla
+  Future<void> resetDeleteCountForPaywall() async {
+    await _setSecureInt(_deleteCountForPaywallKey, 0);
+    debugPrint('💾 [PreferencesService] Silme sayacı sıfırlandı');
   }
 }
 

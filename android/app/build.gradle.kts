@@ -28,6 +28,8 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+        // Core library desugaring - flutter_local_notifications için gerekli
+        isCoreLibraryDesugaringEnabled = true
     }
 
     kotlin {
@@ -75,6 +77,13 @@ android {
             isShrinkResources = false
         }
     }
+
+    // AAR metadata hatasını önlemek için
+    packaging {
+        resources {
+            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        }
+    }
 }
 
 flutter {
@@ -86,4 +95,6 @@ dependencies {
     // This ensures we use the latest Billing Library instead of the deprecated AIDL version
     implementation("com.android.billingclient:billing:6.1.0")
     implementation("com.android.billingclient:billing-ktx:6.1.0")
+    // Core library desugaring - flutter_local_notifications için gerekli
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
 }

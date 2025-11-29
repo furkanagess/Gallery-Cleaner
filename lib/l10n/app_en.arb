@@ -268,6 +268,14 @@
   "@loading": {
     "description": "Loading text"
   },
+  "loadingYourGallery": "Loading Your Gallery",
+  "@loadingYourGallery": {
+    "description": "Title for gallery loading screen"
+  },
+  "loadingYourGalleryDescription": "We are preparing your photos and videos. Please wait...",
+  "@loadingYourGalleryDescription": {
+    "description": "Description for gallery loading screen"
+  },
   "galleryInfoNotLoaded": "Gallery info could not be loaded",
   "@galleryInfoNotLoaded": {
     "description": "Error message when gallery info fails to load"
@@ -400,6 +408,13 @@
   "@galleryPermissionDescription": {
     "description": "Description for gallery permission request"
   },
+  "privacySecurityInfo": "🔒 Your Privacy Matters",
+  "privacySecurityPoint1": "Your photos and videos are never shared with anyone",
+  "privacySecurityPoint2": "All processing happens only on your device",
+  "privacySecurityPoint3": "We do not collect, store, or transmit any of your personal media",
+  "@privacySecurityInfo": {
+    "description": "Privacy and security information text for permission request page"
+  },
   "quickCleanupTitle": "Quick Cleanup",
   "@quickCleanupTitle": {
     "description": "Quick cleanup feature title"
@@ -484,9 +499,21 @@
   "@unlimitedDeletions": {
     "description": "Unlimited deletions feature"
   },
+  "unlimitedScans": "Unlimited Scans",
+  "@unlimitedScans": {
+    "description": "Unlimited scans feature"
+  },
   "noAds": "Ad-free experience",
   "@noAds": {
     "description": "No ads feature"
+  },
+  "allPremiumFeatures": "All Premium Features",
+  "@allPremiumFeatures": {
+    "description": "All premium features text"
+  },
+  "welcomeToPremium": "Unlock all premium features:",
+  "@welcomeToPremium": {
+    "description": "Welcome message for premium features"
   },
   "prioritySupport": "Priority support",
   "@prioritySupport": {
@@ -854,6 +881,30 @@
   "galleryStatsTitle": "Gallery Statistics",
   "@galleryStatsTitle": {
     "description": "Gallery statistics page title"
+  },
+  "generalStatistics": "General Statistics",
+  "@generalStatistics": {
+    "description": "General statistics section title"
+  },
+  "totalPhotos": "Total Photos",
+  "@totalPhotos": {
+    "description": "Total photos label"
+  },
+  "items": "items",
+  "@items": {
+    "description": "Items label for album media count"
+  },
+  "yesterday": "Yesterday",
+  "@yesterday": {
+    "description": "Yesterday text for time ago"
+  },
+  "ago": "ago",
+  "@ago": {
+    "description": "Ago suffix for time ago"
+  },
+  "justNow": "Just now",
+  "@justNow": {
+    "description": "Just now text for time ago"
   },
   "stop": "Stop",
   "@stop": {
@@ -1240,13 +1291,17 @@
   "@noDuplicatesFoundTitle": {
     "description": "Title shown when no duplicate photos are found after scan"
   },
-  "scanCompletedSuccessfully": "Great news! Your gallery scan completed successfully.",
+  "scanCompletedSuccessfully": "Scan completed successfully!",
   "@scanCompletedSuccessfully": {
     "description": "Success message shown when scan completes with no results"
   },
-  "scanCompletedSuccessfullyDuplicate": "Excellent! Your gallery scan completed successfully.",
+  "scanCompletedSuccessfullyDuplicate": "Scan completed successfully!",
   "@scanCompletedSuccessfullyDuplicate": {
     "description": "Success message shown when duplicate scan completes with no results"
+  },
+  "openAppAndViewResults": "Open the app and view results",
+  "@openAppAndViewResults": {
+    "description": "Message telling user to open app and view scan results"
   },
   "rateApp": "Rate App",
   "@rateApp": {
@@ -1428,44 +1483,64 @@
   "@getUnlimitedDeletions": {
     "description": "Button text to get unlimited deletions"
   },
-  "scanTip1": "While we scan your photos, you can scroll through reels.",
+  "scanTip1": "📱 Scroll through reels while we work!",
   "@scanTip1": {
     "description": "Tip shown during scan"
   },
-  "scanTip2": "While we scan, you can read half a page of a book.",
+  "scanTip2": "☕ Grab a cup of coffee from the kitchen!",
   "@scanTip2": {
     "description": "Tip shown during scan"
   },
-  "scanTip3": "While we scan, you can reply to your partner's message.",
+  "scanTip3": "💌 Text your loved one while you wait!",
   "@scanTip3": {
     "description": "Tip shown during scan"
   },
-  "scanTip4": "While we scan, you can check your notifications.",
+  "scanTip4": "📚 Read a book or an article!",
   "@scanTip4": {
     "description": "Tip shown during scan"
   },
-  "scanTip5": "While we scan, you can take a short break.",
+  "scanTip5": "🎵 Listen to your favorite music!",
   "@scanTip5": {
     "description": "Tip shown during scan"
   },
-  "scanTip6": "You can minimize the app to background, but don't close it completely.",
+  "scanTip6": "💬 Chat with your friends!",
   "@scanTip6": {
     "description": "Tip shown during scan"
   },
-  "scanTip7": "While we scan, you can browse other apps without closing this one.",
+  "scanTip7": "🌐 Browse social media!",
   "@scanTip7": {
     "description": "Tip shown during scan"
   },
-  "scanTip8": "While we scan, you can make a quick phone call.",
+  "scanTip8": "🚶 Take a short walk around!",
   "@scanTip8": {
     "description": "Tip shown during scan"
   },
-  "scanTip9": "While we scan, you can check your social media.",
+  "scanTip9": "💧 Drink some water and stay hydrated!",
   "@scanTip9": {
     "description": "Tip shown during scan"
   },
-  "scanTip10": "While we scan, you can grab a cup of coffee.",
+  "scanTip10": "👀 Rest your eyes for a moment!",
   "@scanTip10": {
+    "description": "Tip shown during scan"
+  },
+  "scanTip11": "🎧 Listen to a podcast!",
+  "@scanTip11": {
+    "description": "Tip shown during scan"
+  },
+  "scanTip12": "🏠 Do some quick house chores!",
+  "@scanTip12": {
+    "description": "Tip shown during scan"
+  },
+  "scanTip13": "🍿 Grab a snack!",
+  "@scanTip13": {
+    "description": "Tip shown during scan"
+  },
+  "scanTip14": "📞 Call a friend or family member!",
+  "@scanTip14": {
+    "description": "Tip shown during scan"
+  },
+  "scanTip15": "🎮 Play a quick game!",
+  "@scanTip15": {
     "description": "Tip shown during scan"
   }
 }

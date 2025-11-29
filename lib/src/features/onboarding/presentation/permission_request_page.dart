@@ -8,7 +8,6 @@ import 'package:go_router/go_router.dart';
 import 'package:lottie/lottie.dart';
 
 import '../application/permissions_controller.dart';
-import '../../gallery/application/gallery_stats_provider.dart';
 import '../../gallery/application/gallery_providers.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../app/theme/app_colors.dart';
@@ -178,229 +177,53 @@ class _PermissionRequestPageState extends State<PermissionRequestPage> {
   @override
   Widget build(BuildContext context) {
     final permission = context.watch<PermissionsCubit>().state;
-    final statsState = context.watch<GalleryStatsCubit>().state;
 
     final theme = Theme.of(context);
 
-    // İzin verilmişse istatistikleri göster
+    // İzin verilmişse loading ekranını göster
     if (permission == GalleryPermissionStatus.authorized) {
       return Scaffold(
         backgroundColor: Theme.of(context).colorScheme.background,
-        extendBodyBehindAppBar: true,
-        appBar: AppBar(
-          backgroundColor: AppColors.transparent,
-          elevation: 0,
-          title: Builder(
+        body: Center(
+          child: Builder(
             builder: (ctx) {
               final l10n = AppLocalizations.of(ctx)!;
-              return Text(l10n.appTitle);
+              return Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    width: 150,
+                    height: 150,
+                    child: Lottie.asset(
+                      'assets/lottie/gallery_loading.json',
+                      fit: BoxFit.contain,
+                      repeat: true,
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  Text(
+                    l10n.loadingYourGallery,
+                    style: theme.textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 48),
+                    child: Text(
+                      l10n.loadingYourGalleryDescription,
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        color: theme.colorScheme.onSurface.withOpacity(0.7),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ],
+              );
             },
           ),
-          centerTitle: true,
-        ),
-        body: Stack(
-          children: [
-            SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 16),
-                    Builder(
-                      builder: (ctx) {
-                        final l10n = AppLocalizations.of(ctx)!;
-                        return Text(
-                          l10n.startCleaning,
-                          style: theme.textTheme.displaySmall?.copyWith(
-                            fontWeight: FontWeight.w800,
-                            height: 1.05,
-                          ),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    Builder(
-                      builder: (ctx) {
-                        final l10n = AppLocalizations.of(ctx)!;
-                        return Text(
-                          l10n.swipeCardsDescription,
-                          style: theme.textTheme.bodyLarge?.copyWith(
-                            color: theme.textTheme.bodyMedium?.color
-                                ?.withOpacity(0.9),
-                          ),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 20),
-                    Builder(
-                      builder: (ctx) {
-                        final l10n = AppLocalizations.of(ctx)!;
-                        return Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            _FeatureChip(
-                              icon: Icons.swipe,
-                              label: l10n.quickSwipe,
-                            ),
-                            _FeatureChip(
-                              icon: Icons.folder_open,
-                              label: l10n.dragToFolder,
-                            ),
-                            _FeatureChip(
-                              icon: Icons.undo,
-                              label: l10n.undoSafety,
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                    const Spacer(),
-                    Center(
-                      child: Container(
-                        constraints: const BoxConstraints(maxWidth: 560),
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.surface,
-                          borderRadius: BorderRadius.circular(28),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.black.withOpacity(0.06),
-                              blurRadius: 22,
-                              offset: const Offset(0, 12),
-                            ),
-                          ],
-                        ),
-                        child: Builder(
-                          builder: (context) {
-                            final stats = statsState.stats;
-                            final isLoading =
-                                statsState.isLoading && stats == null;
-                            final hasError =
-                                statsState.error != null && stats == null;
-
-                            if (isLoading) {
-                              return Center(
-                                child: SizedBox(
-                                  width: 100,
-                                  height: 100,
-                                  child: Lottie.asset(
-                                    'assets/lottie/loading.json',
-                                    fit: BoxFit.contain,
-                                    repeat: true,
-                                  ),
-                                ),
-                              );
-                            }
-
-                            if (hasError) {
-                              final l10n = AppLocalizations.of(context)!;
-                              return Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.error_outline,
-                                    size: 72,
-                                    color: theme.colorScheme.error,
-                                  ),
-                                  const SizedBox(height: 12),
-                                  Text(
-                                    l10n.errorMessage(
-                                      statsState.error?.toString() ?? '',
-                                    ),
-                                    style: theme.textTheme.bodyMedium,
-                                    textAlign: TextAlign.center,
-                                  ),
-                                  const SizedBox(height: 16),
-                                  FilledButton(
-                                    onPressed: () {
-                                      context
-                                          .read<GalleryStatsCubit>()
-                                          .refresh();
-                                    },
-                                    child: Text(l10n.tryAgain),
-                                  ),
-                                ],
-                              );
-                            }
-
-                            if (stats == null) {
-                              return Center(
-                                child: SizedBox(
-                                  width: 100,
-                                  height: 100,
-                                  child: Lottie.asset(
-                                    'assets/lottie/loading.json',
-                                    fit: BoxFit.contain,
-                                    repeat: true,
-                                  ),
-                                ),
-                              );
-                            }
-
-                            final l10n = AppLocalizations.of(context)!;
-                            return Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.photo_library,
-                                  size: 72,
-                                  color: theme.colorScheme.primary,
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  l10n.galleryInfo,
-                                  style: theme.textTheme.titleLarge?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 24),
-                                _StatRow(
-                                  icon: Icons.folder,
-                                  label: l10n.album,
-                                  value: '${stats.albumCount}',
-                                ),
-                                const SizedBox(height: 12),
-                                _StatRow(
-                                  icon: Icons.photo,
-                                  label: l10n.photoVideo,
-                                  value: '${stats.mediaCount}',
-                                ),
-                                const SizedBox(height: 12),
-                                _StatRow(
-                                  icon: Icons.storage,
-                                  label: l10n.totalSize,
-                                  value:
-                                      '${stats.totalSizeMB.toStringAsFixed(1)} MB',
-                                ),
-                                const SizedBox(height: 24),
-                                FilledButton.icon(
-                                  icon: const Icon(Icons.play_arrow),
-                                  label: Text(l10n.startCleaningButton),
-                                  style: FilledButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 32,
-                                      vertical: 16,
-                                    ),
-                                  ),
-                                  onPressed: () {
-                                    if (context.mounted) {
-                                      context.go('/swipe');
-                                    }
-                                  },
-                                ),
-                              ],
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
         ),
       );
     }
@@ -474,51 +297,62 @@ class _PermissionRequestPageState extends State<PermissionRequestPage> {
                     },
                   ),
                   const SizedBox(height: 24),
-                  Container(
-                    constraints: const BoxConstraints(maxWidth: 400),
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.surface,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.black.withOpacity(0.06),
-                          blurRadius: 16,
-                          offset: const Offset(0, 8),
+                  // Privacy and Security Info
+                  Builder(
+                    builder: (ctx) {
+                      final l10n = AppLocalizations.of(ctx)!;
+                      return Container(
+                        constraints: const BoxConstraints(maxWidth: 400),
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: theme.colorScheme.primary.withOpacity(0.2),
+                            width: 1.5,
+                          ),
                         ),
-                      ],
-                    ),
-                    child: Builder(
-                      builder: (context) {
-                        final l10n = AppLocalizations.of(context)!;
-                        return Column(
-                          mainAxisSize: MainAxisSize.min,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _PermissionFeature(
-                              icon: Icons.swipe,
-                              title: l10n.quickCleanupTitle,
-                              description: l10n.quickCleanupDescription,
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.security,
+                                  color: theme.colorScheme.primary,
+                                  size: 24,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    l10n.privacySecurityInfo,
+                                    style: theme.textTheme.titleMedium?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: theme.colorScheme.onSurface.withOpacity(0.9),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
-
                             const SizedBox(height: 16),
-                            _PermissionFeature(
-                              icon: Icons.blur_on,
-                              title:
-                                  '${l10n.blurPhotoDetection} - ${l10n.aiPowered}',
-                              description: l10n.blurDetectionDescription,
+                            _PrivacyBulletPoint(
+                              text: l10n.privacySecurityPoint1,
+                              theme: theme,
                             ),
-                            const SizedBox(height: 16),
-                            _PermissionFeature(
-                              icon: Icons.content_copy,
-                              title:
-                                  '${l10n.duplicatePhotoDetection} - ${l10n.aiPowered}',
-                              description:
-                                  l10n.duplicateDetectionDescriptionFromAppBar,
+                            const SizedBox(height: 8),
+                            _PrivacyBulletPoint(
+                              text: l10n.privacySecurityPoint2,
+                              theme: theme,
+                            ),
+                            const SizedBox(height: 8),
+                            _PrivacyBulletPoint(
+                              text: l10n.privacySecurityPoint3,
+                              theme: theme,
                             ),
                           ],
-                        );
-                      },
-                    ),
+                        ),
+                      );
+                    },
                   ),
                   const SizedBox(height: 32),
                   Builder(
@@ -532,6 +366,8 @@ class _PermissionRequestPageState extends State<PermissionRequestPage> {
                             icon: const Icon(Icons.lock_open),
                             label: Text(l10n.allowAccess),
                             style: FilledButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: AppColors.white,
                               padding: const EdgeInsets.symmetric(vertical: 16),
                             ),
                             onPressed: _requestPermission,
@@ -568,110 +404,43 @@ class _PermissionRequestPageState extends State<PermissionRequestPage> {
   }
 }
 
-class _PermissionFeature extends StatelessWidget {
-  const _PermissionFeature({
-    required this.icon,
-    required this.title,
-    required this.description,
+class _PrivacyBulletPoint extends StatelessWidget {
+  const _PrivacyBulletPoint({
+    required this.text,
+    required this.theme,
   });
 
-  final IconData icon;
-  final String title;
-  final String description;
+  final String text;
+  final ThemeData theme;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.primaryContainer,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(icon, color: theme.colorScheme.primary),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                description,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.textTheme.bodyMedium?.color?.withOpacity(0.7),
-                ),
-              ),
-            ],
+        Padding(
+          padding: const EdgeInsets.only(top: 6),
+          child: Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary,
+              shape: BoxShape.circle,
+            ),
           ),
         ),
-      ],
-    );
-  }
-}
-
-class _FeatureChip extends StatelessWidget {
-  const _FeatureChip({required this.icon, required this.label});
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: theme.dividerColor.withOpacity(0.4)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: theme.colorScheme.primary),
-          const SizedBox(width: 6),
-          Text(label, style: theme.textTheme.bodySmall),
-        ],
-      ),
-    );
-  }
-}
-
-class _StatRow extends StatelessWidget {
-  const _StatRow({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
-
-  final IconData icon;
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Row(
-      children: [
-        Icon(icon, size: 20, color: theme.colorScheme.primary),
         const SizedBox(width: 12),
-        Expanded(child: Text(label, style: theme.textTheme.bodyLarge)),
-        Text(
-          value,
-          style: theme.textTheme.bodyLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: theme.colorScheme.primary,
+        Expanded(
+          child: Text(
+            text,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurface.withOpacity(0.9),
+              height: 1.5,
+            ),
           ),
         ),
       ],
     );
   }
 }
+

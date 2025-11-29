@@ -900,15 +900,13 @@ class DuplicateDetectionService {
 
     // Optimize edilmiş batch size - hız ve bellek dengesi
     const pageSize =
-        300; // Kontrollü işleme için optimal (500'den 300'e düşürüldü - daha az memory)
+        500; // Kontrollü işleme için optimal (300'den 500'e artırıldı - daha hızlı I/O)
     const batchSize =
-        20; // Performans için optimize edilmiş (50'den 20'ye - UI thread'i bloklamamak için)
+        50; // Performans için optimize edilmiş (20'den 50'ye artırıldı - daha fazla paralel işleme)
     int totalProcessed = 0;
     int totalAssets = 0;
     int imageCount = 0;
     final random = math.Random();
-    final processingStart = DateTime.now();
-    const targetMsPerPhoto = 30; // ~1000 foto ≈ 30sn hedef
     int sampleTarget = 0;
 
     try {
@@ -1078,21 +1076,10 @@ class DuplicateDetectionService {
           imageCount += batch.length;
           totalProcessed += batch.length;
 
-          // Hedef süreyi yakalamak için adaptif gecikme
-          final expectedDurationMs = imageCount * targetMsPerPhoto;
-          final elapsedMs = DateTime.now()
-              .difference(processingStart)
-              .inMilliseconds;
-          final remainingMs = expectedDurationMs - elapsedMs;
-          if (remainingMs > 3) {
-            final delayMs = remainingMs.clamp(3, 80).toInt();
-            await Future.delayed(Duration(milliseconds: delayMs));
-          }
-
-          // İlerleme callback (throttled - her 50 asset'te bir veya her 500ms'de bir)
+          // İlerleme callback (throttled - her 100 asset'te bir - performans için optimize edildi)
           // UI thread'i bloklamamak için callback'leri azalt
           if (progressCallback != null &&
-              (totalProcessed % 50 == 0 || imageCount >= sampleTarget)) {
+              (totalProcessed % 100 == 0 || imageCount >= sampleTarget)) {
             final progress = (totalProcessed / sampleTarget).clamp(0.0, 1.0);
             // Async olarak çağır (UI thread'i bloklamamak için)
             Future.microtask(() {
@@ -1105,15 +1092,9 @@ class DuplicateDetectionService {
             });
           }
 
-          // Her 100 asset'te bir yield (UI thread'e nefes vermek için)
-          if (totalProcessed % 100 == 0) {
+          // Her 500 asset'te bir yield (UI thread'e nefes vermek için - performans için optimize edildi)
+          if (totalProcessed % 500 == 0) {
             await Future.delayed(const Duration(milliseconds: 1));
-          }
-
-          // Her 200 asset'te bir memory temizliği (GC'yi tetikle)
-          if (totalProcessed % 200 == 0) {
-            // Force garbage collection hint
-            await Future.delayed(const Duration(milliseconds: 5));
           }
 
           // Debug log (her 100 fotoğrafta bir)

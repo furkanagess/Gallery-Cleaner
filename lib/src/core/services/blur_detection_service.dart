@@ -52,7 +52,9 @@ class BlurDetectionService {
       final result = await analyzeBlurInIsolate(thumbnail);
       return result.blurScore;
     } catch (e) {
-      AppLogger.e('⚠️ [BlurDetection] Blur score hesaplama hatası (ID: ${asset.id}): $e');
+      AppLogger.e(
+        '⚠️ [BlurDetection] Blur score hesaplama hatası (ID: ${asset.id}): $e',
+      );
       return 0.5;
     }
   }
@@ -601,19 +603,19 @@ class BlurDetectionService {
     bool isPremium = false,
     int maxScanLimit = 999999999,
   }) async {
-    AppLogger.i('🔍 [BlurDetection] findBlurryPhotosInAlbum başladı: ${album.name} (ID: ${album.id})');
+    AppLogger.i(
+      '🔍 [BlurDetection] findBlurryPhotosInAlbum başladı: ${album.name} (ID: ${album.id})',
+    );
 
     final blurryPhotos = <BlurPhoto>[];
     // Optimize sayfa boyutu: daha büyük sayfa = daha az I/O = daha hızlı
-    const pageSize = 500; // 500 medya/sayfa (memory-safe, daha hızlı I/O)
+    const pageSize = 1000; // 1000 medya/sayfa (memory-safe, daha hızlı I/O)
     const batchSize =
-        20; // Paralel işlenecek asset sayısı (performans için optimize edildi)
+        50; // Paralel işlenecek asset sayısı (performans için optimize edildi - 20'den 50'ye artırıldı)
     int totalProcessed = 0;
     int totalAssets = 0;
     int imageCount = 0;
     final random = math.Random();
-    final processingStart = DateTime.now();
-    const targetMsPerPhoto = 30; // 1000 foto ≈ 30sn hedef
     int sampleTarget = 0;
 
     try {
@@ -624,7 +626,9 @@ class BlurDetectionService {
         AppLogger.d('📊 [BlurDetection] Gerçek toplam asset: $totalAssets');
       } catch (e) {
         // Eğer assetCountAsync çalışmazsa, tahmin et
-        AppLogger.w('⚠️ [BlurDetection] assetCountAsync çalışmadı, tahmin ediliyor: $e');
+        AppLogger.w(
+          '⚠️ [BlurDetection] assetCountAsync çalışmadı, tahmin ediliyor: $e',
+        );
         final firstPage = await album.getAssetListPaged(
           page: 0,
           size: pageSize,
@@ -664,7 +668,9 @@ class BlurDetectionService {
         ..shuffle(random);
 
       // Tüm asset'leri kontrol et
-      AppLogger.i('🔄 [BlurDetection] Rastgele blur taraması başlıyor (hedef: $sampleTarget fotoğraf, toplam albüm asset: $totalAssets)');
+      AppLogger.i(
+        '🔄 [BlurDetection] Rastgele blur taraması başlıyor (hedef: $sampleTarget fotoğraf, toplam albüm asset: $totalAssets)',
+      );
       for (final pageIndex in pageIndices) {
         if (imageCount >= sampleTarget) {
           break;
@@ -750,7 +756,9 @@ class BlurDetectionService {
 
                 // Debug: Tespit edilen problemli fotoğrafları logla
                 if (isBlurry || isPixelated) {
-                  AppLogger.d('✅ [BlurDetection] Problemli fotoğraf tespit edildi: Asset ${asset.id}, BlurScore=${blurScore.toStringAsFixed(3)} (threshold: $blurThreshold), PixelationScore=${pixelationScore.toStringAsFixed(3)}, isBlurry=$isBlurry, isPixelated=$isPixelated');
+                  AppLogger.d(
+                    '✅ [BlurDetection] Problemli fotoğraf tespit edildi: Asset ${asset.id}, BlurScore=${blurScore.toStringAsFixed(3)} (threshold: $blurThreshold), PixelationScore=${pixelationScore.toStringAsFixed(3)}, isBlurry=$isBlurry, isPixelated=$isPixelated',
+                  );
                 }
 
                 if (isBlurry || isPixelated) {
@@ -790,21 +798,10 @@ class BlurDetectionService {
           imageCount += batch.length;
           totalProcessed += batch.length;
 
-          // Hedef süreyi yakalamak için adaptif gecikme
-          final expectedDurationMs = imageCount * targetMsPerPhoto;
-          final elapsedMs = DateTime.now()
-              .difference(processingStart)
-              .inMilliseconds;
-          final remainingMs = expectedDurationMs - elapsedMs;
-          if (remainingMs > 3) {
-            final delayMs = remainingMs.clamp(3, 80).toInt();
-            await Future.delayed(Duration(milliseconds: delayMs));
-          }
-
-          // İlerleme callback (throttled - her 50 asset'te bir veya her 500ms'de bir)
+          // İlerleme callback (throttled - her 100 asset'te bir - performans için optimize edildi)
           // UI thread'i bloklamamak için callback'leri azalt
           if (progressCallback != null &&
-              (totalProcessed % 50 == 0 || imageCount >= sampleTarget)) {
+              (totalProcessed % 100 == 0 || imageCount >= sampleTarget)) {
             final progress = (totalProcessed / sampleTarget).clamp(0.0, 1.0);
             // Async olarak çağır (UI thread'i bloklamamak için)
             Future.microtask(() {
@@ -817,20 +814,16 @@ class BlurDetectionService {
             });
           }
 
-          // Her 100 asset'te bir yield (UI thread'e nefes vermek için)
-          if (totalProcessed % 100 == 0) {
+          // Her 500 asset'te bir yield (UI thread'e nefes vermek için - performans için optimize edildi)
+          if (totalProcessed % 500 == 0) {
             await Future.delayed(const Duration(milliseconds: 1));
-          }
-
-          // Her 200 asset'te bir memory temizliği (GC'yi tetikle)
-          if (totalProcessed % 200 == 0) {
-            // Force garbage collection hint
-            await Future.delayed(const Duration(milliseconds: 5));
           }
 
           // Debug log (her 50 fotoğrafta bir)
           if (imageCount % 50 == 0) {
-            AppLogger.d('🖼️ [BlurDetection] $imageCount fotoğraf işlendi, ${blurryPhotos.length} problem bulundu...');
+            AppLogger.d(
+              '🖼️ [BlurDetection] $imageCount fotoğraf işlendi, ${blurryPhotos.length} problem bulundu...',
+            );
           }
         }
 
@@ -842,8 +835,12 @@ class BlurDetectionService {
       // Blur score'a göre sırala (en blurludan en az blurluya)
       blurryPhotos.sort((a, b) => a.blurScore.compareTo(b.blurScore));
 
-      AppLogger.i('✅ [BlurDetection] ${blurryPhotos.length} blurlu fotoğraf bulundu (${album.name})');
-      AppLogger.i('📊 [BlurDetection] Toplam scan edilen fotoğraf: $imageCount');
+      AppLogger.i(
+        '✅ [BlurDetection] ${blurryPhotos.length} blurlu fotoğraf bulundu (${album.name})',
+      );
+      AppLogger.i(
+        '📊 [BlurDetection] Toplam scan edilen fotoğraf: $imageCount',
+      );
 
       return (
         blurryPhotos: blurryPhotos,
@@ -884,7 +881,9 @@ class BlurDetectionService {
     bool isPremium = false,
     int maxScanLimit = 999999999,
   }) async {
-    AppLogger.i('🔍 [BlurDetection] findBlurryPhotosInAlbums başladı - ${albums.length} albüm');
+    AppLogger.i(
+      '🔍 [BlurDetection] findBlurryPhotosInAlbums başladı - ${albums.length} albüm',
+    );
     final results = <String, List<BlurPhoto>>{};
     int totalScannedPhotos = 0;
     int totalTargetPhotos = 0;
@@ -902,12 +901,16 @@ class BlurDetectionService {
 
       // Kalan scan limit kontrolü (premium değilse)
       if (!isPremium && totalScannedPhotos >= maxScanLimit) {
-        AppLogger.w('⚠️ [BlurDetection] Scan limit aşıldı: $totalScannedPhotos/$maxScanLimit fotoğraf scan edildi');
+        AppLogger.w(
+          '⚠️ [BlurDetection] Scan limit aşıldı: $totalScannedPhotos/$maxScanLimit fotoğraf scan edildi',
+        );
         break;
       }
 
       final album = albums[i];
-      AppLogger.d('📁 [BlurDetection] Albüm ${i + 1}/${albums.length}: ${album.name} (ID: ${album.id})');
+      AppLogger.d(
+        '📁 [BlurDetection] Albüm ${i + 1}/${albums.length}: ${album.name} (ID: ${album.id})',
+      );
 
       // Kalan scan limit'i hesapla
       final remainingScanLimit = isPremium
@@ -961,12 +964,16 @@ class BlurDetectionService {
 
       // Scan limit aşıldıysa dur
       if (!isPremium && totalScannedPhotos >= maxScanLimit) {
-        AppLogger.w('⚠️ [BlurDetection] Scan limit aşıldı: $totalScannedPhotos/$maxScanLimit fotoğraf scan edildi');
+        AppLogger.w(
+          '⚠️ [BlurDetection] Scan limit aşıldı: $totalScannedPhotos/$maxScanLimit fotoğraf scan edildi',
+        );
         break;
       }
     }
 
-    AppLogger.i('🎉 [BlurDetection] Tüm albümler taranı! Toplam sonuç: ${results.length} albüm, Toplam scan edilen: $totalScannedPhotos fotoğraf');
+    AppLogger.i(
+      '🎉 [BlurDetection] Tüm albümler taranı! Toplam sonuç: ${results.length} albüm, Toplam scan edilen: $totalScannedPhotos fotoğraf',
+    );
     return (
       results: results,
       scannedPhotoCount: totalScannedPhotos,

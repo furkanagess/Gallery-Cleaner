@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -38,8 +37,12 @@ class ResultsPage extends StatelessWidget {
             } else {
               context.read<DuplicateDetectionCubit>().clear();
             }
-            // Normal geri dönüş
-            context.pop();
+            // Swipe page'e geri dön
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/swipe');
+            }
           },
         ),
         title: Text(
@@ -144,29 +147,16 @@ class _BlurResultsTab extends StatelessWidget {
                 if (!hasPhotosToDelete) {
                   return const SizedBox.shrink();
                 }
-                return ClipRRect(
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-                    child: Container(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            theme.colorScheme.background.withOpacity(0.7),
-                            theme.colorScheme.background.withOpacity(0.95),
-                            theme.colorScheme.background,
-                          ],
-                        ),
-                      ),
-                      child: _buildDeleteButton(
-                        context,
-                        theme,
-                        l10n,
-                        allPhotos,
-                      ),
-                    ),
+                return Container(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                  decoration: const BoxDecoration(
+                    color: Colors.transparent,
+                  ),
+                  child: _buildDeleteButton(
+                    context,
+                    theme,
+                    l10n,
+                    allPhotos,
                   ),
                 );
               },
@@ -310,7 +300,7 @@ class _BlurResultsTab extends StatelessWidget {
                   style: FilledButton.styleFrom(
                     backgroundColor: theme.colorScheme.error,
                     side: BorderSide(
-                      color: AppColors.error.withOpacity(0.9),
+                      color: AppColors.error,
                       width: 1.5,
                     ),
                   ),
@@ -378,9 +368,9 @@ class _BlurResultsTab extends StatelessWidget {
           style: FilledButton.styleFrom(
             padding: const EdgeInsets.symmetric(vertical: 16),
             minimumSize: const Size(double.infinity, 56),
-            backgroundColor: AppColors.error.withOpacity(0.85),
+            backgroundColor: AppColors.error,
             foregroundColor: theme.colorScheme.onError,
-            side: BorderSide(color: AppColors.error.withOpacity(0.9), width: 1.5),
+            side: BorderSide(color: AppColors.error, width: 1.5),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
@@ -681,29 +671,16 @@ class _DuplicateResultsTab extends StatelessWidget {
                 if (!hasPhotosToDelete) {
                   return const SizedBox.shrink();
                 }
-                return ClipRRect(
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-                    child: Container(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            theme.colorScheme.background.withOpacity(0.7),
-                            theme.colorScheme.background.withOpacity(0.95),
-                            theme.colorScheme.background,
-                          ],
-                        ),
-                      ),
-                      child: _buildDeleteButton(
-                        context,
-                        theme,
-                        l10n,
-                        state,
-                      ),
-                    ),
+                return Container(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                  decoration: const BoxDecoration(
+                    color: Colors.transparent,
+                  ),
+                  child: _buildDeleteButton(
+                    context,
+                    theme,
+                    l10n,
+                    state,
                   ),
                 );
               },
@@ -846,7 +823,7 @@ class _DuplicateResultsTab extends StatelessWidget {
                   style: FilledButton.styleFrom(
                     backgroundColor: theme.colorScheme.error,
                     side: BorderSide(
-                      color: AppColors.error.withOpacity(0.9),
+                      color: AppColors.error,
                       width: 1.5,
                     ),
                   ),
@@ -914,9 +891,9 @@ class _DuplicateResultsTab extends StatelessWidget {
           style: FilledButton.styleFrom(
             padding: const EdgeInsets.symmetric(vertical: 16),
             minimumSize: const Size(double.infinity, 56),
-            backgroundColor: AppColors.error.withOpacity(0.85),
+            backgroundColor: AppColors.error,
             foregroundColor: theme.colorScheme.onError,
-            side: BorderSide(color: AppColors.error.withOpacity(0.9), width: 1.5),
+            side: BorderSide(color: AppColors.error, width: 1.5),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),

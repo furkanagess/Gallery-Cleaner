@@ -216,6 +216,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get loading => 'Cargando...';
 
   @override
+  String get loadingYourGallery => 'Cargando Tu Galería';
+
+  @override
+  String get loadingYourGalleryDescription =>
+      'Estamos preparando tus fotos y videos. Por favor espera...';
+
+  @override
   String get galleryInfoNotLoaded =>
       'No se pudo cargar la información de la galería';
 
@@ -327,6 +334,21 @@ class AppLocalizationsEs extends AppLocalizations {
       'Necesitamos acceso a tus fotos y videos para realizar operaciones de limpieza de galería.';
 
   @override
+  String get privacySecurityInfo => '🔒 Tu Privacidad Importa';
+
+  @override
+  String get privacySecurityPoint1 =>
+      'Tus fotos y videos nunca se comparten con nadie';
+
+  @override
+  String get privacySecurityPoint2 =>
+      'Todo el procesamiento ocurre solo en tu dispositivo';
+
+  @override
+  String get privacySecurityPoint3 =>
+      'No recopilamos, almacenamos ni transmitimos ningún contenido multimedia personal';
+
+  @override
   String get quickCleanupTitle => 'Limpieza Rápida';
 
   @override
@@ -391,7 +413,16 @@ class AppLocalizationsEs extends AppLocalizations {
   String get unlimitedDeletions => 'Derechos de eliminación ilimitados';
 
   @override
+  String get unlimitedScans => 'Escaneos Ilimitados';
+
+  @override
   String get noAds => 'Experiencia sin anuncios';
+
+  @override
+  String get allPremiumFeatures => 'Todas las Funciones Premium';
+
+  @override
+  String get welcomeToPremium => 'Desbloquea todas las funciones premium:';
 
   @override
   String get prioritySupport => 'Soporte prioritario';
@@ -667,6 +698,24 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get galleryStatsTitle => 'Estadísticas de Galería';
+
+  @override
+  String get generalStatistics => 'Estadísticas Generales';
+
+  @override
+  String get totalPhotos => 'Total de Fotos';
+
+  @override
+  String get items => 'elementos';
+
+  @override
+  String get yesterday => 'Ayer';
+
+  @override
+  String get ago => 'hace';
+
+  @override
+  String get justNow => 'Ahora mismo';
 
   @override
   String get stop => 'Detener';
@@ -945,12 +994,14 @@ class AppLocalizationsEs extends AppLocalizations {
   String get noDuplicatesFoundTitle => 'No se encontraron duplicados';
 
   @override
-  String get scanCompletedSuccessfully =>
-      '¡Buenas noticias! El escaneo de tu galería se completó exitosamente.';
+  String get scanCompletedSuccessfully => '¡Escaneo completado exitosamente!';
 
   @override
   String get scanCompletedSuccessfullyDuplicate =>
-      '¡Excelente! El escaneo de tu galería se completó exitosamente.';
+      '¡Escaneo completado exitosamente!';
+
+  @override
+  String get openAppAndViewResults => 'Abre la aplicación y ve los resultados';
 
   @override
   String get rateApp => 'Calificar App';
@@ -1086,39 +1137,47 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get scanTip1 =>
-      'Mientras escaneamos tus fotos, puedes desplazarte por los reels.';
+      '📱 ¡Puedes desplazarte por reels mientras trabajamos!';
 
   @override
-  String get scanTip2 =>
-      'Mientras escaneamos, puedes leer media página de un libro.';
+  String get scanTip2 => '☕ ¡Ve a la cocina y prepárate un café!';
 
   @override
-  String get scanTip3 =>
-      'Mientras escaneamos, puedes responder al mensaje de tu pareja.';
+  String get scanTip3 => '💌 ¡Escribe a tu ser querido mientras esperas!';
 
   @override
-  String get scanTip4 =>
-      'Mientras escaneamos, puedes revisar tus notificaciones.';
+  String get scanTip4 => '📚 ¡Lee un libro o un artículo!';
 
   @override
-  String get scanTip5 => 'Mientras escaneamos, puedes tomar un breve descanso.';
+  String get scanTip5 => '🎵 ¡Escucha tu música favorita!';
 
   @override
-  String get scanTip6 =>
-      'Puedes minimizar la app al fondo, pero no la cierres completamente.';
+  String get scanTip6 => '💬 ¡Chatea con tus amigos!';
 
   @override
-  String get scanTip7 =>
-      'Mientras escaneamos, puedes navegar por otras apps sin cerrar esta.';
+  String get scanTip7 => '🌐 ¡Navega por las redes sociales!';
 
   @override
-  String get scanTip8 =>
-      'Mientras escaneamos, puedes hacer una llamada rápida.';
+  String get scanTip8 => '🚶 ¡Da un paseo corto!';
 
   @override
-  String get scanTip9 =>
-      'Mientras escaneamos, puedes revisar tus redes sociales.';
+  String get scanTip9 => '💧 ¡Bebe agua y mantente hidratado!';
 
   @override
-  String get scanTip10 => 'Mientras escaneamos, puedes tomar una taza de café.';
+  String get scanTip10 => '👀 ¡Descansa tus ojos por un momento!';
+
+  @override
+  String get scanTip11 => '🎧 ¡Escucha un podcast!';
+
+  @override
+  String get scanTip12 => '🏠 ¡Haz algunas tareas domésticas rápidas!';
+
+  @override
+  String get scanTip13 => '🍿 ¡Toma un snack!';
+
+  @override
+  String get scanTip14 => '📞 ¡Llama a un amigo o familiar!';
+
+  @override
+  String get scanTip15 => '🎮 ¡Juega un juego rápido!';
 }

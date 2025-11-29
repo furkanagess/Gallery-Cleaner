@@ -216,6 +216,13 @@ class AppLocalizationsTr extends AppLocalizations {
   String get loading => 'Yükleniyor...';
 
   @override
+  String get loadingYourGallery => 'Galerinizi Yüklüyoruz';
+
+  @override
+  String get loadingYourGalleryDescription =>
+      'Fotoğraf ve videolarınız hazırlanıyor. Lütfen bekleyiniz...';
+
+  @override
   String get galleryInfoNotLoaded => 'Galeri bilgileri yüklenemedi';
 
   @override
@@ -325,6 +332,21 @@ class AppLocalizationsTr extends AppLocalizations {
       'Galeri temizleme işlemlerini yapabilmek için fotoğraf ve videolarınıza erişim iznine ihtiyacımız var.';
 
   @override
+  String get privacySecurityInfo => '🔒 Gizliliğiniz Önemli';
+
+  @override
+  String get privacySecurityPoint1 =>
+      'Fotoğraf ve videolarınız hiçbir şekilde başkalarıyla paylaşılmaz';
+
+  @override
+  String get privacySecurityPoint2 =>
+      'Tüm işlemler yalnızca cihazınızda gerçekleşir';
+
+  @override
+  String get privacySecurityPoint3 =>
+      'Kişisel medya içeriklerinizi toplamıyor, saklamıyor veya iletmiyoruz';
+
+  @override
   String get quickCleanupTitle => 'Hızlı Temizlik';
 
   @override
@@ -390,7 +412,16 @@ class AppLocalizationsTr extends AppLocalizations {
   String get unlimitedDeletions => 'Sınırsız silme hakkı';
 
   @override
+  String get unlimitedScans => 'Sınırsız Tarama';
+
+  @override
   String get noAds => 'Reklamsız deneyim';
+
+  @override
+  String get allPremiumFeatures => 'Tüm Premium Özellikler';
+
+  @override
+  String get welcomeToPremium => 'Tüm premium özelliklerin kilidini açın:';
 
   @override
   String get prioritySupport => 'Öncelikli destek';
@@ -664,6 +695,24 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get galleryStatsTitle => 'Galeri İstatistikleri';
+
+  @override
+  String get generalStatistics => 'Genel İstatistikler';
+
+  @override
+  String get totalPhotos => 'Toplam Fotoğraf';
+
+  @override
+  String get items => 'öğe';
+
+  @override
+  String get yesterday => 'Dün';
+
+  @override
+  String get ago => 'önce';
+
+  @override
+  String get justNow => 'Az önce';
 
   @override
   String get stop => 'Durdur';
@@ -942,12 +991,14 @@ class AppLocalizationsTr extends AppLocalizations {
   String get noDuplicatesFoundTitle => 'Duplicate Fotoğraf Bulunamadı';
 
   @override
-  String get scanCompletedSuccessfully =>
-      'Harika haber! Galeri taramanız başarıyla tamamlandı.';
+  String get scanCompletedSuccessfully => 'Tarama başarıyla tamamlandı!';
 
   @override
   String get scanCompletedSuccessfullyDuplicate =>
-      'Mükemmel! Galeri taramanız başarıyla tamamlandı.';
+      'Tarama başarıyla tamamlandı!';
+
+  @override
+  String get openAppAndViewResults => 'Uygulamayı aç ve sonuçları gör';
 
   @override
   String get rateApp => 'Uygulamayı Değerlendir';
@@ -1034,7 +1085,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get viewResults => 'Sonuçları Görüntüle';
 
   @override
-  String get viewLastResults => 'Son Sonuçları Görüntüle';
+  String get viewLastResults => 'Sonuçları Görüntüle';
 
   @override
   String get filterAndSort => 'Filtre ve Sıralama';
@@ -1083,39 +1134,47 @@ class AppLocalizationsTr extends AppLocalizations {
   String get getUnlimitedDeletions => 'Sınırsız Silme Al';
 
   @override
-  String get scanTip1 =>
-      'Biz görsellerinizi scan ederken siz reels kaydırabilirsiniz.';
+  String get scanTip1 => '📱 Reels kaydırabilirsin!';
 
   @override
-  String get scanTip2 => 'Biz scan ederken yarım sayfa kitap okuyabilirsiniz.';
+  String get scanTip2 => '☕ Mutfaktan kahve doldurabilirsin!';
 
   @override
-  String get scanTip3 =>
-      'Biz scan ederken sevgilinizin mesajına dönüş yapabilirsiniz.';
+  String get scanTip3 => '💌 Sevgiline yazabilirsin!';
 
   @override
-  String get scanTip4 =>
-      'Biz scan ederken bildirimlerinizi kontrol edebilirsiniz.';
+  String get scanTip4 => '📚 Kitap okuyabilirsin!';
 
   @override
-  String get scanTip5 => 'Biz scan ederken kısa bir mola verebilirsiniz.';
+  String get scanTip5 => '🎵 Müzik dinleyebilirsin!';
 
   @override
-  String get scanTip6 =>
-      'Uygulamayı arka plana alabilirsiniz, ancak tamamen kapatmayın.';
+  String get scanTip6 => '💬 Arkadaşlarınla sohbet edebilirsin!';
 
   @override
-  String get scanTip7 =>
-      'Biz scan ederken bu uygulamayı kapatmadan diğer uygulamalara bakabilirsiniz.';
+  String get scanTip7 => '🌐 Sosyal medyada gezinebilirsin!';
 
   @override
-  String get scanTip8 =>
-      'Biz scan ederken kısa bir telefon görüşmesi yapabilirsiniz.';
+  String get scanTip8 => '🚶 Kısa bir yürüyüş yapabilirsin!';
 
   @override
-  String get scanTip9 =>
-      'Biz scan ederken sosyal medyanızı kontrol edebilirsiniz.';
+  String get scanTip9 => '💧 Su içebilirsin!';
 
   @override
-  String get scanTip10 => 'Biz scan ederken bir fincan kahve alabilirsiniz.';
+  String get scanTip10 => '👀 Gözlerini dinlendirebilirsin!';
+
+  @override
+  String get scanTip11 => '🎧 Bir podcast dinleyebilirsin!';
+
+  @override
+  String get scanTip12 => '🏠 Ev işlerine bakabilirsin!';
+
+  @override
+  String get scanTip13 => '🍿 Bir şeyler atıştırabilirsin!';
+
+  @override
+  String get scanTip14 => '📞 Arkadaşlarını arayabilirsin!';
+
+  @override
+  String get scanTip15 => '🎮 Bir oyun oynayabilirsin!';
 }

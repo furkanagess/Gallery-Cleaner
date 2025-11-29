@@ -124,6 +124,13 @@
   "@galleryPermissionDescription": {
     "description": "Description for gallery permission request"
   },
+  "privacySecurityInfo": "🔒 Gizliliğiniz Önemli",
+  "privacySecurityPoint1": "Fotoğraf ve videolarınız hiçbir şekilde başkalarıyla paylaşılmaz",
+  "privacySecurityPoint2": "Tüm işlemler yalnızca cihazınızda gerçekleşir",
+  "privacySecurityPoint3": "Kişisel medya içeriklerinizi toplamıyor, saklamıyor veya iletmiyoruz",
+  "@privacySecurityInfo": {
+    "description": "Privacy and security information text for permission request page"
+  },
   "quickCleanupTitle": "Hızlı Temizlik",
   "@quickCleanupTitle": {
     "description": "Quick cleanup feature title"
@@ -208,9 +215,21 @@
   "@unlimitedDeletions": {
     "description": "Unlimited deletions feature"
   },
+  "unlimitedScans": "Sınırsız Tarama",
+  "@unlimitedScans": {
+    "description": "Unlimited scans feature"
+  },
   "noAds": "Reklamsız deneyim",
   "@noAds": {
     "description": "No ads feature"
+  },
+  "allPremiumFeatures": "Tüm Premium Özellikler",
+  "@allPremiumFeatures": {
+    "description": "All premium features text"
+  },
+  "welcomeToPremium": "Tüm premium özelliklerin kilidini açın:",
+  "@welcomeToPremium": {
+    "description": "Welcome message for premium features"
   },
   "prioritySupport": "Öncelikli destek",
   "@prioritySupport": {
@@ -576,6 +595,30 @@
   "@galleryStatsTitle": {
     "description": "Gallery statistics page title"
   },
+  "generalStatistics": "Genel İstatistikler",
+  "@generalStatistics": {
+    "description": "General statistics section title"
+  },
+  "totalPhotos": "Toplam Fotoğraf",
+  "@totalPhotos": {
+    "description": "Total photos label"
+  },
+  "items": "öğe",
+  "@items": {
+    "description": "Items label for album media count"
+  },
+  "yesterday": "Dün",
+  "@yesterday": {
+    "description": "Yesterday text for time ago"
+  },
+  "ago": "önce",
+  "@ago": {
+    "description": "Ago suffix for time ago"
+  },
+  "justNow": "Az önce",
+  "@justNow": {
+    "description": "Just now text for time ago"
+  },
   "stop": "Durdur",
   "@stop": {
     "description": "Stop button text"
@@ -755,6 +798,14 @@
   "loading": "Yükleniyor...",
   "@loading": {
     "description": "Loading text"
+  },
+  "loadingYourGallery": "Galerinizi Yüklüyoruz",
+  "@loadingYourGallery": {
+    "description": "Title for gallery loading screen"
+  },
+  "loadingYourGalleryDescription": "Fotoğraf ve videolarınız hazırlanıyor. Lütfen bekleyiniz...",
+  "@loadingYourGalleryDescription": {
+    "description": "Description for gallery loading screen"
   },
   "photoUnit": "fotoğraf",
   "@photoUnit": {
@@ -957,13 +1008,17 @@
   "@noDuplicatesFoundTitle": {
     "description": "Title shown when no duplicate photos are found after scan"
   },
-  "scanCompletedSuccessfully": "Harika haber! Galeri taramanız başarıyla tamamlandı.",
+  "scanCompletedSuccessfully": "Tarama başarıyla tamamlandı!",
   "@scanCompletedSuccessfully": {
     "description": "Success message shown when scan completes with no results"
   },
-  "scanCompletedSuccessfullyDuplicate": "Mükemmel! Galeri taramanız başarıyla tamamlandı.",
+  "scanCompletedSuccessfullyDuplicate": "Tarama başarıyla tamamlandı!",
   "@scanCompletedSuccessfullyDuplicate": {
     "description": "Success message shown when duplicate scan completes with no results"
+  },
+  "openAppAndViewResults": "Uygulamayı aç ve sonuçları gör",
+  "@openAppAndViewResults": {
+    "description": "Message telling user to open app and view scan results"
   },
   "rateApp": "Uygulamayı Değerlendir",
   "@rateApp": {
@@ -1073,7 +1128,7 @@
   "@viewResults": {
     "description": "Button text to view scan results"
   },
-  "viewLastResults": "Son Sonuçları Görüntüle",
+  "viewLastResults": "Sonuçları Görüntüle",
   "@viewLastResults": {
     "description": "Button text to view last scan results"
   },
@@ -1145,44 +1200,64 @@
   "@getUnlimitedDeletions": {
     "description": "Button text to get unlimited deletions"
   },
-  "scanTip1": "Biz görsellerinizi scan ederken siz reels kaydırabilirsiniz.",
+  "scanTip1": "📱 Reels kaydırabilirsin!",
   "@scanTip1": {
     "description": "Tip shown during scan"
   },
-  "scanTip2": "Biz scan ederken yarım sayfa kitap okuyabilirsiniz.",
+  "scanTip2": "☕ Mutfaktan kahve doldurabilirsin!",
   "@scanTip2": {
     "description": "Tip shown during scan"
   },
-  "scanTip3": "Biz scan ederken sevgilinizin mesajına dönüş yapabilirsiniz.",
+  "scanTip3": "💌 Sevgiline yazabilirsin!",
   "@scanTip3": {
     "description": "Tip shown during scan"
   },
-  "scanTip4": "Biz scan ederken bildirimlerinizi kontrol edebilirsiniz.",
+  "scanTip4": "📚 Kitap okuyabilirsin!",
   "@scanTip4": {
     "description": "Tip shown during scan"
   },
-  "scanTip5": "Biz scan ederken kısa bir mola verebilirsiniz.",
+  "scanTip5": "🎵 Müzik dinleyebilirsin!",
   "@scanTip5": {
     "description": "Tip shown during scan"
   },
-  "scanTip6": "Uygulamayı arka plana alabilirsiniz, ancak tamamen kapatmayın.",
+  "scanTip6": "💬 Arkadaşlarınla sohbet edebilirsin!",
   "@scanTip6": {
     "description": "Tip shown during scan"
   },
-  "scanTip7": "Biz scan ederken bu uygulamayı kapatmadan diğer uygulamalara bakabilirsiniz.",
+  "scanTip7": "🌐 Sosyal medyada gezinebilirsin!",
   "@scanTip7": {
     "description": "Tip shown during scan"
   },
-  "scanTip8": "Biz scan ederken kısa bir telefon görüşmesi yapabilirsiniz.",
+  "scanTip8": "🚶 Kısa bir yürüyüş yapabilirsin!",
   "@scanTip8": {
     "description": "Tip shown during scan"
   },
-  "scanTip9": "Biz scan ederken sosyal medyanızı kontrol edebilirsiniz.",
+  "scanTip9": "💧 Su içebilirsin!",
   "@scanTip9": {
     "description": "Tip shown during scan"
   },
-  "scanTip10": "Biz scan ederken bir fincan kahve alabilirsiniz.",
+  "scanTip10": "👀 Gözlerini dinlendirebilirsin!",
   "@scanTip10": {
+    "description": "Tip shown during scan"
+  },
+  "scanTip11": "🎧 Bir podcast dinleyebilirsin!",
+  "@scanTip11": {
+    "description": "Tip shown during scan"
+  },
+  "scanTip12": "🏠 Ev işlerine bakabilirsin!",
+  "@scanTip12": {
+    "description": "Tip shown during scan"
+  },
+  "scanTip13": "🍿 Bir şeyler atıştırabilirsin!",
+  "@scanTip13": {
+    "description": "Tip shown during scan"
+  },
+  "scanTip14": "📞 Arkadaşlarını arayabilirsin!",
+  "@scanTip14": {
+    "description": "Tip shown during scan"
+  },
+  "scanTip15": "🎮 Bir oyun oynayabilirsin!",
+  "@scanTip15": {
     "description": "Tip shown during scan"
   }
 }

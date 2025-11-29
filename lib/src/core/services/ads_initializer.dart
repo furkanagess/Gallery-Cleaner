@@ -5,7 +5,6 @@ import 'package:flutter/widgets.dart';
 
 import 'interstitial_ads_service.dart';
 import 'preferences_service.dart';
-import 'rewarded_ads_service.dart';
 
 /// Handles initializing and warming up ads whenever the app launches
 /// or returns to the foreground.
@@ -13,7 +12,6 @@ class AdsInitializer with WidgetsBindingObserver {
   AdsInitializer._();
   static final AdsInitializer instance = AdsInitializer._();
 
-  bool _sdkInitialized = false;
   bool _isWarmingUp = false;
   Completer<void>? _warmupCompleter;
 
@@ -50,19 +48,11 @@ class AdsInitializer with WidgetsBindingObserver {
         return;
       }
 
-      if (!_sdkInitialized) {
-        debugPrint('📱 [AdsInitializer] Initializing Mobile Ads SDK...');
-        await RewardedAdsService.initialize();
-        _sdkInitialized = true;
-      }
-
-      debugPrint(
-        '📱 [AdsInitializer] Warming up rewarded and interstitial ads...',
-      );
-      await RewardedAdsService.preloadAllAds();
-      await Future.delayed(const Duration(milliseconds: 500));
+      debugPrint('📱 [AdsInitializer] Warming up interstitial ads...');
       await InterstitialAdsService.instance.loadAd();
-      debugPrint('✅ [AdsInitializer] Ads are warmed up and ready.');
+      debugPrint(
+        '✅ [AdsInitializer] Interstitial ads are warmed up and ready.',
+      );
       _warmupCompleter?.complete();
     } catch (e, stackTrace) {
       debugPrint('❌ [AdsInitializer] Failed to warm up ads: $e');

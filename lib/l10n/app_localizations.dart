@@ -466,6 +466,18 @@ abstract class AppLocalizations {
   /// **'Loading...'**
   String get loading;
 
+  /// Title for gallery loading screen
+  ///
+  /// In en, this message translates to:
+  /// **'Loading Your Gallery'**
+  String get loadingYourGallery;
+
+  /// Description for gallery loading screen
+  ///
+  /// In en, this message translates to:
+  /// **'We are preparing your photos and videos. Please wait...'**
+  String get loadingYourGalleryDescription;
+
   /// Error message when gallery info fails to load
   ///
   /// In en, this message translates to:
@@ -664,6 +676,30 @@ abstract class AppLocalizations {
   /// **'We need access to your photos and videos to perform gallery cleaning operations.'**
   String get galleryPermissionDescription;
 
+  /// Privacy and security information text for permission request page
+  ///
+  /// In en, this message translates to:
+  /// **'🔒 Your Privacy Matters'**
+  String get privacySecurityInfo;
+
+  /// No description provided for @privacySecurityPoint1.
+  ///
+  /// In en, this message translates to:
+  /// **'Your photos and videos are never shared with anyone'**
+  String get privacySecurityPoint1;
+
+  /// No description provided for @privacySecurityPoint2.
+  ///
+  /// In en, this message translates to:
+  /// **'All processing happens only on your device'**
+  String get privacySecurityPoint2;
+
+  /// No description provided for @privacySecurityPoint3.
+  ///
+  /// In en, this message translates to:
+  /// **'We do not collect, store, or transmit any of your personal media'**
+  String get privacySecurityPoint3;
+
   /// Quick cleanup feature title
   ///
   /// In en, this message translates to:
@@ -766,11 +802,29 @@ abstract class AppLocalizations {
   /// **'Unlimited deletion rights'**
   String get unlimitedDeletions;
 
+  /// Unlimited scans feature
+  ///
+  /// In en, this message translates to:
+  /// **'Unlimited Scans'**
+  String get unlimitedScans;
+
   /// No ads feature
   ///
   /// In en, this message translates to:
   /// **'Ad-free experience'**
   String get noAds;
+
+  /// All premium features text
+  ///
+  /// In en, this message translates to:
+  /// **'All Premium Features'**
+  String get allPremiumFeatures;
+
+  /// Welcome message for premium features
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock all premium features:'**
+  String get welcomeToPremium;
 
   /// Priority support feature
   ///
@@ -1264,6 +1318,42 @@ abstract class AppLocalizations {
   /// **'Gallery Statistics'**
   String get galleryStatsTitle;
 
+  /// General statistics section title
+  ///
+  /// In en, this message translates to:
+  /// **'General Statistics'**
+  String get generalStatistics;
+
+  /// Total photos label
+  ///
+  /// In en, this message translates to:
+  /// **'Total Photos'**
+  String get totalPhotos;
+
+  /// Items label for album media count
+  ///
+  /// In en, this message translates to:
+  /// **'items'**
+  String get items;
+
+  /// Yesterday text for time ago
+  ///
+  /// In en, this message translates to:
+  /// **'Yesterday'**
+  String get yesterday;
+
+  /// Ago suffix for time ago
+  ///
+  /// In en, this message translates to:
+  /// **'ago'**
+  String get ago;
+
+  /// Just now text for time ago
+  ///
+  /// In en, this message translates to:
+  /// **'Just now'**
+  String get justNow;
+
   /// Stop button text
   ///
   /// In en, this message translates to:
@@ -1747,14 +1837,20 @@ abstract class AppLocalizations {
   /// Success message shown when scan completes with no results
   ///
   /// In en, this message translates to:
-  /// **'Great news! Your gallery scan completed successfully.'**
+  /// **'Scan completed successfully!'**
   String get scanCompletedSuccessfully;
 
   /// Success message shown when duplicate scan completes with no results
   ///
   /// In en, this message translates to:
-  /// **'Excellent! Your gallery scan completed successfully.'**
+  /// **'Scan completed successfully!'**
   String get scanCompletedSuccessfullyDuplicate;
+
+  /// Message telling user to open app and view scan results
+  ///
+  /// In en, this message translates to:
+  /// **'Open the app and view results'**
+  String get openAppAndViewResults;
 
   /// Title for rate app section
   ///
@@ -1987,62 +2083,92 @@ abstract class AppLocalizations {
   /// Tip shown during scan
   ///
   /// In en, this message translates to:
-  /// **'While we scan your photos, you can scroll through reels.'**
+  /// **'📱 Scroll through reels while we work!'**
   String get scanTip1;
 
   /// Tip shown during scan
   ///
   /// In en, this message translates to:
-  /// **'While we scan, you can read half a page of a book.'**
+  /// **'☕ Grab a cup of coffee from the kitchen!'**
   String get scanTip2;
 
   /// Tip shown during scan
   ///
   /// In en, this message translates to:
-  /// **'While we scan, you can reply to your partner\'s message.'**
+  /// **'💌 Text your loved one while you wait!'**
   String get scanTip3;
 
   /// Tip shown during scan
   ///
   /// In en, this message translates to:
-  /// **'While we scan, you can check your notifications.'**
+  /// **'📚 Read a book or an article!'**
   String get scanTip4;
 
   /// Tip shown during scan
   ///
   /// In en, this message translates to:
-  /// **'While we scan, you can take a short break.'**
+  /// **'🎵 Listen to your favorite music!'**
   String get scanTip5;
 
   /// Tip shown during scan
   ///
   /// In en, this message translates to:
-  /// **'You can minimize the app to background, but don\'t close it completely.'**
+  /// **'💬 Chat with your friends!'**
   String get scanTip6;
 
   /// Tip shown during scan
   ///
   /// In en, this message translates to:
-  /// **'While we scan, you can browse other apps without closing this one.'**
+  /// **'🌐 Browse social media!'**
   String get scanTip7;
 
   /// Tip shown during scan
   ///
   /// In en, this message translates to:
-  /// **'While we scan, you can make a quick phone call.'**
+  /// **'🚶 Take a short walk around!'**
   String get scanTip8;
 
   /// Tip shown during scan
   ///
   /// In en, this message translates to:
-  /// **'While we scan, you can check your social media.'**
+  /// **'💧 Drink some water and stay hydrated!'**
   String get scanTip9;
 
   /// Tip shown during scan
   ///
   /// In en, this message translates to:
-  /// **'While we scan, you can grab a cup of coffee.'**
+  /// **'👀 Rest your eyes for a moment!'**
   String get scanTip10;
+
+  /// Tip shown during scan
+  ///
+  /// In en, this message translates to:
+  /// **'🎧 Listen to a podcast!'**
+  String get scanTip11;
+
+  /// Tip shown during scan
+  ///
+  /// In en, this message translates to:
+  /// **'🏠 Do some quick house chores!'**
+  String get scanTip12;
+
+  /// Tip shown during scan
+  ///
+  /// In en, this message translates to:
+  /// **'🍿 Grab a snack!'**
+  String get scanTip13;
+
+  /// Tip shown during scan
+  ///
+  /// In en, this message translates to:
+  /// **'📞 Call a friend or family member!'**
+  String get scanTip14;
+
+  /// Tip shown during scan
+  ///
+  /// In en, this message translates to:
+  /// **'🎮 Play a quick game!'**
+  String get scanTip15;
 }
 
 class _AppLocalizationsDelegate
