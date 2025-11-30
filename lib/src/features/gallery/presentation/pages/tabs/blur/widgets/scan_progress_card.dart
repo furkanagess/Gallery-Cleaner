@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../../application/gallery_providers.dart' show PremiumCubit;
 
 class ScanProgressCard extends StatelessWidget {
   const ScanProgressCard({
@@ -16,6 +18,19 @@ class ScanProgressCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
+    // Premium durumunu kontrol et
+    final isPremiumAsync = context.watch<PremiumCubit>().state;
+    final isPremium = isPremiumAsync.maybeWhen(
+      data: (premium) => premium,
+      orElse: () => false,
+    );
+
+    // Bottom navigation bar'daki container rengiyle aynı
+    final containerColor = theme.colorScheme.onPrimaryContainer.withOpacity(
+      0.8,
+    );
+
     final hasTotal = total > 0;
     final progressValue = hasTotal ? (processed / total).clamp(0.0, 1.0) : null;
     final primaryLabel = title.isEmpty ? fallbackLabel : title;
@@ -27,7 +42,7 @@ class ScanProgressCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: theme.colorScheme.primaryContainer.withOpacity(0.25),
+        color: containerColor.withOpacity(0.25),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -36,7 +51,7 @@ class ScanProgressCard extends StatelessWidget {
           Text(
             primaryLabel,
             style: theme.textTheme.titleSmall?.copyWith(
-              color: theme.colorScheme.primary,
+              color: containerColor,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -49,7 +64,7 @@ class ScanProgressCard extends StatelessWidget {
           Text(
             statusText,
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.primary,
+              color: containerColor,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -57,7 +72,7 @@ class ScanProgressCard extends StatelessWidget {
           Text(
             helperText,
             style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.primary.withOpacity(0.8),
+              color: containerColor.withOpacity(0.8),
             ),
           ),
         ],
@@ -65,4 +80,3 @@ class ScanProgressCard extends StatelessWidget {
     );
   }
 }
-

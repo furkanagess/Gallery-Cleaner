@@ -1,3 +1,5 @@
+// ignore_for_file: unused_element
+
 import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui';
@@ -18,16 +20,12 @@ import '../../application/gallery_providers.dart';
 import '../../application/blur_detection_provider.dart';
 import '../../application/duplicate_detection_provider.dart';
 import '../../../onboarding/application/permissions_controller.dart';
-import '../../../../core/models/duplicate_photo.dart';
 import '../../../../core/services/interstitial_ads_service.dart';
 import '../../application/gallery_stats_provider.dart';
 import '../../../../app/theme/app_colors.dart';
-import '../../../../app/theme/app_decorations.dart';
 import '../../../settings/presentation/settings_page.dart' as settings;
-import '../../../settings/presentation/premium_after_ads_dialog.dart';
 import '../../../settings/presentation/premium_success_dialog.dart';
 import '../../../../core/services/revenuecat_service.dart';
-import 'results_page_helpers.dart';
 import 'package:gallery_cleaner/src/core/utils/view_refresh_cubit.dart';
 import 'swipe_tab.dart' show SwipeTab;
 import 'tabs/blur/blur_tab.dart' show BlurTab;
@@ -44,11 +42,6 @@ enum AdUnitType {
 }
 
 // State for tracking drag over "Change Album" zone - using a simple class instead of StateProvider
-class _DragOverChangeAlbumState {
-  bool _isDragging = false;
-  bool get isDragging => _isDragging;
-  void setDragging(bool value) => _isDragging = value;
-}
 
 // Modern and subtle shimmer widget for loading states
 class _ShimmerWidget extends StatefulWidget {
@@ -137,6 +130,7 @@ class _ShimmerWidgetState extends State<_ShimmerWidget>
 }
 
 // Shimmer for scan form (blur/duplicate tabs)
+// ignore:
 class _ScanFormShimmer extends StatelessWidget {
   const _ScanFormShimmer();
 
@@ -231,963 +225,1078 @@ Future<void> _presentAlbumPicker({
 
   final filteredAlbums = albums.where((album) => !album.isAll).toList();
 
-  // Step 1: Album Selection
-  final selectedAlbumResult = await showModalBottomSheet<pm.AssetPathEntity?>(
-    context: context,
-    backgroundColor: AppColors.transparent,
-    isScrollControlled: true,
-    builder: (context) => ClipRRect(
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: Container(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.65,
-          ),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                theme.colorScheme.surface.withOpacity(0.95),
-                theme.colorScheme.surfaceContainerHighest.withOpacity(0.9),
-              ],
-            ),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-            border: Border(
-              top: BorderSide(
-                color: theme.colorScheme.outline.withOpacity(0.1),
-                width: 1,
-              ),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: theme.colorScheme.shadow.withOpacity(0.1),
-                blurRadius: 20,
-                offset: const Offset(0, -5),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                margin: const EdgeInsets.only(top: 12, bottom: 4),
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.onSurface.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 16, 24, 20),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            theme.colorScheme.primary.withOpacity(0.2),
-                            theme.colorScheme.primary.withOpacity(0.1),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(
-                        Icons.photo_library_rounded,
-                        color: theme.colorScheme.primary,
-                        size: 24,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            l10n.albumSelection,
-                            style: theme.textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: -0.5,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            l10n.selectAlbumToView,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurface.withOpacity(
-                                0.6,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Flexible(
-                child: ListView(
-                  shrinkWrap: true,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  children: [
-                    // All Photos Option
-                    Material(
-                      color: AppColors.transparent,
-                      child: InkWell(
-                        onTap: () => Navigator.of(context).pop(null),
-                        borderRadius: BorderRadius.circular(16),
-                        child: Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            gradient: selectedAlbum == null
-                                ? LinearGradient(
-                                    colors: [
-                                      theme.colorScheme.primaryContainer
-                                          .withOpacity(0.3),
-                                      theme.colorScheme.primaryContainer
-                                          .withOpacity(0.1),
-                                    ],
-                                  )
-                                : null,
-                            color: selectedAlbum == null
-                                ? null
-                                : theme.colorScheme.surfaceContainerHighest
-                                      .withOpacity(0.5),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: selectedAlbum == null
-                                  ? theme.colorScheme.primary.withOpacity(0.3)
-                                  : theme.colorScheme.outline.withOpacity(0.1),
-                              width: selectedAlbum == null ? 1.5 : 1,
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(10),
-                                decoration: BoxDecoration(
-                                  color: selectedAlbum == null
-                                      ? theme.colorScheme.primary.withOpacity(
-                                          0.2,
-                                        )
-                                      : theme.colorScheme.onSurface.withOpacity(
-                                          0.1,
-                                        ),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Icon(
-                                  Icons.grid_view_rounded,
-                                  color: selectedAlbum == null
-                                      ? theme.colorScheme.primary
-                                      : theme.colorScheme.onSurface.withOpacity(
-                                          0.7,
-                                        ),
-                                  size: 22,
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Text(
-                                  l10n.allPhotos,
-                                  style: theme.textTheme.titleMedium?.copyWith(
-                                    fontWeight: selectedAlbum == null
-                                        ? FontWeight.w600
-                                        : FontWeight.w500,
-                                    color: selectedAlbum == null
-                                        ? theme.colorScheme.primary
-                                        : theme.colorScheme.onSurface,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              if (selectedAlbum == null)
-                                Icon(
-                                  Icons.check_circle_rounded,
-                                  color: theme.colorScheme.primary,
-                                  size: 24,
-                                ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    // Album List
-                    ...filteredAlbums.map((album) {
-                      final isSelected = selectedAlbum?.id == album.id;
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: Material(
-                          color: AppColors.transparent,
-                          child: InkWell(
-                            onTap: () => Navigator.of(context).pop(album),
-                            borderRadius: BorderRadius.circular(16),
-                            child: Container(
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                gradient: isSelected
-                                    ? LinearGradient(
-                                        colors: [
-                                          theme.colorScheme.primaryContainer
-                                              .withOpacity(0.3),
-                                          theme.colorScheme.primaryContainer
-                                              .withOpacity(0.1),
-                                        ],
-                                      )
-                                    : null,
-                                color: isSelected
-                                    ? null
-                                    : theme.colorScheme.surfaceContainerHighest
-                                          .withOpacity(0.5),
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                  color: isSelected
-                                      ? theme.colorScheme.primary.withOpacity(
-                                          0.3,
-                                        )
-                                      : theme.colorScheme.outline.withOpacity(
-                                          0.1,
-                                        ),
-                                  width: isSelected ? 1.5 : 1,
-                                ),
-                              ),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(10),
-                                    decoration: BoxDecoration(
-                                      color: isSelected
-                                          ? theme.colorScheme.primary
-                                                .withOpacity(0.2)
-                                          : theme.colorScheme.onSurface
-                                                .withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Icon(
-                                      Icons.folder_rounded,
-                                      color: isSelected
-                                          ? theme.colorScheme.primary
-                                          : theme.colorScheme.onSurface
-                                                .withOpacity(0.7),
-                                      size: 22,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  Expanded(
-                                    child: Text(
-                                      album.name,
-                                      style: theme.textTheme.titleMedium
-                                          ?.copyWith(
-                                            fontWeight: isSelected
-                                                ? FontWeight.w600
-                                                : FontWeight.w500,
-                                            color: isSelected
-                                                ? theme.colorScheme.primary
-                                                : theme.colorScheme.onSurface,
-                                          ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  if (isSelected)
-                                    Icon(
-                                      Icons.check_circle_rounded,
-                                      color: theme.colorScheme.primary,
-                                      size: 24,
-                                    ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      );
-                    }),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    ),
-  );
-
-  if (!context.mounted) return;
-
-  // If user cancelled (swiped down or tapped outside) and no album was previously selected, return
-  // If selectedAlbumResult is null but selectedAlbum was not null, user selected "All Photos"
-  if (selectedAlbumResult == null && selectedAlbum == null) {
-    return;
-  }
-
-  // Update album selection immediately when user selects an album
-  // This handles both selecting a new album and selecting "All Photos" (null)
-  if (selectedAlbumResult != selectedAlbum) {
-    onSelected(selectedAlbumResult);
-  }
-
-  // Step 2: Date Range and Sort Order
+  // Date Range and Sort Order için cubit'leri al
   final dateFilterCubit = context.read<AlbumFilterCubit>();
   final sortOrderCubit = context.read<AlbumSortOrderCubit>();
 
   final initialDateRange = dateFilterCubit.state;
   final initialSortOrder = sortOrderCubit.state;
 
-  DateTime? startDate = initialDateRange.startDate;
-  DateTime? endDate = initialDateRange.endDate;
-  SortOrder sortOrder = initialSortOrder;
-
-  final filterResult = await showModalBottomSheet<Map<String, dynamic>?>(
+  // Tüm seçimleri tek bir bottomsheet'te topla - Apply butonuna basıldığında uygulanacak
+  final result = await showModalBottomSheet<Map<String, dynamic>?>(
     context: context,
     backgroundColor: AppColors.transparent,
     isScrollControlled: true,
-    builder: (context) => StatefulBuilder(
-      builder: (context, setState) {
-        return ClipRRect(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Container(
-              constraints: BoxConstraints(
-                maxHeight: MediaQuery.of(context).size.height * 0.75,
-              ),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    theme.colorScheme.surface.withOpacity(0.95),
-                    theme.colorScheme.surfaceContainerHighest.withOpacity(0.9),
+    builder: (context) {
+      // Premium durumunu kontrol et
+      final isPremiumAsync = context.watch<PremiumCubit>().state;
+      final isPremium = isPremiumAsync.maybeWhen(
+        data: (premium) => premium,
+        orElse: () => false,
+      );
+
+      // Bottom navigation bar'daki container rengiyle aynı
+      final containerColor = theme.colorScheme.onPrimaryContainer.withOpacity(0.8);
+
+      // StatefulBuilder içinde state tutmak için Map kullan - closure ile erişim
+      final state = <String, dynamic>{
+        'selectedAlbum': selectedAlbum,
+        'startDate': initialDateRange.startDate,
+        'endDate': initialDateRange.endDate,
+        'sortOrder': initialSortOrder,
+      };
+
+      return StatefulBuilder(
+        builder: (context, setState) {
+          // State'ten değerleri al
+          final tempSelectedAlbum =
+              state['selectedAlbum'] as pm.AssetPathEntity?;
+          final tempStartDate = state['startDate'] as DateTime?;
+          final tempEndDate = state['endDate'] as DateTime?;
+          final tempSortOrder = state['sortOrder'] as SortOrder;
+
+          return ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: Container(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.85,
+                ),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      theme.colorScheme.surface.withOpacity(0.95),
+                      theme.colorScheme.surfaceContainerHighest.withOpacity(
+                        0.9,
+                      ),
+                    ],
+                  ),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(24),
+                  ),
+                  border: Border(
+                    top: BorderSide(
+                      color: theme.colorScheme.outline.withOpacity(0.1),
+                      width: 1,
+                    ),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: theme.colorScheme.shadow.withOpacity(0.1),
+                      blurRadius: 20,
+                      offset: const Offset(0, -5),
+                    ),
                   ],
                 ),
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(24),
-                ),
-                border: Border(
-                  top: BorderSide(
-                    color: theme.colorScheme.outline.withOpacity(0.1),
-                    width: 1,
-                  ),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: theme.colorScheme.shadow.withOpacity(0.1),
-                    blurRadius: 20,
-                    offset: const Offset(0, -5),
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    margin: const EdgeInsets.only(top: 12, bottom: 4),
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.onSurface.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(2),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      margin: const EdgeInsets.only(top: 12, bottom: 4),
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.onSurface.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
                     ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 16, 24, 20),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                theme.colorScheme.primary.withOpacity(0.2),
-                                theme.colorScheme.primary.withOpacity(0.1),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 16, 24, 20),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  containerColor.withOpacity(0.2),
+                                  containerColor.withOpacity(0.1),
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(
+                              Icons.photo_library_rounded,
+                              color: containerColor,
+                              size: 24,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  l10n.albumSelection,
+                                  style: theme.textTheme.titleLarge?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: -0.5,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  l10n.selectAlbumToView,
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: theme.colorScheme.onSurface
+                                        .withOpacity(0.6),
+                                  ),
+                                ),
                               ],
                             ),
-                            borderRadius: BorderRadius.circular(12),
                           ),
-                          child: Icon(
-                            Icons.tune_rounded,
-                            color: theme.colorScheme.primary,
-                            size: 24,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                l10n.filterAndSort,
-                                style: theme.textTheme.titleLarge?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: -0.5,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                l10n.filterAndSortDescription,
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: theme.colorScheme.onSurface
-                                      .withOpacity(0.6),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                  Flexible(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          // Date Range Section
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.calendar_today_rounded,
-                                size: 18,
-                                color: theme.colorScheme.primary,
+                    Flexible(
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            // Album Selection Section
+                            Text(
+                              l10n.albumSelection,
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
                               ),
-                              const SizedBox(width: 8),
-                              Text(
-                                l10n.dateRange,
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Material(
-                                  color: AppColors.transparent,
-                                  child: InkWell(
-                                    onTap: () async {
-                                      final picked = await showDatePicker(
-                                        context: context,
-                                        initialDate:
-                                            startDate ?? DateTime.now(),
-                                        firstDate: DateTime(2000),
-                                        lastDate: DateTime.now(),
-                                      );
-                                      if (picked != null) {
-                                        setState(() {
-                                          startDate = picked;
-                                        });
-                                      }
-                                    },
-                                    borderRadius: BorderRadius.circular(16),
-                                    child: Container(
-                                      padding: const EdgeInsets.all(18),
-                                      decoration: BoxDecoration(
-                                        gradient: startDate != null
-                                            ? LinearGradient(
-                                                colors: [
-                                                  theme
-                                                      .colorScheme
-                                                      .primaryContainer
-                                                      .withOpacity(0.3),
-                                                  theme
-                                                      .colorScheme
-                                                      .primaryContainer
-                                                      .withOpacity(0.1),
-                                                ],
-                                              )
-                                            : null,
-                                        color: startDate != null
-                                            ? null
-                                            : theme
-                                                  .colorScheme
-                                                  .surfaceContainerHighest
-                                                  .withOpacity(0.6),
-                                        borderRadius: BorderRadius.circular(16),
-                                        border: Border.all(
-                                          color: startDate != null
-                                              ? theme.colorScheme.primary
-                                                    .withOpacity(0.3)
-                                              : theme.colorScheme.outline
-                                                    .withOpacity(0.15),
-                                          width: startDate != null ? 1.5 : 1,
-                                        ),
-                                      ),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Row(
-                                            children: [
-                                              Icon(
-                                                Icons.play_arrow_rounded,
-                                                size: 16,
-                                                color: startDate != null
-                                                    ? theme.colorScheme.primary
-                                                    : theme
-                                                          .colorScheme
-                                                          .onSurface
-                                                          .withOpacity(0.5),
-                                              ),
-                                              const SizedBox(width: 6),
-                                              Text(
-                                                l10n.startDate,
-                                                style: theme
-                                                    .textTheme
-                                                    .labelSmall
-                                                    ?.copyWith(
-                                                      color: startDate != null
-                                                          ? theme
-                                                                .colorScheme
-                                                                .primary
-                                                          : theme
-                                                                .colorScheme
-                                                                .onSurface
-                                                                .withOpacity(
-                                                                  0.6,
-                                                                ),
-                                                      fontWeight:
-                                                          FontWeight.w600,
-                                                    ),
-                                              ),
-                                            ],
-                                          ),
-                                          const SizedBox(height: 8),
-                                          Text(
-                                            startDate != null
-                                                ? DateFormat(
-                                                    'dd.MM.yyyy',
-                                                  ).format(startDate!)
-                                                : l10n.notSelected,
-                                            style: theme.textTheme.titleSmall
-                                                ?.copyWith(
-                                                  fontWeight: FontWeight.w600,
-                                                  color: startDate != null
-                                                      ? theme
-                                                            .colorScheme
-                                                            .onSurface
-                                                      : theme
-                                                            .colorScheme
-                                                            .onSurface
-                                                            .withOpacity(0.5),
-                                                ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Material(
-                                  color: AppColors.transparent,
-                                  child: InkWell(
-                                    onTap: () async {
-                                      final picked = await showDatePicker(
-                                        context: context,
-                                        initialDate: endDate ?? DateTime.now(),
-                                        firstDate: startDate ?? DateTime(2000),
-                                        lastDate: DateTime.now(),
-                                      );
-                                      if (picked != null) {
-                                        setState(() {
-                                          endDate = picked;
-                                        });
-                                      }
-                                    },
-                                    borderRadius: BorderRadius.circular(16),
-                                    child: Container(
-                                      padding: const EdgeInsets.all(18),
-                                      decoration: BoxDecoration(
-                                        gradient: endDate != null
-                                            ? LinearGradient(
-                                                colors: [
-                                                  theme
-                                                      .colorScheme
-                                                      .primaryContainer
-                                                      .withOpacity(0.3),
-                                                  theme
-                                                      .colorScheme
-                                                      .primaryContainer
-                                                      .withOpacity(0.1),
-                                                ],
-                                              )
-                                            : null,
-                                        color: endDate != null
-                                            ? null
-                                            : theme
-                                                  .colorScheme
-                                                  .surfaceContainerHighest
-                                                  .withOpacity(0.6),
-                                        borderRadius: BorderRadius.circular(16),
-                                        border: Border.all(
-                                          color: endDate != null
-                                              ? theme.colorScheme.primary
-                                                    .withOpacity(0.3)
-                                              : theme.colorScheme.outline
-                                                    .withOpacity(0.15),
-                                          width: endDate != null ? 1.5 : 1,
-                                        ),
-                                      ),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Row(
-                                            children: [
-                                              Icon(
-                                                Icons.stop_rounded,
-                                                size: 16,
-                                                color: endDate != null
-                                                    ? theme.colorScheme.primary
-                                                    : theme
-                                                          .colorScheme
-                                                          .onSurface
-                                                          .withOpacity(0.5),
-                                              ),
-                                              const SizedBox(width: 6),
-                                              Text(
-                                                l10n.endDate,
-                                                style: theme
-                                                    .textTheme
-                                                    .labelSmall
-                                                    ?.copyWith(
-                                                      color: endDate != null
-                                                          ? theme
-                                                                .colorScheme
-                                                                .primary
-                                                          : theme
-                                                                .colorScheme
-                                                                .onSurface
-                                                                .withOpacity(
-                                                                  0.6,
-                                                                ),
-                                                      fontWeight:
-                                                          FontWeight.w600,
-                                                    ),
-                                              ),
-                                            ],
-                                          ),
-                                          const SizedBox(height: 8),
-                                          Text(
-                                            endDate != null
-                                                ? DateFormat(
-                                                    'dd.MM.yyyy',
-                                                  ).format(endDate!)
-                                                : l10n.notSelected,
-                                            style: theme.textTheme.titleSmall
-                                                ?.copyWith(
-                                                  fontWeight: FontWeight.w600,
-                                                  color: endDate != null
-                                                      ? theme
-                                                            .colorScheme
-                                                            .onSurface
-                                                      : theme
-                                                            .colorScheme
-                                                            .onSurface
-                                                            .withOpacity(0.5),
-                                                ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          if (startDate != null || endDate != null) ...[
+                            ),
                             const SizedBox(height: 12),
-                            OutlinedButton.icon(
-                              onPressed: () {
-                                setState(() {
-                                  startDate = null;
-                                  endDate = null;
-                                });
-                              },
-                              icon: Icon(
-                                Icons.clear_rounded,
-                                size: 18,
-                                color: theme.colorScheme.error,
-                              ),
-                              label: Text(
-                                l10n.clearDateFilter,
-                                style: TextStyle(
-                                  color: theme.colorScheme.error,
-                                ),
-                              ),
-                              style: OutlinedButton.styleFrom(
+                            // Yatay Album List (All Photos + Albums)
+                            SizedBox(
+                              height: 80,
+                              child: ListView.builder(
+                                scrollDirection: Axis.horizontal,
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 8,
+                                  horizontal: 4,
                                 ),
-                                side: BorderSide(
+                                itemCount:
+                                    filteredAlbums.length +
+                                    1, // +1 for "All Photos"
+                                itemBuilder: (context, index) {
+                                  // İlk item "All Photos"
+                                  if (index == 0) {
+                                    final isSelected =
+                                        tempSelectedAlbum == null;
+                                    return Padding(
+                                      padding: const EdgeInsets.only(right: 12),
+                                      child: Material(
+                                        color: AppColors.transparent,
+                                        child: InkWell(
+                                          onTap: () {
+                                            setState(() {
+                                              state['selectedAlbum'] = null;
+                                            });
+                                          },
+                                          borderRadius: BorderRadius.circular(
+                                            16,
+                                          ),
+                                          child: Container(
+                                            constraints: const BoxConstraints(
+                                              minWidth: 120,
+                                              maxWidth: 160,
+                                            ),
+                                            padding: const EdgeInsets.all(12),
+                                            decoration: BoxDecoration(
+                                              gradient: isSelected
+                                                  ? LinearGradient(
+                                                      colors: [
+                                                        containerColor
+                                                            .withOpacity(0.3),
+                                                        containerColor
+                                                            .withOpacity(0.1),
+                                                      ],
+                                                    )
+                                                  : null,
+                                              color: isSelected
+                                                  ? null
+                                                  : theme
+                                                        .colorScheme
+                                                        .surfaceContainerHighest
+                                                        .withOpacity(0.5),
+                                              borderRadius:
+                                                  BorderRadius.circular(16),
+                                              border: Border.all(
+                                                color: isSelected
+                                                    ? containerColor
+                                                          .withOpacity(0.3)
+                                                    : theme.colorScheme.outline
+                                                          .withOpacity(0.1),
+                                                width: isSelected ? 1.5 : 1,
+                                              ),
+                                            ),
+                                            child: Column(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
+                                              children: [
+                                                Container(
+                                                  padding: const EdgeInsets.all(
+                                                    8,
+                                                  ),
+                                                  decoration: BoxDecoration(
+                                                    color: isSelected
+                                                        ? containerColor
+                                                              .withOpacity(0.2)
+                                                        : theme
+                                                              .colorScheme
+                                                              .onSurface
+                                                              .withOpacity(0.1),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          12,
+                                                        ),
+                                                  ),
+                                                  child: Icon(
+                                                    Icons.grid_view_rounded,
+                                                    color: isSelected
+                                                        ? containerColor
+                                                        : theme
+                                                              .colorScheme
+                                                              .onSurface
+                                                              .withOpacity(0.7),
+                                                    size: 20,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 6),
+                                                Flexible(
+                                                  child: Text(
+                                                    l10n.allPhotos,
+                                                    style: theme
+                                                        .textTheme
+                                                        .labelSmall
+                                                        ?.copyWith(
+                                                          fontSize: 11,
+                                                          fontWeight: isSelected
+                                                              ? FontWeight.w600
+                                                              : FontWeight.w500,
+                                                          color: isSelected
+                                                              ? containerColor
+                                                              : theme
+                                                                    .colorScheme
+                                                                    .onSurface,
+                                                        ),
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                    textAlign: TextAlign.center,
+                                                    maxLines: 2,
+                                                  ),
+                                                ),
+                                                if (isSelected)
+                                                  const SizedBox(height: 4),
+                                                if (isSelected)
+                                                  Icon(
+                                                    Icons.check_circle_rounded,
+                                                    color: containerColor,
+                                                    size: 16,
+                                                  ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  }
+
+                                  // Diğer albümler
+                                  final album = filteredAlbums[index - 1];
+                                  final isSelected =
+                                      tempSelectedAlbum?.id == album.id;
+                                  final isLastItem =
+                                      index == filteredAlbums.length;
+                                  return Padding(
+                                    padding: EdgeInsets.only(
+                                      right: isLastItem ? 0 : 12,
+                                    ),
+                                    child: Material(
+                                      color: AppColors.transparent,
+                                      child: InkWell(
+                                        onTap: () {
+                                          setState(() {
+                                            state['selectedAlbum'] = album;
+                                          });
+                                        },
+                                        borderRadius: BorderRadius.circular(16),
+                                        child: Container(
+                                          constraints: const BoxConstraints(
+                                            minWidth: 120,
+                                            maxWidth: 160,
+                                          ),
+                                          padding: const EdgeInsets.all(12),
+                                          decoration: BoxDecoration(
+                                            gradient: isSelected
+                                                ? LinearGradient(
+                                                    colors: [
+                                                      containerColor
+                                                          .withOpacity(0.3),
+                                                      containerColor
+                                                          .withOpacity(0.1),
+                                                    ],
+                                                  )
+                                                : null,
+                                            color: isSelected
+                                                ? null
+                                                : theme
+                                                      .colorScheme
+                                                      .surfaceContainerHighest
+                                                      .withOpacity(0.5),
+                                            borderRadius: BorderRadius.circular(
+                                              16,
+                                            ),
+                                            border: Border.all(
+                                              color: isSelected
+                                                  ? containerColor.withOpacity(
+                                                      0.3,
+                                                    )
+                                                  : theme.colorScheme.outline
+                                                        .withOpacity(0.1),
+                                              width: isSelected ? 1.5 : 1,
+                                            ),
+                                          ),
+                                          child: Column(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              Container(
+                                                padding: const EdgeInsets.all(
+                                                  8,
+                                                ),
+                                                decoration: BoxDecoration(
+                                                  color: isSelected
+                                                      ? containerColor
+                                                            .withOpacity(0.2)
+                                                      : theme
+                                                            .colorScheme
+                                                            .onSurface
+                                                            .withOpacity(0.1),
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                ),
+                                                child: Icon(
+                                                  Icons.folder_rounded,
+                                                  color: isSelected
+                                                      ? containerColor
+                                                      : theme
+                                                            .colorScheme
+                                                            .onSurface
+                                                            .withOpacity(0.7),
+                                                  size: 20,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 6),
+                                              Flexible(
+                                                child: Text(
+                                                  album.name,
+                                                  style: theme
+                                                      .textTheme
+                                                      .labelSmall
+                                                      ?.copyWith(
+                                                        fontSize: 11,
+                                                        fontWeight: isSelected
+                                                            ? FontWeight.w600
+                                                            : FontWeight.w500,
+                                                        color: isSelected
+                                                            ? containerColor
+                                                            : theme
+                                                                  .colorScheme
+                                                                  .onSurface,
+                                                      ),
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                  textAlign: TextAlign.center,
+                                                  maxLines: 2,
+                                                ),
+                                              ),
+                                              if (isSelected)
+                                                const SizedBox(height: 4),
+                                              if (isSelected)
+                                                Icon(
+                                                  Icons.check_circle_rounded,
+                                                  color: containerColor,
+                                                  size: 16,
+                                                ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                            const SizedBox(height: 32),
+                            // Date Range Section
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.calendar_today_rounded,
+                                  size: 18,
+                                  color: containerColor,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  l10n.dateRange,
+                                  style: theme.textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Material(
+                                    color: AppColors.transparent,
+                                    child: InkWell(
+                                      onTap: () async {
+                                        final picked = await showDatePicker(
+                                          context: context,
+                                          initialDate:
+                                              tempStartDate ?? DateTime.now(),
+                                          firstDate: DateTime(2000),
+                                          lastDate: DateTime.now(),
+                                        );
+                                        if (picked != null) {
+                                          setState(() {
+                                            state['startDate'] = picked;
+                                          });
+                                        }
+                                      },
+                                      borderRadius: BorderRadius.circular(16),
+                                      child: Container(
+                                        padding: const EdgeInsets.all(18),
+                                        decoration: BoxDecoration(
+                                          gradient: tempStartDate != null
+                                              ? LinearGradient(
+                                                  colors: [
+                                                    containerColor.withOpacity(
+                                                      0.3,
+                                                    ),
+                                                    containerColor.withOpacity(
+                                                      0.1,
+                                                    ),
+                                                  ],
+                                                )
+                                              : null,
+                                          color: tempStartDate != null
+                                              ? null
+                                              : theme
+                                                    .colorScheme
+                                                    .surfaceContainerHighest
+                                                    .withOpacity(0.6),
+                                          borderRadius: BorderRadius.circular(
+                                            16,
+                                          ),
+                                          border: Border.all(
+                                            color: tempStartDate != null
+                                                ? containerColor.withOpacity(
+                                                    0.3,
+                                                  )
+                                                : theme.colorScheme.outline
+                                                      .withOpacity(0.15),
+                                            width: tempStartDate != null
+                                                ? 1.5
+                                                : 1,
+                                          ),
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                Icon(
+                                                  Icons.play_arrow_rounded,
+                                                  size: 16,
+                                                  color: tempStartDate != null
+                                                      ? containerColor
+                                                      : theme
+                                                            .colorScheme
+                                                            .onSurface
+                                                            .withOpacity(0.5),
+                                                ),
+                                                const SizedBox(width: 6),
+                                                Text(
+                                                  l10n.startDate,
+                                                  style: theme
+                                                      .textTheme
+                                                      .labelSmall
+                                                      ?.copyWith(
+                                                        color:
+                                                            tempStartDate !=
+                                                                null
+                                                            ? containerColor
+                                                            : theme
+                                                                  .colorScheme
+                                                                  .onSurface
+                                                                  .withOpacity(
+                                                                    0.6,
+                                                                  ),
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                      ),
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 8),
+                                            Text(
+                                              tempStartDate != null
+                                                  ? DateFormat(
+                                                      'dd.MM.yyyy',
+                                                    ).format(tempStartDate)
+                                                  : l10n.notSelected,
+                                              style: theme.textTheme.titleSmall
+                                                  ?.copyWith(
+                                                    fontWeight: FontWeight.w600,
+                                                    color: tempStartDate != null
+                                                        ? theme
+                                                              .colorScheme
+                                                              .onSurface
+                                                        : theme
+                                                              .colorScheme
+                                                              .onSurface
+                                                              .withOpacity(0.5),
+                                                  ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Material(
+                                    color: AppColors.transparent,
+                                    child: InkWell(
+                                      onTap: () async {
+                                        final picked = await showDatePicker(
+                                          context: context,
+                                          initialDate:
+                                              tempEndDate ?? DateTime.now(),
+                                          firstDate:
+                                              tempStartDate ?? DateTime(2000),
+                                          lastDate: DateTime.now(),
+                                        );
+                                        if (picked != null) {
+                                          setState(() {
+                                            state['endDate'] = picked;
+                                          });
+                                        }
+                                      },
+                                      borderRadius: BorderRadius.circular(16),
+                                      child: Container(
+                                        padding: const EdgeInsets.all(18),
+                                        decoration: BoxDecoration(
+                                          gradient: tempEndDate != null
+                                              ? LinearGradient(
+                                                  colors: [
+                                                    containerColor.withOpacity(
+                                                      0.3,
+                                                    ),
+                                                    containerColor.withOpacity(
+                                                      0.1,
+                                                    ),
+                                                  ],
+                                                )
+                                              : null,
+                                          color: tempEndDate != null
+                                              ? null
+                                              : theme
+                                                    .colorScheme
+                                                    .surfaceContainerHighest
+                                                    .withOpacity(0.6),
+                                          borderRadius: BorderRadius.circular(
+                                            16,
+                                          ),
+                                          border: Border.all(
+                                            color: tempEndDate != null
+                                                ? containerColor.withOpacity(
+                                                    0.3,
+                                                  )
+                                                : theme.colorScheme.outline
+                                                      .withOpacity(0.15),
+                                            width: tempEndDate != null
+                                                ? 1.5
+                                                : 1,
+                                          ),
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                Icon(
+                                                  Icons.stop_rounded,
+                                                  size: 16,
+                                                  color: tempEndDate != null
+                                                      ? containerColor
+                                                      : theme
+                                                            .colorScheme
+                                                            .onSurface
+                                                            .withOpacity(0.5),
+                                                ),
+                                                const SizedBox(width: 6),
+                                                Text(
+                                                  l10n.endDate,
+                                                  style: theme
+                                                      .textTheme
+                                                      .labelSmall
+                                                      ?.copyWith(
+                                                        color:
+                                                            tempEndDate != null
+                                                            ? containerColor
+                                                            : theme
+                                                                  .colorScheme
+                                                                  .onSurface
+                                                                  .withOpacity(
+                                                                    0.6,
+                                                                  ),
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                      ),
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 8),
+                                            Text(
+                                              tempEndDate != null
+                                                  ? DateFormat(
+                                                      'dd.MM.yyyy',
+                                                    ).format(tempEndDate)
+                                                  : l10n.notSelected,
+                                              style: theme.textTheme.titleSmall
+                                                  ?.copyWith(
+                                                    fontWeight: FontWeight.w600,
+                                                    color: tempEndDate != null
+                                                        ? theme
+                                                              .colorScheme
+                                                              .onSurface
+                                                        : theme
+                                                              .colorScheme
+                                                              .onSurface
+                                                              .withOpacity(0.5),
+                                                  ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            if (tempStartDate != null ||
+                                tempEndDate != null) ...[
+                              const SizedBox(height: 12),
+                              OutlinedButton.icon(
+                                onPressed: () {
+                                  setState(() {
+                                    state['startDate'] = null;
+                                    state['endDate'] = null;
+                                  });
+                                },
+                                icon: Icon(
+                                  Icons.clear_rounded,
+                                  size: 18,
                                   color: theme.colorScheme.error,
-                                  width: 1,
+                                ),
+                                label: Text(
+                                  l10n.clearDateFilter,
+                                  style: TextStyle(
+                                    color: theme.colorScheme.error,
+                                  ),
+                                ),
+                                style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
+                                  ),
+                                  side: BorderSide(
+                                    color: theme.colorScheme.error,
+                                    width: 1,
+                                  ),
+                                ),
+                              ),
+                            ],
+                            const SizedBox(height: 32),
+                            // Sort Order Section
+                            Builder(
+                              builder: (builderContext) {
+                                final isPremiumAsync = builderContext
+                                    .watch<PremiumCubit>()
+                                    .state;
+                                final isPremium = isPremiumAsync.maybeWhen(
+                                  data: (premium) => premium,
+                                  orElse: () => false,
+                                );
+                                final containerColorSort = theme.colorScheme.onPrimaryContainer.withOpacity(0.8);
+
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          Icons.sort_rounded,
+                                          size: 18,
+                                          color: containerColorSort,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          l10n.sort,
+                                          style: theme.textTheme.titleMedium
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.bold,
+                                                color: containerColorSort,
+                                              ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Material(
+                                            color: AppColors.transparent,
+                                            child: InkWell(
+                                              onTap: () {
+                                                setState(() {
+                                                  state['sortOrder'] =
+                                                      SortOrder.newest;
+                                                });
+                                              },
+                                              borderRadius:
+                                                  BorderRadius.circular(16),
+                                              child: Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      vertical: 16,
+                                                      horizontal: 12,
+                                                    ),
+                                                decoration: BoxDecoration(
+                                                  color:
+                                                      tempSortOrder ==
+                                                          SortOrder.newest
+                                                      ? containerColorSort
+                                                      : theme
+                                                            .colorScheme
+                                                            .surfaceContainerHighest
+                                                            .withOpacity(0.5),
+                                                  borderRadius:
+                                                      BorderRadius.circular(16),
+                                                  border: Border.all(
+                                                    color:
+                                                        tempSortOrder ==
+                                                            SortOrder.newest
+                                                        ? containerColorSort
+                                                        : theme
+                                                              .colorScheme
+                                                              .outline
+                                                              .withOpacity(
+                                                                0.15,
+                                                              ),
+                                                    width:
+                                                        tempSortOrder ==
+                                                            SortOrder.newest
+                                                        ? 2
+                                                        : 1,
+                                                  ),
+                                                ),
+                                                child: Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.center,
+                                                  children: [
+                                                    Icon(
+                                                      Icons
+                                                          .arrow_downward_rounded,
+                                                      size: 20,
+                                                      color:
+                                                          tempSortOrder ==
+                                                              SortOrder.newest
+                                                          ? AppColors.white
+                                                          : theme
+                                                                .colorScheme
+                                                                .onSurface
+                                                                .withOpacity(
+                                                                  0.7,
+                                                                ),
+                                                    ),
+                                                    const SizedBox(width: 8),
+                                                    Text(
+                                                      l10n.newest,
+                                                      style: theme
+                                                          .textTheme
+                                                          .titleSmall
+                                                          ?.copyWith(
+                                                            fontWeight:
+                                                                tempSortOrder ==
+                                                                    SortOrder
+                                                                        .newest
+                                                                ? FontWeight
+                                                                      .w600
+                                                                : FontWeight
+                                                                      .w500,
+                                                            color:
+                                                                tempSortOrder ==
+                                                                    SortOrder
+                                                                        .newest
+                                                                ? AppColors
+                                                                      .white
+                                                                : theme
+                                                                      .colorScheme
+                                                                      .onSurface,
+                                                          ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Material(
+                                            color: AppColors.transparent,
+                                            child: InkWell(
+                                              onTap: () {
+                                                setState(() {
+                                                  state['sortOrder'] =
+                                                      SortOrder.oldest;
+                                                });
+                                              },
+                                              borderRadius:
+                                                  BorderRadius.circular(16),
+                                              child: Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      vertical: 16,
+                                                      horizontal: 12,
+                                                    ),
+                                                decoration: BoxDecoration(
+                                                  color:
+                                                      tempSortOrder ==
+                                                          SortOrder.oldest
+                                                      ? containerColorSort
+                                                      : theme
+                                                            .colorScheme
+                                                            .surfaceContainerHighest
+                                                            .withOpacity(0.5),
+                                                  borderRadius:
+                                                      BorderRadius.circular(16),
+                                                  border: Border.all(
+                                                    color:
+                                                        tempSortOrder ==
+                                                            SortOrder.oldest
+                                                        ? containerColorSort
+                                                        : theme
+                                                              .colorScheme
+                                                              .outline
+                                                              .withOpacity(
+                                                                0.15,
+                                                              ),
+                                                    width:
+                                                        tempSortOrder ==
+                                                            SortOrder.oldest
+                                                        ? 2
+                                                        : 1,
+                                                  ),
+                                                ),
+                                                child: Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.center,
+                                                  children: [
+                                                    Icon(
+                                                      Icons
+                                                          .arrow_upward_rounded,
+                                                      size: 20,
+                                                      color:
+                                                          tempSortOrder ==
+                                                              SortOrder.oldest
+                                                          ? AppColors.white
+                                                          : theme
+                                                                .colorScheme
+                                                                .onSurface
+                                                                .withOpacity(
+                                                                  0.7,
+                                                                ),
+                                                    ),
+                                                    const SizedBox(width: 8),
+                                                    Text(
+                                                      l10n.oldest,
+                                                      style: theme
+                                                          .textTheme
+                                                          .titleSmall
+                                                          ?.copyWith(
+                                                            fontWeight:
+                                                                tempSortOrder ==
+                                                                    SortOrder
+                                                                        .oldest
+                                                                ? FontWeight
+                                                                      .w600
+                                                                : FontWeight
+                                                                      .w500,
+                                                            color:
+                                                                tempSortOrder ==
+                                                                    SortOrder
+                                                                        .oldest
+                                                                ? AppColors
+                                                                      .white
+                                                                : theme
+                                                                      .colorScheme
+                                                                      .onSurface,
+                                                          ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                );
+                              },
+                            ),
+                            const SizedBox(height: 24),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            theme.colorScheme.surface.withOpacity(0),
+                            theme.colorScheme.surface.withOpacity(0.8),
+                          ],
+                        ),
+                      ),
+                      child: Builder(
+                        builder: (buttonContext) {
+                          final isPremiumAsync = buttonContext
+                              .watch<PremiumCubit>()
+                              .state;
+                          final isPremium = isPremiumAsync.maybeWhen(
+                            data: (premium) => premium,
+                            orElse: () => false,
+                          );
+                          final containerColorButton = theme.colorScheme.onPrimaryContainer.withOpacity(0.8);
+
+                          return Container(
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  containerColorButton,
+                                  containerColorButton.withOpacity(0.85),
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: containerColorButton,
+                                width: 1.5,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: containerColorButton.withOpacity(0.35),
+                                  blurRadius: 16,
+                                  offset: const Offset(0, 4),
+                                  spreadRadius: -2,
+                                ),
+                              ],
+                            ),
+                            child: Material(
+                              color: AppColors.transparent,
+                              child: InkWell(
+                                onTap: () {
+                                  Navigator.of(context).pop({
+                                    'selectedAlbum': state['selectedAlbum'],
+                                    'startDate': state['startDate'],
+                                    'endDate': state['endDate'],
+                                    'sortOrder': state['sortOrder'],
+                                  });
+                                },
+                                borderRadius: BorderRadius.circular(16),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 16,
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.check_circle_rounded,
+                                        size: 20,
+                                        color: AppColors.white,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        l10n.apply,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w900,
+                                          fontSize: 16,
+                                          color: AppColors.white,
+                                          letterSpacing: 0.5,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
-                          ],
-                          const SizedBox(height: 32),
-                          // Sort Order Section
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.sort_rounded,
-                                size: 18,
-                                color: theme.colorScheme.primary,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                l10n.sort,
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Material(
-                                  color: AppColors.transparent,
-                                  child: InkWell(
-                                    onTap: () {
-                                      setState(() {
-                                        sortOrder = SortOrder.newest;
-                                      });
-                                    },
-                                    borderRadius: BorderRadius.circular(16),
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 16,
-                                        horizontal: 12,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        gradient: sortOrder == SortOrder.newest
-                                            ? LinearGradient(
-                                                colors: [
-                                                  theme
-                                                      .colorScheme
-                                                      .primaryContainer
-                                                      .withOpacity(0.4),
-                                                  theme
-                                                      .colorScheme
-                                                      .primaryContainer
-                                                      .withOpacity(0.2),
-                                                ],
-                                              )
-                                            : null,
-                                        color: sortOrder == SortOrder.newest
-                                            ? null
-                                            : theme
-                                                  .colorScheme
-                                                  .surfaceContainerHighest
-                                                  .withOpacity(0.5),
-                                        borderRadius: BorderRadius.circular(16),
-                                        border: Border.all(
-                                          color: sortOrder == SortOrder.newest
-                                              ? theme.colorScheme.primary
-                                                    .withOpacity(0.4)
-                                              : theme.colorScheme.outline
-                                                    .withOpacity(0.15),
-                                          width: sortOrder == SortOrder.newest
-                                              ? 2
-                                              : 1,
-                                        ),
-                                      ),
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          Icon(
-                                            Icons.arrow_downward_rounded,
-                                            size: 20,
-                                            color: sortOrder == SortOrder.newest
-                                                ? theme.colorScheme.primary
-                                                : theme.colorScheme.onSurface
-                                                      .withOpacity(0.7),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            l10n.newest,
-                                            style: theme.textTheme.titleSmall
-                                                ?.copyWith(
-                                                  fontWeight:
-                                                      sortOrder ==
-                                                          SortOrder.newest
-                                                      ? FontWeight.w600
-                                                      : FontWeight.w500,
-                                                  color:
-                                                      sortOrder ==
-                                                          SortOrder.newest
-                                                      ? theme
-                                                            .colorScheme
-                                                            .primary
-                                                      : theme
-                                                            .colorScheme
-                                                            .onSurface,
-                                                ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Material(
-                                  color: AppColors.transparent,
-                                  child: InkWell(
-                                    onTap: () {
-                                      setState(() {
-                                        sortOrder = SortOrder.oldest;
-                                      });
-                                    },
-                                    borderRadius: BorderRadius.circular(16),
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 16,
-                                        horizontal: 12,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        gradient: sortOrder == SortOrder.oldest
-                                            ? LinearGradient(
-                                                colors: [
-                                                  theme
-                                                      .colorScheme
-                                                      .primaryContainer
-                                                      .withOpacity(0.4),
-                                                  theme
-                                                      .colorScheme
-                                                      .primaryContainer
-                                                      .withOpacity(0.2),
-                                                ],
-                                              )
-                                            : null,
-                                        color: sortOrder == SortOrder.oldest
-                                            ? null
-                                            : theme
-                                                  .colorScheme
-                                                  .surfaceContainerHighest
-                                                  .withOpacity(0.5),
-                                        borderRadius: BorderRadius.circular(16),
-                                        border: Border.all(
-                                          color: sortOrder == SortOrder.oldest
-                                              ? theme.colorScheme.primary
-                                                    .withOpacity(0.4)
-                                              : theme.colorScheme.outline
-                                                    .withOpacity(0.15),
-                                          width: sortOrder == SortOrder.oldest
-                                              ? 2
-                                              : 1,
-                                        ),
-                                      ),
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          Icon(
-                                            Icons.arrow_upward_rounded,
-                                            size: 20,
-                                            color: sortOrder == SortOrder.oldest
-                                                ? theme.colorScheme.primary
-                                                : theme.colorScheme.onSurface
-                                                      .withOpacity(0.7),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            l10n.oldest,
-                                            style: theme.textTheme.titleSmall
-                                                ?.copyWith(
-                                                  fontWeight:
-                                                      sortOrder ==
-                                                          SortOrder.oldest
-                                                      ? FontWeight.w600
-                                                      : FontWeight.w500,
-                                                  color:
-                                                      sortOrder ==
-                                                          SortOrder.oldest
-                                                      ? theme
-                                                            .colorScheme
-                                                            .primary
-                                                      : theme
-                                                            .colorScheme
-                                                            .onSurface,
-                                                ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 24),
-                        ],
+                          );
+                        },
                       ),
                     ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          theme.colorScheme.surface.withOpacity(0),
-                          theme.colorScheme.surface.withOpacity(0.8),
-                        ],
-                      ),
-                    ),
-                    child: FilledButton.icon(
-                      onPressed: () {
-                        Navigator.of(context).pop({
-                          'startDate': startDate,
-                          'endDate': endDate,
-                          'sortOrder': sortOrder,
-                        });
-                      },
-                      icon: const Icon(Icons.check_circle_rounded),
-                      label: Text(l10n.apply),
-                      style: FilledButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        minimumSize: const Size(double.infinity, 56),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
-        );
-      },
-    ),
+          );
+        },
+      );
+    },
   );
 
   if (!context.mounted) return;
 
-  // Update filters if user didn't cancel
-  if (filterResult != null) {
+  // Apply butonuna basıldığında tüm değişiklikleri uygula
+  if (result != null) {
+    // Album seçimini uygula
+    final newSelectedAlbum = result['selectedAlbum'] as pm.AssetPathEntity?;
+    if (newSelectedAlbum != selectedAlbum) {
+      onSelected(newSelectedAlbum);
+    }
+
+    // Filter ve sort değişikliklerini uygula
     dateFilterCubit.setDateRange(
-      filterResult['startDate'],
-      filterResult['endDate'],
+      result['startDate'] as DateTime?,
+      result['endDate'] as DateTime?,
     );
-    sortOrderCubit.setSortOrder(filterResult['sortOrder']);
+    sortOrderCubit.setSortOrder(result['sortOrder'] as SortOrder);
   }
 }
 
-// ignore: unused_element
 class _ChangeAlbumZone extends StatelessWidget {
   const _ChangeAlbumZone({
     required this.onDragOver,
@@ -1200,10 +1309,19 @@ class _ChangeAlbumZone extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // isDraggingOver state'i widget içinde tutulacak - StatefulWidget'a dönüştürülmeli
-    final isDraggingOver =
-        false; // TODO: StatefulWidget'a dönüştürüldüğünde state'ten alınacak
+    // TODO: StatefulWidget'a dönüştürüldüğünde state'ten alınacak
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
+
+    // Premium durumunu kontrol et
+    final isPremiumAsync = context.watch<PremiumCubit>().state;
+    final isPremium = isPremiumAsync.maybeWhen(
+      data: (premium) => premium,
+      orElse: () => false,
+    );
+
+    // Bottom navigation bar'daki container rengiyle aynı
+    final containerColor = theme.colorScheme.onPrimaryContainer.withOpacity(0.8);
 
     return Container(
       key: changeAlbumZoneKey,
@@ -1212,7 +1330,7 @@ class _ChangeAlbumZone extends StatelessWidget {
         children: [
           // Radial glow background when hovering
           AnimatedOpacity(
-            opacity: isDraggingOver ? 1.0 : 0.0,
+            opacity: 0.0,
             duration: const Duration(milliseconds: 180),
             child: Container(
               decoration: BoxDecoration(
@@ -1221,7 +1339,7 @@ class _ChangeAlbumZone extends StatelessWidget {
                   center: Alignment.center,
                   radius: 0.95,
                   colors: [
-                    theme.colorScheme.primary.withOpacity(0.12),
+                    containerColor.withOpacity(0.12),
                     AppColors.transparent,
                   ],
                   stops: const [0.0, 1.0],
@@ -1232,7 +1350,7 @@ class _ChangeAlbumZone extends StatelessWidget {
           AnimatedScale(
             duration: const Duration(milliseconds: 180),
             curve: Curves.easeOut,
-            scale: isDraggingOver ? 1.03 : 1.0,
+            scale: 1.0,
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -1244,14 +1362,12 @@ class _ChangeAlbumZone extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   AnimatedRotation(
-                    turns: isDraggingOver ? 0.25 : 0,
+                    turns: 0,
                     duration: const Duration(milliseconds: 200),
                     child: Icon(
                       Icons.photo_library_outlined,
                       size: 26,
-                      color: isDraggingOver
-                          ? theme.colorScheme.onPrimaryContainer
-                          : theme.colorScheme.onSurface.withOpacity(0.7),
+                      color: theme.colorScheme.onSurface.withOpacity(0.7),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -1262,12 +1378,8 @@ class _ChangeAlbumZone extends StatelessWidget {
                       Text(
                         l10n.changeAlbum,
                         style: theme.textTheme.bodyLarge?.copyWith(
-                          fontWeight: isDraggingOver
-                              ? FontWeight.bold
-                              : FontWeight.w600,
-                          color: isDraggingOver
-                              ? theme.colorScheme.onPrimaryContainer
-                              : theme.colorScheme.onSurface.withOpacity(0.9),
+                          fontWeight: FontWeight.w600,
+                          color: theme.colorScheme.onSurface.withOpacity(0.9),
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -1275,10 +1387,7 @@ class _ChangeAlbumZone extends StatelessWidget {
                       Text(
                         l10n.dragPhotoHere,
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: isDraggingOver
-                              ? theme.colorScheme.onPrimaryContainer
-                                    .withOpacity(0.8)
-                              : theme.colorScheme.onSurface.withOpacity(0.6),
+                          color: theme.colorScheme.onSurface.withOpacity(0.6),
                           fontSize: 11,
                         ),
                         overflow: TextOverflow.ellipsis,
@@ -1289,9 +1398,7 @@ class _ChangeAlbumZone extends StatelessWidget {
                   Icon(
                     Icons.arrow_upward,
                     size: 22,
-                    color: isDraggingOver
-                        ? theme.colorScheme.onPrimaryContainer
-                        : theme.colorScheme.onSurface.withOpacity(0.6),
+                    color: theme.colorScheme.onSurface.withOpacity(0.6),
                   ),
                 ],
               ),
@@ -1418,19 +1525,25 @@ class _SwipePageState extends State<SwipePage>
     _blurDetectionSubscription?.cancel();
     final blurDetectionCubit = context.read<BlurDetectionCubit>();
     debugPrint('🔧 [SwipePage] Creating blur detection listener...');
-    
+
     // Mevcut state'i kontrol et ve previous state olarak sakla
     var previousBlurState = blurDetectionCubit.state;
-    debugPrint('🔧 [SwipePage] Current blur state: isScanning=${previousBlurState.isScanning}, hasCompletedScan=${previousBlurState.hasCompletedScan}');
-    
+    debugPrint(
+      '🔧 [SwipePage] Current blur state: isScanning=${previousBlurState.isScanning}, hasCompletedScan=${previousBlurState.hasCompletedScan}',
+    );
+
     // Eğer scan zaten tamamlanmışsa bildirim gönder
-    if (previousBlurState.hasCompletedScan && !previousBlurState.isScanning && !_isNavigatingToResults) {
-      debugPrint('⚠️ [SwipePage] Blur scan already completed when listener was set up, sending notification...');
+    if (previousBlurState.hasCompletedScan &&
+        !previousBlurState.isScanning &&
+        !_isNavigatingToResults) {
+      debugPrint(
+        '⚠️ [SwipePage] Blur scan already completed when listener was set up, sending notification...',
+      );
       _isNavigatingToResults = true;
       unawaited(_sendScanCompletedNotification('blur'));
       _navigateToResultsPage('/results/blur');
     }
-    
+
     _blurDetectionSubscription = blurDetectionCubit.stream.listen((next) {
       debugPrint('🔔 [SwipePage] Blur detection stream event received!');
       if (!mounted) {
@@ -1445,9 +1558,13 @@ class _SwipePageState extends State<SwipePage>
       debugPrint(
         '🔍 [SwipePage] Blur scan state: wasScanning=$wasScanning, isNowScanning=$isNowScanning, hasCompleted=$hasCompleted, _isNavigatingToResults=$_isNavigatingToResults',
       );
-      debugPrint('   - previous state: ${previousBlurState.isScanning}, ${previousBlurState.hasCompletedScan}');
-      debugPrint('   - next state: ${next.isScanning}, ${next.hasCompletedScan}');
-      
+      debugPrint(
+        '   - previous state: ${previousBlurState.isScanning}, ${previousBlurState.hasCompletedScan}',
+      );
+      debugPrint(
+        '   - next state: ${next.isScanning}, ${next.hasCompletedScan}',
+      );
+
       // Previous state'i güncelle
       previousBlurState = next;
 
@@ -1460,10 +1577,10 @@ class _SwipePageState extends State<SwipePage>
           '✅ [SwipePage] Blur scan completed, sending notification and navigating to results page',
         );
         _isNavigatingToResults = true;
-        
+
         // Bildirim gönder (unawaited - navigation'ı beklemez ama hataları yakalar)
         unawaited(_sendScanCompletedNotification('blur'));
-        
+
         // Results sayfasına yönlendir
         _navigateToResultsPage('/results/blur');
       }
@@ -1473,25 +1590,33 @@ class _SwipePageState extends State<SwipePage>
     _duplicateDetectionSubscription?.cancel();
     final duplicateDetectionCubit = context.read<DuplicateDetectionCubit>();
     debugPrint('🔧 [SwipePage] Creating duplicate detection listener...');
-    
+
     // Mevcut state'i kontrol et ve previous state olarak sakla
     var previousDuplicateState = duplicateDetectionCubit.state;
-    debugPrint('🔧 [SwipePage] Current duplicate state: isScanning=${previousDuplicateState.isScanning}, hasCompletedScan=${previousDuplicateState.hasCompletedScan}');
-    
+    debugPrint(
+      '🔧 [SwipePage] Current duplicate state: isScanning=${previousDuplicateState.isScanning}, hasCompletedScan=${previousDuplicateState.hasCompletedScan}',
+    );
+
     // Eğer scan zaten tamamlanmışsa bildirim gönder
-    if (previousDuplicateState.hasCompletedScan && !previousDuplicateState.isScanning && !_isNavigatingToResults) {
-      debugPrint('⚠️ [SwipePage] Duplicate scan already completed when listener was set up, sending notification...');
+    if (previousDuplicateState.hasCompletedScan &&
+        !previousDuplicateState.isScanning &&
+        !_isNavigatingToResults) {
+      debugPrint(
+        '⚠️ [SwipePage] Duplicate scan already completed when listener was set up, sending notification...',
+      );
       _isNavigatingToResults = true;
       unawaited(_sendScanCompletedNotification('duplicate'));
       _navigateToResultsPage('/results/duplicate');
     }
-    
+
     _duplicateDetectionSubscription = duplicateDetectionCubit.stream.listen((
       next,
     ) {
       debugPrint('🔔 [SwipePage] Duplicate detection stream event received!');
       if (!mounted) {
-        debugPrint('⚠️ [SwipePage] Widget not mounted, skipping duplicate listener');
+        debugPrint(
+          '⚠️ [SwipePage] Widget not mounted, skipping duplicate listener',
+        );
         return;
       }
 
@@ -1502,9 +1627,13 @@ class _SwipePageState extends State<SwipePage>
       debugPrint(
         '🔍 [SwipePage] Duplicate scan state: wasScanning=$wasScanning, isNowScanning=$isNowScanning, hasCompleted=$hasCompleted, _isNavigatingToResults=$_isNavigatingToResults',
       );
-      debugPrint('   - previous state: ${previousDuplicateState.isScanning}, ${previousDuplicateState.hasCompletedScan}');
-      debugPrint('   - next state: ${next.isScanning}, ${next.hasCompletedScan}');
-      
+      debugPrint(
+        '   - previous state: ${previousDuplicateState.isScanning}, ${previousDuplicateState.hasCompletedScan}',
+      );
+      debugPrint(
+        '   - next state: ${next.isScanning}, ${next.hasCompletedScan}',
+      );
+
       // Previous state'i güncelle
       previousDuplicateState = next;
 
@@ -1517,10 +1646,10 @@ class _SwipePageState extends State<SwipePage>
           '✅ [SwipePage] Duplicate scan completed, sending notification and navigating to results page',
         );
         _isNavigatingToResults = true;
-        
+
         // Bildirim gönder (unawaited - navigation'ı beklemez ama hataları yakalar)
         unawaited(_sendScanCompletedNotification('duplicate'));
-        
+
         // Results sayfasına yönlendir
         _navigateToResultsPage('/results/duplicate');
       }
@@ -1632,38 +1761,22 @@ class _SwipePageState extends State<SwipePage>
     );
   }
 
-  /// Feature item widget
-  Widget _buildFeatureItem(ThemeData theme, IconData icon, String text) {
-    return Row(
-      children: [
-        Icon(icon, size: 20, color: theme.colorScheme.primary),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            text,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurface.withOpacity(0.8),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
   void _showPremiumDialog() {
     if (!mounted) return;
     debugPrint(
-      '💰 [SwipePage] Showing premium dialog after 3 interstitial ads',
+      '💰 [SwipePage] Showing first paywall dialog after 3 interstitial ads',
     );
-    // PremiumAfterAdsDialog'u göster
-    PremiumAfterAdsDialog.show(context);
+    // First Paywall Dialog'u göster
+    _showFirstPaywallDialog();
   }
 
   /// Scan tamamlandı bildirimi gönder (güvenli ve async)
   Future<void> _sendScanCompletedNotification(String scanType) async {
     try {
-      debugPrint('📱 [SwipePage] Starting notification send process for: $scanType');
-      
+      debugPrint(
+        '📱 [SwipePage] Starting notification send process for: $scanType',
+      );
+
       if (!mounted) {
         debugPrint('⚠️ [SwipePage] Widget not mounted, skipping notification');
         return;
@@ -1672,11 +1785,15 @@ class _SwipePageState extends State<SwipePage>
       debugPrint('📱 [SwipePage] Widget is mounted, getting localizations...');
       final l10n = AppLocalizations.of(context);
       if (l10n == null) {
-        debugPrint('⚠️ [SwipePage] Localizations not available, skipping notification');
+        debugPrint(
+          '⚠️ [SwipePage] Localizations not available, skipping notification',
+        );
         return;
       }
 
-      debugPrint('📱 [SwipePage] Localizations available, preparing notification...');
+      debugPrint(
+        '📱 [SwipePage] Localizations available, preparing notification...',
+      );
       final title = scanType == 'blur'
           ? l10n.scanCompletedSuccessfully
           : l10n.scanCompletedSuccessfullyDuplicate;
@@ -1686,18 +1803,22 @@ class _SwipePageState extends State<SwipePage>
       debugPrint('   - Title: $title');
       debugPrint('   - Body: $body');
       debugPrint('   - Scan type: $scanType');
-      
+
       // FCMService'in initialize olduğundan emin ol
       debugPrint('📱 [SwipePage] Checking FCMService initialization...');
       try {
         // Bildirimi göster (await ile - hataları yakalamak için)
-        debugPrint('📱 [SwipePage] Calling FCMService.showScanCompletedNotification...');
+        debugPrint(
+          '📱 [SwipePage] Calling FCMService.showScanCompletedNotification...',
+        );
         await FCMService.instance.showScanCompletedNotification(
           title: title,
           body: body,
           scanType: scanType,
         );
-        debugPrint('✅ [SwipePage] Scan completed notification sent successfully');
+        debugPrint(
+          '✅ [SwipePage] Scan completed notification sent successfully',
+        );
       } catch (fcmError, fcmStackTrace) {
         debugPrint('❌ [SwipePage] FCMService error: $fcmError');
         debugPrint('❌ [SwipePage] FCMService stack trace: $fcmStackTrace');
@@ -1768,92 +1889,6 @@ class _SwipePageState extends State<SwipePage>
       if (mounted) {
         _isNavigatingToResults = false;
       }
-    }
-  }
-
-  /// Scan tamamlandığında interstitial ad göster ve sonra results sayfasına yönlendir
-  Future<void> _showInterstitialAdAndNavigate(String route) async {
-    if (!mounted) return;
-
-    debugPrint(
-      '📱 [SwipePage] Scan completed, showing interstitial ad before navigating to $route',
-    );
-
-    // Premium kontrolü
-    final prefsService = PreferencesService();
-    final isPremium = await prefsService.isPremium();
-
-    if (!isPremium) {
-      debugPrint('📱 [SwipePage] Non-premium user, showing interstitial ad...');
-      try {
-        final adService = InterstitialAdsService.instance;
-
-        // Ad göster ve kapatılmasını bekle
-        try {
-          debugPrint('📱 [SwipePage] Attempting to show interstitial ad...');
-          final adShown = await adService
-              .showAd()
-              .timeout(
-                const Duration(seconds: 35),
-                onTimeout: () {
-                  debugPrint(
-                    '⚠️ [SwipePage] Ad showing timeout, continuing to navigate',
-                  );
-                  return false;
-                },
-              )
-              .catchError((e) {
-                debugPrint(
-                  '⚠️ [SwipePage] Ad showing error: $e, continuing to navigate',
-                );
-                return false;
-              });
-
-          debugPrint('📱 [SwipePage] Ad shown result: $adShown');
-
-          if (adShown == true) {
-            // Ad kapatıldı, kısa bir bekleme sonra navigate et
-            debugPrint(
-              '📱 [SwipePage] Ad was shown, waiting 500ms before navigation...',
-            );
-            await Future.delayed(const Duration(milliseconds: 500));
-          } else {
-            debugPrint(
-              '📱 [SwipePage] Ad was not shown, proceeding to navigation...',
-            );
-          }
-        } catch (e) {
-          debugPrint(
-            '⚠️ [SwipePage] Error showing ad: $e, continuing to navigate',
-          );
-          // Hata olsa bile devam et
-        }
-      } catch (e) {
-        debugPrint(
-          '⚠️ [SwipePage] Error in ad flow: $e, continuing to navigate',
-        );
-        // Hata olsa bile navigate et
-      }
-    } else {
-      debugPrint('💰 [SwipePage] Premium user, skipping ad...');
-    }
-
-    // Ad gösterildikten sonra (veya premium kullanıcı ise) results sayfasına yönlendir
-    if (mounted) {
-      // PostFrameCallback kullanarak navigation'ı bir sonraki frame'de yap
-      // Böylece state değişiklikleri tamamlandıktan sonra navigation yapılır
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          // Normal push kullan, results ekranından geri dönüş yapıldığında
-          // scan state'i temizlenecek ve normal tab yapısı gösterilecek
-          context.push(route).then((_) {
-            // Results ekranından geri dönüldüğünde flag'i reset et
-            if (mounted) {
-              _isNavigatingToResults = false;
-            }
-          });
-        }
-      });
     }
   }
 
@@ -2129,10 +2164,7 @@ class _SwipePageState extends State<SwipePage>
                     Icons.workspace_premium_rounded,
                     color: isScanning
                         ? theme.colorScheme.onSurface.withOpacity(0.38)
-                        : isPremium
-                        ? AppColors
-                              .warningLight // Premium kullanıcıda sarı renk
-                        : theme.colorScheme.primary,
+                        : theme.colorScheme.onPrimaryContainer.withOpacity(0.8),
                   ),
                   tooltip: isScanning
                       ? l10n.doNotLeaveScreenDuringScan
@@ -2273,7 +2305,7 @@ class _HistoryButtonState extends State<_HistoryButton> {
       final previous = galleryStatsCubit.state;
       if (!mounted) return;
 
-      final wasScanning = previous?.isScanning ?? false;
+      final wasScanning = previous.isScanning;
       final isNowScanning = next.isScanning;
       final hasNewData =
           next.stats != null &&
@@ -2381,7 +2413,7 @@ class _ModernTopInfoBarState extends State<_ModernTopInfoBar>
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    Theme.of(context);
     final currentTab = context.watch<TabSelectionCubit>().state;
 
     return IgnorePointer(
@@ -2500,22 +2532,9 @@ class _ModernDeleteLimitBadge extends StatelessWidget {
                     style: theme.textTheme.labelSmall?.copyWith(
                       fontWeight: FontWeight.w600,
                       fontSize: 10,
-                      color: isPremium
-                          ? theme.colorScheme.primary.withOpacity(0.9)
-                          : theme.colorScheme.onPrimaryContainer.withOpacity(
-                              0.8,
-                            ),
+                      color: theme.colorScheme.onPrimaryContainer.withOpacity(0.8),
                       letterSpacing: 0.3,
-                      shadows: isPremium
-                          ? [
-                              Shadow(
-                                color: theme.colorScheme.primary.withOpacity(
-                                  0.35,
-                                ),
-                                blurRadius: 8,
-                              ),
-                            ]
-                          : null,
+                      shadows: null,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -2612,22 +2631,9 @@ class _ModernScanLimitBadge extends StatelessWidget {
                     style: theme.textTheme.labelSmall?.copyWith(
                       fontWeight: FontWeight.w600,
                       fontSize: 10,
-                      color: isPremium
-                          ? theme.colorScheme.primary.withOpacity(0.9)
-                          : theme.colorScheme.onPrimaryContainer.withOpacity(
-                              0.8,
-                            ),
+                      color: theme.colorScheme.onPrimaryContainer.withOpacity(0.8),
                       letterSpacing: 0.3,
-                      shadows: isPremium
-                          ? [
-                              Shadow(
-                                color: theme.colorScheme.primary.withOpacity(
-                                  0.35,
-                                ),
-                                blurRadius: 8,
-                              ),
-                            ]
-                          : null,
+                      shadows: null,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -2772,75 +2778,106 @@ class _ModernAlbumSelectionButton extends StatelessWidget {
                         runSpacing: 4,
                         children: [
                           if (hasDateFilter)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: theme.colorScheme.primaryContainer
-                                    .withOpacity(0.3),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.calendar_today_rounded,
-                                    size: 10,
-                                    color: theme.colorScheme.primary,
+                            Builder(
+                              builder: (badgeContext) {
+                                // Premium durumunu kontrol et
+                                final isPremiumAsync = badgeContext
+                                    .watch<PremiumCubit>()
+                                    .state;
+                                final isPremium = isPremiumAsync.maybeWhen(
+                                  data: (premium) => premium,
+                                  orElse: () => false,
+                                );
+
+                                // Bottom navigation bar'daki container rengiyle aynı
+                                final containerColor = theme.colorScheme.onPrimaryContainer.withOpacity(0.8);
+
+                                return Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
                                   ),
-                                  const SizedBox(width: 4),
-                                  Flexible(
-                                    child: Text(
-                                      '${dateFilter.startDate != null ? DateFormat('dd.MM').format(dateFilter.startDate!) : ''}${dateFilter.startDate != null && dateFilter.endDate != null ? ' - ' : ''}${dateFilter.endDate != null ? DateFormat('dd.MM').format(dateFilter.endDate!) : ''}',
-                                      style: theme.textTheme.labelSmall
-                                          ?.copyWith(
-                                            fontSize: 9,
-                                            fontWeight: FontWeight.w600,
-                                            color: theme.colorScheme.primary,
-                                          ),
-                                      overflow: TextOverflow.ellipsis,
-                                      maxLines: 1,
-                                    ),
+                                  decoration: BoxDecoration(
+                                    color: containerColor.withOpacity(0.3),
+                                    borderRadius: BorderRadius.circular(6),
                                   ),
-                                ],
-                              ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.calendar_today_rounded,
+                                        size: 10,
+                                        color: containerColor,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Flexible(
+                                        child: Text(
+                                          '${dateFilter.startDate != null ? DateFormat('dd.MM').format(dateFilter.startDate!) : ''}${dateFilter.startDate != null && dateFilter.endDate != null ? ' - ' : ''}${dateFilter.endDate != null ? DateFormat('dd.MM').format(dateFilter.endDate!) : ''}',
+                                          style: theme.textTheme.labelSmall
+                                              ?.copyWith(
+                                                fontSize: 9,
+                                                fontWeight: FontWeight.w600,
+                                                color: containerColor,
+                                              ),
+                                          overflow: TextOverflow.ellipsis,
+                                          maxLines: 1,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
                             ),
                           if (sortOrder != SortOrder.newest)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: theme.colorScheme.primaryContainer
-                                    .withOpacity(0.3),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    sortOrder == SortOrder.oldest
-                                        ? Icons.arrow_upward_rounded
-                                        : Icons.arrow_downward_rounded,
-                                    size: 10,
-                                    color: theme.colorScheme.primary,
+                            Builder(
+                              builder: (badgeContext) {
+                                // Premium durumunu kontrol et
+                                final isPremiumAsync = badgeContext
+                                    .watch<PremiumCubit>()
+                                    .state;
+                                final isPremium = isPremiumAsync.maybeWhen(
+                                  data: (premium) => premium,
+                                  orElse: () => false,
+                                );
+
+                                // Bottom navigation bar'daki container rengiyle aynı
+                                final containerColor = theme.colorScheme.onPrimaryContainer.withOpacity(0.8);
+
+                                return Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
                                   ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    sortText,
-                                    style: theme.textTheme.labelSmall?.copyWith(
-                                      fontSize: 9,
-                                      fontWeight: FontWeight.w600,
-                                      color: theme.colorScheme.primary,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                    maxLines: 1,
+                                  decoration: BoxDecoration(
+                                    color: containerColor.withOpacity(0.3),
+                                    borderRadius: BorderRadius.circular(6),
                                   ),
-                                ],
-                              ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        sortOrder == SortOrder.oldest
+                                            ? Icons.arrow_upward_rounded
+                                            : Icons.arrow_downward_rounded,
+                                        size: 10,
+                                        color: containerColor,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        sortText,
+                                        style: theme.textTheme.labelSmall
+                                            ?.copyWith(
+                                              fontSize: 9,
+                                              fontWeight: FontWeight.w600,
+                                              color: containerColor,
+                                            ),
+                                        overflow: TextOverflow.ellipsis,
+                                        maxLines: 1,
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
                             ),
                         ],
                       ),
@@ -3088,44 +3125,18 @@ class _DeleteLimitInfoState extends State<_DeleteLimitInfo>
                             ),
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
-                              color: isPremium
-                                  ? theme.colorScheme.primary.withOpacity(0.3)
-                                  : theme.colorScheme.primary.withOpacity(0.2),
-                              width: isPremium ? 2 : 1,
+                              color: theme.colorScheme.primary.withOpacity(0.2),
+                              width: 1,
                             ),
-                            boxShadow: isPremium
-                                ? [
-                                    BoxShadow(
-                                      color: theme.colorScheme.primary
-                                          .withOpacity(0.4),
-                                      blurRadius: 20,
-                                      offset: const Offset(0, 4),
-                                      spreadRadius: 3,
-                                    ),
-                                    BoxShadow(
-                                      color: theme.colorScheme.primary
-                                          .withOpacity(0.25),
-                                      blurRadius: 12,
-                                      offset: const Offset(0, 2),
-                                      spreadRadius: 1,
-                                    ),
-                                    BoxShadow(
-                                      color: theme.colorScheme.primary
-                                          .withOpacity(0.15),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 1),
-                                      spreadRadius: 0,
-                                    ),
-                                  ]
-                                : [
-                                    BoxShadow(
-                                      color: theme.colorScheme.primary
-                                          .withOpacity(0.15),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 3),
-                                      spreadRadius: 0,
-                                    ),
-                                  ],
+                            boxShadow: [
+                              BoxShadow(
+                                color: theme.colorScheme.primary
+                                    .withOpacity(0.15),
+                                blurRadius: 8,
+                                offset: const Offset(0, 3),
+                                spreadRadius: 0,
+                              ),
+                            ],
                           ),
                           child: Row(
                             children: [
@@ -3430,7 +3441,6 @@ class _DeleteLimitInfoState extends State<_DeleteLimitInfo>
   }
 }
 
-// ignore: unused_element
 class _PurchaseFeatureItem extends StatelessWidget {
   const _PurchaseFeatureItem({required this.icon, required this.text});
 
@@ -3594,6 +3604,18 @@ class _LiquidGlassBottomNavBarState extends State<_LiquidGlassBottomNavBar>
                               .clamp(0, 2);
                           final indicatorLeft = selectedIndex * tabWidth;
 
+                          // Premium durumunu kontrol et ve "remaining deletion" text rengiyle eşit renk kullan
+                          final isPremiumAsync = context
+                              .watch<PremiumCubit>()
+                              .state;
+                          final isPremium = isPremiumAsync.maybeWhen(
+                            data: (premium) => premium,
+                            orElse: () => false,
+                          );
+
+                          // "remaining deletion" text rengiyle aynı renk
+                          final containerColor = theme.colorScheme.onPrimaryContainer.withOpacity(0.8);
+
                           return Positioned(
                             left: indicatorLeft + 6,
                             top: 6,
@@ -3606,14 +3628,13 @@ class _LiquidGlassBottomNavBarState extends State<_LiquidGlassBottomNavBar>
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
                                   colors: [
-                                    theme.colorScheme.primary.withOpacity(0.95),
-                                    theme.colorScheme.primary.withOpacity(0.85),
+                                    containerColor,
+                                    containerColor.withOpacity(0.85),
                                   ],
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: theme.colorScheme.primary
-                                        .withOpacity(0.35),
+                                    color: containerColor.withOpacity(0.35),
                                     blurRadius: 16,
                                     offset: const Offset(0, 4),
                                     spreadRadius: -2,
@@ -3698,6 +3719,9 @@ class _LiquidGlassBottomNavBarState extends State<_LiquidGlassBottomNavBar>
     final selectedTabIndex = context.watch<TabSelectionCubit>().state;
     final isSelected = selectedTabIndex == index;
 
+    // Seçili item ikon rengi: ekranın arka plan rengiyle aynı
+    final selectedIconColor = theme.colorScheme.background;
+
     return Expanded(
       child: Material(
         color: AppColors.transparent,
@@ -3716,7 +3740,7 @@ class _LiquidGlassBottomNavBarState extends State<_LiquidGlassBottomNavBar>
             child: customWidget != null
                 ? customWidget
                 : isSelected
-                ? Icon(icon, size: 24, color: theme.colorScheme.onPrimary)
+                ? Icon(icon, size: 24, color: selectedIconColor)
                 : Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     mainAxisSize: MainAxisSize.min,
@@ -3912,6 +3936,17 @@ Future<void> _showDeleteSuccessDialog(
       barrierColor: AppColors.black.withOpacity(0.5),
       builder: (dialogContext) {
         debugPrint('🎬 [SwipePage] Dialog builder called');
+
+        // Premium durumunu kontrol et
+        final isPremiumAsync = dialogContext.watch<PremiumCubit>().state;
+        final isPremium = isPremiumAsync.maybeWhen(
+          data: (premium) => premium,
+          orElse: () => false,
+        );
+
+        // Bottom navigation bar'daki container rengiyle aynı
+        final containerColor = theme.colorScheme.onPrimaryContainer.withOpacity(0.8);
+
         return Dialog(
           backgroundColor: AppColors.transparent,
           elevation: 0,
@@ -3987,14 +4022,14 @@ Future<void> _showDeleteSuccessDialog(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: [
-                            theme.colorScheme.primary,
-                            theme.colorScheme.primary.withOpacity(0.8),
+                            containerColor,
+                            containerColor.withOpacity(0.85),
                           ],
                         ),
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: theme.colorScheme.primary.withOpacity(0.3),
+                            color: containerColor.withOpacity(0.35),
                             blurRadius: 12,
                             offset: const Offset(0, 4),
                             spreadRadius: 0,
@@ -4056,7 +4091,6 @@ class _FirstPaywallDialogState extends State<_FirstPaywallDialog>
   String? _errorMessage;
   String? _productPrice;
   String? _originalPrice;
-  String? _packageIdentifier;
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
 
@@ -4089,7 +4123,6 @@ class _FirstPaywallDialogState extends State<_FirstPaywallDialog>
       // Paket bilgisini al
       final package = await rc.fetchLifetimePackage();
       if (package != null) {
-        _packageIdentifier = package.identifier;
         final product = package.storeProduct;
         final priceString = product.priceString;
         final priceValue = _parsePrice(priceString);
@@ -4209,6 +4242,10 @@ class _FirstPaywallDialogState extends State<_FirstPaywallDialog>
     final isDark = theme.brightness == Brightness.dark;
     final pricePrimaryTextColor = AppColors.textPrimary(theme.brightness);
     final priceSecondaryTextColor = AppColors.textSecondary(theme.brightness);
+    // Dinamik container rengi (premium durumuna göre)
+    final isPremiumAsync = context.watch<PremiumCubit>().state;
+    final isPremium = isPremiumAsync.valueOrNull ?? false;
+    final containerColor = theme.colorScheme.onPrimaryContainer.withOpacity(0.8);
 
     return Dialog(
       backgroundColor: Colors.transparent,
@@ -4240,8 +4277,8 @@ class _FirstPaywallDialogState extends State<_FirstPaywallDialog>
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: [
-                      AppColors.primary.withOpacity(0.15),
-                      AppColors.primary.withOpacity(0.0),
+                      containerColor.withOpacity(0.15),
+                      containerColor.withOpacity(0.0),
                     ],
                   ),
                 ),
@@ -4281,15 +4318,6 @@ class _FirstPaywallDialogState extends State<_FirstPaywallDialog>
                 ),
               ),
             ),
-            // Dekoratif çizgiler ve noktalar (modern pattern)
-            Positioned.fill(
-              child: CustomPaint(
-                painter: _ModernPatternPainter(
-                  primaryColor: theme.colorScheme.primary.withOpacity(0.05),
-                  accentColor: theme.colorScheme.secondary.withOpacity(0.03),
-                ),
-              ),
-            ),
             // Ana içerik
             Column(
               mainAxisSize: MainAxisSize.min,
@@ -4321,19 +4349,19 @@ class _FirstPaywallDialogState extends State<_FirstPaywallDialog>
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [
-                        AppColors.primary.withOpacity(0.2),
+                        containerColor.withOpacity(0.2),
                         AppColors.accent.withOpacity(0.15),
                         AppColors.secondary.withOpacity(0.1),
                       ],
                     ),
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: AppColors.primary.withOpacity(0.3),
+                      color: containerColor.withOpacity(0.3),
                       width: 2,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.primary.withOpacity(0.3),
+                        color: containerColor.withOpacity(0.3),
                         blurRadius: 15,
                         spreadRadius: 2,
                         offset: const Offset(0, 6),
@@ -4349,7 +4377,7 @@ class _FirstPaywallDialogState extends State<_FirstPaywallDialog>
                   child: Icon(
                     Icons.workspace_premium_rounded,
                     size: 40,
-                    color: AppColors.primary,
+                    color: containerColor,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -4380,18 +4408,21 @@ class _FirstPaywallDialogState extends State<_FirstPaywallDialog>
                         theme,
                         Icons.auto_delete_rounded,
                         l10n.unlimitedDeletions,
+                        containerColor,
                       ),
                       const SizedBox(height: 8),
                       _buildCompactFeatureItem(
                         theme,
                         Icons.scanner_rounded,
                         l10n.unlimitedScans,
+                        containerColor,
                       ),
                       const SizedBox(height: 8),
                       _buildCompactFeatureItem(
                         theme,
                         Icons.block_rounded,
                         l10n.noAds,
+                        containerColor,
                       ),
                     ],
                   ),
@@ -4480,14 +4511,12 @@ class _FirstPaywallDialogState extends State<_FirstPaywallDialog>
                           : theme.colorScheme.primaryContainer.withOpacity(0.8),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: theme.colorScheme.primary.withOpacity(
-                          isDark ? 0.3 : 0.5,
-                        ),
+                        color: containerColor.withOpacity(isDark ? 0.3 : 0.5),
                         width: 2,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: theme.colorScheme.primary.withOpacity(
+                          color: containerColor.withOpacity(
                             isDark ? 0.15 : 0.3,
                           ),
                           blurRadius: 15,
@@ -4664,16 +4693,16 @@ class _FirstPaywallDialogState extends State<_FirstPaywallDialog>
                             gradient: LinearGradient(
                               begin: Alignment.centerLeft,
                               end: Alignment.centerRight,
-                              colors: [AppColors.primary, AppColors.accent],
+                              colors: [containerColor, AppColors.accent],
                             ),
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
-                              color: AppColors.primary.withOpacity(0.9),
+                              color: containerColor.withOpacity(0.9),
                               width: 1.5,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: theme.colorScheme.primary.withOpacity(
+                                color: containerColor.withOpacity(
                                   (isDark ? 0.3 : 0.5) * _pulseAnimation.value,
                                 ),
                                 blurRadius: 25 * _pulseAnimation.value,
@@ -4713,8 +4742,7 @@ class _FirstPaywallDialogState extends State<_FirstPaywallDialog>
                                             style: TextStyle(
                                               fontWeight: FontWeight.w800,
                                               fontSize: 14,
-                                              color:
-                                                  theme.colorScheme.onPrimary,
+                                              color: theme.colorScheme.surface,
                                               letterSpacing: 0.3,
                                             ),
                                             overflow: TextOverflow.ellipsis,
@@ -4726,7 +4754,7 @@ class _FirstPaywallDialogState extends State<_FirstPaywallDialog>
                                         style: TextStyle(
                                           fontWeight: FontWeight.w900,
                                           fontSize: 16,
-                                          color: theme.colorScheme.onPrimary,
+                                          color: theme.colorScheme.surface,
                                           letterSpacing: 0.5,
                                         ),
                                         textAlign: TextAlign.center,
@@ -4796,8 +4824,13 @@ class _FirstPaywallDialogState extends State<_FirstPaywallDialog>
     );
   }
 
-  Widget _buildCompactFeatureItem(ThemeData theme, IconData icon, String text) {
-    final color = theme.colorScheme.primary;
+  Widget _buildCompactFeatureItem(
+    ThemeData theme,
+    IconData icon,
+    String text,
+    Color containerColor,
+  ) {
+    final color = containerColor;
     final isDark = theme.brightness == Brightness.dark;
 
     return Container(
@@ -4883,60 +4916,4 @@ class _FirstPaywallDialogState extends State<_FirstPaywallDialog>
       ),
     );
   }
-}
-
-/// Modern pattern painter for dialog background
-class _ModernPatternPainter extends CustomPainter {
-  _ModernPatternPainter({
-    required this.primaryColor,
-    required this.accentColor,
-  });
-
-  final Color primaryColor;
-  final Color accentColor;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    // Diagonal lines pattern
-    final diagonalPaint = Paint()
-      ..color = primaryColor
-      ..strokeWidth = 1.0
-      ..style = PaintingStyle.stroke;
-
-    const spacing = 40.0;
-    const angle = 45.0 * (3.14159 / 180.0); // 45 degrees in radians
-
-    // Diagonal lines from top-left to bottom-right
-    for (double i = -size.height; i < size.width + size.height; i += spacing) {
-      final startX = i;
-      final startY = 0.0;
-      final endX = i + size.height * math.tan(angle);
-      final endY = size.height;
-
-      canvas.drawLine(
-        Offset(startX, startY),
-        Offset(endX, endY),
-        diagonalPaint,
-      );
-    }
-
-    // Dots pattern
-    final dotPaint = Paint()
-      ..color = accentColor
-      ..style = PaintingStyle.fill;
-
-    const dotSpacing = 30.0;
-    const dotRadius = 2.0;
-
-    for (double x = 0; x < size.width; x += dotSpacing) {
-      for (double y = 0; y < size.height; y += dotSpacing) {
-        // Offset dots for visual interest
-        final offsetX = (y % (dotSpacing * 2) == 0) ? x : x + dotSpacing / 2;
-        canvas.drawCircle(Offset(offsetX, y), dotRadius, dotPaint);
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

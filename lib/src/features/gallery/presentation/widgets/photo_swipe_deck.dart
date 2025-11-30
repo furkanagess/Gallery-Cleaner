@@ -1,13 +1,11 @@
-import 'dart:collection';
+// ignore_for_file: deprecated_member_use
+
 import 'dart:math' as math;
-import 'dart:typed_data';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lottie/lottie.dart';
 import 'package:photo_manager/photo_manager.dart' as pm;
 import 'package:image/image.dart' as img;
-import '../../../../app/theme/app_theme.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../../l10n/app_localizations.dart';
 import '../../../../core/services/sound_service.dart';
@@ -41,7 +39,7 @@ class _ThumbnailMemoryCache {
   _ThumbnailMemoryCache._();
 
   static const _maxEntries = 40;
-  static final _cache = LinkedHashMap<String, Uint8List>();
+  static final _cache = <String, Uint8List>{};
 
   static Uint8List? get(String id) => _cache[id];
 
@@ -68,6 +66,7 @@ class PhotoSwipeDeck extends StatefulWidget {
     this.initialIndex = 0,
     this.onIndexChanged,
     this.onResetCallbackReady,
+    this.onDragOffsetChanged,
   });
 
   final List<pm.AssetEntity> assets;
@@ -80,6 +79,7 @@ class PhotoSwipeDeck extends StatefulWidget {
   final int initialIndex;
   final void Function(int index)? onIndexChanged;
   final void Function(VoidCallback resetCallback)? onResetCallbackReady;
+  final void Function(Offset dragOffset)? onDragOffsetChanged;
 
   @override
   State<PhotoSwipeDeck> createState() => _PhotoSwipeDeckState();
@@ -90,11 +90,10 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck>
   static const double _swipeThreshold = 120;
   static const double _rotationMaxDeg = 15;
   static const int _stackSize = 2;
-  static const double _verticalDragThreshold = -80; // Yukarı sürükleme eşiği
+  // Yukarı sürükleme eşiği
 
   late int _topIndex;
   Offset _dragOffset = Offset.zero;
-  Offset? _lastGlobalPosition;
   double _dragRotation = 0;
   late AnimationController _controller;
   late Animation<Offset> _slideAnimation;
@@ -138,6 +137,7 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck>
       cubitSetState(() {
         _dragOffset = _slideAnimation.value;
       });
+      widget.onDragOffsetChanged?.call(_slideAnimation.value);
     }
   }
 
@@ -165,6 +165,7 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck>
           _dragOffset = Offset.zero;
           _dragRotation = 0;
         });
+        widget.onDragOffsetChanged?.call(Offset.zero);
       }
     }
     // Reset callback değiştiyse güncelle
@@ -194,6 +195,7 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck>
         _dragRotation = 0;
         _pendingDecision = null;
       });
+      widget.onDragOffsetChanged?.call(Offset.zero);
       widget.onIndexChanged?.call(0);
     }
 
@@ -250,6 +252,7 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck>
       _pendingDecision = null;
     });
 
+    widget.onDragOffsetChanged?.call(Offset.zero);
     // Index değişikliğini bildir
     widget.onIndexChanged?.call(_topIndex);
 
@@ -302,6 +305,7 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck>
             widget.assets[idx],
             indexFromTop: i,
             isTop: isTop,
+            absoluteIndex: idx,
           ),
         );
       }
@@ -319,6 +323,7 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck>
     pm.AssetEntity asset, {
     required int indexFromTop,
     required bool isTop,
+    required int absoluteIndex,
   }) {
     const baseScale = 1.0;
     const baseOffsetY = 0.0;
@@ -335,31 +340,7 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck>
         ? 1.0
         : baseScale; // Background cards maintain fixed scale
 
-    // Border ve badge hesaplamaları sadece top kart için yapılacak
-    final decisionStrength = isTop && widget.canDelete
-        ? (_dragOffset.dx / _swipeThreshold).clamp(-1.0, 1.0)
-        : 0.0;
-    final keepOpacity = isTop && widget.canDelete && decisionStrength > 0
-        ? decisionStrength.abs().clamp(0.0, 1.0)
-        : 0.0;
-    final deleteOpacity = isTop && widget.canDelete && decisionStrength < 0
-        ? decisionStrength.abs().clamp(0.0, 1.0)
-        : 0.0;
-    final sem = Theme.of(context).extension<AppSemanticColors>()!;
-    final borderColor = isTop
-        ? (decisionStrength >= 0
-              ? sem.keep.withOpacity(keepOpacity * 0.8)
-              : sem.delete.withOpacity(deleteOpacity * 0.8))
-        : AppColors.transparent;
-    final borderWidth = isTop
-        ? ((keepOpacity > deleteOpacity ? keepOpacity : deleteOpacity) * 3.5 +
-              1.5)
-        : 0.0;
-    final l10n = AppLocalizations.of(context)!;
-
     // Karartı overlay'i kaldırıldı - tüm kartlar tam görünür, animasyon yok
-    // Border'ı Container'a ekleyerek fotoğrafın çevresinde net görünmesini sağlıyoruz
-    // Border sadece top kartta ve swipe yapıldığında görünür
     Widget card = Transform.translate(
       offset: offset,
       child: Transform.rotate(
@@ -374,10 +355,6 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck>
                 borderRadius: BorderRadius.circular(20),
                 // Şeffaf arka plan - siyah alan sorununu önlemek için
                 color: AppColors.transparent,
-                // Border sadece top kartta ve swipe yapıldığında gösterilir
-                border: isTop && borderWidth > 0
-                    ? Border.all(color: borderColor, width: borderWidth)
-                    : null,
                 boxShadow: [
                   BoxShadow(
                     color: AppColors.black.withOpacity(
@@ -405,7 +382,6 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck>
             return;
           }
           _controller.stop();
-          _lastGlobalPosition = details.globalPosition;
         },
         onPanUpdate: (details) {
           // Silme hakkı yoksa hiçbir swipe hareketine izin verme
@@ -414,40 +390,30 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck>
             return;
           }
 
-          final newOffset = _dragOffset + details.delta;
-          final isDraggingUpward = newOffset.dy < _verticalDragThreshold;
+          // Yalnızca yatay hareket - dikey hareketi sıfırla
+          final newOffset = Offset(_dragOffset.dx + details.delta.dx, 0.0);
 
           // Optimize: Sadece değişiklik varsa cubitSetState çağır
-          final newRotation = isDraggingUpward
-              ? (newOffset.dx / 20).clamp(
-                  -_rotationMaxDeg * 0.5,
-                  _rotationMaxDeg * 0.5,
-                )
-              : (newOffset.dx / 12).clamp(-_rotationMaxDeg, _rotationMaxDeg);
+          final newRotation = (newOffset.dx / 12).clamp(
+            -_rotationMaxDeg,
+            _rotationMaxDeg,
+          );
 
           if (_dragOffset != newOffset || _dragRotation != newRotation) {
             cubitSetState(() {
               _dragOffset = newOffset;
               _dragRotation = newRotation;
             });
+            widget.onDragOffsetChanged?.call(newOffset);
           }
 
-          // Yukarı sürüklenmiyorsa haptik feedback
-          if (!isDraggingUpward) {
-            if (newOffset.dx > _swipeThreshold && !_didHapticForKeep) {
-              HapticFeedback.lightImpact();
-              _didHapticForKeep = true;
-            } else if (newOffset.dx < -_swipeThreshold &&
-                !_didHapticForDelete) {
-              HapticFeedback.lightImpact();
-              _didHapticForDelete = true;
-            }
-          }
-
-          // Global pozisyonu sakla ve albüm hedeflerine ilet
-          _lastGlobalPosition = details.globalPosition;
-          if (widget.onDragUpdate != null) {
-            widget.onDragUpdate!(details.globalPosition);
+          // Haptik feedback
+          if (newOffset.dx > _swipeThreshold && !_didHapticForKeep) {
+            HapticFeedback.lightImpact();
+            _didHapticForKeep = true;
+          } else if (newOffset.dx < -_swipeThreshold && !_didHapticForDelete) {
+            HapticFeedback.lightImpact();
+            _didHapticForDelete = true;
           }
         },
         onPanEnd: (details) {
@@ -459,41 +425,11 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck>
           }
 
           final dx = _dragOffset.dx;
-          final dy = _dragOffset.dy;
 
-          final wasDraggingToAlbum = widget.isDraggingToAlbum?.call() ?? false;
-          final isUpwardDrag = dy < _verticalDragThreshold;
-          final releasePosition =
-              _lastGlobalPosition ??
-              (context.findRenderObject() as RenderBox?)?.localToGlobal(
-                _dragOffset,
-              ) ??
-              Offset.zero;
-          final currentAsset = widget.assets[_topIndex];
-
-          // Önce albüm hedefi kontrolü
-          if (widget.onDragEnd != null) {
+          // Yalnızca yatay swipe kontrolü - dikey hareket yok
+          if (dx.abs() >= _swipeThreshold) {
             debugPrint(
-              '🔄 [PhotoSwipeDeck] onPanEnd: dy=$dy, wasDraggingToAlbum=$wasDraggingToAlbum, isUpwardDrag=$isUpwardDrag, releasePosition=$releasePosition',
-            );
-
-            // Eğer yukarı sürüklenmişse veya albüme sürüklenmişse, onDragEnd'i çağır
-            if (wasDraggingToAlbum || isUpwardDrag) {
-              debugPrint(
-                '🔄 [PhotoSwipeDeck] Albüm taşıma modu - onDragEnd çağrılıyor',
-              );
-              widget.onDragEnd!(currentAsset, releasePosition);
-              // Albüme taşındıysa swipe yapma, kartı geri döndür
-              _animateBack();
-              _lastGlobalPosition = null;
-              return;
-            }
-          }
-
-          // Yukarı sürüklenmemişse ve albüme taşınmamışsa normal swipe kontrolü
-          if (dx.abs() >= _swipeThreshold && dy >= _verticalDragThreshold) {
-            debugPrint(
-              '🔄 [PhotoSwipeDeck] Normal swipe: ${dx > 0 ? "keep" : "delete"}',
+              '🔄 [PhotoSwipeDeck] Yatay swipe: ${dx > 0 ? "keep" : "delete"}',
             );
             _animateOff(dx > 0 ? SwipeDecision.keep : SwipeDecision.delete);
           } else {
@@ -502,17 +438,14 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck>
             );
             _animateBack();
           }
-
-          _lastGlobalPosition = null;
         },
         onPanCancel: () {
-          _lastGlobalPosition = null;
           _animateBack();
         },
         child: Stack(
           children: [
             card,
-            // Underlay: gradient overlay (border artık kartın üzerinde)
+            // Underlay: gradient overlay
             Positioned.fill(
               child: IgnorePointer(
                 child: ClipRRect(
@@ -532,87 +465,6 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck>
                 ),
               ),
             ),
-            // Overlays (TOP): Modern badges: delete (bottom-left) and keep/gallery (bottom-right)
-            // Badge'ler sadece top kartta gösterilir ve sabit konumda kalır
-            if (isTop)
-              Positioned.fill(
-                child: RepaintBoundary(
-                  child: IgnorePointer(
-                    ignoring: true,
-                    child: Stack(
-                      children: [
-                        // Delete badge (bottom-left) - sol alt köşede sabit
-                        Positioned(
-                          left: 16,
-                          bottom: 16,
-                          child: AnimatedOpacity(
-                            opacity: deleteOpacity > 0.08
-                                ? deleteOpacity.clamp(0.5, 1.0)
-                                : 0.0,
-                            duration: const Duration(milliseconds: 200),
-                            curve: Curves.easeOut,
-                            child: AnimatedScale(
-                              scale: deleteOpacity > 0.08
-                                  ? (0.92 + deleteOpacity * 0.08).clamp(
-                                      0.92,
-                                      1.0,
-                                    )
-                                  : 0.88,
-                              duration: const Duration(milliseconds: 200),
-                              curve: Curves.easeOutCubic,
-                              child: AnimatedRotation(
-                                turns: deleteOpacity > 0.5 ? 0.0 : 0.025,
-                                duration: const Duration(milliseconds: 200),
-                                curve: Curves.easeOutCubic,
-                                child: _BadgeWithArrow(
-                                  color: sem.delete,
-                                  icon: Icons.delete,
-                                  label: l10n.delete,
-                                  arrowDirection: _ArrowDirection.topRight,
-                                  isDelete: true,
-                                  shouldAnimate: deleteOpacity > 0.3,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        // Keep/Library badge (bottom-right) - sağ alt köşede sabit
-                        Positioned(
-                          right: 16,
-                          bottom: 16,
-                          child: AnimatedOpacity(
-                            opacity: keepOpacity > 0.08
-                                ? keepOpacity.clamp(0.5, 1.0)
-                                : 0.0,
-                            duration: const Duration(milliseconds: 200),
-                            curve: Curves.easeOut,
-                            child: AnimatedScale(
-                              scale: keepOpacity > 0.08
-                                  ? (0.92 + keepOpacity * 0.08).clamp(0.92, 1.0)
-                                  : 0.88,
-                              duration: const Duration(milliseconds: 200),
-                              curve: Curves.easeOutCubic,
-                              child: AnimatedRotation(
-                                turns: keepOpacity > 0.5 ? 0.0 : -0.025,
-                                duration: const Duration(milliseconds: 200),
-                                curve: Curves.easeOutCubic,
-                                child: _BadgeWithArrow(
-                                  color: sem.keep,
-                                  icon: Icons.photo_library_outlined,
-                                  label: l10n.keep,
-                                  arrowDirection: _ArrowDirection.topLeft,
-                                  isKeep: true,
-                                  shouldAnimate: keepOpacity > 0.3,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
           ],
         ),
       );
@@ -622,7 +474,12 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck>
 
     // Optimize: RepaintBoundary ile wrap et
     // AnimatedSwitcher kaldırıldı - siyah alan sorununu önlemek için
-    return RepaintBoundary(key: ValueKey(asset.id), child: card);
+    // Key'i unique yapmak için asset.id ve absoluteIndex'i birleştir
+    // Bu, albüm değiştiğinde veya aynı asset farklı pozisyonlarda göründüğünde duplicate key hatasını önler
+    return RepaintBoundary(
+      key: ValueKey('${asset.id}_$absoluteIndex'),
+      child: card,
+    );
   }
 
   Widget _buildAllPhotosReviewedWidget(BuildContext context) {
@@ -718,9 +575,9 @@ class _BadgeWithArrow extends StatefulWidget {
     required this.icon,
     required this.label,
     required this.arrowDirection,
-    this.isDelete = false,
-    this.isKeep = false,
-    this.shouldAnimate = false,
+    required this.isDelete,
+    required this.isKeep,
+    required this.shouldAnimate,
   });
 
   final Color color;
@@ -1026,35 +883,35 @@ class _PhotoCardState extends State<_PhotoCard> {
                 return placeholder;
               }
 
-                  return AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 220),
-                    switchInCurve: Curves.easeOutCubic,
-                    switchOutCurve: Curves.easeInCubic,
-                    child: Image.memory(
-                      imageData,
-                      key: ObjectKey(imageData),
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                      height: double.infinity,
-                      gaplessPlayback: true,
-                      filterQuality: FilterQuality.medium,
-                      cacheWidth: thumbSize.width,
-                      cacheHeight: thumbSize.height,
-                      errorBuilder: (context, error, stackTrace) {
-                        if (_previousImageData != null) {
-                          return Image.memory(
-                            _previousImageData!,
-                            fit: BoxFit.cover,
-                            width: double.infinity,
-                            height: double.infinity,
-                            gaplessPlayback: true,
-                            filterQuality: FilterQuality.medium,
-                          );
-                        }
-                        return placeholder;
-                      },
-                    ),
-                  );
+              return AnimatedSwitcher(
+                duration: const Duration(milliseconds: 220),
+                switchInCurve: Curves.easeOutCubic,
+                switchOutCurve: Curves.easeInCubic,
+                child: Image.memory(
+                  imageData,
+                  key: ObjectKey(imageData),
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  height: double.infinity,
+                  gaplessPlayback: true,
+                  filterQuality: FilterQuality.medium,
+                  cacheWidth: thumbSize.width,
+                  cacheHeight: thumbSize.height,
+                  errorBuilder: (context, error, stackTrace) {
+                    if (_previousImageData != null) {
+                      return Image.memory(
+                        _previousImageData!,
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        height: double.infinity,
+                        gaplessPlayback: true,
+                        filterQuality: FilterQuality.medium,
+                      );
+                    }
+                    return placeholder;
+                  },
+                ),
+              );
             },
           ),
         ),

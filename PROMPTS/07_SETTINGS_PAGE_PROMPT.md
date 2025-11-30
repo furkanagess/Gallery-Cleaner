@@ -287,3 +287,4 @@ Scaffold
 
 Settings Page, kullanıcıya uygulama ayarlarını kolayca yönetme imkanı sunan, premium durumunu net bir şekilde gösteren ve uygulama değerlendirmesini teşvik eden düzenli bir ekrandır. Tüm ayarlar erişilebilir ve anlaşılır olmalıdır.
 
+

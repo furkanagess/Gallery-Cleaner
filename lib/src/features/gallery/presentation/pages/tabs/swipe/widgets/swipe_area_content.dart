@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -7,10 +8,18 @@ import '../../../../../../../core/utils/view_refresh_cubit.dart';
 import '../../../../../application/gallery_providers.dart';
 import '../../../../../application/review_actions_controller.dart';
 import '../../../../../../../../src/app/theme/app_colors.dart' show AppColors;
-import '../../../../../../../../l10n/app_localizations.dart' show AppLocalizations;
-import '../../../../widgets/photo_swipe_deck.dart' show PhotoSwipeDeck, SwipeDecision;
-import '../../../../../../../../src/core/services/sound_service.dart' show SoundService;
-import 'swipe_tab_helpers.dart' show isPositionOverWidget, getWidgetCenter, showAlbumSelectionDialog, maybePrefetch;
+import '../../../../../../../../l10n/app_localizations.dart'
+    show AppLocalizations;
+import '../../../../widgets/photo_swipe_deck.dart'
+    show PhotoSwipeDeck, SwipeDecision;
+import '../../../../../../../../src/core/services/sound_service.dart'
+    show SoundService;
+import 'swipe_tab_helpers.dart'
+    show
+        isPositionOverWidget,
+        getWidgetCenter,
+        showAlbumSelectionDialog,
+        maybePrefetch;
 
 class SwipeAreaContent extends StatefulWidget {
   const SwipeAreaContent({
@@ -20,6 +29,7 @@ class SwipeAreaContent extends StatefulWidget {
     this.initialIndex = 0,
     this.onIndexChanged,
     this.onResetCallbackReady,
+    this.currentIndex = 0,
   });
 
   final List<pm.AssetEntity> assets;
@@ -27,6 +37,7 @@ class SwipeAreaContent extends StatefulWidget {
   final int initialIndex;
   final void Function(int index)? onIndexChanged;
   final void Function(VoidCallback resetCallback)? onResetCallbackReady;
+  final int currentIndex;
 
   @override
   State<SwipeAreaContent> createState() => SwipeAreaContentState();
@@ -46,6 +57,11 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
   bool _isDraggingToAlbum = false;
   Offset? _dragStartPosition;
   bool _isDialogShowing = false;
+  Offset _photoSwipeDragOffset =
+      Offset.zero; // PhotoSwipeDeck'ten gelen drag offset
+  Offset? _pendingDragOffset; // Build sırasında update'i geciktirmek için
+  bool _hasPendingOffsetUpdate =
+      false; // Build sırasında update'i geciktirmek için
 
   @override
   void didUpdateWidget(covariant SwipeAreaContent oldWidget) {
@@ -71,47 +87,139 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
     );
 
     return RepaintBoundary(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 480),
-            child: AspectRatio(
-              aspectRatio: 3 / 4,
-              child: AnimatedScale(
-                scale: _dragScale,
-                duration: const Duration(milliseconds: 150),
-                curve: Curves.easeOutCubic,
-                child: Transform.translate(
-                  offset: _dragOffset,
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      PhotoSwipeDeck(
-                        assets: widget.assets,
-                        initialIndex: widget.initialIndex,
-                        canDelete: canDelete,
-                        isDraggingToAlbum: () => _isDraggingToAlbum,
-                        onDragUpdate: _handleDragUpdate,
-                        onDragEnd: (asset, pos) {
-                          _handleDragEnd(asset, pos);
-                        },
-                        onDecision: (asset, decision) {
-                          _handleDecision(asset, decision);
-                        },
-                        onNoRightsLeft: () {
-                          _showNoRightsDialog(context);
-                        },
-                        onIndexChanged: widget.onIndexChanged,
-                        onResetCallbackReady: widget.onResetCallbackReady,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          // Ana içerik
+          Padding(
+            padding: const EdgeInsets.only(
+              left: 16,
+              right: 16,
+              top: 8,
+              bottom: 16,
+            ),
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 420),
+                child: AspectRatio(
+                  aspectRatio: 3 / 4,
+                  child: AnimatedScale(
+                    scale: _dragScale,
+                    duration: const Duration(milliseconds: 150),
+                    curve: Curves.easeOutCubic,
+                    child: Transform.translate(
+                      offset: _dragOffset,
+                      child: Stack(
+                        fit: StackFit.expand,
+                        clipBehavior: Clip.none,
+                        children: [
+                          PhotoSwipeDeck(
+                            key: ValueKey(
+                              widget.assets.isEmpty
+                                  ? 'empty'
+                                  : '${widget.assets.first.id}_${widget.assets.length}',
+                            ),
+                            assets: widget.assets,
+                            initialIndex: widget.initialIndex,
+                            canDelete: canDelete,
+                            isDraggingToAlbum: () => _isDraggingToAlbum,
+                            onDragUpdate: _handleDragUpdate,
+                            onDragEnd: (asset, pos) {
+                              _handleDragEnd(asset, pos);
+                            },
+                            onDecision: (asset, decision) {
+                              _handleDecision(asset, decision);
+                            },
+                            onNoRightsLeft: () {
+                              _showNoRightsDialog(context);
+                            },
+                            onIndexChanged: widget.onIndexChanged,
+                            onResetCallbackReady: widget.onResetCallbackReady,
+                            onDragOffsetChanged: (offset) {
+                              // Build sırasında setState çağrılmasını engellemek için
+                              // postFrameCallback kullanarak setState'i geciktir
+                              if (!mounted) return;
+
+                              // Pending offset'i güncelle (her zaman en son değeri tut)
+                              _pendingDragOffset = offset;
+
+                              // Eğer zaten bir pending update yoksa, yeni bir tane ekle
+                              // Bu sayede çok fazla postFrameCallback eklenmesini engelleriz
+                              if (!_hasPendingOffsetUpdate) {
+                                _hasPendingOffsetUpdate = true;
+                                WidgetsBinding.instance.addPostFrameCallback((
+                                  _,
+                                ) {
+                                  if (mounted && _pendingDragOffset != null) {
+                                    final offsetToApply = _pendingDragOffset!;
+                                    _pendingDragOffset = null;
+                                    _hasPendingOffsetUpdate = false;
+                                    setState(() {
+                                      _photoSwipeDragOffset = offsetToApply;
+                                    });
+                                  } else if (mounted) {
+                                    _hasPendingOffsetUpdate = false;
+                                  }
+                                });
+                              }
+                            },
+                          ),
+                          // Fotoğraf sayacı - Deck'in hemen altında, fotoğraf kartının altında
+                          if (widget.assets.isNotEmpty)
+                            Positioned(
+                              bottom: 12,
+                              left: 0,
+                              right: 0,
+                              child: Center(
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 8,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.surface.withOpacity(0.9),
+                                    borderRadius: BorderRadius.circular(16),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: AppColors.black.withOpacity(0.2),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 2),
+                                        spreadRadius: 0,
+                                      ),
+                                    ],
+                                  ),
+                                  child: Text(
+                                    '${widget.currentIndex + 1} / ${widget.assets.length}',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.copyWith(
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.onSurface,
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 13,
+                                          letterSpacing: 0.2,
+                                        ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ),
             ),
           ),
-        ),
+          // Overlay'ler - Ekranın tam kenarından başlayacak
+          if (widget.assets.isNotEmpty && canDelete)
+            ..._buildSwipeActionButtons(context),
+        ],
       ),
     );
   }
@@ -226,7 +334,180 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
       _dragOffset = Offset.zero;
       _isDraggingToAlbum = false;
       _dragStartPosition = null;
+      _photoSwipeDragOffset = Offset.zero;
     });
+  }
+
+  List<Widget> _buildSwipeActionButtons(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    final screenWidth = screenSize.width;
+    final screenHeight = screenSize.height;
+
+    // Buton boyutları
+    const double buttonSize = 80.0;
+    const double buttonIconSize = 32.0;
+
+    // Buton konumları - ekranın daha yukarısında
+    final buttonCenterY = screenHeight / 2 - 120;
+    final leftButtonCenterX = screenWidth / 2 - 70;
+    final rightButtonCenterX = screenWidth / 2 + 70;
+
+    // Drag offset değerlerini al
+    final dragDx = _photoSwipeDragOffset.dx;
+
+    // Debug: Her zaman offset değerini logla
+    if (dragDx.abs() > 5.0) {
+      debugPrint('🎯 [SwipeActionButtons] Drag dx: $dragDx');
+    }
+
+    // Sol swipe (delete) hesaplamaları
+    final deleteOffsetAbs = dragDx < 0 ? dragDx.abs() : 0.0;
+    // Çok düşük threshold - 10px'den itibaren görünür
+    final deleteProgress = deleteOffsetAbs >= 10.0
+        ? ((deleteOffsetAbs - 10.0) / 100.0).clamp(0.0, 1.0)
+        : 0.0;
+    // Minimum %30 opacity ile başla, maksimum %100
+    final deleteOpacity = deleteProgress > 0.0
+        ? (0.3 + (deleteProgress * 0.7)).clamp(0.3, 1.0)
+        : 0.0;
+
+    // Sağ swipe (keep) hesaplamaları
+    final keepOffset = dragDx > 0 ? dragDx : 0.0;
+    // Çok düşük threshold - 10px'den itibaren görünür
+    final keepProgress = keepOffset >= 10.0
+        ? ((keepOffset - 10.0) / 100.0).clamp(0.0, 1.0)
+        : 0.0;
+    // Minimum %30 opacity ile başla, maksimum %100
+    final keepOpacity = keepProgress > 0.0
+        ? (0.3 + (keepProgress * 0.7)).clamp(0.3, 1.0)
+        : 0.0;
+
+    // Overlay genişlikleri - ekranın kenarlarından butonlara kadar
+    final leftButtonRightEdge = leftButtonCenterX + (buttonSize / 2);
+    final rightButtonLeftEdge = rightButtonCenterX - (buttonSize / 2);
+    final leftToButton = leftButtonRightEdge;
+    final rightToButton = screenWidth - rightButtonLeftEdge;
+    final deleteOverlayWidth = deleteProgress * leftToButton;
+    final keepOverlayWidth = keepProgress * rightToButton;
+
+    return [
+      // Sol overlay - Ekranın en solundan sol butonun sağına kadar
+      if (deleteOpacity > 0.0)
+        Positioned(
+          left: 0,
+          top: buttonCenterY - (buttonSize / 2),
+          height: buttonSize,
+          width: deleteOverlayWidth,
+          child: IgnorePointer(
+            child: AnimatedOpacity(
+              opacity: deleteOpacity,
+              duration: const Duration(milliseconds: 150),
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                    colors: [
+                      AppColors.error.withOpacity(0.6),
+                      AppColors.error.withOpacity(0.0),
+                    ],
+                    stops: const [0.0, 1.0],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      // Sağ overlay - Ekranın en sağından sağ butonun soluna kadar
+      if (keepOpacity > 0.0)
+        Positioned(
+          right: 0,
+          top: buttonCenterY - (buttonSize / 2),
+          height: buttonSize,
+          width: keepOverlayWidth,
+          child: IgnorePointer(
+            child: AnimatedOpacity(
+              opacity: keepOpacity,
+              duration: const Duration(milliseconds: 150),
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.centerRight,
+                    end: Alignment.centerLeft,
+                    colors: [
+                      AppColors.success.withOpacity(0.6),
+                      AppColors.success.withOpacity(0.0),
+                    ],
+                    stops: const [0.0, 1.0],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      // Sol buton - Sil
+      if (deleteOpacity > 0.0)
+        Positioned(
+          left: leftButtonCenterX - (buttonSize / 2),
+          top: buttonCenterY - (buttonSize / 2),
+          child: IgnorePointer(
+            child: AnimatedOpacity(
+              opacity: deleteOpacity,
+              duration: const Duration(milliseconds: 150),
+              child: AnimatedScale(
+                scale: 1.0,
+                duration: const Duration(milliseconds: 150),
+                child: Container(
+                  width: buttonSize,
+                  height: buttonSize,
+                  decoration: BoxDecoration(
+                    color: AppColors.error,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Icon(
+                      Icons.delete_outline_rounded,
+                      color: AppColors.white,
+                      size: buttonIconSize,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      // Sağ buton - Tut
+      if (keepOpacity > 0.0)
+        Positioned(
+          left: rightButtonCenterX - (buttonSize / 2),
+          top: buttonCenterY - (buttonSize / 2),
+          child: IgnorePointer(
+            child: AnimatedOpacity(
+              opacity: keepOpacity,
+              duration: const Duration(milliseconds: 150),
+              child: AnimatedScale(
+                scale: 1.0,
+                duration: const Duration(milliseconds: 150),
+                child: Container(
+                  width: buttonSize,
+                  height: buttonSize,
+                  decoration: BoxDecoration(
+                    color: AppColors.success,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Icon(
+                      Icons.check_circle_outline_rounded,
+                      color: AppColors.white,
+                      size: buttonIconSize,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+    ];
   }
 
   void _showNoRightsDialog(BuildContext context) {
@@ -403,4 +684,3 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
     });
   }
 }
-

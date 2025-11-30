@@ -31,13 +31,7 @@ class ResultsPage extends StatelessWidget {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () {
-            // Scan state'ini temizle
-            if (isBlur) {
-              context.read<BlurDetectionCubit>().clear();
-            } else {
-              context.read<DuplicateDetectionCubit>().clear();
-            }
-            // Swipe page'e geri dön
+            // Swipe page'e geri dön (state'i temizleme - böylece "View Last Results" butonu görünür kalır)
             if (context.canPop()) {
               context.pop();
             } else {
@@ -149,15 +143,8 @@ class _BlurResultsTab extends StatelessWidget {
                 }
                 return Container(
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                  decoration: const BoxDecoration(
-                    color: Colors.transparent,
-                  ),
-                  child: _buildDeleteButton(
-                    context,
-                    theme,
-                    l10n,
-                    allPhotos,
-                  ),
+                  decoration: const BoxDecoration(color: Colors.transparent),
+                  child: _buildDeleteButton(context, theme, l10n, allPhotos),
                 );
               },
             ),
@@ -283,86 +270,86 @@ class _BlurResultsTab extends StatelessWidget {
         width: double.infinity,
         child: FilledButton.icon(
           onPressed: () async {
-          final confirmed = await showDialog<bool>(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: Text(l10n.deleteAllBlurryPhotos),
-              content: Text(
-                l10n.deleteAllBlurryPhotosMessage(allPhotos.length),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(false),
-                  child: Text(l10n.cancel),
+            final confirmed = await showDialog<bool>(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: Text(l10n.deleteAllBlurryPhotos),
+                content: Text(
+                  l10n.deleteAllBlurryPhotosMessage(allPhotos.length),
                 ),
-                FilledButton(
-                  onPressed: () => Navigator.of(context).pop(true),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: theme.colorScheme.error,
-                    side: BorderSide(
-                      color: AppColors.error,
-                      width: 1.5,
-                    ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(false),
+                    child: Text(l10n.cancel),
                   ),
-                  child: Text(l10n.delete),
-                ),
-              ],
-            ),
-          );
-
-          if (confirmed != true || !context.mounted) return;
-
-          // BLoC kullanarak blur fotoğraflarını sil
-          final blurCubit = context.read<BlurDetectionCubit>();
-          final deletedCount = await blurCubit.deleteAllBlurryPhotos();
-
-          if (!context.mounted) return;
-
-          // Root navigator context'ini kaydet - widget rebuild edilirse context kaybolabilir
-          final rootNavigatorContext = Navigator.of(context, rootNavigator: true).context;
-          
-          // Delete limit'i azalt
-          final deleteLimitCubit = context.read<DeleteLimitCubit>();
-          await deleteLimitCubit.decrease(deletedCount);
-
-          // Cleanup complete dialogunu göster
-          debugPrint(
-            '🎯 [ResultsPage] Blur - About to show delete success dialog - deletedCount: $deletedCount, context.mounted: ${context.mounted}',
-          );
-          
-          // Context mounted kontrolünü decrease'dan sonra tekrar yap
-          if (deletedCount > 0) {
-            // Önce normal context'i kontrol et
-            if (context.mounted) {
-              debugPrint(
-                '✅ [ResultsPage] Blur - Context is mounted and deletedCount > 0, calling showDeleteSuccessDialog...',
-              );
-              await showDeleteSuccessDialog(context, deletedCount);
-              debugPrint(
-                '✅ [ResultsPage] Blur - showDeleteSuccessDialog completed',
-              );
-            } else {
-              // Context unmount olmuşsa, root navigator context'ini kullan
-              debugPrint(
-                '⚠️ [ResultsPage] Blur - Context not mounted after decrease, using rootNavigator context...',
-              );
-              // Bir sonraki frame'de root context ile dene
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                try {
-                  showDeleteSuccessDialog(rootNavigatorContext, deletedCount);
-                } catch (e) {
-                  debugPrint(
-                    '❌ [ResultsPage] Blur - Error showing dialog with rootNavigator context: $e',
-                  );
-                }
-              });
-            }
-          } else {
-            debugPrint(
-              '⚠️ [ResultsPage] Blur - deletedCount is 0, dialog gösterilmeyecek',
+                  FilledButton(
+                    onPressed: () => Navigator.of(context).pop(true),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: theme.colorScheme.error,
+                      side: BorderSide(color: AppColors.error, width: 1.5),
+                    ),
+                    child: Text(l10n.delete),
+                  ),
+                ],
+              ),
             );
-          }
-        },
+
+            if (confirmed != true || !context.mounted) return;
+
+            // BLoC kullanarak blur fotoğraflarını sil
+            final blurCubit = context.read<BlurDetectionCubit>();
+            final deletedCount = await blurCubit.deleteAllBlurryPhotos();
+
+            if (!context.mounted) return;
+
+            // Root navigator context'ini kaydet - widget rebuild edilirse context kaybolabilir
+            final rootNavigatorContext = Navigator.of(
+              context,
+              rootNavigator: true,
+            ).context;
+
+            // Delete limit'i azalt
+            final deleteLimitCubit = context.read<DeleteLimitCubit>();
+            await deleteLimitCubit.decrease(deletedCount);
+
+            // Cleanup complete dialogunu göster
+            debugPrint(
+              '🎯 [ResultsPage] Blur - About to show delete success dialog - deletedCount: $deletedCount, context.mounted: ${context.mounted}',
+            );
+
+            // Context mounted kontrolünü decrease'dan sonra tekrar yap
+            if (deletedCount > 0) {
+              // Önce normal context'i kontrol et
+              if (context.mounted) {
+                debugPrint(
+                  '✅ [ResultsPage] Blur - Context is mounted and deletedCount > 0, calling showDeleteSuccessDialog...',
+                );
+                await showDeleteSuccessDialog(context, deletedCount);
+                debugPrint(
+                  '✅ [ResultsPage] Blur - showDeleteSuccessDialog completed',
+                );
+              } else {
+                // Context unmount olmuşsa, root navigator context'ini kullan
+                debugPrint(
+                  '⚠️ [ResultsPage] Blur - Context not mounted after decrease, using rootNavigator context...',
+                );
+                // Bir sonraki frame'de root context ile dene
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  try {
+                    showDeleteSuccessDialog(rootNavigatorContext, deletedCount);
+                  } catch (e) {
+                    debugPrint(
+                      '❌ [ResultsPage] Blur - Error showing dialog with rootNavigator context: $e',
+                    );
+                  }
+                });
+              }
+            } else {
+              debugPrint(
+                '⚠️ [ResultsPage] Blur - deletedCount is 0, dialog gösterilmeyecek',
+              );
+            }
+          },
           icon: const Icon(Icons.delete_outline),
           label: Text(l10n.deleteAllBlurryPhotos),
           style: FilledButton.styleFrom(
@@ -673,15 +660,8 @@ class _DuplicateResultsTab extends StatelessWidget {
                 }
                 return Container(
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                  decoration: const BoxDecoration(
-                    color: Colors.transparent,
-                  ),
-                  child: _buildDeleteButton(
-                    context,
-                    theme,
-                    l10n,
-                    state,
-                  ),
+                  decoration: const BoxDecoration(color: Colors.transparent),
+                  child: _buildDeleteButton(context, theme, l10n, state),
                 );
               },
             ),
@@ -806,86 +786,86 @@ class _DuplicateResultsTab extends StatelessWidget {
         width: double.infinity,
         child: FilledButton.icon(
           onPressed: () async {
-          final confirmed = await showDialog<bool>(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: Text(l10n.deleteAllDuplicates),
-              content: Text(
-                l10n.deleteAllDuplicatesMessage(state.totalDuplicatePhotos),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(false),
-                  child: Text(l10n.cancel),
+            final confirmed = await showDialog<bool>(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: Text(l10n.deleteAllDuplicates),
+                content: Text(
+                  l10n.deleteAllDuplicatesMessage(state.totalDuplicatePhotos),
                 ),
-                FilledButton(
-                  onPressed: () => Navigator.of(context).pop(true),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: theme.colorScheme.error,
-                    side: BorderSide(
-                      color: AppColors.error,
-                      width: 1.5,
-                    ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(false),
+                    child: Text(l10n.cancel),
                   ),
-                  child: Text(l10n.delete),
-                ),
-              ],
-            ),
-          );
-
-          if (confirmed != true || !context.mounted) return;
-
-          // BLoC kullanarak duplicate fotoğrafları sil
-          final duplicateCubit = context.read<DuplicateDetectionCubit>();
-          final deletedCount = await duplicateCubit.deleteAllDuplicates();
-
-          if (!context.mounted) return;
-
-          // Root navigator context'ini kaydet - widget rebuild edilirse context kaybolabilir
-          final rootNavigatorContext = Navigator.of(context, rootNavigator: true).context;
-          
-          // Delete limit'i azalt
-          final deleteLimitCubit = context.read<DeleteLimitCubit>();
-          await deleteLimitCubit.decrease(deletedCount);
-
-          // Cleanup complete dialogunu göster
-          debugPrint(
-            '🎯 [ResultsPage] Duplicate - About to show delete success dialog - deletedCount: $deletedCount, context.mounted: ${context.mounted}',
-          );
-          
-          // Context mounted kontrolünü decrease'dan sonra tekrar yap
-          if (deletedCount > 0) {
-            // Önce normal context'i kontrol et
-            if (context.mounted) {
-              debugPrint(
-                '✅ [ResultsPage] Duplicate - Context is mounted and deletedCount > 0, calling showDeleteSuccessDialog...',
-              );
-              await showDeleteSuccessDialog(context, deletedCount);
-              debugPrint(
-                '✅ [ResultsPage] Duplicate - showDeleteSuccessDialog completed',
-              );
-            } else {
-              // Context unmount olmuşsa, root navigator context'ini kullan
-              debugPrint(
-                '⚠️ [ResultsPage] Duplicate - Context not mounted after decrease, using rootNavigator context...',
-              );
-              // Bir sonraki frame'de root context ile dene
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                try {
-                  showDeleteSuccessDialog(rootNavigatorContext, deletedCount);
-                } catch (e) {
-                  debugPrint(
-                    '❌ [ResultsPage] Duplicate - Error showing dialog with rootNavigator context: $e',
-                  );
-                }
-              });
-            }
-          } else {
-            debugPrint(
-              '⚠️ [ResultsPage] Duplicate - deletedCount is 0, dialog gösterilmeyecek',
+                  FilledButton(
+                    onPressed: () => Navigator.of(context).pop(true),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: theme.colorScheme.error,
+                      side: BorderSide(color: AppColors.error, width: 1.5),
+                    ),
+                    child: Text(l10n.delete),
+                  ),
+                ],
+              ),
             );
-          }
-        },
+
+            if (confirmed != true || !context.mounted) return;
+
+            // BLoC kullanarak duplicate fotoğrafları sil
+            final duplicateCubit = context.read<DuplicateDetectionCubit>();
+            final deletedCount = await duplicateCubit.deleteAllDuplicates();
+
+            if (!context.mounted) return;
+
+            // Root navigator context'ini kaydet - widget rebuild edilirse context kaybolabilir
+            final rootNavigatorContext = Navigator.of(
+              context,
+              rootNavigator: true,
+            ).context;
+
+            // Delete limit'i azalt
+            final deleteLimitCubit = context.read<DeleteLimitCubit>();
+            await deleteLimitCubit.decrease(deletedCount);
+
+            // Cleanup complete dialogunu göster
+            debugPrint(
+              '🎯 [ResultsPage] Duplicate - About to show delete success dialog - deletedCount: $deletedCount, context.mounted: ${context.mounted}',
+            );
+
+            // Context mounted kontrolünü decrease'dan sonra tekrar yap
+            if (deletedCount > 0) {
+              // Önce normal context'i kontrol et
+              if (context.mounted) {
+                debugPrint(
+                  '✅ [ResultsPage] Duplicate - Context is mounted and deletedCount > 0, calling showDeleteSuccessDialog...',
+                );
+                await showDeleteSuccessDialog(context, deletedCount);
+                debugPrint(
+                  '✅ [ResultsPage] Duplicate - showDeleteSuccessDialog completed',
+                );
+              } else {
+                // Context unmount olmuşsa, root navigator context'ini kullan
+                debugPrint(
+                  '⚠️ [ResultsPage] Duplicate - Context not mounted after decrease, using rootNavigator context...',
+                );
+                // Bir sonraki frame'de root context ile dene
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  try {
+                    showDeleteSuccessDialog(rootNavigatorContext, deletedCount);
+                  } catch (e) {
+                    debugPrint(
+                      '❌ [ResultsPage] Duplicate - Error showing dialog with rootNavigator context: $e',
+                    );
+                  }
+                });
+              }
+            } else {
+              debugPrint(
+                '⚠️ [ResultsPage] Duplicate - deletedCount is 0, dialog gösterilmeyecek',
+              );
+            }
+          },
           icon: const Icon(Icons.delete_outline),
           label: Text(l10n.deleteAllDuplicates),
           style: FilledButton.styleFrom(

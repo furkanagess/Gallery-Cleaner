@@ -118,7 +118,6 @@ class DuplicateTabState extends State<DuplicateTab>
     }
   }
 
-
   void _startTipRotation() {
     _tipTimer?.cancel();
     // Random tip sırası oluştur (15 tip var)
@@ -188,6 +187,18 @@ class DuplicateTabState extends State<DuplicateTab>
     final albumsAsync = context.watch<AlbumsCubit>().state;
     final duplicateState = context.watch<DuplicateDetectionCubit>().state;
 
+    // Premium durumunu kontrol et
+    final isPremiumAsync = context.watch<PremiumCubit>().state;
+    final isPremium = isPremiumAsync.maybeWhen(
+      data: (premium) => premium,
+      orElse: () => false,
+    );
+
+    // Bottom navigation bar'daki container rengiyle aynı
+    final containerColor = theme.colorScheme.onPrimaryContainer.withOpacity(
+      0.8,
+    );
+
     final isScanning = duplicateState.isScanning;
 
     return PopScope(
@@ -216,11 +227,6 @@ class DuplicateTabState extends State<DuplicateTab>
           final selectedAlbums = selectedAlbum != null
               ? [selectedAlbum]
               : albums.where((a) => !a.isAll).toList();
-
-          // Eğer tarama tamamlandıysa, sonuç olsun ya da olmasın results view göster
-          // Böylece no results ekranı da gösterilebilir
-          final hasResults =
-              duplicateState.hasCompletedScan || duplicateState.totalGroups > 0;
 
           // Tarama yapılırken full-screen overlay göster
           if (isScanning) {
@@ -298,16 +304,13 @@ class DuplicateTabState extends State<DuplicateTab>
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                               colors: [
-                                theme.colorScheme.primaryContainer.withOpacity(
-                                  0.3,
-                                ),
-                                theme.colorScheme.secondaryContainer
-                                    .withOpacity(0.2),
+                                containerColor.withOpacity(0.3),
+                                containerColor.withOpacity(0.2),
                               ],
                             ),
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
-                              color: theme.colorScheme.primary.withOpacity(0.3),
+                              color: containerColor.withOpacity(0.3),
                               width: 1.5,
                             ),
                           ),
@@ -317,7 +320,7 @@ class DuplicateTabState extends State<DuplicateTab>
                               Icon(
                                 Icons.lightbulb_outline_rounded,
                                 size: 20,
-                                color: theme.colorScheme.primary,
+                                color: containerColor,
                               ),
                               const SizedBox(width: 12),
                               Flexible(
@@ -481,65 +484,6 @@ class DuplicateTabState extends State<DuplicateTab>
                                       0,
                                     ),
                               data: (isPremium) {
-                                // hasResults durumunda "View Last Results" ve "Start New Scan" butonları göster
-                                if (hasResults) {
-                                  return Row(
-                                    children: [
-                                      Expanded(
-                                        child: OutlinedButton.icon(
-                                          onPressed: () {
-                                            // Scan state'ini temizle
-                                            context
-                                                .read<DuplicateDetectionCubit>()
-                                                .clear();
-                                          },
-                                          icon: const Icon(
-                                            Icons.refresh_rounded,
-                                          ),
-                                          label: Text(l10n.startNewScan),
-                                          style: OutlinedButton.styleFrom(
-                                            padding: const EdgeInsets.symmetric(
-                                              vertical: 16,
-                                            ),
-                                            minimumSize: const Size(0, 56),
-                                            side: BorderSide(
-                                              color: theme.colorScheme.primary
-                                                  .withOpacity(0.5),
-                                              width: 1.5,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: FilledButton.icon(
-                                          onPressed: () {
-                                            context.push('/results/duplicate');
-                                          },
-                                          icon: const Icon(
-                                            Icons.visibility_rounded,
-                                          ),
-                                          label: Text(l10n.viewLastResults),
-                                          style: FilledButton.styleFrom(
-                                            padding: const EdgeInsets.symmetric(
-                                              vertical: 16,
-                                            ),
-                                            minimumSize: const Size(0, 56),
-                                            backgroundColor: AppColors.primary,
-                                            foregroundColor:
-                                                theme.colorScheme.onPrimary,
-                                            side: BorderSide(
-                                              color: AppColors.primary
-                                                  .withOpacity(0.9),
-                                              width: 1.5,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  );
-                                }
-
                                 return FutureBuilder<
                                   ({
                                     int estimatedSeconds,
@@ -605,6 +549,8 @@ class DuplicateTabState extends State<DuplicateTab>
   ) {
     final duplicateState = context.watch<DuplicateDetectionCubit>().state;
     final isScanning = duplicateState.isScanning;
+    final hasResults =
+        duplicateState.hasCompletedScan || duplicateState.totalGroups > 0;
 
     return isPremiumAsync.when(
       loading: () => const SizedBox.shrink(),
@@ -618,6 +564,56 @@ class DuplicateTabState extends State<DuplicateTab>
           error: (_, __) => const SizedBox.shrink(),
           data: (scanLimit) {
             final hasNoScanRights = !isPremium && scanLimit <= 0;
+
+            // hasResults durumunda "View Last Results" ve "Start New Scan" butonları göster
+            if (hasResults) {
+              // Bottom navigation bar'daki container rengiyle aynı
+              final containerColor = theme.colorScheme.onPrimaryContainer
+                  .withOpacity(0.8);
+
+              return Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        // Scan state'ini temizle
+                        context.read<DuplicateDetectionCubit>().clear();
+                      },
+                      icon: const Icon(Icons.refresh_rounded),
+                      label: Text(l10n.startNewScan),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        minimumSize: const Size(0, 56),
+                        side: BorderSide(
+                          color: containerColor.withOpacity(0.5),
+                          width: 1.5,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FilledButton.icon(
+                      onPressed: () {
+                        context.push('/results/duplicate');
+                      },
+                      icon: const Icon(Icons.visibility_rounded),
+                      label: Text(l10n.viewLastResults),
+                      style: FilledButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        minimumSize: const Size(0, 56),
+                        backgroundColor: containerColor,
+                        foregroundColor: AppColors.white,
+                        side: BorderSide(
+                          color: containerColor.withOpacity(0.9),
+                          width: 1.5,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            }
 
             return ModernScanButton(
               context: context,
@@ -634,67 +630,82 @@ class DuplicateTabState extends State<DuplicateTab>
                       // Onay dialogu göster
                       final confirmed = await showDialog<bool>(
                         context: context,
-                        builder: (dialogContext) => AlertDialog(
-                          title: Text(l10n.confirmDuplicateScan),
-                          content: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(l10n.confirmDuplicateScanMessage),
-                              const SizedBox(height: 12),
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: theme.colorScheme.primaryContainer
-                                      .withOpacity(0.3),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                    color: theme.colorScheme.primary
-                                        .withOpacity(0.2),
-                                    width: 1,
+                        builder: (dialogContext) {
+                          // Premium durumunu kontrol et
+                          final isPremiumAsync = dialogContext
+                              .watch<PremiumCubit>()
+                              .state;
+                          final isPremium = isPremiumAsync.maybeWhen(
+                            data: (premium) => premium,
+                            orElse: () => false,
+                          );
+
+                          // Bottom navigation bar'daki container rengiyle aynı
+                          final containerColor = theme
+                              .colorScheme
+                              .onPrimaryContainer
+                              .withOpacity(0.8);
+
+                          return AlertDialog(
+                            title: Text(l10n.confirmDuplicateScan),
+                            content: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(l10n.confirmDuplicateScanMessage),
+                                const SizedBox(height: 12),
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: containerColor.withOpacity(0.3),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: containerColor.withOpacity(0.2),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.folder_rounded,
+                                        size: 20,
+                                        color: containerColor,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          albumNames,
+                                          style: theme.textTheme.bodyMedium
+                                              ?.copyWith(
+                                                color: containerColor,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                          maxLines: 3,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      Icons.folder_rounded,
-                                      size: 20,
-                                      color: theme.colorScheme.primary,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        albumNames,
-                                        style: theme.textTheme.bodyMedium
-                                            ?.copyWith(
-                                              color: theme.colorScheme.primary,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                        maxLines: 3,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  ],
+                              ],
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () =>
+                                    Navigator.of(dialogContext).pop(false),
+                                child: Text(l10n.cancel),
+                              ),
+                              FilledButton(
+                                onPressed: () =>
+                                    Navigator.of(dialogContext).pop(true),
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: containerColor,
                                 ),
+                                child: Text(l10n.scan),
                               ),
                             ],
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () =>
-                                  Navigator.of(dialogContext).pop(false),
-                              child: Text(l10n.cancel),
-                            ),
-                            FilledButton(
-                              onPressed: () =>
-                                  Navigator.of(dialogContext).pop(true),
-                              style: FilledButton.styleFrom(
-                                backgroundColor: theme.colorScheme.primary,
-                              ),
-                              child: Text(l10n.scan),
-                            ),
-                          ],
-                        ),
+                          );
+                        },
                       );
 
                       // Kullanıcı onaylamadıysa veya dialog kapatıldıysa çık
@@ -827,6 +838,18 @@ class DuplicateTabState extends State<DuplicateTab>
     ThemeData theme,
     AppLocalizations l10n,
   ) {
+    // Premium durumunu kontrol et
+    final isPremiumAsync = context.watch<PremiumCubit>().state;
+    final isPremium = isPremiumAsync.maybeWhen(
+      data: (premium) => premium,
+      orElse: () => false,
+    );
+
+    // Bottom navigation bar'daki container rengiyle aynı
+    final containerColor = theme.colorScheme.onPrimaryContainer.withOpacity(
+      0.8,
+    );
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -843,13 +866,13 @@ class DuplicateTabState extends State<DuplicateTab>
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.onPrimaryContainer.withOpacity(0.15),
+                  color: containerColor.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
                   Icons.copy_rounded,
                   size: 28,
-                  color: theme.colorScheme.onPrimaryContainer,
+                  color: containerColor,
                 ),
               ),
               const SizedBox(width: 12),
@@ -866,7 +889,7 @@ class DuplicateTabState extends State<DuplicateTab>
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: theme.colorScheme.primary.withOpacity(0.2),
+                            color: containerColor.withOpacity(0.2),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Row(
@@ -875,7 +898,7 @@ class DuplicateTabState extends State<DuplicateTab>
                               Icon(
                                 Icons.auto_awesome,
                                 size: 12,
-                                color: theme.colorScheme.onPrimaryContainer,
+                                color: containerColor,
                               ),
                               const SizedBox(width: 4),
                               Text(
@@ -883,7 +906,7 @@ class DuplicateTabState extends State<DuplicateTab>
                                 style: theme.textTheme.labelSmall?.copyWith(
                                   fontWeight: FontWeight.w700,
                                   fontSize: 10,
-                                  color: theme.colorScheme.onPrimaryContainer,
+                                  color: containerColor,
                                 ),
                               ),
                             ],
@@ -897,7 +920,7 @@ class DuplicateTabState extends State<DuplicateTab>
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
-                        color: theme.colorScheme.onPrimaryContainer,
+                        color: containerColor,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -906,9 +929,7 @@ class DuplicateTabState extends State<DuplicateTab>
                       style: theme.textTheme.bodySmall?.copyWith(
                         fontSize: 11,
                         height: 1.4,
-                        color: theme.colorScheme.onPrimaryContainer.withOpacity(
-                          0.8,
-                        ),
+                        color: containerColor.withOpacity(0.8),
                       ),
                     ),
                   ],

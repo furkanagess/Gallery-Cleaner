@@ -5,7 +5,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/models/gallery_stats.dart';
 import '../../../core/services/preferences_service.dart';
 import '../../../core/services/media_library_service.dart';
-import '../application/gallery_providers.dart';
 import '../../onboarding/application/permissions_controller.dart';
 
 /// Galeri istatistiklerini cache ile birlikte yönetir
@@ -37,9 +36,11 @@ class GalleryStatsState {
   }) {
     return GalleryStatsState(
       stats: stats ?? this.stats,
-      previousStats: clearPreviousStats ? null : (previousStats ?? this.previousStats),
+      previousStats: clearPreviousStats
+          ? null
+          : (previousStats ?? this.previousStats),
       isLoading: isLoading ?? this.isLoading,
-      error: error != null ? error : this.error,
+      error: error ?? this.error,
       isFromCache: isFromCache ?? this.isFromCache,
       isScanning: isScanning ?? this.isScanning,
     );
@@ -51,10 +52,10 @@ class GalleryStatsCubit extends Cubit<GalleryStatsState> {
     required MediaLibraryService mediaLibraryService,
     required PreferencesService preferencesService,
     required PermissionsCubit permissionsCubit,
-  })  : _mediaLibraryService = mediaLibraryService,
-        _preferencesService = preferencesService,
-        _permissionsCubit = permissionsCubit,
-        super(const GalleryStatsState()) {
+  }) : _mediaLibraryService = mediaLibraryService,
+       _preferencesService = preferencesService,
+       _permissionsCubit = permissionsCubit,
+       super(const GalleryStatsState()) {
     _init();
   }
 
@@ -68,16 +69,18 @@ class GalleryStatsCubit extends Cubit<GalleryStatsState> {
   Future<void> _init() async {
     // İlk yüklemede cache'den oku ve hemen göster
     await _loadFromCache();
-    
+
     // İzin verilmişse otomatik analiz kontrolü yap
     final permission = _permissionsCubit.state;
     if (permission == GalleryPermissionStatus.authorized) {
-      final isAutoAnalyzeEnabled =
-          await _preferencesService.isAutoAnalyzeOnLaunchEnabled();
-      
+      final isAutoAnalyzeEnabled = await _preferencesService
+          .isAutoAnalyzeOnLaunchEnabled();
+
       // Otomatik analiz açıksa her girişte analiz yap
       if (isAutoAnalyzeEnabled) {
-        debugPrint('📊 [GalleryStats] Otomatik analiz açık, analiz başlatılıyor...');
+        debugPrint(
+          '📊 [GalleryStats] Otomatik analiz açık, analiz başlatılıyor...',
+        );
         // Kısa bir gecikme ile başlat (UI'nin yüklenmesi için)
         Future.delayed(const Duration(milliseconds: 1000), () {
           if (!_isCancelled) {
@@ -86,10 +89,10 @@ class GalleryStatsCubit extends Cubit<GalleryStatsState> {
         });
       } else {
         // Otomatik analiz kapalıysa, sadece ilk analiz kontrolü yap
-        final isFirstAnalysisCompleted =
-            await _preferencesService.isFirstAnalysisCompleted();
+        final isFirstAnalysisCompleted = await _preferencesService
+            .isFirstAnalysisCompleted();
         final hasCachedStats = state.stats != null;
-        
+
         // Cache yoksa ve ilk analiz tamamlanmamışsa otomatik analiz başlat
         if (!hasCachedStats && !isFirstAnalysisCompleted) {
           debugPrint('📊 [GalleryStats] İlk analiz başlatılıyor...');
@@ -102,11 +105,10 @@ class GalleryStatsCubit extends Cubit<GalleryStatsState> {
         }
       }
     }
-    
+
     // İzin durumunu dinle
     _lastPermission = permission;
-    _permissionSubscription =
-        _permissionsCubit.stream.listen((next) {
+    _permissionSubscription = _permissionsCubit.stream.listen((next) {
       final previous = _lastPermission;
       _lastPermission = next;
       if (next != GalleryPermissionStatus.authorized) {
@@ -134,9 +136,11 @@ class GalleryStatsCubit extends Cubit<GalleryStatsState> {
     try {
       final cachedStats = await _preferencesService.getCachedGalleryStats();
       final previousStats = await _preferencesService.getPreviousGalleryStats();
-      
+
       if (cachedStats != null) {
-        debugPrint('📊 [GalleryStats] Cache\'den yüklendi: ${cachedStats.albumCount} albüm, ${cachedStats.mediaCount} medya');
+        debugPrint(
+          '📊 [GalleryStats] Cache\'den yüklendi: ${cachedStats.albumCount} albüm, ${cachedStats.mediaCount} medya',
+        );
         emit(
           GalleryStatsState(
             stats: cachedStats,
@@ -161,7 +165,10 @@ class GalleryStatsCubit extends Cubit<GalleryStatsState> {
   }
 
   /// İstatistikleri yenile (cache kullanarak veya tamamen yeniden yükleyerek)
-  Future<void> _refreshStats({bool useCache = true, bool savePrevious = true}) async {
+  Future<void> _refreshStats({
+    bool useCache = true,
+    bool savePrevious = true,
+  }) async {
     final permission = _permissionsCubit.state;
     if (permission != GalleryPermissionStatus.authorized) {
       emit(const GalleryStatsState());
@@ -169,13 +176,13 @@ class GalleryStatsCubit extends Cubit<GalleryStatsState> {
     }
 
     GalleryStats? previousStats = state.stats;
-    if (previousStats == null) {
-      previousStats = await _preferencesService.getPreviousGalleryStats();
-    }
+    previousStats ??= await _preferencesService.getPreviousGalleryStats();
 
     final currentStatsBeforeScan = state.stats;
     if (savePrevious && currentStatsBeforeScan != null) {
-      await _preferencesService.savePreviousGalleryStats(currentStatsBeforeScan);
+      await _preferencesService.savePreviousGalleryStats(
+        currentStatsBeforeScan,
+      );
       previousStats = currentStatsBeforeScan;
     }
 
@@ -196,7 +203,7 @@ class GalleryStatsCubit extends Cubit<GalleryStatsState> {
         isScanning: true,
       ),
     );
-    
+
     try {
       final stats = await _mediaLibraryService.fetchGalleryStats(
         shouldCancel: () => _isCancelled,
@@ -213,25 +220,26 @@ class GalleryStatsCubit extends Cubit<GalleryStatsState> {
           );
         },
       );
-      
+
       if (_isCancelled) {
         debugPrint('🛑 [GalleryStats] Tarama iptal edildi');
-        emit(state.copyWith(
-          isLoading: false,
-          isScanning: false,
-        ));
+        emit(state.copyWith(isLoading: false, isScanning: false));
         return;
       }
-      
+
       final statsWithCacheTime = stats.copyWith(cachedAt: DateTime.now());
       await _preferencesService.cacheGalleryStats(statsWithCacheTime);
       await _preferencesService.setFirstAnalysisCompleted(true);
-      
-      debugPrint('📊 [GalleryStats] İstatistikler güncellendi: ${stats.albumCount} albüm, ${stats.mediaCount} medya');
+
+      debugPrint(
+        '📊 [GalleryStats] İstatistikler güncellendi: ${stats.albumCount} albüm, ${stats.mediaCount} medya',
+      );
       if (previousStats != null) {
-        debugPrint('📊 [GalleryStats] Önceki istatistikler: ${previousStats.albumCount} albüm, ${previousStats.mediaCount} medya');
+        debugPrint(
+          '📊 [GalleryStats] Önceki istatistikler: ${previousStats.albumCount} albüm, ${previousStats.mediaCount} medya',
+        );
       }
-      
+
       emit(
         GalleryStatsState(
           stats: statsWithCacheTime,
@@ -244,14 +252,8 @@ class GalleryStatsCubit extends Cubit<GalleryStatsState> {
     } catch (e, stackTrace) {
       debugPrint('❌ [GalleryStats] Hata oluştu: $e');
       debugPrint('❌ [GalleryStats] Stack trace: $stackTrace');
-      
-      emit(
-        state.copyWith(
-          isLoading: false,
-          error: e,
-          isScanning: false,
-        ),
-      );
+
+      emit(state.copyWith(isLoading: false, error: e, isScanning: false));
     }
   }
 
@@ -264,12 +266,7 @@ class GalleryStatsCubit extends Cubit<GalleryStatsState> {
   void cancel() {
     debugPrint('🛑 [GalleryStats] Tarama iptal ediliyor...');
     _isCancelled = true;
-    emit(
-      state.copyWith(
-        isScanning: false,
-        isLoading: false,
-      ),
-    );
+    emit(state.copyWith(isScanning: false, isLoading: false));
   }
 
   /// Cache'i temizle

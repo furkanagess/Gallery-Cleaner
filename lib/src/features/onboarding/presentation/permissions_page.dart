@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:lottie/lottie.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../application/permissions_controller.dart';
+import '../../gallery/application/gallery_providers.dart' show PremiumCubit;
 
 class PermissionsPage extends StatefulWidget {
   const PermissionsPage({super.key});
@@ -48,21 +49,87 @@ class _PermissionsPageState extends State<PermissionsPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Icon(Icons.photo_library_outlined, size: 72, color: Theme.of(context).colorScheme.primary),
+            Builder(
+              builder: (iconContext) {
+                final isPremiumAsync = iconContext.watch<PremiumCubit>().state;
+                final isPremium = isPremiumAsync.maybeWhen(
+                  data: (premium) => premium,
+                  orElse: () => false,
+                );
+                final containerColor = Theme.of(
+                  context,
+                ).colorScheme.onPrimaryContainer.withOpacity(0.8);
+                return Icon(
+                  Icons.photo_library_outlined,
+                  size: 72,
+                  color: containerColor,
+                );
+              },
+            ),
             const SizedBox(height: 16),
-            Text(l10n.photoLibraryAccessRequired, style: Theme.of(context).textTheme.titleLarge, textAlign: TextAlign.center),
+            Text(
+              l10n.photoLibraryAccessRequired,
+              style: Theme.of(context).textTheme.titleLarge,
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: 8),
-            Text(l10n.permissionRequestDescription, style: Theme.of(context).textTheme.bodyMedium, textAlign: TextAlign.center),
+            Text(
+              l10n.permissionRequestDescription,
+              style: Theme.of(context).textTheme.bodyMedium,
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: 24),
-            if (status == GalleryPermissionStatus.denied || status == GalleryPermissionStatus.unknown) ...[
-              FilledButton(
-                onPressed: () => context.read<PermissionsCubit>().request(),
-                child: Text(l10n.allowAccess),
+            if (status == GalleryPermissionStatus.denied ||
+                status == GalleryPermissionStatus.unknown) ...[
+              Builder(
+                builder: (buttonContext) {
+                  final isPremiumAsync = buttonContext
+                      .watch<PremiumCubit>()
+                      .state;
+                  final isPremium = isPremiumAsync.maybeWhen(
+                    data: (premium) => premium,
+                    orElse: () => false,
+                  );
+                  final containerColor = Theme.of(
+                    context,
+                  ).colorScheme.onPrimaryContainer.withOpacity(0.8);
+                  return FilledButton(
+                    onPressed: () => context.read<PermissionsCubit>().request(),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: containerColor,
+                      foregroundColor: Colors.white,
+                      side: BorderSide(color: containerColor, width: 1.5),
+                    ),
+                    child: Text(l10n.allowAccess),
+                  );
+                },
               ),
               const SizedBox(height: 8),
-              TextButton(
-                onPressed: () => context.read<PermissionsCubit>().openSettings(),
-                child: Text(l10n.openSettings),
+              Builder(
+                builder: (buttonContext) {
+                  final isPremiumAsync = buttonContext
+                      .watch<PremiumCubit>()
+                      .state;
+                  final isPremium = isPremiumAsync.maybeWhen(
+                    data: (premium) => premium,
+                    orElse: () => false,
+                  );
+                  final containerColor = Theme.of(
+                    context,
+                  ).colorScheme.onPrimaryContainer.withOpacity(0.8);
+                  return TextButton(
+                    onPressed: () =>
+                        context.read<PermissionsCubit>().openSettings(),
+                    style: TextButton.styleFrom(
+                      foregroundColor: containerColor,
+                      side: BorderSide(
+                        color: containerColor.withOpacity(0.6),
+                        width: 1.5,
+                      ),
+                    ),
+                    child: Text(l10n.openSettings),
+                  );
+                },
               ),
             ] else ...[
               Center(
@@ -78,9 +145,30 @@ class _PermissionsPageState extends State<PermissionsPage> {
               ),
             ],
             const SizedBox(height: 8),
-            TextButton(
-              onPressed: () => context.read<PermissionsCubit>().refresh(),
-              child: Text(l10n.checkAgain),
+            Builder(
+              builder: (buttonContext) {
+                final isPremiumAsync = buttonContext
+                    .watch<PremiumCubit>()
+                    .state;
+                final isPremium = isPremiumAsync.maybeWhen(
+                  data: (premium) => premium,
+                  orElse: () => false,
+                );
+                final containerColor = Theme.of(
+                  context,
+                ).colorScheme.onPrimaryContainer.withOpacity(0.8);
+                return TextButton(
+                  onPressed: () => context.read<PermissionsCubit>().refresh(),
+                  style: TextButton.styleFrom(
+                    foregroundColor: containerColor,
+                    side: BorderSide(
+                      color: containerColor.withOpacity(0.6),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Text(l10n.checkAgain),
+                );
+              },
             ),
           ],
         ),

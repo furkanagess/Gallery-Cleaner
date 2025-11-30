@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../app/theme/app_colors.dart';
+import '../../gallery/application/gallery_providers.dart' show PremiumCubit;
 
 /// Premium başarı dialog'u - kullanıcı premium olduğunda gösterilir
 class PremiumSuccessDialog extends StatelessWidget {
@@ -21,6 +23,16 @@ class PremiumSuccessDialog extends StatelessWidget {
 
     final isDark = theme.brightness == Brightness.dark;
 
+    // Dinamik container rengi (premium durumuna göre)
+    final isPremiumAsync = context.watch<PremiumCubit>().state;
+    final isPremium = isPremiumAsync.maybeWhen(
+      data: (premium) => premium,
+      orElse: () => false,
+    );
+    final containerColor = theme.colorScheme.onPrimaryContainer.withOpacity(
+      0.8,
+    );
+
     return Dialog(
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -30,22 +42,25 @@ class PremiumSuccessDialog extends StatelessWidget {
           Container(
             padding: const EdgeInsets.fromLTRB(24, 80, 24, 28),
             decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest
-                  .withOpacity(isDark ? 0.85 : 0.95),
+              color: theme.colorScheme.surfaceContainerHighest.withOpacity(
+                isDark ? 0.85 : 0.95,
+              ),
               borderRadius: BorderRadius.circular(28),
               border: Border.all(
-                color: theme.colorScheme.primary.withOpacity(isDark ? 0.25 : 0.18),
+                color: containerColor.withOpacity(isDark ? 0.25 : 0.18),
                 width: 1.2,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: theme.colorScheme.primary.withOpacity(isDark ? 0.35 : 0.25),
+                  color: containerColor.withOpacity(isDark ? 0.35 : 0.25),
                   blurRadius: 40,
                   offset: const Offset(0, 24),
                   spreadRadius: -12,
                 ),
                 BoxShadow(
-                  color: theme.colorScheme.shadow.withOpacity(isDark ? 0.4 : 0.2),
+                  color: theme.colorScheme.shadow.withOpacity(
+                    isDark ? 0.4 : 0.2,
+                  ),
                   blurRadius: 18,
                   offset: const Offset(0, 12),
                 ),
@@ -65,24 +80,27 @@ class PremiumSuccessDialog extends StatelessWidget {
                 ),
                 const SizedBox(height: 24),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 14,
+                  ),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [
-                        theme.colorScheme.primary.withOpacity(isDark ? 0.35 : 0.25),
-                        theme.colorScheme.secondary.withOpacity(isDark ? 0.2 : 0.18),
+                        containerColor.withOpacity(isDark ? 0.35 : 0.25),
+                        containerColor.withOpacity(isDark ? 0.2 : 0.18),
                       ],
                     ),
                     borderRadius: BorderRadius.circular(18),
                     border: Border.all(
-                      color: theme.colorScheme.primary.withOpacity(isDark ? 0.4 : 0.25),
+                      color: containerColor.withOpacity(isDark ? 0.4 : 0.25),
                       width: 1.4,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: theme.colorScheme.primary.withOpacity(isDark ? 0.3 : 0.2),
+                        color: containerColor.withOpacity(isDark ? 0.3 : 0.2),
                         blurRadius: 18,
                         offset: const Offset(0, 8),
                       ),
@@ -94,15 +112,16 @@ class PremiumSuccessDialog extends StatelessWidget {
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: theme.colorScheme.onPrimary.withOpacity(0.12),
+                          color: AppColors.white.withOpacity(0.12),
                           border: Border.all(
-                            color:
-                                theme.colorScheme.onPrimary.withOpacity(isDark ? 0.3 : 0.2),
+                            color: AppColors.white.withOpacity(
+                              isDark ? 0.3 : 0.2,
+                            ),
                           ),
                         ),
                         child: Icon(
                           Icons.all_inclusive_rounded,
-                          color: theme.colorScheme.onPrimary,
+                          color: AppColors.white,
                           size: 26,
                         ),
                       ),
@@ -112,7 +131,7 @@ class PremiumSuccessDialog extends StatelessWidget {
                           l10n.lifetimeAccessMessage,
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w700,
-                            color: theme.colorScheme.onPrimary,
+                            color: AppColors.white,
                             height: 1.35,
                           ),
                         ),
@@ -122,10 +141,14 @@ class PremiumSuccessDialog extends StatelessWidget {
                 ),
                 const SizedBox(height: 24),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 16,
+                  ),
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceContainerHigh
-                        .withOpacity(isDark ? 0.7 : 0.75),
+                    color: theme.colorScheme.surfaceContainerHigh.withOpacity(
+                      isDark ? 0.7 : 0.75,
+                    ),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
                       color: theme.colorScheme.outline.withOpacity(0.15),
@@ -137,24 +160,28 @@ class PremiumSuccessDialog extends StatelessWidget {
                         icon: Icons.all_inclusive,
                         text: l10n.unlimitedDeletions,
                         theme: theme,
+                        containerColor: containerColor,
                       ),
                       const SizedBox(height: 10),
                       _FeatureItem(
                         icon: Icons.blur_on,
                         text: l10n.unlimitedBlurScans,
                         theme: theme,
+                        containerColor: containerColor,
                       ),
                       const SizedBox(height: 10),
                       _FeatureItem(
                         icon: Icons.photo_library,
                         text: l10n.unlimitedDuplicateScans,
                         theme: theme,
+                        containerColor: containerColor,
                       ),
                       const SizedBox(height: 10),
                       _FeatureItem(
                         icon: Icons.block,
                         text: l10n.noAds,
                         theme: theme,
+                        containerColor: containerColor,
                       ),
                     ],
                   ),
@@ -165,14 +192,14 @@ class PremiumSuccessDialog extends StatelessWidget {
                   child: FilledButton(
                     onPressed: () => Navigator.of(context).pop(),
                     style: FilledButton.styleFrom(
-                      backgroundColor: theme.colorScheme.primary.withOpacity(0.85),
-                      foregroundColor: theme.colorScheme.onPrimary,
+                      backgroundColor: containerColor.withOpacity(0.85),
+                      foregroundColor: AppColors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(18),
                       ),
                       side: BorderSide(
-                        color: theme.colorScheme.primary.withOpacity(0.92),
+                        color: containerColor.withOpacity(0.92),
                         width: 1.5,
                       ),
                     ),
@@ -180,7 +207,7 @@ class PremiumSuccessDialog extends StatelessWidget {
                       l10n.startUsing,
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w700,
-                        color: theme.colorScheme.onPrimary,
+                        color: AppColors.white,
                         letterSpacing: 0.2,
                       ),
                     ),
@@ -202,14 +229,11 @@ class PremiumSuccessDialog extends StatelessWidget {
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                    colors: [
-                      theme.colorScheme.primary,
-                      theme.colorScheme.secondary,
-                    ],
+                    colors: [containerColor, containerColor.withOpacity(0.8)],
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: theme.colorScheme.primary.withOpacity(0.45),
+                      color: containerColor.withOpacity(0.45),
                       blurRadius: 30,
                       spreadRadius: 6,
                     ),
@@ -234,11 +258,13 @@ class _FeatureItem extends StatelessWidget {
     required this.icon,
     required this.text,
     required this.theme,
+    required this.containerColor,
   });
 
   final IconData icon;
   final String text;
   final ThemeData theme;
+  final Color containerColor;
 
   @override
   Widget build(BuildContext context) {
@@ -251,21 +277,17 @@ class _FeatureItem extends StatelessWidget {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                theme.colorScheme.primary.withOpacity(0.25),
-                theme.colorScheme.secondary.withOpacity(0.20),
+                containerColor.withOpacity(0.25),
+                containerColor.withOpacity(0.20),
               ],
             ),
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: theme.colorScheme.primary.withOpacity(0.35),
+              color: containerColor.withOpacity(0.35),
               width: 1.1,
             ),
           ),
-          child: Icon(
-            icon,
-            size: 20,
-            color: theme.colorScheme.onPrimary,
-          ),
+          child: Icon(icon, size: 20, color: AppColors.white),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -286,4 +308,3 @@ class _FeatureItem extends StatelessWidget {
     );
   }
 }
-

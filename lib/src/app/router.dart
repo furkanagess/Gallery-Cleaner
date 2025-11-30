@@ -82,7 +82,6 @@ GoRouter createAppRouter() {
           return const PaywallPage() as Widget;
         },
       ),
-
       GoRoute(
         path: '/gallery/stats',
         name: 'galleryStats',

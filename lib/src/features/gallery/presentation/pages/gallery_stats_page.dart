@@ -17,6 +17,7 @@ import '../../../../core/services/sound_service.dart';
 import '../../../../app/theme/app_theme.dart';
 import '../../../../app/theme/app_colors.dart';
 import 'package:gallery_cleaner/src/core/utils/view_refresh_cubit.dart';
+import '../../application/gallery_providers.dart' show PremiumCubit;
 
 class GalleryStatsPage extends StatefulWidget {
   const GalleryStatsPage({super.key});
@@ -79,8 +80,6 @@ class _GalleryStatsPageState extends State<GalleryStatsPage>
     _albumScrollController.dispose();
     super.dispose();
   }
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -217,7 +216,6 @@ class _GalleryStatsPageState extends State<GalleryStatsPage>
                         totalSizeMB: 0.0,
                       );
 
-
                   // History'den sil/tut istatistiklerini al
                   final history = context.read<ReviewHistoryCubit>().state;
                   final semanticColors = Theme.of(
@@ -281,31 +279,49 @@ class _GalleryStatsPageState extends State<GalleryStatsPage>
                             // Progress bilgisi
                             if (displayStats.albumCount > 0) ...[
                               const SizedBox(height: 16),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 8,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: theme.colorScheme.primaryContainer
-                                      .withOpacity(0.4),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: theme.colorScheme.primary
-                                        .withOpacity(0.2),
-                                    width: 1,
-                                  ),
-                                ),
-                                child: Text(
-                                  l10n.progressFormat(
-                                    '${displayStats.albumDetails.length}/${displayStats.albumCount}',
-                                    displayStats.mediaCount,
-                                  ),
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: theme.colorScheme.primary,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
+                              Builder(
+                                builder: (progressContext) {
+                                  // Premium durumunu kontrol et
+                                  final isPremiumAsync = progressContext
+                                      .watch<PremiumCubit>()
+                                      .state;
+                                  final isPremium = isPremiumAsync.maybeWhen(
+                                    data: (premium) => premium,
+                                    orElse: () => false,
+                                  );
+
+                                  // Bottom navigation bar'daki container rengiyle aynı
+                                  final containerColor = theme
+                                      .colorScheme
+                                      .onPrimaryContainer
+                                      .withOpacity(0.8);
+
+                                  return Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 8,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: containerColor.withOpacity(0.4),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: containerColor.withOpacity(0.2),
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      l10n.progressFormat(
+                                        '${displayStats.albumDetails.length}/${displayStats.albumCount}',
+                                        displayStats.mediaCount,
+                                      ),
+                                      style: theme.textTheme.bodySmall
+                                          ?.copyWith(
+                                            color: containerColor,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                    ),
+                                  );
+                                },
                               ),
                             ],
                             const SizedBox(height: 24),
@@ -345,171 +361,185 @@ class _GalleryStatsPageState extends State<GalleryStatsPage>
                       Expanded(
                         child: SingleChildScrollView(
                           padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            // Keep/Delete Stats Section (en üstte)
-                            _buildKeepDeleteStatsSection(
-                              context,
-                              theme,
-                              l10n,
-                              keepCount,
-                              deleteCount,
-                              totalBytesFreed,
-                              semanticColors,
-                            ),
-                            const SizedBox(height: 24),
-                            // General Statistics Section
-                            _buildGeneralStatisticsSection(
-                              context,
-                              theme,
-                              l10n,
-                              displayStats,
-                            ),
-                            const SizedBox(height: 24),
-                            // Albums Section
-                            _buildAlbumsSection(
-                              context,
-                              theme,
-                              l10n,
-                              displayStats,
-                            ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              // Keep/Delete Stats Section (en üstte)
+                              _buildKeepDeleteStatsSection(
+                                context,
+                                theme,
+                                l10n,
+                                keepCount,
+                                deleteCount,
+                                totalBytesFreed,
+                                semanticColors,
+                              ),
+                              const SizedBox(height: 24),
+                              // General Statistics Section
+                              _buildGeneralStatisticsSection(
+                                context,
+                                theme,
+                                l10n,
+                                displayStats,
+                              ),
+                              const SizedBox(height: 24),
+                              // Albums Section
+                              _buildAlbumsSection(
+                                context,
+                                theme,
+                                l10n,
+                                displayStats,
+                              ),
                               // Bottom padding for fixed buttons
                               if (!isScanning) const SizedBox(height: 180),
-                          ],
+                            ],
                           ),
                         ),
                       ),
                       // Otomatik analiz toggle ve Tekrardan Analiz Et butonu (ekranın en altında - sabit)
                       if (!isScanning)
                         Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.background,
-                            ),
-                            child: SafeArea(
-                              top: false,
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  // Otomatik analiz toggle
-                                  FutureBuilder<bool>(
-                                    future: context
-                                        .read<PreferencesService>()
-                                        .isAutoAnalyzeOnLaunchEnabled(),
-                                    builder: (context, snapshot) {
-                                      final isEnabled = snapshot.data ?? true;
-                                      return Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 16,
-                                          vertical: 12,
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.background,
+                          ),
+                          child: SafeArea(
+                            top: false,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                // Otomatik analiz toggle
+                                FutureBuilder<bool>(
+                                  future: context
+                                      .read<PreferencesService>()
+                                      .isAutoAnalyzeOnLaunchEnabled(),
+                                  builder: (context, snapshot) {
+                                    final isEnabled = snapshot.data ?? true;
+                                    return Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 12,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: theme
+                                            .colorScheme
+                                            .surfaceContainerHighest
+                                            .withOpacity(isEnabled ? 0.5 : 0.7),
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                          color: isEnabled
+                                              ? theme.colorScheme.outline
+                                                    .withOpacity(0.1)
+                                              : theme.colorScheme.outline
+                                                    .withOpacity(0.3),
+                                          width: 1,
                                         ),
-                                        decoration: BoxDecoration(
-                                          color: theme
-                                              .colorScheme
-                                              .surfaceContainerHighest
-                                              .withOpacity(
-                                                isEnabled ? 0.5 : 0.7,
-                                              ),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Text(
+                                                  l10n.autoAnalyzeOnLaunch,
+                                                  style: theme
+                                                      .textTheme
+                                                      .titleSmall
+                                                      ?.copyWith(
+                                                        fontWeight:
+                                                            FontWeight.w700,
+                                                        fontSize: 14,
+                                                        color: theme
+                                                            .colorScheme
+                                                            .onSurface,
+                                                      ),
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  l10n.autoAnalyzeOnLaunchDescription,
+                                                  style: theme
+                                                      .textTheme
+                                                      .bodySmall
+                                                      ?.copyWith(
+                                                        color: theme
+                                                            .colorScheme
+                                                            .onSurface
+                                                            .withOpacity(0.65),
+                                                      ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          CupertinoSwitch(
+                                            value: isEnabled,
+                                            onChanged: (value) async {
+                                              await context
+                                                  .read<PreferencesService>()
+                                                  .setAutoAnalyzeOnLaunch(
+                                                    value,
+                                                  );
+                                              if (mounted) {
+                                                cubitSetState(() {});
+                                              }
+                                            },
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                                ),
+                                const SizedBox(height: 12),
+                                // Re-Analyze butonu
+                                Builder(
+                                  builder: (buttonContext) {
+                                    // Premium durumunu kontrol et
+                                    final isPremiumAsync = buttonContext
+                                        .watch<PremiumCubit>()
+                                        .state;
+                                    final isPremium = isPremiumAsync.maybeWhen(
+                                      data: (premium) => premium,
+                                      orElse: () => false,
+                                    );
+
+                                    // Bottom navigation bar'daki container rengiyle aynı
+                                    final containerColor = theme
+                                        .colorScheme
+                                        .onPrimaryContainer
+                                        .withOpacity(0.8);
+
+                                    return FilledButton.icon(
+                                      onPressed: () {
+                                        context
+                                            .read<GalleryStatsCubit>()
+                                            .refresh();
+                                      },
+                                      icon: const Icon(Icons.refresh),
+                                      label: Text(l10n.reAnalyze),
+                                      style: FilledButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 24,
+                                          vertical: 16,
+                                        ),
+                                        backgroundColor: containerColor,
+                                        foregroundColor: AppColors.white,
+                                        side: BorderSide(
+                                          color: containerColor,
+                                          width: 1.5,
+                                        ),
+                                        shape: RoundedRectangleBorder(
                                           borderRadius: BorderRadius.circular(
                                             12,
                                           ),
-                                          border: Border.all(
-                                            color: isEnabled
-                                                ? theme.colorScheme.outline
-                                                      .withOpacity(0.1)
-                                                : theme.colorScheme.outline
-                                                      .withOpacity(0.3),
-                                            width: 1,
-                                          ),
                                         ),
-                                        child: Row(
-                                          children: [
-                                            Expanded(
-                                              child: Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  Text(
-                                                    l10n.autoAnalyzeOnLaunch,
-                                                    style: theme
-                                                        .textTheme
-                                                        .titleSmall
-                                                        ?.copyWith(
-                                                          fontWeight:
-                                                              FontWeight.w700,
-                                                          fontSize: 14,
-                                                          color: theme
-                                                              .colorScheme
-                                                              .onSurface,
-                                                        ),
-                                                  ),
-                                                  const SizedBox(height: 4),
-                                                  Text(
-                                                    l10n.autoAnalyzeOnLaunchDescription,
-                                                    style: theme
-                                                        .textTheme
-                                                        .bodySmall
-                                                        ?.copyWith(
-                                                          color: theme
-                                                              .colorScheme
-                                                              .onSurface
-                                                              .withOpacity(
-                                                                0.65,
-                                                              ),
-                                                        ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                            CupertinoSwitch(
-                                              value: isEnabled,
-                                              onChanged: (value) async {
-                                                await context
-                                                    .read<PreferencesService>()
-                                                    .setAutoAnalyzeOnLaunch(
-                                                      value,
-                                                    );
-                                                if (mounted) {
-                                                  cubitSetState(() {});
-                                                }
-                                              },
-                                            ),
-                                          ],
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                  const SizedBox(height: 12),
-                                  // Re-Analyze butonu
-                                  FilledButton.icon(
-                                    onPressed: () {
-                                      context
-                                          .read<GalleryStatsCubit>()
-                                          .refresh();
-                                    },
-                                    icon: const Icon(Icons.refresh),
-                                    label: Text(l10n.reAnalyze),
-                                    style: FilledButton.styleFrom(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 24,
-                                        vertical: 16,
                                       ),
-                                      backgroundColor: theme.colorScheme.primary
-                                          .withOpacity(0.85),
-                                      side: BorderSide(
-                                        color: theme.colorScheme.primary
-                                            .withOpacity(0.9),
-                                        width: 1.5,
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                    ),
-                                  ),
-                                ],
+                                    );
+                                  },
+                                ),
+                              ],
                             ),
                           ),
                         ),
@@ -552,9 +582,11 @@ class _GalleryStatsPageState extends State<GalleryStatsPage>
             gradientColors: [
               (semanticColors?.keep ?? AppColors.success).withOpacity(0.25),
               (semanticColors?.keep ?? AppColors.success).withOpacity(0.15),
-                  ],
-            borderColor: (semanticColors?.keep ?? AppColors.success).withOpacity(0.4),
-            shadowColor: (semanticColors?.keep ?? AppColors.success).withOpacity(0.15),
+            ],
+            borderColor: (semanticColors?.keep ?? AppColors.success)
+                .withOpacity(0.4),
+            shadowColor: (semanticColors?.keep ?? AppColors.success)
+                .withOpacity(0.15),
           ),
         ),
         const SizedBox(width: 12),
@@ -569,27 +601,44 @@ class _GalleryStatsPageState extends State<GalleryStatsPage>
               (semanticColors?.delete ?? AppColors.error).withOpacity(0.25),
               (semanticColors?.delete ?? AppColors.error).withOpacity(0.15),
             ],
-            borderColor: (semanticColors?.delete ?? AppColors.error).withOpacity(0.4),
-            shadowColor: (semanticColors?.delete ?? AppColors.error).withOpacity(0.15),
-                      ),
-                  ),
+            borderColor: (semanticColors?.delete ?? AppColors.error)
+                .withOpacity(0.4),
+            shadowColor: (semanticColors?.delete ?? AppColors.error)
+                .withOpacity(0.15),
+          ),
+        ),
         const SizedBox(width: 12),
-        Expanded(
-          child: _buildStatCardEnhanced(
-            context: context,
-            theme: theme,
-            label: l10n.spaceSaved,
-            value: _formatBytes(totalBytesFreed),
-            iconColor: AppColors.blurTab,
-            gradientColors: [
-              AppColors.blurTab.withOpacity(0.25),
-              AppColors.blurTab.withOpacity(0.15),
-            ],
-            borderColor: AppColors.blurTab.withOpacity(0.4),
-            shadowColor: AppColors.blurTab.withOpacity(0.15),
-                    ),
-                  ),
+        Builder(
+          builder: (builderContext) {
+            // Premium durumunu kontrol et
+            final isPremiumAsync = builderContext.watch<PremiumCubit>().state;
+            final isPremium = isPremiumAsync.maybeWhen(
+              data: (premium) => premium,
+              orElse: () => false,
+            );
+
+            // Bottom navigation bar'daki container rengiyle aynı
+            final containerColor = theme.colorScheme.onPrimaryContainer
+                .withOpacity(0.8);
+
+            return Expanded(
+              child: _buildStatCardEnhanced(
+                context: context,
+                theme: theme,
+                label: l10n.spaceSaved,
+                value: _formatBytes(totalBytesFreed),
+                iconColor: containerColor,
+                gradientColors: [
+                  containerColor.withOpacity(0.25),
+                  containerColor.withOpacity(0.15),
                 ],
+                borderColor: containerColor.withOpacity(0.4),
+                shadowColor: containerColor.withOpacity(0.15),
+              ),
+            );
+          },
+        ),
+      ],
     );
   }
 
@@ -606,28 +655,25 @@ class _GalleryStatsPageState extends State<GalleryStatsPage>
   }) {
     return Container(
       height: 120,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
           colors: gradientColors,
-                ),
+        ),
         borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-          color: borderColor,
-          width: 2,
-                ),
-                boxShadow: [
-                  BoxShadow(
+        border: Border.all(color: borderColor, width: 2),
+        boxShadow: [
+          BoxShadow(
             color: shadowColor,
             blurRadius: 16,
             offset: const Offset(0, 6),
-                    spreadRadius: 0,
-                  ),
-                ],
-              ),
+            spreadRadius: 0,
+          ),
+        ],
+      ),
       child: Stack(
-                children: [
+        children: [
           // Dekoratif arka plan daire
           Positioned(
             top: -20,
@@ -639,46 +685,46 @@ class _GalleryStatsPageState extends State<GalleryStatsPage>
                 shape: BoxShape.circle,
                 color: iconColor.withOpacity(0.1),
               ),
-                ),
+            ),
           ),
           Padding(
             padding: const EdgeInsets.all(18),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
+              children: [
                 // Label
                 Text(
                   label,
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 11,
-                            color: theme.colorScheme.onSurface.withOpacity(0.8),
-                            letterSpacing: 0.3,
-                          ),
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 11,
+                    color: theme.colorScheme.onSurface.withOpacity(0.8),
+                    letterSpacing: 0.3,
+                  ),
                   maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                  overflow: TextOverflow.ellipsis,
+                ),
                 // Değer
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerLeft,
-                    child: Text(
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
                     value,
                     style: theme.textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.w900,
+                      fontWeight: FontWeight.w900,
                       fontSize: 28,
-                        color: theme.colorScheme.onSurface,
+                      color: theme.colorScheme.onSurface,
                       letterSpacing: -1.5,
-                        height: 1,
-                      ),
-                      maxLines: 1,
+                      height: 1,
                     ),
+                    maxLines: 1,
                   ),
-                ],
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
       ),
     );
   }
@@ -703,40 +749,55 @@ class _GalleryStatsPageState extends State<GalleryStatsPage>
           ),
         ),
         const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: _buildStatCardEnhanced(
-                context: context,
-                theme: theme,
-                label: l10n.totalPhotos,
-                value: _formatNumber(totalPhotos),
-                iconColor: theme.colorScheme.primary,
-                gradientColors: [
-                  theme.colorScheme.primary.withOpacity(0.25),
-                  theme.colorScheme.primary.withOpacity(0.15),
-                ],
-                borderColor: theme.colorScheme.primary.withOpacity(0.4),
-                shadowColor: theme.colorScheme.primary.withOpacity(0.15),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildStatCardEnhanced(
-                context: context,
-                theme: theme,
-                label: l10n.totalSize,
-                value: _formatSizeMB(stats.totalSizeMB),
-                iconColor: AppColors.blurTab,
-                gradientColors: [
-                  AppColors.blurTab.withOpacity(0.25),
-                  AppColors.blurTab.withOpacity(0.15),
-                ],
-                borderColor: AppColors.blurTab.withOpacity(0.4),
-                shadowColor: AppColors.blurTab.withOpacity(0.15),
-              ),
-            ),
-          ],
+        Builder(
+          builder: (builderContext) {
+            // Premium durumunu kontrol et
+            final isPremiumAsync = builderContext.watch<PremiumCubit>().state;
+            final isPremium = isPremiumAsync.maybeWhen(
+              data: (premium) => premium,
+              orElse: () => false,
+            );
+
+            // Bottom navigation bar'daki container rengiyle aynı
+            final containerColor = theme.colorScheme.onPrimaryContainer
+                .withOpacity(0.8);
+
+            return Row(
+              children: [
+                Expanded(
+                  child: _buildStatCardEnhanced(
+                    context: context,
+                    theme: theme,
+                    label: l10n.totalPhotos,
+                    value: _formatNumber(totalPhotos),
+                    iconColor: containerColor,
+                    gradientColors: [
+                      containerColor.withOpacity(0.25),
+                      containerColor.withOpacity(0.15),
+                    ],
+                    borderColor: containerColor.withOpacity(0.4),
+                    shadowColor: containerColor.withOpacity(0.15),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildStatCardEnhanced(
+                    context: context,
+                    theme: theme,
+                    label: l10n.totalSize,
+                    value: _formatSizeMB(stats.totalSizeMB),
+                    iconColor: containerColor,
+                    gradientColors: [
+                      containerColor.withOpacity(0.25),
+                      containerColor.withOpacity(0.15),
+                    ],
+                    borderColor: containerColor.withOpacity(0.4),
+                    shadowColor: containerColor.withOpacity(0.15),
+                  ),
+                ),
+              ],
+            );
+          },
         ),
       ],
     );
@@ -968,7 +1029,6 @@ class _GalleryStatsPageState extends State<GalleryStatsPage>
     );
   }
 
-
   /// Format number with commas
   String _formatNumber(int number) {
     return number.toString().replaceAllMapped(
@@ -984,5 +1044,4 @@ class _GalleryStatsPageState extends State<GalleryStatsPage>
     }
     return '${sizeMB.toStringAsFixed(1)} MB';
   }
-
 }

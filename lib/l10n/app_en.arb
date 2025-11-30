@@ -408,7 +408,7 @@
   "@galleryPermissionDescription": {
     "description": "Description for gallery permission request"
   },
-  "privacySecurityInfo": "🔒 Your Privacy Matters",
+  "privacySecurityInfo": "Your Privacy Matters",
   "privacySecurityPoint1": "Your photos and videos are never shared with anyone",
   "privacySecurityPoint2": "All processing happens only on your device",
   "privacySecurityPoint3": "We do not collect, store, or transmit any of your personal media",

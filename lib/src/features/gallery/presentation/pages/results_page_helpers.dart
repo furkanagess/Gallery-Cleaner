@@ -296,7 +296,7 @@ Future<void> showBlurPhotoDetail(
   final isBlurry = photo.isBlurry();
   final isPixelated = photo.isPixelated();
   final problemType = getBlurProblemTypeLabel(photo, l10n);
-  
+
   // Problem tipine göre renk belirle
   final problemColor = isPixelated && isBlurry
       ? AppColors.secondary
@@ -399,7 +399,8 @@ Future<void> showBlurPhotoDetail(
                           color: theme.colorScheme.onSurface.withOpacity(0.7),
                         ),
                         style: IconButton.styleFrom(
-                          backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                          backgroundColor:
+                              theme.colorScheme.surfaceContainerHighest,
                           padding: const EdgeInsets.all(8),
                         ),
                       ),
@@ -429,14 +430,16 @@ Future<void> showBlurPhotoDetail(
                           quality: 95,
                         ),
                         builder: (context, snapshot) {
-                          if (snapshot.connectionState == ConnectionState.waiting) {
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
                             return Container(
                               height: 400,
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(
                                   colors: [
                                     theme.colorScheme.surfaceContainerHighest,
-                                    theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                                    theme.colorScheme.surfaceContainerHighest
+                                        .withOpacity(0.5),
                                   ],
                                 ),
                               ),
@@ -461,7 +464,9 @@ Future<void> showBlurPhotoDetail(
                               gradient: LinearGradient(
                                 colors: [
                                   theme.colorScheme.errorContainer,
-                                  theme.colorScheme.errorContainer.withOpacity(0.7),
+                                  theme.colorScheme.errorContainer.withOpacity(
+                                    0.7,
+                                  ),
                                 ],
                               ),
                             ),
@@ -535,10 +540,12 @@ Future<void> showBlurPhotoDetail(
                                 children: [
                                   Text(
                                     'Blur Score',
-                                    style: theme.textTheme.labelMedium?.copyWith(
-                                      color: theme.colorScheme.onSurface.withOpacity(0.7),
-                                      fontSize: 12,
-                                    ),
+                                    style: theme.textTheme.labelMedium
+                                        ?.copyWith(
+                                          color: theme.colorScheme.onSurface
+                                              .withOpacity(0.7),
+                                          fontSize: 12,
+                                        ),
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
@@ -1167,6 +1174,18 @@ Future<void> showDeleteSuccessDialog(
       barrierDismissible: true,
       barrierColor: AppColors.black.withOpacity(0.5),
       builder: (dialogContext) {
+        // Premium durumunu kontrol et
+        final isPremiumAsync = dialogContext.watch<PremiumCubit>().state;
+        final isPremium = isPremiumAsync.maybeWhen(
+          data: (premium) => premium,
+          orElse: () => false,
+        );
+
+        // Bottom navigation bar'daki container rengiyle aynı
+        final containerColor = theme.colorScheme.onPrimaryContainer.withOpacity(
+          0.8,
+        );
+
         return Dialog(
           backgroundColor: AppColors.transparent,
           elevation: 0,
@@ -1238,14 +1257,14 @@ Future<void> showDeleteSuccessDialog(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: [
-                            theme.colorScheme.primary,
-                            theme.colorScheme.primary.withOpacity(0.8),
+                            containerColor,
+                            containerColor.withOpacity(0.85),
                           ],
                         ),
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: theme.colorScheme.primary.withOpacity(0.3),
+                            color: containerColor.withOpacity(0.35),
                             blurRadius: 12,
                             offset: const Offset(0, 4),
                             spreadRadius: 0,

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:photo_manager/photo_manager.dart' as pm;
 import '../../../../../../../../l10n/app_localizations.dart';
+import '../../../../../application/gallery_providers.dart' show PremiumCubit;
 
 // Album Selection Sheet
 class AlbumSelectionSheet extends StatelessWidget {
@@ -12,6 +14,18 @@ class AlbumSelectionSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
+
+    // Premium durumunu kontrol et
+    final isPremiumAsync = context.watch<PremiumCubit>().state;
+    final isPremium = isPremiumAsync.maybeWhen(
+      data: (premium) => premium,
+      orElse: () => false,
+    );
+
+    // Bottom navigation bar'daki container rengiyle aynı
+    final containerColor = theme.colorScheme.onPrimaryContainer.withOpacity(
+      0.8,
+    );
 
     return Container(
       constraints: BoxConstraints(
@@ -46,13 +60,10 @@ class AlbumSelectionSheet extends StatelessWidget {
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.primaryContainer,
+                      color: containerColor.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Icon(
-                      Icons.folder,
-                      color: theme.colorScheme.onPrimaryContainer,
-                    ),
+                    child: Icon(Icons.folder, color: containerColor),
                   ),
                   title: Text(album.name, overflow: TextOverflow.ellipsis),
                   trailing: Icon(
@@ -72,4 +83,3 @@ class AlbumSelectionSheet extends StatelessWidget {
     );
   }
 }
-

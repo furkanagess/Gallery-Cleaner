@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'app_colors.dart';
 
@@ -62,7 +64,8 @@ class AppSemanticColors extends ThemeExtension<AppSemanticColors> {
 /// Extension to easily access semantic colors from theme
 extension AppSemanticColorsExtension on ThemeData {
   AppSemanticColors get semanticColors =>
-      extension<AppSemanticColors>() ?? const AppSemanticColors(
+      extension<AppSemanticColors>() ??
+      const AppSemanticColors(
         keep: AppColors.success,
         delete: AppColors.error,
         targetHover: AppColors.primary,
@@ -95,11 +98,15 @@ AppThemeData buildAppTheme() {
       onSecondaryContainer: isLight ? AppColors.secondary : AppColors.accent,
       // Tertiary/Accent
       tertiary: AppColors.accent,
-      onTertiary: isLight ? AppColors.textPrimaryLight : AppColors.textPrimaryDark,
+      onTertiary: isLight
+          ? AppColors.textPrimaryLight
+          : AppColors.textPrimaryDark,
       tertiaryContainer: isLight
           ? AppColors.accent.withOpacity(0.1)
           : AppColors.accent.withOpacity(0.2),
-      onTertiaryContainer: isLight ? AppColors.textPrimaryLight : AppColors.accent,
+      onTertiaryContainer: isLight
+          ? AppColors.textPrimaryLight
+          : AppColors.accent,
       // Error
       error: AppColors.error,
       onError: AppColors.white,
@@ -109,7 +116,9 @@ AppThemeData buildAppTheme() {
       onErrorContainer: AppColors.error,
       // Surface
       surface: isLight ? AppColors.cardLight : AppColors.cardDark,
-      onSurface: isLight ? AppColors.textPrimaryLight : AppColors.textPrimaryDark,
+      onSurface: isLight
+          ? AppColors.textPrimaryLight
+          : AppColors.textPrimaryDark,
       surfaceContainerHighest: isLight
           ? AppColors.borderLight
           : AppColors.borderDark,
@@ -117,8 +126,12 @@ AppThemeData buildAppTheme() {
           ? AppColors.textSecondaryLight
           : AppColors.textSecondaryDark,
       // Background
-      background: isLight ? AppColors.backgroundLight : AppColors.backgroundDark,
-      onBackground: isLight ? AppColors.textPrimaryLight : AppColors.textPrimaryDark,
+      background: isLight
+          ? AppColors.backgroundLight
+          : AppColors.backgroundDark,
+      onBackground: isLight
+          ? AppColors.textPrimaryLight
+          : AppColors.textPrimaryDark,
       // Outline
       outline: isLight ? AppColors.borderLight : AppColors.borderDark,
       outlineVariant: isLight
@@ -127,8 +140,12 @@ AppThemeData buildAppTheme() {
       // Shadow
       shadow: isLight ? AppColors.shadowLight : AppColors.shadowDark,
       scrim: AppColors.black.withOpacity(0.3),
-      inverseSurface: isLight ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
-      onInverseSurface: isLight ? AppColors.backgroundDark : AppColors.backgroundLight,
+      inverseSurface: isLight
+          ? AppColors.textPrimaryDark
+          : AppColors.textPrimaryLight,
+      onInverseSurface: isLight
+          ? AppColors.backgroundDark
+          : AppColors.backgroundLight,
       inversePrimary: AppColors.primary,
       surfaceTint: AppColors.primary,
     );
@@ -186,8 +203,8 @@ AppThemeData buildAppTheme() {
             color: states.contains(MaterialState.disabled)
                 ? AppColors.primary.withOpacity(0.2)
                 : states.contains(MaterialState.pressed)
-                    ? AppColors.primary.withOpacity(0.9) // Koyu border
-                    : AppColors.primary.withOpacity(0.8), // Koyu border
+                ? AppColors.primary.withOpacity(0.9) // Koyu border
+                : AppColors.primary.withOpacity(0.8), // Koyu border
             width: 1.5,
           ),
         ),
@@ -264,15 +281,21 @@ AppThemeData buildAppTheme() {
       highlightColor: AppColors.transparent,
       // AppBar Theme
       appBarTheme: AppBarTheme(
-        backgroundColor: isLight ? AppColors.backgroundLight : AppColors.backgroundDark,
-        foregroundColor: isLight ? AppColors.textPrimaryLight : AppColors.textPrimaryDark,
+        backgroundColor: isLight
+            ? AppColors.backgroundLight
+            : AppColors.backgroundDark,
+        foregroundColor: isLight
+            ? AppColors.textPrimaryLight
+            : AppColors.textPrimaryDark,
         elevation: 0,
         surfaceTintColor: AppColors.transparent,
       ),
       // Button Themes
       filledButtonTheme: FilledButtonThemeData(style: filledButtonStyle()),
       elevatedButtonTheme: ElevatedButtonThemeData(style: filledButtonStyle()),
-      outlinedButtonTheme: OutlinedButtonThemeData(style: outlinedButtonStyle()),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: outlinedButtonStyle(),
+      ),
       textButtonTheme: TextButtonThemeData(style: textButtonStyle()),
       // Card Theme
       cardTheme: CardThemeData(
@@ -281,16 +304,12 @@ AppThemeData buildAppTheme() {
         shadowColor: AppColors.black.withOpacity(isLight ? 0.08 : 0.25),
         surfaceTintColor: AppColors.transparent,
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(26),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(26)),
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: AppColors.accent,
         foregroundColor: AppColors.textPrimaryDark,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         elevation: 6,
         highlightElevation: 8,
       ),
@@ -312,9 +331,7 @@ AppThemeData buildAppTheme() {
         backgroundColor: isLight
             ? AppColors.cardLight.withOpacity(0.96)
             : AppColors.cardDark.withOpacity(0.94),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(28),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
         elevation: 12,
       ),
       dropdownMenuTheme: DropdownMenuThemeData(
@@ -334,11 +351,11 @@ AppThemeData buildAppTheme() {
             : AppColors.cardDark,
         selectedColor: AppColors.primary.withOpacity(0.1),
         labelStyle: TextStyle(
-          color: isLight ? AppColors.textPrimaryLight : AppColors.textPrimaryDark,
+          color: isLight
+              ? AppColors.textPrimaryLight
+              : AppColors.textPrimaryDark,
         ),
-        secondaryLabelStyle: TextStyle(
-          color: AppColors.primary,
-        ),
+        secondaryLabelStyle: TextStyle(color: AppColors.primary),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         side: BorderSide(color: AppColors.border(brightness)),
       ),
@@ -355,7 +372,7 @@ AppThemeData buildAppTheme() {
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide(color: AppColors.border(brightness)),
-      ),
+        ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide(color: AppColors.border(brightness)),

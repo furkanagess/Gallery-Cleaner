@@ -59,7 +59,9 @@ class BlurTabState extends State<BlurTab> with CubitStateMixin<BlurTab> {
         final isScanning = next.isScanning;
         final hasCompleted = next.hasCompletedScan && !next.isScanning;
 
-        debugPrint('🔍 [BlurTab] Stream event - wasScanning: $wasScanning, isScanning: $isScanning, hasCompleted: $hasCompleted');
+        debugPrint(
+          '🔍 [BlurTab] Stream event - wasScanning: $wasScanning, isScanning: $isScanning, hasCompleted: $hasCompleted',
+        );
 
         // Scan başladıysa ses çal
         if (isScanning && !wasScanning) {
@@ -72,7 +74,9 @@ class BlurTabState extends State<BlurTab> with CubitStateMixin<BlurTab> {
 
         // Scan tamamlandığında tip rotation'ı durdur (bildirim ve navigation SwipePage'de yapılıyor)
         if (wasScanning && !isScanning && hasCompleted) {
-          debugPrint('✅ [BlurTab] Scan completed (notification and navigation will be handled by SwipePage)');
+          debugPrint(
+            '✅ [BlurTab] Scan completed (notification and navigation will be handled by SwipePage)',
+          );
           _stopTipRotation();
         }
       });
@@ -81,7 +85,7 @@ class BlurTabState extends State<BlurTab> with CubitStateMixin<BlurTab> {
 
   @override
   void dispose() {
-      _blurDetectionSubscription?.cancel();
+    _blurDetectionSubscription?.cancel();
     _tipTimer?.cancel();
     _soundService.stopScannerSound();
     super.dispose();
@@ -91,8 +95,6 @@ class BlurTabState extends State<BlurTab> with CubitStateMixin<BlurTab> {
     _isSoundEnabled = await _prefsService.isScanSoundEnabled();
   }
 
-
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -100,6 +102,18 @@ class BlurTabState extends State<BlurTab> with CubitStateMixin<BlurTab> {
     final selectedAlbum = context.watch<SelectedAlbumCubit>().state;
     final albumsAsync = context.watch<AlbumsCubit>().state;
     final blurState = context.watch<BlurDetectionCubit>().state;
+
+    // Premium durumunu kontrol et
+    final isPremiumAsync = context.watch<PremiumCubit>().state;
+    final isPremium = isPremiumAsync.maybeWhen(
+      data: (premium) => premium,
+      orElse: () => false,
+    );
+
+    // Bottom navigation bar'daki container rengiyle aynı
+    final containerColor = theme.colorScheme.onPrimaryContainer.withOpacity(
+      0.8,
+    );
 
     final isScanning = blurState.isScanning;
 
@@ -132,7 +146,7 @@ class BlurTabState extends State<BlurTab> with CubitStateMixin<BlurTab> {
 
           // Eğer tarama tamamlandıysa, sonuç olsun ya da olmasın results view göster
           // Böylece no results ekranı da gösterilebilir
-      // Tarama yapılırken full-screen overlay göster
+          // Tarama yapılırken full-screen overlay göster
           if (isScanning) {
             // Timer'ı başlat
             WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -207,16 +221,13 @@ class BlurTabState extends State<BlurTab> with CubitStateMixin<BlurTab> {
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                               colors: [
-                                theme.colorScheme.primaryContainer.withOpacity(
-                                  0.3,
-                                ),
-                                theme.colorScheme.secondaryContainer
-                                    .withOpacity(0.2),
+                                containerColor.withOpacity(0.3),
+                                containerColor.withOpacity(0.2),
                               ],
                             ),
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
-                              color: theme.colorScheme.primary.withOpacity(0.3),
+                              color: containerColor.withOpacity(0.3),
                               width: 1.5,
                             ),
                           ),
@@ -226,7 +237,7 @@ class BlurTabState extends State<BlurTab> with CubitStateMixin<BlurTab> {
                               Icon(
                                 Icons.lightbulb_outline_rounded,
                                 size: 20,
-                                color: theme.colorScheme.primary,
+                                color: containerColor,
                               ),
                               const SizedBox(width: 12),
                               Flexible(
@@ -468,6 +479,10 @@ class BlurTabState extends State<BlurTab> with CubitStateMixin<BlurTab> {
 
             // hasResults durumunda "View Last Results" ve "Start New Scan" butonları göster
             if (hasResults) {
+              // Bottom navigation bar'daki container rengiyle aynı
+              final containerColor = theme.colorScheme.onPrimaryContainer
+                  .withOpacity(0.8);
+
               return Row(
                 children: [
                   Expanded(
@@ -482,7 +497,7 @@ class BlurTabState extends State<BlurTab> with CubitStateMixin<BlurTab> {
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         minimumSize: const Size(0, 56),
                         side: BorderSide(
-                          color: theme.colorScheme.primary.withOpacity(0.5),
+                          color: containerColor.withOpacity(0.5),
                           width: 1.5,
                         ),
                       ),
@@ -499,10 +514,10 @@ class BlurTabState extends State<BlurTab> with CubitStateMixin<BlurTab> {
                       style: FilledButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         minimumSize: const Size(0, 56),
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: theme.colorScheme.onPrimary,
+                        backgroundColor: containerColor,
+                        foregroundColor: AppColors.white,
                         side: BorderSide(
-                          color: AppColors.primary.withOpacity(0.9),
+                          color: containerColor.withOpacity(0.9),
                           width: 1.5,
                         ),
                       ),
@@ -513,11 +528,12 @@ class BlurTabState extends State<BlurTab> with CubitStateMixin<BlurTab> {
             }
 
             return FutureBuilder<
-                ({
-                  int estimatedSeconds,
-                  int totalPhotoCount,
-                  bool hasLimitWarning,
-                })>(
+              ({
+                int estimatedSeconds,
+                int totalPhotoCount,
+                bool hasLimitWarning,
+              })
+            >(
               future: estimateBlurScanDuration(selectedAlbums),
               builder: (context, snapshot) {
                 final estimatedTimeText = snapshot.hasData
@@ -526,8 +542,9 @@ class BlurTabState extends State<BlurTab> with CubitStateMixin<BlurTab> {
 
                 final hasLimitWarning =
                     snapshot.hasData && snapshot.data!.hasLimitWarning;
-                final totalPhotoCount =
-                    snapshot.hasData ? snapshot.data!.totalPhotoCount : 0;
+                final totalPhotoCount = snapshot.hasData
+                    ? snapshot.data!.totalPhotoCount
+                    : 0;
 
                 return ModernScanButton(
                   context: context,
@@ -537,93 +554,105 @@ class BlurTabState extends State<BlurTab> with CubitStateMixin<BlurTab> {
                       ? null
                       : () async {
                           // Seçili albüm isimlerini hazırla
-                          final albumNames =
-                              selectedAlbums.map((a) => a.name).join(', ');
+                          final albumNames = selectedAlbums
+                              .map((a) => a.name)
+                              .join(', ');
 
                           // Onay dialogu göster
                           final confirmed = await showDialog<bool>(
                             context: context,
-                            builder: (dialogContext) => AlertDialog(
-                              title: Text(l10n.startScan),
-                              content: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    l10n.blurDetectionDescription,
-                                  ),
-                                  const SizedBox(height: 12),
-                                  Container(
-                                    padding: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(
-                                      color: theme.colorScheme.primaryContainer
-                                          .withOpacity(0.3),
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(
-                                        color: theme.colorScheme.primary
-                                            .withOpacity(0.2),
-                                        width: 1,
+                            builder: (dialogContext) {
+                              // Premium durumunu kontrol et
+                              final isPremiumAsync = dialogContext
+                                  .watch<PremiumCubit>()
+                                  .state;
+                              final isPremium = isPremiumAsync.maybeWhen(
+                                data: (premium) => premium,
+                                orElse: () => false,
+                              );
+
+                              // Bottom navigation bar'daki container rengiyle aynı
+                              final containerColor = theme
+                                  .colorScheme
+                                  .onPrimaryContainer
+                                  .withOpacity(0.8);
+
+                              return AlertDialog(
+                                title: Text(l10n.startScan),
+                                content: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(l10n.blurDetectionDescription),
+                                    const SizedBox(height: 12),
+                                    Container(
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color: containerColor.withOpacity(0.3),
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                          color: containerColor.withOpacity(
+                                            0.2,
+                                          ),
+                                          width: 1,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Icon(
+                                            Icons.folder_rounded,
+                                            size: 20,
+                                            color: containerColor,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              albumNames,
+                                              style: theme.textTheme.bodyMedium
+                                                  ?.copyWith(
+                                                    color: containerColor,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                              maxLines: 3,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
-                                    child: Row(
-                                      children: [
-                                        Icon(
-                                          Icons.folder_rounded,
-                                          size: 20,
-                                          color: theme.colorScheme.primary,
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Expanded(
-                                          child: Text(
-                                            albumNames,
-                                            style: theme.textTheme.bodyMedium
-                                                ?.copyWith(
-                                              color: theme.colorScheme.primary,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                            maxLines: 3,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                      ],
+                                  ],
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.of(dialogContext).pop(false),
+                                    child: Text(l10n.cancel),
+                                  ),
+                                  FilledButton(
+                                    onPressed: () =>
+                                        Navigator.of(dialogContext).pop(true),
+                                    style: FilledButton.styleFrom(
+                                      backgroundColor: containerColor,
                                     ),
+                                    child: Text(l10n.scan),
                                   ),
                                 ],
-                              ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () =>
-                                      Navigator.of(dialogContext).pop(false),
-                                  child: Text(l10n.cancel),
-                                ),
-                                FilledButton(
-                                  onPressed: () =>
-                                      Navigator.of(dialogContext).pop(true),
-                                  style: FilledButton.styleFrom(
-                                    backgroundColor: theme.colorScheme.primary,
-                                  ),
-                                  child: Text(l10n.scan),
-                                ),
-                              ],
-                            ),
+                              );
+                            },
                           );
 
                           // Kullanıcı onaylamadıysa veya dialog kapatıldıysa çık
                           if (confirmed != true || !mounted) return;
 
                           // Scan başlat
-                          await context
-                              .read<BlurDetectionCubit>()
-                              .scanAlbums(
-                                selectedAlbums,
-                                blurThreshold: _blurThreshold,
-                              );
+                          await context.read<BlurDetectionCubit>().scanAlbums(
+                            selectedAlbums,
+                            blurThreshold: _blurThreshold,
+                          );
 
                           if (!mounted) return;
                         },
-                  icon: hasNoScanRights
-                      ? Icons.block
-                      : Icons.search_rounded,
+                  icon: hasNoScanRights ? Icons.block : Icons.search_rounded,
                   label: hasNoScanRights
                       ? l10n.noScanRightsLeft
                       : l10n.scanSelectedAlbums,
@@ -647,6 +676,18 @@ class BlurTabState extends State<BlurTab> with CubitStateMixin<BlurTab> {
     ThemeData theme,
     AppLocalizations l10n,
   ) {
+    // Premium durumunu kontrol et
+    final isPremiumAsync = context.watch<PremiumCubit>().state;
+    final isPremium = isPremiumAsync.maybeWhen(
+      data: (premium) => premium,
+      orElse: () => false,
+    );
+
+    // Bottom navigation bar'daki container rengiyle aynı
+    final containerColor = theme.colorScheme.onPrimaryContainer.withOpacity(
+      0.8,
+    );
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -663,13 +704,13 @@ class BlurTabState extends State<BlurTab> with CubitStateMixin<BlurTab> {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.onPrimaryContainer.withOpacity(0.15),
+                  color: containerColor.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
                   Icons.blur_on_rounded,
                   size: 28,
-                  color: theme.colorScheme.onPrimaryContainer,
+                  color: containerColor,
                 ),
               ),
               const SizedBox(width: 12),
@@ -686,7 +727,7 @@ class BlurTabState extends State<BlurTab> with CubitStateMixin<BlurTab> {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: theme.colorScheme.primary.withOpacity(0.2),
+                            color: containerColor.withOpacity(0.2),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Row(
@@ -695,7 +736,7 @@ class BlurTabState extends State<BlurTab> with CubitStateMixin<BlurTab> {
                               Icon(
                                 Icons.auto_awesome,
                                 size: 12,
-                                color: theme.colorScheme.onPrimaryContainer,
+                                color: containerColor,
                               ),
                               const SizedBox(width: 4),
                               Text(
@@ -703,7 +744,7 @@ class BlurTabState extends State<BlurTab> with CubitStateMixin<BlurTab> {
                                 style: theme.textTheme.labelSmall?.copyWith(
                                   fontWeight: FontWeight.w700,
                                   fontSize: 10,
-                                  color: theme.colorScheme.onPrimaryContainer,
+                                  color: containerColor,
                                 ),
                               ),
                             ],
@@ -717,7 +758,7 @@ class BlurTabState extends State<BlurTab> with CubitStateMixin<BlurTab> {
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
-                        color: theme.colorScheme.onPrimaryContainer,
+                        color: containerColor,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -726,9 +767,7 @@ class BlurTabState extends State<BlurTab> with CubitStateMixin<BlurTab> {
                       style: theme.textTheme.bodySmall?.copyWith(
                         fontSize: 11,
                         height: 1.4,
-                        color: theme.colorScheme.onPrimaryContainer.withOpacity(
-                          0.8,
-                        ),
+                        color: containerColor.withOpacity(0.8),
                       ),
                     ),
                   ],
@@ -752,4 +791,3 @@ class BlurTabState extends State<BlurTab> with CubitStateMixin<BlurTab> {
     );
   }
 }
-

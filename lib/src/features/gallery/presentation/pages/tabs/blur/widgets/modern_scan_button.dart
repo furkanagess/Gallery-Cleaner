@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../../../../../src/app/theme/app_colors.dart' show AppColors;
 import '../../../../../../../../l10n/app_localizations.dart'
     show AppLocalizations;
+import '../../../../../application/gallery_providers.dart' show PremiumCubit;
 
 class ModernScanButton extends StatelessWidget {
   const ModernScanButton({
@@ -35,6 +37,18 @@ class ModernScanButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Premium durumunu kontrol et
+    final isPremiumAsync = context.watch<PremiumCubit>().state;
+    final isPremium = isPremiumAsync.maybeWhen(
+      data: (premium) => premium,
+      orElse: () => false,
+    );
+
+    // Bottom navigation bar'daki seçili item container rengiyle aynı renk
+    final containerColor = theme.colorScheme.onPrimaryContainer.withOpacity(
+      0.8,
+    );
+
     // isError durumunda premium butonu göster
     if (isError) {
       return Column(
@@ -182,7 +196,7 @@ class ModernScanButton extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 16),
               minimumSize: const Size(double.infinity, 56),
               backgroundColor: isEnabled
-                  ? AppColors.primary.withOpacity(0.85)
+                  ? containerColor
                   : theme.colorScheme.surfaceContainerHighest,
               disabledBackgroundColor:
                   theme.colorScheme.surfaceContainerHighest,
@@ -194,7 +208,7 @@ class ModernScanButton extends StatelessWidget {
               ),
               side: BorderSide(
                 color: isEnabled
-                    ? AppColors.primary.withOpacity(0.9)
+                    ? containerColor
                     : theme.colorScheme.onSurface.withOpacity(0.3),
                 width: 1.5,
               ),

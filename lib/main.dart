@@ -77,11 +77,6 @@ void main() async {
       // FCM token'ı al ve logla (test için)
       final fcmToken = await FCMService.instance.getToken();
       if (fcmToken != null) {
-        print('═══════════════════════════════════════════════════════════');
-        print('📱 FCM TOKEN (Main.dart - Test için)');
-        print('═══════════════════════════════════════════════════════════');
-        print('Token: $fcmToken');
-        print('═══════════════════════════════════════════════════════════');
         AppLogger.i('📱 [main] FCM Token: $fcmToken');
       }
     } catch (e) {

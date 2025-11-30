@@ -333,3 +333,4 @@ Scaffold
 
 Swipe Page, uygulamanın kalbi olan, kullanıcıların fotoğrafları hızlıca değerlendirdiği ana ekrandır. Swipe mekanizması akıcı ve sezgisel olmalı, kullanıcı her zaman durumu bilmeli ve hızlı karar verebilmelidir.
 
+

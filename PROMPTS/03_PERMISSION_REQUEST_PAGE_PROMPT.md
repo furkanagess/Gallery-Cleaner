@@ -350,3 +350,4 @@ Scaffold
 
 Permission Request Page, kullanıcıya neden izin gerektiğini açıkça anlatan, güven verici ve bilgilendirici bir ekrandır. İzin verildikten sonra, kullanıcıya galeri bilgilerini gösterir ve temizleme işlemine başlaması için teşvik eder.
 
+

@@ -22,10 +22,13 @@ class _DuplicateTabIndicatorState extends State<DuplicateTabIndicator> {
     final hasCompleted = duplicateState.hasCompletedScan && !isScanning;
 
     if (widget.isSelected) {
+      // Seçili item ikon rengi: ekranın arka plan rengiyle aynı
+      final selectedIconColor = theme.colorScheme.background;
+      
       return Icon(
         Icons.content_copy_rounded,
         size: 24,
-        color: theme.colorScheme.onPrimary,
+        color: selectedIconColor,
       );
     }
 

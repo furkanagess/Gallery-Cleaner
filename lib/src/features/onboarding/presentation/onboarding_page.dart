@@ -6,6 +6,7 @@ import '../../../../../l10n/app_localizations.dart';
 import '../application/onboarding_controller.dart';
 import '../../../app/theme/app_colors.dart';
 import 'package:gallery_cleaner/src/core/utils/view_refresh_cubit.dart';
+import '../../gallery/application/gallery_providers.dart' show PremiumCubit;
 
 class OnboardingPage extends StatefulWidget {
   const OnboardingPage({super.key});
@@ -105,7 +106,19 @@ class _OnboardingPageState extends State<OnboardingPage>
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(4),
                         color: _currentPage == index
-                            ? theme.colorScheme.primary
+                            ? (() {
+                                final isPremiumAsync = context
+                                    .watch<PremiumCubit>()
+                                    .state;
+                                final isPremium = isPremiumAsync.maybeWhen(
+                                  data: (premium) => premium,
+                                  orElse: () => false,
+                                );
+                                return isPremium
+                                    ? theme.colorScheme.primary.withOpacity(0.9)
+                                    : theme.colorScheme.onPrimaryContainer
+                                          .withOpacity(0.8);
+                              })()
                             : theme.colorScheme.primary.withOpacity(0.3),
                       ),
                     );
@@ -174,10 +187,21 @@ class _OnboardingSlide1 extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child: Icon(
-                    Icons.photo,
-                    size: 80,
-                    color: theme.colorScheme.primary,
+                  child: Builder(
+                    builder: (iconContext) {
+                      final isPremiumAsync = iconContext
+                          .watch<PremiumCubit>()
+                          .state;
+                      final isPremium = isPremiumAsync.maybeWhen(
+                        data: (premium) => premium,
+                        orElse: () => false,
+                      );
+                      final containerColor = theme
+                          .colorScheme
+                          .onPrimaryContainer
+                          .withOpacity(0.8);
+                      return Icon(Icons.photo, size: 80, color: containerColor);
+                    },
                   ),
                 ),
                 // Swipe indicators
@@ -352,7 +376,20 @@ class _OnboardingSlide4 extends StatelessWidget {
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                             colors: [
-                              theme.colorScheme.primary.withOpacity(0.3),
+                              (() {
+                                final isPremiumAsync = context
+                                    .watch<PremiumCubit>()
+                                    .state;
+                                final isPremium = isPremiumAsync.maybeWhen(
+                                  data: (premium) => premium,
+                                  orElse: () => false,
+                                );
+                                final containerColor = theme
+                                    .colorScheme
+                                    .onPrimaryContainer
+                                    .withOpacity(0.8);
+                                return containerColor.withOpacity(0.3);
+                              })(),
                               theme.colorScheme.secondary.withOpacity(0.2),
                             ],
                           ),
@@ -464,7 +501,20 @@ class _OnboardingSlide5 extends StatelessWidget {
                     child: Icon(
                       Icons.photo,
                       size: 50,
-                      color: theme.colorScheme.primary.withOpacity(0.6),
+                      color: (() {
+                        final isPremiumAsync = context
+                            .watch<PremiumCubit>()
+                            .state;
+                        final isPremium = isPremiumAsync.maybeWhen(
+                          data: (premium) => premium,
+                          orElse: () => false,
+                        );
+                        final containerColor = theme
+                            .colorScheme
+                            .onPrimaryContainer
+                            .withOpacity(0.8);
+                        return containerColor.withOpacity(0.6);
+                      })(),
                     ),
                   ),
                 ),
@@ -596,26 +646,40 @@ class _ModernActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      height: 56,
-      child: FilledButton(
-        onPressed: onPressed,
-        style: FilledButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          foregroundColor: AppColors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+    return Builder(
+      builder: (buttonContext) {
+        final isPremiumAsync = buttonContext.watch<PremiumCubit>().state;
+        final isPremium = isPremiumAsync.maybeWhen(
+          data: (premium) => premium,
+          orElse: () => false,
+        );
+        final containerColor = theme.colorScheme.onPrimaryContainer.withOpacity(
+          0.8,
+        );
+
+        return SizedBox(
+          width: double.infinity,
+          height: 56,
+          child: FilledButton(
+            onPressed: onPressed,
+            style: FilledButton.styleFrom(
+              backgroundColor: containerColor,
+              foregroundColor: AppColors.white,
+              side: BorderSide(color: containerColor, width: 1.5),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+            child: Text(
+              isLastPage ? l10n.startButton : l10n.continueButton,
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.5,
+              ),
+            ),
           ),
-        ),
-        child: Text(
-          isLastPage ? l10n.startButton : l10n.continueButton,
-          style: theme.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-            letterSpacing: 0.5,
-          ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

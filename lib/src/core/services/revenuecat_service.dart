@@ -1,9 +1,12 @@
+// ignore_for_file: deprecated_member_use
+
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 
 import 'preferences_service.dart';
+
 /// RevenueCat purchase service wrapper
 ///
 /// This service centralizes initialization and common operations
@@ -40,7 +43,9 @@ class RevenueCatService {
     if (_configured) return;
     try {
       debugPrint('🟦 [RevenueCat] initialize() starting...');
-      final selectedKey = Platform.isAndroid ? _androidPublicKey : _iosPublicKey;
+      final selectedKey = Platform.isAndroid
+          ? _androidPublicKey
+          : _iosPublicKey;
       final configuration = PurchasesConfiguration(selectedKey);
       await Purchases.configure(configuration);
       _configured = true;
@@ -61,21 +66,29 @@ class RevenueCatService {
       debugPrint('🟦 [RevenueCat] getOfferings()...');
       final o = await Purchases.getOfferings();
       if (o.current == null || o.current!.availablePackages.isEmpty) {
-        debugPrint('⚠️ [RevenueCat] No offerings found. Please configure offerings in RevenueCat dashboard.');
+        debugPrint(
+          '⚠️ [RevenueCat] No offerings found. Please configure offerings in RevenueCat dashboard.',
+        );
         debugPrint('   📝 Steps:');
         debugPrint('   1. Go to RevenueCat Dashboard > Offerings');
         debugPrint('   2. Create offering with ID: $offeringId');
         debugPrint('   3. Add product ID: lifetime_gallery_cleaner_premium');
         debugPrint('   4. Ensure product is active in Google Play Console');
       } else {
-        debugPrint('✅ [RevenueCat] offerings loaded | current=${o.current?.identifier} '
-            'packages=${o.current?.availablePackages.length ?? 0}');
+        debugPrint(
+          '✅ [RevenueCat] offerings loaded | current=${o.current?.identifier} '
+          'packages=${o.current?.availablePackages.length ?? 0}',
+        );
       }
       return o;
     } on PlatformException catch (e) {
       if (e.code == '23' || e.message?.contains('ConfigurationError') == true) {
-        debugPrint('⚠️ [RevenueCat] Configuration Error - Offerings not configured in dashboard');
-        debugPrint('   💡 This is expected if you haven\'t set up offerings yet.');
+        debugPrint(
+          '⚠️ [RevenueCat] Configuration Error - Offerings not configured in dashboard',
+        );
+        debugPrint(
+          '   💡 This is expected if you haven\'t set up offerings yet.',
+        );
         debugPrint('   📖 Guide: https://rev.cat/how-to-configure-offerings');
       } else {
         debugPrint('❌ [RevenueCat] getOfferings error: $e');
@@ -91,17 +104,22 @@ class RevenueCatService {
     Offering? targetOffering;
     final current = offerings.current;
 
-    if (current != null && (offeringId.isEmpty || current.identifier == offeringId)) {
+    if (current != null &&
+        (offeringId.isEmpty || current.identifier == offeringId)) {
       targetOffering = current;
     } else {
       targetOffering = offerings.all[offeringId];
       targetOffering ??= current;
-      targetOffering ??= offerings.all.isNotEmpty ? offerings.all.values.first : null;
+      targetOffering ??= offerings.all.isNotEmpty
+          ? offerings.all.values.first
+          : null;
     }
 
     if (targetOffering == null) {
-      debugPrint('❌ [RevenueCat] No offering found. current=${current?.identifier} '
-          'requested=$offeringId all=${offerings.all.keys.toList()}');
+      debugPrint(
+        '❌ [RevenueCat] No offering found. current=${current?.identifier} '
+        'requested=$offeringId all=${offerings.all.keys.toList()}',
+      );
       return null;
     }
 
@@ -109,7 +127,9 @@ class RevenueCatService {
     if (pkg == null) {
       final list = targetOffering.availablePackages;
       final byType = list.where((p) => p.packageType == PackageType.lifetime);
-      pkg = byType.isNotEmpty ? byType.first : (list.isNotEmpty ? list.first : null);
+      pkg = byType.isNotEmpty
+          ? byType.first
+          : (list.isNotEmpty ? list.first : null);
     }
     if (pkg == null) {
       debugPrint(
@@ -143,15 +163,19 @@ class RevenueCatService {
       debugPrint('🟦 [RevenueCat] purchaseLifetime()...');
       final pkg = await fetchLifetimePackage();
       if (pkg == null) {
-        debugPrint('❌ [RevenueCat] Offerings not available. Please configure in dashboard.');
+        debugPrint(
+          '❌ [RevenueCat] Offerings not available. Please configure in dashboard.',
+        );
         return false;
       }
 
-      debugPrint('🟩 [RevenueCat] purchasing package '
-          '| offering=${pkg.offeringIdentifier} '
-          'packageType=${pkg.packageType} '
-          'productId=${pkg.storeProduct.identifier} '
-          'price=${pkg.storeProduct.priceString}');
+      debugPrint(
+        '🟩 [RevenueCat] purchasing package '
+        '| offering=${pkg.offeringIdentifier} '
+        'packageType=${pkg.packageType} '
+        'productId=${pkg.storeProduct.identifier} '
+        'price=${pkg.storeProduct.priceString}',
+      );
       final purchaseResult = await Purchases.purchasePackage(pkg);
       final active = await _markPremiumIfActive(purchaseResult.customerInfo);
       if (active) return true;
@@ -170,30 +194,36 @@ class RevenueCatService {
       return false;
     } on PlatformException catch (e) {
       final errorCode = PurchasesErrorHelper.getErrorCode(e);
-      
+
       // Handle user cancelled error - simülatörde bazen yanlış pozitif olabilir
       if (errorCode == PurchasesErrorCode.purchaseCancelledError) {
         debugPrint('⚠️ [RevenueCat] Purchase was cancelled by user.');
-        // Simülatörde bazen bu hata yanlış oluşabiliyor, 
+        // Simülatörde bazen bu hata yanlış oluşabiliyor,
         // o yüzden bir kez daha premium durumunu kontrol edelim
         final premium = await isPremium();
         if (premium) {
-          debugPrint('✅ [RevenueCat] Premium is active despite cancellation error (possible simulator false positive).');
+          debugPrint(
+            '✅ [RevenueCat] Premium is active despite cancellation error (possible simulator false positive).',
+          );
           return true;
         }
         return false;
       }
-      
+
       // Handle already purchased error
       if (errorCode == PurchasesErrorCode.productAlreadyPurchasedError) {
-        debugPrint('ℹ️ [RevenueCat] Product already purchased. Attempting restore.');
+        debugPrint(
+          'ℹ️ [RevenueCat] Product already purchased. Attempting restore.',
+        );
         final restored = await restore();
         if (restored) return true;
         final premium = await isPremium();
         if (premium) return true;
       }
-      
-      debugPrint('⚠️ [RevenueCat] purchase platform error: $errorCode | message=${e.message} | details=${e.details}');
+
+      debugPrint(
+        '⚠️ [RevenueCat] purchase platform error: $errorCode | message=${e.message} | details=${e.details}',
+      );
       return false;
     } catch (e) {
       debugPrint('❌ [RevenueCat] purchase error: $e');
@@ -216,7 +246,9 @@ class RevenueCatService {
 
       final refreshedInfo = await Purchases.getCustomerInfo();
       active = await _markPremiumIfActive(refreshedInfo);
-      debugPrint('✅ [RevenueCat] restore result after refresh | premiumActive=$active');
+      debugPrint(
+        '✅ [RevenueCat] restore result after refresh | premiumActive=$active',
+      );
       return active;
     } catch (e) {
       debugPrint('❌ [RevenueCat] restore error: $e');
@@ -241,7 +273,9 @@ class RevenueCatService {
     debugPrint('🟦 [RevenueCat] addCustomerInfoUpdateListener() registered');
     Purchases.addCustomerInfoUpdateListener((info) {
       final active = info.entitlements.all[entitlementId]?.isActive == true;
-      debugPrint('🔁 [RevenueCat] customerInfo updated | premiumActive=$active');
+      debugPrint(
+        '🔁 [RevenueCat] customerInfo updated | premiumActive=$active',
+      );
       onChange();
     });
   }
@@ -250,16 +284,17 @@ class RevenueCatService {
     final active = _hasActiveEntitlement(info);
     if (active) {
       await PreferencesService().setPremium(true);
-      debugPrint('💾 [RevenueCat] Local premium flag persisted (entitlement active).');
+      debugPrint(
+        '💾 [RevenueCat] Local premium flag persisted (entitlement active).',
+      );
     }
     return active;
   }
 
   bool _hasActiveEntitlement(CustomerInfo info) {
-    final premiumActive = info.entitlements.all[entitlementId]?.isActive == true;
+    final premiumActive =
+        info.entitlements.all[entitlementId]?.isActive == true;
     final anyActive = info.entitlements.active.isNotEmpty;
     return premiumActive || anyActive;
   }
 }
-
-

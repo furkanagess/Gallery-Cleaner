@@ -1,3 +1,5 @@
+import 'package:gallery_cleaner/src/core/utils/app_logger.dart';
+
 import 'package:audioplayers/audioplayers.dart';
 import 'preferences_service.dart';
 
@@ -8,11 +10,13 @@ class SoundService {
 
   final AudioPlayer _audioPlayer = AudioPlayer();
   final AudioPlayer _scannerPlayer = AudioPlayer(); // Scanner için ayrı player
-  final List<AudioPlayer> _deletePlayers = []; // Delete sesleri için player listesi
+  final List<AudioPlayer> _deletePlayers =
+      []; // Delete sesleri için player listesi
   bool _isScannerPlaying = false; // Scanner sesinin çalıp çalmadığını takip et
-  bool? _isSoundEnabledCache; // Ses durumu cache'i - gereksiz async çağrıları önlemek için
+  bool?
+  _isSoundEnabledCache; // Ses durumu cache'i - gereksiz async çağrıları önlemek için
   final PreferencesService _prefsService = PreferencesService();
-  
+
   /// Ses durumunu cache'den oku veya yükle
   Future<bool> _getSoundEnabled() async {
     if (_isSoundEnabledCache != null) {
@@ -21,17 +25,15 @@ class SoundService {
     _isSoundEnabledCache = await _prefsService.isScanSoundEnabled();
     return _isSoundEnabledCache!;
   }
-  
+
   /// Ses durumu cache'ini güncelle
   void _updateSoundEnabledCache(bool enabled) {
     _isSoundEnabledCache = enabled;
   }
-  
+
   /// Cache'i başlangıçta yükle (opsiyonel - performans için)
   Future<void> initializeCache() async {
-    if (_isSoundEnabledCache == null) {
-      _isSoundEnabledCache = await _prefsService.isScanSoundEnabled();
-    }
+    _isSoundEnabledCache ??= await _prefsService.isScanSoundEnabled();
   }
 
   /// Silme ses efektini çalar (üst üste çalınabilir)
@@ -40,17 +42,17 @@ class SoundService {
       // Her delete sesi için yeni bir AudioPlayer oluştur
       final deletePlayer = AudioPlayer();
       _deletePlayers.add(deletePlayer);
-      
+
       // Ses bittiğinde player'ı temizle
       deletePlayer.onPlayerComplete.listen((_) {
         deletePlayer.dispose();
         _deletePlayers.remove(deletePlayer);
       });
-      
+
       await deletePlayer.play(AssetSource('sound/delete.mp3'));
     } catch (e) {
       // Ses çalma hatası sessizce yok sayılır
-      print('Ses çalma hatası: $e');
+      AppLogger.e;
     }
   }
 
@@ -65,7 +67,7 @@ class SoundService {
         }
       } catch (_) {
         // State okunamazsa async kontrol yap
-        final state = await _audioPlayer.state;
+        final state = _audioPlayer.state;
         if (state == PlayerState.playing) {
           return;
         }
@@ -96,13 +98,13 @@ class SoundService {
           }
         } catch (_) {
           // State okunamazsa async kontrol yap
-          final state = await _scannerPlayer.state;
+          final state = _scannerPlayer.state;
           if (state == PlayerState.playing) {
             return;
           }
         }
       }
-      
+
       _isScannerPlaying = true;
       // Release mode'u sadece değiştiyse set et
       await _scannerPlayer.setReleaseMode(ReleaseMode.loop); // Loop modunda çal
@@ -121,9 +123,9 @@ class SoundService {
       if (!_isScannerPlaying) {
         return; // Zaten durdurulmuş
       }
-      
+
       _isScannerPlaying = false;
-      
+
       // Player durumunu optimize et - sadece gerekirse async çağrı yap
       try {
         final state = _scannerPlayer.state;
@@ -134,7 +136,7 @@ class SoundService {
         }
       } catch (_) {
         // State okunamazsa async kontrol yap
-        final state = await _scannerPlayer.state;
+        final state = _scannerPlayer.state;
         if (state == PlayerState.playing || state == PlayerState.paused) {
           await _scannerPlayer.stop();
           await _scannerPlayer.setReleaseMode(ReleaseMode.release);
@@ -146,18 +148,18 @@ class SoundService {
       // Debug log'ları kaldır - production'da gereksiz
     }
   }
-  
+
   /// Ses durumunu güncelle (cache'i de günceller)
   Future<void> setSoundEnabled(bool enabled) async {
     _updateSoundEnabledCache(enabled);
     await _prefsService.setScanSoundEnabled(enabled);
-    
+
     // Eğer ses kapatıldıysa ve scanner çalıyorsa durdur
     if (!enabled && _isScannerPlaying) {
       await stopScannerSound();
     }
   }
-  
+
   /// Ses durumunu oku (cache'den)
   bool? get isSoundEnabled => _isSoundEnabledCache;
 
@@ -181,4 +183,3 @@ class SoundService {
     _deletePlayers.clear();
   }
 }
-

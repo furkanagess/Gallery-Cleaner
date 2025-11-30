@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../../../../app/theme/app_colors.dart';
 import '../../../../../application/duplicate_detection_provider.dart';
 import '../../../../../../../../l10n/app_localizations.dart';
+import '../../../../../application/gallery_providers.dart' show PremiumCubit;
 
 class DuplicateModeSelector extends StatefulWidget {
   final DuplicateDetectionMode currentMode;
@@ -31,10 +33,7 @@ class _DuplicateModeSelectorState extends State<DuplicateModeSelector>
       duration: const Duration(milliseconds: 200),
     );
     _scaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeInOut,
-      ),
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
   }
 
@@ -74,6 +73,18 @@ class _DuplicateModeSelectorState extends State<DuplicateModeSelector>
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
 
+    // Premium durumunu kontrol et
+    final isPremiumAsync = context.watch<PremiumCubit>().state;
+    final isPremium = isPremiumAsync.maybeWhen(
+      data: (premium) => premium,
+      orElse: () => false,
+    );
+
+    // Bottom navigation bar'daki container rengiyle aynı
+    final containerColor = theme.colorScheme.onPrimaryContainer.withOpacity(
+      0.8,
+    );
+
     return AnimatedBuilder(
       animation: _scaleAnimation,
       builder: (context, child) {
@@ -81,10 +92,10 @@ class _DuplicateModeSelectorState extends State<DuplicateModeSelector>
           scale: _scaleAnimation.value,
           child: Container(
             padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
               borderRadius: BorderRadius.circular(18),
-        border: Border.all(
+              border: Border.all(
                 color: theme.colorScheme.outline.withOpacity(0.15),
                 width: 1.5,
               ),
@@ -93,122 +104,137 @@ class _DuplicateModeSelectorState extends State<DuplicateModeSelector>
                   color: theme.colorScheme.primary.withOpacity(0.05),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
-        ),
+                ),
               ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            children: [
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
                     Container(
                       padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+                        color: theme.colorScheme.primaryContainer.withOpacity(
+                          0.3,
+                        ),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Icon(
-                Icons.tune_rounded,
+                        Icons.tune_rounded,
                         size: 18,
-                color: theme.colorScheme.primary,
-              ),
+                        color: containerColor,
+                      ),
                     ),
                     const SizedBox(width: 10),
-              Text(
-                l10n.duplicateMode,
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
+                    Text(
+                      l10n.duplicateMode,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
                         fontSize: 15,
                         color: theme.colorScheme.onSurface,
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
-          ),
                 const SizedBox(height: 14),
                 // Mode levels with improved design
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _buildModeChip(
-                theme,
-                _getShortModeLabel(
-                  l10n,
-                  DuplicateDetectionMode.lowSpeedHighAccuracy,
-                ),
-                Icons.verified_rounded,
-                DuplicateDetectionMode.lowSpeedHighAccuracy,
-                      _currentMode == DuplicateDetectionMode.lowSpeedHighAccuracy,
-                      () => _handleModeChange(DuplicateDetectionMode.lowSpeedHighAccuracy),
-              ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _buildModeChip(
+                      context,
+                      theme,
+                      _getShortModeLabel(
+                        l10n,
+                        DuplicateDetectionMode.lowSpeedHighAccuracy,
+                      ),
+                      Icons.verified_rounded,
+                      DuplicateDetectionMode.lowSpeedHighAccuracy,
+                      _currentMode ==
+                          DuplicateDetectionMode.lowSpeedHighAccuracy,
+                      () => _handleModeChange(
+                        DuplicateDetectionMode.lowSpeedHighAccuracy,
+                      ),
+                    ),
                     const SizedBox(width: 6),
-              _buildModeChip(
-                theme,
-                l10n.duplicateModeBalanced,
-                Icons.balance_rounded,
-                DuplicateDetectionMode.balanced,
+                    _buildModeChip(
+                      context,
+                      theme,
+                      l10n.duplicateModeBalanced,
+                      Icons.balance_rounded,
+                      DuplicateDetectionMode.balanced,
                       _currentMode == DuplicateDetectionMode.balanced,
                       () => _handleModeChange(DuplicateDetectionMode.balanced),
-              ),
+                    ),
                     const SizedBox(width: 6),
-              _buildModeChip(
-                theme,
-                _getShortModeLabel(
-                  l10n,
-                  DuplicateDetectionMode.highSpeedLowAccuracy,
+                    _buildModeChip(
+                      context,
+                      theme,
+                      _getShortModeLabel(
+                        l10n,
+                        DuplicateDetectionMode.highSpeedLowAccuracy,
+                      ),
+                      Icons.speed_rounded,
+                      DuplicateDetectionMode.highSpeedLowAccuracy,
+                      _currentMode ==
+                          DuplicateDetectionMode.highSpeedLowAccuracy,
+                      () => _handleModeChange(
+                        DuplicateDetectionMode.highSpeedLowAccuracy,
+                      ),
+                    ),
+                  ],
                 ),
-                Icons.speed_rounded,
-                DuplicateDetectionMode.highSpeedLowAccuracy,
-                      _currentMode == DuplicateDetectionMode.highSpeedLowAccuracy,
-                      () => _handleModeChange(DuplicateDetectionMode.highSpeedLowAccuracy),
-              ),
-            ],
-          ),
                 const SizedBox(height: 12),
-          // Mode descriptions with bullet points
+                // Mode descriptions with bullet points
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.2),
+                    color: theme.colorScheme.surfaceContainerHighest
+                        .withOpacity(0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ..._parseModeDescription(l10n.duplicateModeLevelsDescription).map(
-                (line) => Padding(
-                          padding: const EdgeInsets.only(bottom: 5),
-                  child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      ..._parseModeDescription(
+                        l10n.duplicateModeLevelsDescription,
+                      ).map(
+                        (line) => Padding(
+                          padding: const EdgeInsets.only(bottom: 5),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
                               Container(
                                 margin: const EdgeInsets.only(top: 6, right: 8),
                                 width: 4,
                                 height: 4,
                                 decoration: BoxDecoration(
-                                  color: theme.colorScheme.primary,
+                                  color: containerColor,
                                   shape: BoxShape.circle,
-                        ),
-                      ),
-                      Expanded(
-                        child: Text(
-                          line,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                                    color: theme.colorScheme.onSurface.withOpacity(0.75),
+                                ),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  line,
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: theme.colorScheme.onSurface
+                                        .withOpacity(0.75),
                                     height: 1.5,
                                     fontSize: 11.5,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
                     ],
                   ),
                 ),
-              ),
-            ],
-                  ),
-          ),
-        ],
-      ),
+              ],
+            ),
           ),
         );
       },
@@ -235,6 +261,7 @@ class _DuplicateModeSelectorState extends State<DuplicateModeSelector>
   }
 
   Widget _buildModeChip(
+    BuildContext context,
     ThemeData theme,
     String label,
     IconData icon,
@@ -242,6 +269,18 @@ class _DuplicateModeSelectorState extends State<DuplicateModeSelector>
     bool isSelected,
     VoidCallback onTap,
   ) {
+    // Premium durumunu kontrol et
+    final isPremiumAsync = context.watch<PremiumCubit>().state;
+    final isPremium = isPremiumAsync.maybeWhen(
+      data: (premium) => premium,
+      orElse: () => false,
+    );
+
+    // Bottom navigation bar'daki container rengiyle aynı
+    final containerColor = theme.colorScheme.onPrimaryContainer.withOpacity(
+      0.8,
+    );
+
     return Expanded(
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
@@ -259,19 +298,21 @@ class _DuplicateModeSelectorState extends State<DuplicateModeSelector>
               padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? theme.colorScheme.primaryContainer.withOpacity(0.6)
-                    : theme.colorScheme.surfaceContainerHighest.withOpacity(0.4),
+                    ? containerColor
+                    : theme.colorScheme.surfaceContainerHighest.withOpacity(
+                        0.4,
+                      ),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: isSelected
-                      ? theme.colorScheme.primary.withOpacity(0.5)
+                      ? containerColor
                       : theme.colorScheme.outline.withOpacity(0.15),
                   width: isSelected ? 2 : 1,
                 ),
                 boxShadow: isSelected
                     ? [
                         BoxShadow(
-                          color: theme.colorScheme.primary.withOpacity(0.2),
+                          color: containerColor.withOpacity(0.35),
                           blurRadius: 8,
                           offset: const Offset(0, 2),
                         ),
@@ -286,25 +327,28 @@ class _DuplicateModeSelectorState extends State<DuplicateModeSelector>
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? theme.colorScheme.primary.withOpacity(0.15)
-                          : theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                          ? AppColors.white.withOpacity(0.2)
+                          : theme.colorScheme.surfaceContainerHighest
+                                .withOpacity(0.5),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
-                    icon,
+                      icon,
                       size: 18,
-                    color: isSelected
-                          ? theme.colorScheme.onPrimaryContainer.withOpacity(0.8)
-                        : theme.colorScheme.onSurface.withOpacity(0.6),
+                      color: isSelected
+                          ? AppColors.white
+                          : containerColor.withOpacity(0.6),
                     ),
                   ),
                   const SizedBox(height: 6),
                   Text(
                     label.replaceAll('\n', ' '),
                     style: theme.textTheme.labelSmall?.copyWith(
-                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                      fontWeight: isSelected
+                          ? FontWeight.w700
+                          : FontWeight.w600,
                       color: isSelected
-                          ? theme.colorScheme.onPrimaryContainer.withOpacity(0.8)
+                          ? AppColors.white
                           : theme.colorScheme.onSurface.withOpacity(0.7),
                       fontSize: 10.5,
                       letterSpacing: 0.2,

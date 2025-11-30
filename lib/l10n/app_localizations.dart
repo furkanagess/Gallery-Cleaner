@@ -679,7 +679,7 @@ abstract class AppLocalizations {
   /// Privacy and security information text for permission request page
   ///
   /// In en, this message translates to:
-  /// **'🔒 Your Privacy Matters'**
+  /// **'Your Privacy Matters'**
   String get privacySecurityInfo;
 
   /// No description provided for @privacySecurityPoint1.

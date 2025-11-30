@@ -8,7 +8,6 @@ import '../../../core/models/blur_photo.dart';
 import '../../../core/services/media_library_service.dart';
 import '../../../core/services/preferences_service.dart';
 import '../../onboarding/application/permissions_controller.dart';
-import 'gallery_providers.dart';
 
 /// Blur detection state
 class BlurDetectionState {
@@ -94,12 +93,12 @@ class BlurDetectionCubit extends Cubit<BlurDetectionState> {
     required MediaLibraryService mediaLibraryService,
     required PermissionsCubit permissionsCubit,
     VoidCallback? onScanLimitChanged,
-  })  : _blurDetectionService = blurDetectionService,
-        _preferencesService = preferencesService,
-        _mediaLibraryService = mediaLibraryService,
-        _permissionsCubit = permissionsCubit,
-        _onScanLimitChanged = onScanLimitChanged,
-        super(const BlurDetectionState());
+  }) : _blurDetectionService = blurDetectionService,
+       _preferencesService = preferencesService,
+       _mediaLibraryService = mediaLibraryService,
+       _permissionsCubit = permissionsCubit,
+       _onScanLimitChanged = onScanLimitChanged,
+       super(const BlurDetectionState());
 
   final BlurDetectionService _blurDetectionService;
   final PreferencesService _preferencesService;
@@ -127,12 +126,7 @@ class BlurDetectionCubit extends Cubit<BlurDetectionState> {
 
     if (permission != GalleryPermissionStatus.authorized) {
       debugPrint('❌ [BlurDetection] İzin yok! Tarama durduruldu.');
-      emit(
-        state.copyWith(
-        error: 'Permission not granted',
-        isScanning: false,
-        ),
-      );
+      emit(state.copyWith(error: 'Permission not granted', isScanning: false));
       return;
     }
 
@@ -400,7 +394,7 @@ class BlurDetectionCubit extends Cubit<BlurDetectionState> {
       final deletedCount = deletedIds.length;
 
       debugPrint(
-        '✅ [BlurDetection] ${deletedCount}/${photoIds.length} fotoğraf başarıyla silindi',
+        '✅ [BlurDetection] $deletedCount/${photoIds.length} fotoğraf başarıyla silindi',
       );
 
       // Silinen fotoğrafları state'ten kaldır

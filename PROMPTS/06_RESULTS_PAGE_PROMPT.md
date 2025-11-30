@@ -297,3 +297,4 @@ Scaffold
 
 Results Page, tarama sonuçlarını görsel ve düzenli bir şekilde sunan, toplu silme işlemini kolaylaştıran ve kullanıcıyı bilgilendiren bir ekrandır. Tüm işlemler güvenli ve onaylı olmalıdır.
 
+

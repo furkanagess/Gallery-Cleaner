@@ -20,28 +20,33 @@ class PermissionRequestPage extends StatefulWidget {
 }
 
 class _PermissionRequestPageState extends State<PermissionRequestPage> {
-  bool _hasRequestedPermission = false;
   StreamSubscription<GalleryPermissionStatus>? _permissionSubscription;
   GalleryPermissionStatus? _lastPermission;
 
   @override
   void initState() {
     super.initState();
-    // İzin durumunu kontrol et ve eğer izin verilmemişse otomatik olarak izin iste
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    // Sayfa yüklendiğinde otomatik olarak izin iste
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // İzin durumunu kontrol et
       final permission = context.read<PermissionsCubit>().state;
       _lastPermission = permission;
-      if (permission != GalleryPermissionStatus.authorized) {
-        // Onboarding bittikten sonra 500ms sonra otomatik olarak izin iste
-        Future.delayed(const Duration(milliseconds: 500), () {
-          if (mounted && !_hasRequestedPermission) {
-            _requestPermission();
-          }
-        });
+
+      if (permission == GalleryPermissionStatus.authorized) {
+        // İzin zaten verilmişse direkt navigate et
+        _waitForPhotosAndNavigate(context);
+      } else {
+        // İzin verilmemişse otomatik olarak sistem izin dialogunu aç
+        // Kısa bir gecikme ekle ki sayfa tam olarak yüklensin
+        await Future.delayed(const Duration(milliseconds: 500));
+        if (mounted) {
+          await _requestPermission();
+        }
       }
     });
-    _permissionSubscription =
-        context.read<PermissionsCubit>().stream.listen((next) {
+    _permissionSubscription = context.read<PermissionsCubit>().stream.listen((
+      next,
+    ) {
       final previous = _lastPermission;
       _lastPermission = next;
       if (next == GalleryPermissionStatus.authorized &&
@@ -59,33 +64,34 @@ class _PermissionRequestPageState extends State<PermissionRequestPage> {
   }
 
   Future<void> _requestPermission() async {
-    if (_hasRequestedPermission) return;
-
-    // İzin durumunu tekrar kontrol et
+    // İzin durumunu kontrol et (sadece authorized ise kontrol et)
     final currentPermission = context.read<PermissionsCubit>().state;
+
     if (currentPermission == GalleryPermissionStatus.authorized) {
-      // İzin zaten verilmişse işlem yapma
+      // İzin zaten verilmişse swipe page'e yönlendir
+      if (mounted) {
+        _waitForPhotosAndNavigate(context);
+      }
       return;
     }
 
-    _hasRequestedPermission = true;
+    // Butona tıklandığında direkt sistem izin dialogunu aç
+    // İzin durumunu kontrol etmeden direkt PhotoManager'a istek gönder
+    // Bu, sistem izin dialogunun açılmasını sağlar
+    await context.read<PermissionsCubit>().request();
 
-    // OS'un native izin dialog'unu göster
-    final ok = await context.read<PermissionsCubit>().request();
-
-    if (!ok && mounted) {
-      // İzin reddedildiyse tekrar deneme için flag'i sıfırla
-      _hasRequestedPermission = false;
-    }
+    // İzin verildiyse otomatik olarak navigate edilecek (stream listener sayesinde)
   }
 
   /// İzin verildikten sonra fotoğrafların yüklendiğinden emin ol ve swipe page'e geçiş yap
   Future<void> _waitForPhotosAndNavigate(BuildContext context) async {
-    debugPrint('🔄 [PermissionRequestPage] İzin verildi, fotoğrafların yüklenmesi bekleniyor...');
+    debugPrint(
+      '🔄 [PermissionRequestPage] İzin verildi, fotoğrafların yüklenmesi bekleniyor...',
+    );
 
     // İlk gecikme - PhotoManager'ın hazır olması için
-    final initialDelay = Platform.isIOS 
-        ? const Duration(milliseconds: 800) 
+    final initialDelay = Platform.isIOS
+        ? const Duration(milliseconds: 800)
         : const Duration(milliseconds: 300);
     await Future.delayed(initialDelay);
 
@@ -103,23 +109,31 @@ class _PermissionRequestPageState extends State<PermissionRequestPage> {
       );
 
       if (albums.isNotEmpty) {
-        debugPrint('✅ [PermissionRequestPage] Album listesi yüklendi: ${albums.length} album');
+        debugPrint(
+          '✅ [PermissionRequestPage] Album listesi yüklendi: ${albums.length} album',
+        );
         albumsReady = true;
         break;
       }
 
       // Hala yükleniyorsa veya boşsa bekle
       if (albumsAsync.isLoading) {
-        debugPrint('⏳ [PermissionRequestPage] Album listesi yükleniyor... (attempt ${attempt + 1})');
+        debugPrint(
+          '⏳ [PermissionRequestPage] Album listesi yükleniyor... (attempt ${attempt + 1})',
+        );
       } else {
-        debugPrint('⚠️ [PermissionRequestPage] Album listesi boş, yeniden deniyor... (attempt ${attempt + 1})');
+        debugPrint(
+          '⚠️ [PermissionRequestPage] Album listesi boş, yeniden deniyor... (attempt ${attempt + 1})',
+        );
       }
 
       await Future.delayed(const Duration(milliseconds: 300));
     }
 
     if (!albumsReady) {
-      debugPrint('⚠️ [PermissionRequestPage] Album listesi yüklenemedi, yine de swipe page\'e geçiliyor...');
+      debugPrint(
+        '⚠️ [PermissionRequestPage] Album listesi yüklenemedi, yine de swipe page\'e geçiliyor...',
+      );
       // Yine de swipe page'e geç (kullanıcı deneyimi için)
       if (mounted && context.mounted) {
         context.go('/swipe');
@@ -139,27 +153,37 @@ class _PermissionRequestPageState extends State<PermissionRequestPage> {
       );
 
       if (assets.isNotEmpty) {
-        debugPrint('✅ [PermissionRequestPage] Fotoğraflar yüklendi: ${assets.length} fotoğraf');
+        debugPrint(
+          '✅ [PermissionRequestPage] Fotoğraflar yüklendi: ${assets.length} fotoğraf',
+        );
         assetsReady = true;
         break;
       }
 
       // Hala yükleniyorsa bekle
       if (assetsAsync.isLoading) {
-        debugPrint('⏳ [PermissionRequestPage] Fotoğraflar yükleniyor... (attempt ${attempt + 1})');
+        debugPrint(
+          '⏳ [PermissionRequestPage] Fotoğraflar yükleniyor... (attempt ${attempt + 1})',
+        );
       } else if (assetsAsync.hasError) {
-        debugPrint('⚠️ [PermissionRequestPage] Fotoğraf yükleme hatası, yeniden deniyor... (attempt ${attempt + 1})');
+        debugPrint(
+          '⚠️ [PermissionRequestPage] Fotoğraf yükleme hatası, yeniden deniyor... (attempt ${attempt + 1})',
+        );
         // Hata varsa reload'u tetikle
         context.read<GalleryPagingCubit>().reload();
       } else {
-        debugPrint('⚠️ [PermissionRequestPage] Fotoğraflar boş, yeniden deniyor... (attempt ${attempt + 1})');
+        debugPrint(
+          '⚠️ [PermissionRequestPage] Fotoğraflar boş, yeniden deniyor... (attempt ${attempt + 1})',
+        );
       }
 
       await Future.delayed(const Duration(milliseconds: 300));
     }
 
     if (!assetsReady) {
-      debugPrint('⚠️ [PermissionRequestPage] Fotoğraflar yüklenemedi, yine de swipe page\'e geçiliyor...');
+      debugPrint(
+        '⚠️ [PermissionRequestPage] Fotoğraflar yüklenemedi, yine de swipe page\'e geçiliyor...',
+      );
       // Yine de swipe page'e geç (kullanıcı deneyimi için)
       if (mounted && context.mounted) {
         context.go('/swipe');
@@ -168,7 +192,9 @@ class _PermissionRequestPageState extends State<PermissionRequestPage> {
     }
 
     // Her şey hazır, swipe page'e geç
-    debugPrint('✅ [PermissionRequestPage] Fotoğraflar hazır, swipe page\'e geçiliyor...');
+    debugPrint(
+      '✅ [PermissionRequestPage] Fotoğraflar hazır, swipe page\'e geçiliyor...',
+    );
     if (mounted && context.mounted) {
       context.go('/swipe');
     }
@@ -240,7 +266,16 @@ class _PermissionRequestPageState extends State<PermissionRequestPage> {
               width: 220,
               height: 220,
               decoration: BoxDecoration(
-                color: theme.colorScheme.primary.withOpacity(0.10),
+                color: (() {
+                  final isPremiumAsync = context.watch<PremiumCubit>().state;
+                  final isPremium = isPremiumAsync.maybeWhen(
+                    data: (premium) => premium,
+                    orElse: () => false,
+                  );
+                  final containerColor = theme.colorScheme.onPrimaryContainer
+                      .withOpacity(0.8);
+                  return containerColor.withOpacity(0.10);
+                })(),
                 shape: BoxShape.circle,
               ),
             ),
@@ -263,10 +298,25 @@ class _PermissionRequestPageState extends State<PermissionRequestPage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    Icons.photo_library_outlined,
-                    size: 120,
-                    color: theme.colorScheme.primary,
+                  Builder(
+                    builder: (iconContext) {
+                      final isPremiumAsync = iconContext
+                          .watch<PremiumCubit>()
+                          .state;
+                      final isPremium = isPremiumAsync.maybeWhen(
+                        data: (premium) => premium,
+                        orElse: () => false,
+                      );
+                      final containerColor = theme
+                          .colorScheme
+                          .onPrimaryContainer
+                          .withOpacity(0.8);
+                      return Icon(
+                        Icons.photo_library_outlined,
+                        size: 120,
+                        color: containerColor,
+                      );
+                    },
                   ),
                   const SizedBox(height: 32),
                   Builder(
@@ -305,10 +355,36 @@ class _PermissionRequestPageState extends State<PermissionRequestPage> {
                         constraints: const BoxConstraints(maxWidth: 400),
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
-                          color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+                          color: (() {
+                            final isPremiumAsync = context
+                                .watch<PremiumCubit>()
+                                .state;
+                            final isPremium = isPremiumAsync.maybeWhen(
+                              data: (premium) => premium,
+                              orElse: () => false,
+                            );
+                            final containerColor = theme
+                                .colorScheme
+                                .onPrimaryContainer
+                                .withOpacity(0.8);
+                            return containerColor.withOpacity(0.3);
+                          })(),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: theme.colorScheme.primary.withOpacity(0.2),
+                            color: (() {
+                              final isPremiumAsync = context
+                                  .watch<PremiumCubit>()
+                                  .state;
+                              final isPremium = isPremiumAsync.maybeWhen(
+                                data: (premium) => premium,
+                                orElse: () => false,
+                              );
+                              final containerColor = theme
+                                  .colorScheme
+                                  .onPrimaryContainer
+                                  .withOpacity(0.8);
+                              return containerColor.withOpacity(0.2);
+                            })(),
                             width: 1.5,
                           ),
                         ),
@@ -317,19 +393,36 @@ class _PermissionRequestPageState extends State<PermissionRequestPage> {
                           children: [
                             Row(
                               children: [
-                                Icon(
-                                  Icons.security,
-                                  color: theme.colorScheme.primary,
-                                  size: 24,
+                                Builder(
+                                  builder: (iconContext) {
+                                    final isPremiumAsync = iconContext
+                                        .watch<PremiumCubit>()
+                                        .state;
+                                    final isPremium = isPremiumAsync.maybeWhen(
+                                      data: (premium) => premium,
+                                      orElse: () => false,
+                                    );
+                                    final containerColor = theme
+                                        .colorScheme
+                                        .onPrimaryContainer
+                                        .withOpacity(0.8);
+                                    return Icon(
+                                      Icons.security,
+                                      color: containerColor,
+                                      size: 24,
+                                    );
+                                  },
                                 ),
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Text(
                                     l10n.privacySecurityInfo,
-                                    style: theme.textTheme.titleMedium?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                      color: theme.colorScheme.onSurface.withOpacity(0.9),
-                                    ),
+                                    style: theme.textTheme.titleMedium
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                          color: theme.colorScheme.onSurface
+                                              .withOpacity(0.9),
+                                        ),
                                   ),
                                 ),
                               ],
@@ -362,15 +455,37 @@ class _PermissionRequestPageState extends State<PermissionRequestPage> {
                         constraints: const BoxConstraints(maxWidth: 400),
                         child: SizedBox(
                           width: double.infinity,
-                          child: FilledButton.icon(
-                            icon: const Icon(Icons.lock_open),
-                            label: Text(l10n.allowAccess),
-                            style: FilledButton.styleFrom(
-                              backgroundColor: AppColors.primary,
-                              foregroundColor: AppColors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                            ),
-                            onPressed: _requestPermission,
+                          child: Builder(
+                            builder: (buttonContext) {
+                              final isPremiumAsync = buttonContext
+                                  .watch<PremiumCubit>()
+                                  .state;
+                              final isPremium = isPremiumAsync.maybeWhen(
+                                data: (premium) => premium,
+                                orElse: () => false,
+                              );
+                              final containerColor = theme
+                                  .colorScheme
+                                  .onPrimaryContainer
+                                  .withOpacity(0.8);
+
+                              return FilledButton.icon(
+                                icon: const Icon(Icons.lock_open),
+                                label: Text(l10n.allowAccess),
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: containerColor,
+                                  foregroundColor: AppColors.white,
+                                  side: BorderSide(
+                                    color: containerColor,
+                                    width: 1.5,
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 16,
+                                  ),
+                                ),
+                                onPressed: _requestPermission,
+                              );
+                            },
                           ),
                         ),
                       );
@@ -380,14 +495,30 @@ class _PermissionRequestPageState extends State<PermissionRequestPage> {
                   Builder(
                     builder: (ctx) {
                       final l10n = AppLocalizations.of(ctx)!;
+                      final isPremiumAsync = ctx.watch<PremiumCubit>().state;
+                      final isPremium = isPremiumAsync.maybeWhen(
+                        data: (premium) => premium,
+                        orElse: () => false,
+                      );
+                      final containerColor = theme
+                          .colorScheme
+                          .onPrimaryContainer
+                          .withOpacity(0.8);
+
                       return ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 400),
                         child: SizedBox(
                           width: double.infinity,
                           child: TextButton(
-                            onPressed: () => context
-                                .read<PermissionsCubit>()
-                                .openSettings(),
+                            onPressed: () =>
+                                context.read<PermissionsCubit>().openSettings(),
+                            style: TextButton.styleFrom(
+                              foregroundColor: containerColor,
+                              side: BorderSide(
+                                color: containerColor.withOpacity(0.6),
+                                width: 1.5,
+                              ),
+                            ),
                             child: Text(l10n.openSettings),
                           ),
                         ),
@@ -405,10 +536,7 @@ class _PermissionRequestPageState extends State<PermissionRequestPage> {
 }
 
 class _PrivacyBulletPoint extends StatelessWidget {
-  const _PrivacyBulletPoint({
-    required this.text,
-    required this.theme,
-  });
+  const _PrivacyBulletPoint({required this.text, required this.theme});
 
   final String text;
   final ThemeData theme;
@@ -424,7 +552,16 @@ class _PrivacyBulletPoint extends StatelessWidget {
             width: 6,
             height: 6,
             decoration: BoxDecoration(
-              color: theme.colorScheme.primary,
+              color: (() {
+                final isPremiumAsync = context.watch<PremiumCubit>().state;
+                final isPremium = isPremiumAsync.maybeWhen(
+                  data: (premium) => premium,
+                  orElse: () => false,
+                );
+                final containerColor = theme.colorScheme.onPrimaryContainer
+                    .withOpacity(0.8);
+                return containerColor;
+              })(),
               shape: BoxShape.circle,
             ),
           ),
@@ -443,4 +580,3 @@ class _PrivacyBulletPoint extends StatelessWidget {
     );
   }
 }
-

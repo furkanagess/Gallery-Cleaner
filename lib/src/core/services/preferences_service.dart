@@ -20,7 +20,8 @@ class PreferencesService {
   );
 
   // Migration flag key
-  static const String _migrationCompletedKey = 'secure_storage_migration_completed';
+  static const String _migrationCompletedKey =
+      'secure_storage_migration_completed';
 
   static const String _onboardingCompletedKey = 'onboarding_completed';
   static const String _firstPaywallShownKey = 'first_paywall_shown';
@@ -36,9 +37,9 @@ class PreferencesService {
   static const String _scanLimitKey = 'scan_limit';
   static const String _scanLimitLastResetKey = 'scan_limit_last_reset';
   static const String _duplicateScanLimitKey = 'duplicate_scan_limit';
-  static const String _duplicateScanLimitLastResetKey = 'duplicate_scan_limit_last_reset';
+  static const String _duplicateScanLimitLastResetKey =
+      'duplicate_scan_limit_last_reset';
   static const String _blurScanLimitKey = 'blur_scan_limit';
-  static const String _blurScanLimitLastResetKey = 'blur_scan_limit_last_reset';
   static const String _swipeIndexKey = 'swipe_index';
   static const String _swipeAlbumIdKey = 'swipe_album_id';
   static const String _autoAnalyzeOnLaunchKey = 'auto_analyze_on_launch';
@@ -47,8 +48,10 @@ class PreferencesService {
   static const String _deleteCountForPaywallKey = 'delete_count_for_paywall';
   static const int _defaultDeleteLimit = 100;
   static const int _defaultScanLimit = 1000;
-  static const int _premiumDialogThreshold = 3; // 3 reklam sonrası premium dialog göster
-  static const int _paywallAfterDeleteThreshold = 3; // 3 silme sonrası paywall dialog göster
+  static const int _premiumDialogThreshold =
+      3; // 3 reklam sonrası premium dialog göster
+  static const int _paywallAfterDeleteThreshold =
+      3; // 3 silme sonrası paywall dialog göster
 
   /// Secure storage'dan integer değer oku
   Future<int?> _getSecureInt(String key) async {
@@ -57,7 +60,9 @@ class PreferencesService {
       if (value == null) return null;
       return int.tryParse(value);
     } catch (e) {
-      debugPrint('❌ [PreferencesService] Secure storage okuma hatası ($key): $e');
+      debugPrint(
+        '❌ [PreferencesService] Secure storage okuma hatası ($key): $e',
+      );
       return null;
     }
   }
@@ -66,9 +71,13 @@ class PreferencesService {
   Future<void> _setSecureInt(String key, int value) async {
     try {
       await _secureStorage.write(key: key, value: value.toString());
-      debugPrint('💾 [PreferencesService] Secure storage\'a kaydedildi ($key): $value');
+      debugPrint(
+        '💾 [PreferencesService] Secure storage\'a kaydedildi ($key): $value',
+      );
     } catch (e) {
-      debugPrint('❌ [PreferencesService] Secure storage yazma hatası ($key): $e');
+      debugPrint(
+        '❌ [PreferencesService] Secure storage yazma hatası ($key): $e',
+      );
     }
   }
 
@@ -77,7 +86,9 @@ class PreferencesService {
     try {
       return await _secureStorage.read(key: key);
     } catch (e) {
-      debugPrint('❌ [PreferencesService] Secure storage okuma hatası ($key): $e');
+      debugPrint(
+        '❌ [PreferencesService] Secure storage okuma hatası ($key): $e',
+      );
       return null;
     }
   }
@@ -86,9 +97,13 @@ class PreferencesService {
   Future<void> _setSecureString(String key, String value) async {
     try {
       await _secureStorage.write(key: key, value: value);
-      debugPrint('💾 [PreferencesService] Secure storage\'a kaydedildi ($key): $value');
+      debugPrint(
+        '💾 [PreferencesService] Secure storage\'a kaydedildi ($key): $value',
+      );
     } catch (e) {
-      debugPrint('❌ [PreferencesService] Secure storage yazma hatası ($key): $e');
+      debugPrint(
+        '❌ [PreferencesService] Secure storage yazma hatası ($key): $e',
+      );
     }
   }
 
@@ -99,7 +114,9 @@ class PreferencesService {
       if (value == null) return null;
       return value == 'true';
     } catch (e) {
-      debugPrint('❌ [PreferencesService] Secure storage okuma hatası ($key): $e');
+      debugPrint(
+        '❌ [PreferencesService] Secure storage okuma hatası ($key): $e',
+      );
       return null;
     }
   }
@@ -108,9 +125,13 @@ class PreferencesService {
   Future<void> _setSecureBool(String key, bool value) async {
     try {
       await _secureStorage.write(key: key, value: value.toString());
-      debugPrint('💾 [PreferencesService] Secure storage\'a kaydedildi ($key): $value');
+      debugPrint(
+        '💾 [PreferencesService] Secure storage\'a kaydedildi ($key): $value',
+      );
     } catch (e) {
-      debugPrint('❌ [PreferencesService] Secure storage yazma hatası ($key): $e');
+      debugPrint(
+        '❌ [PreferencesService] Secure storage yazma hatası ($key): $e',
+      );
     }
   }
 
@@ -119,13 +140,15 @@ class PreferencesService {
     try {
       final prefs = await SharedPreferences.getInstance();
       final migrationCompleted = prefs.getBool(_migrationCompletedKey) ?? false;
-      
+
       if (migrationCompleted) {
         debugPrint('💾 [PreferencesService] Migration zaten tamamlanmış');
         return;
       }
 
-      debugPrint('💾 [PreferencesService] SharedPreferences\'dan secure storage\'a migration başlıyor...');
+      debugPrint(
+        '💾 [PreferencesService] SharedPreferences\'dan secure storage\'a migration başlıyor...',
+      );
 
       // Delete limit'i migrate et
       final deleteLimit = prefs.getInt(_deleteLimitKey);
@@ -244,7 +267,9 @@ class PreferencesService {
       }
       final json = jsonDecode(jsonString) as Map<String, dynamic>;
       final stats = GalleryStats.fromJson(json);
-      debugPrint('💾 [PreferencesService] GalleryStats cache\'den okundu: ${stats.albumCount} albüm, ${stats.mediaCount} medya');
+      debugPrint(
+        '💾 [PreferencesService] GalleryStats cache\'den okundu: ${stats.albumCount} albüm, ${stats.mediaCount} medya',
+      );
       return stats;
     } catch (e) {
       debugPrint('❌ [PreferencesService] GalleryStats cache okunamadı: $e');
@@ -271,7 +296,9 @@ class PreferencesService {
       await prefs.setString(_previousGalleryStatsKey, json);
       debugPrint('💾 [PreferencesService] Önceki GalleryStats kaydedildi');
     } catch (e) {
-      debugPrint('❌ [PreferencesService] Önceki GalleryStats kaydedilemedi: $e');
+      debugPrint(
+        '❌ [PreferencesService] Önceki GalleryStats kaydedilemedi: $e',
+      );
     }
   }
 
@@ -308,24 +335,24 @@ class PreferencesService {
   Future<int> getDeleteLimit() async {
     // İlk çalıştırmada migration yap
     await _migrateToSecureStorage();
-    
+
     final premiumStatus = await isPremium();
     if (premiumStatus) {
       return 999999999; // Premium için sınırsız
     }
-    
+
     final lastReset = await _getSecureString(_deleteLimitLastResetKey);
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final todayString = today.toIso8601String().split('T')[0];
-    
+
     // Eğer bugün reset edilmemişse, limiti sıfırla
     if (lastReset == null || lastReset != todayString) {
       await _setSecureInt(_deleteLimitKey, _defaultDeleteLimit);
       await _setSecureString(_deleteLimitLastResetKey, todayString);
       return _defaultDeleteLimit;
     }
-    
+
     final limit = await _getSecureInt(_deleteLimitKey);
     return limit ?? _defaultDeleteLimit;
   }
@@ -344,18 +371,18 @@ class PreferencesService {
     if (premiumStatus) {
       return 999999999; // Premium kullanıcılar için limit düşürme yok
     }
-    
+
     // İlk çalıştırmada migration yap
     await _migrateToSecureStorage();
-    
+
     // Günlük reset kontrolü yapmadan direkt secure storage'dan oku
     final lastReset = await _getSecureString(_deleteLimitLastResetKey);
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final todayString = today.toIso8601String().split('T')[0];
-    
+
     int currentLimit;
-    
+
     // Eğer bugün reset edilmemişse, limiti sıfırla
     if (lastReset == null || lastReset != todayString) {
       currentLimit = _defaultDeleteLimit;
@@ -366,29 +393,33 @@ class PreferencesService {
       final limit = await _getSecureInt(_deleteLimitKey);
       currentLimit = limit ?? _defaultDeleteLimit;
     }
-    
+
     final newLimit = (currentLimit - amount).clamp(0, 999999999);
-    
+
     // Secure storage'a yaz
     await _setSecureInt(_deleteLimitKey, newLimit);
     // SharedPreferences'a da yaz (backward compatibility)
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_deleteLimitKey, newLimit);
-    
+
     // Yazma işleminin tamamlandığından emin ol
     await Future.delayed(const Duration(milliseconds: 10));
-    
-    debugPrint('💾 [PreferencesService] Delete limit azaltıldı: $currentLimit -> $newLimit (azaltılan: $amount)');
-    
+
+    debugPrint(
+      '💾 [PreferencesService] Delete limit azaltıldı: $currentLimit -> $newLimit (azaltılan: $amount)',
+    );
+
     // Doğrulama: Yazdığımız değeri okuyarak kontrol et
     final verifiedLimit = await _getSecureInt(_deleteLimitKey);
     if (verifiedLimit != newLimit) {
-      debugPrint('⚠️ [PreferencesService] UYARI: Yazılan değer doğrulanamadı! Beklenen: $newLimit, Okunan: $verifiedLimit');
+      debugPrint(
+        '⚠️ [PreferencesService] UYARI: Yazılan değer doğrulanamadı! Beklenen: $newLimit, Okunan: $verifiedLimit',
+      );
       // Tekrar dene
       await _setSecureInt(_deleteLimitKey, newLimit);
       await prefs.setInt(_deleteLimitKey, newLimit);
     }
-    
+
     return newLimit;
   }
 
@@ -397,7 +428,9 @@ class PreferencesService {
     final currentLimit = await getDeleteLimit();
     final newLimit = currentLimit + amount;
     await setDeleteLimit(newLimit);
-    debugPrint('💾 [PreferencesService] Delete limit artırıldı: $currentLimit -> $newLimit');
+    debugPrint(
+      '💾 [PreferencesService] Delete limit artırıldı: $currentLimit -> $newLimit',
+    );
     return newLimit;
   }
 
@@ -405,7 +438,7 @@ class PreferencesService {
   Future<bool> isPremium() async {
     // İlk çalıştırmada migration yap
     await _migrateToSecureStorage();
-    
+
     final premiumStatus = await _getSecureBool(_isPremiumKey);
     return premiumStatus ?? false;
   }
@@ -454,29 +487,34 @@ class PreferencesService {
   Future<int> getScanLimit() async {
     // İlk çalıştırmada migration yap
     await _migrateToSecureStorage();
-    
+
     final premiumStatus = await isPremium();
     if (premiumStatus) {
       return 999999999; // Premium için sınırsız
     }
-    
+
     final lastReset = await _getSecureString(_scanLimitLastResetKey);
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final todayString = today.toIso8601String().split('T')[0];
-    
+
     // Eğer bugün reset edilmemişse, limiti kontrol et
     if (lastReset == null || lastReset != todayString) {
-      final currentLimit = await _getSecureInt(_scanLimitKey) ?? _defaultScanLimit;
+      final currentLimit =
+          await _getSecureInt(_scanLimitKey) ?? _defaultScanLimit;
       // Günlük reset: Eğer limit 1000'den azsa, 1000'e çıkar
       // Reklam izleyerek kazanılan limit'ler (1000'den fazla) korunur
-      final newLimit = currentLimit < _defaultScanLimit ? _defaultScanLimit : currentLimit;
+      final newLimit = currentLimit < _defaultScanLimit
+          ? _defaultScanLimit
+          : currentLimit;
       await _setSecureInt(_scanLimitKey, newLimit);
       await _setSecureString(_scanLimitLastResetKey, todayString);
-      debugPrint('💾 [PreferencesService] Günlük reset: $currentLimit -> $newLimit');
+      debugPrint(
+        '💾 [PreferencesService] Günlük reset: $currentLimit -> $newLimit',
+      );
       return newLimit;
     }
-    
+
     final limit = await _getSecureInt(_scanLimitKey);
     return limit ?? _defaultScanLimit;
   }
@@ -495,11 +533,13 @@ class PreferencesService {
     if (premiumStatus) {
       return 999999999; // Premium kullanıcılar için limit düşürme yok
     }
-    
+
     final currentLimit = await getScanLimit();
     final newLimit = (currentLimit - amount).clamp(0, _defaultScanLimit);
     await setScanLimit(newLimit);
-    debugPrint('💾 [PreferencesService] Scan limit azaltıldı: $currentLimit -> $newLimit (kullanılan: $amount)');
+    debugPrint(
+      '💾 [PreferencesService] Scan limit azaltıldı: $currentLimit -> $newLimit (kullanılan: $amount)',
+    );
     return newLimit;
   }
 
@@ -509,39 +549,46 @@ class PreferencesService {
     if (premiumStatus) {
       return 999999999; // Premium kullanıcılar için limit artırma yok (zaten sınırsız)
     }
-    
+
     final currentLimit = await getScanLimit();
     // Reklam izleyerek limit artırılabilir (günlük reset mekanizması sadece 1000'e sıfırlar)
     final newLimit = currentLimit + amount;
     await setScanLimit(newLimit);
-    debugPrint('💾 [PreferencesService] Scan limit artırıldı: $currentLimit -> $newLimit (kazanılan: $amount)');
+    debugPrint(
+      '💾 [PreferencesService] Scan limit artırıldı: $currentLimit -> $newLimit (kazanılan: $amount)',
+    );
     return newLimit;
   }
 
   /// Duplicate scan limit'ini al (günlük reset kontrolü ile)
   Future<int> getDuplicateScanLimit() async {
     await _migrateToSecureStorage();
-    
+
     final premiumStatus = await isPremium();
     if (premiumStatus) {
       return 999999999; // Premium için sınırsız
     }
-    
+
     final lastReset = await _getSecureString(_duplicateScanLimitLastResetKey);
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final todayString = today.toIso8601String().split('T')[0];
-    
+
     // Eğer bugün reset edilmemişse, limiti kontrol et
     if (lastReset == null || lastReset != todayString) {
-      final currentLimit = await _getSecureInt(_duplicateScanLimitKey) ?? _defaultScanLimit;
-      final newLimit = currentLimit < _defaultScanLimit ? _defaultScanLimit : currentLimit;
+      final currentLimit =
+          await _getSecureInt(_duplicateScanLimitKey) ?? _defaultScanLimit;
+      final newLimit = currentLimit < _defaultScanLimit
+          ? _defaultScanLimit
+          : currentLimit;
       await _setSecureInt(_duplicateScanLimitKey, newLimit);
       await _setSecureString(_duplicateScanLimitLastResetKey, todayString);
-      debugPrint('💾 [PreferencesService] Duplicate scan limit günlük reset: $currentLimit -> $newLimit');
+      debugPrint(
+        '💾 [PreferencesService] Duplicate scan limit günlük reset: $currentLimit -> $newLimit',
+      );
       return newLimit;
     }
-    
+
     final limit = await _getSecureInt(_duplicateScanLimitKey);
     return limit ?? _defaultScanLimit;
   }
@@ -559,11 +606,13 @@ class PreferencesService {
     if (premiumStatus) {
       return 999999999;
     }
-    
+
     final currentLimit = await getDuplicateScanLimit();
     final newLimit = (currentLimit - amount).clamp(0, 999999999);
     await setDuplicateScanLimit(newLimit);
-    debugPrint('💾 [PreferencesService] Duplicate scan limit azaltıldı: $currentLimit -> $newLimit (kullanılan: $amount)');
+    debugPrint(
+      '💾 [PreferencesService] Duplicate scan limit azaltıldı: $currentLimit -> $newLimit (kullanılan: $amount)',
+    );
     return newLimit;
   }
 
@@ -573,23 +622,25 @@ class PreferencesService {
     if (premiumStatus) {
       return 999999999;
     }
-    
+
     final currentLimit = await getDuplicateScanLimit();
     final newLimit = currentLimit + amount;
     await setDuplicateScanLimit(newLimit);
-    debugPrint('💾 [PreferencesService] Duplicate scan limit artırıldı: $currentLimit -> $newLimit (kazanılan: $amount)');
+    debugPrint(
+      '💾 [PreferencesService] Duplicate scan limit artırıldı: $currentLimit -> $newLimit (kazanılan: $amount)',
+    );
     return newLimit;
   }
 
   /// Blur scan limit'ini al
   Future<int> getBlurScanLimit() async {
     await _migrateToSecureStorage();
-    
+
     final premiumStatus = await isPremium();
     if (premiumStatus) {
       return 999999999; // Premium için sınırsız
     }
-    
+
     // Blur scan limit, sadece ilk kurulumda set edilir
     final limit = await _getSecureInt(_blurScanLimitKey);
     if (limit == null) {
@@ -597,10 +648,12 @@ class PreferencesService {
       await _setSecureInt(_blurScanLimitKey, _defaultScanLimit);
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt(_blurScanLimitKey, _defaultScanLimit);
-      debugPrint('💾 [PreferencesService] Blur scan limit ilk kurulum: $_defaultScanLimit');
+      debugPrint(
+        '💾 [PreferencesService] Blur scan limit ilk kurulum: $_defaultScanLimit',
+      );
       return _defaultScanLimit;
     }
-    
+
     return limit;
   }
 
@@ -617,11 +670,13 @@ class PreferencesService {
     if (premiumStatus) {
       return 999999999;
     }
-    
+
     final currentLimit = await getBlurScanLimit();
     final newLimit = (currentLimit - amount).clamp(0, 999999999);
     await setBlurScanLimit(newLimit);
-    debugPrint('💾 [PreferencesService] Blur scan limit azaltıldı: $currentLimit -> $newLimit (kullanılan: $amount)');
+    debugPrint(
+      '💾 [PreferencesService] Blur scan limit azaltıldı: $currentLimit -> $newLimit (kullanılan: $amount)',
+    );
     return newLimit;
   }
 
@@ -631,11 +686,13 @@ class PreferencesService {
     if (premiumStatus) {
       return 999999999;
     }
-    
+
     final currentLimit = await getBlurScanLimit();
     final newLimit = currentLimit + amount;
     await setBlurScanLimit(newLimit);
-    debugPrint('💾 [PreferencesService] Blur scan limit artırıldı: $currentLimit -> $newLimit (kazanılan: $amount)');
+    debugPrint(
+      '💾 [PreferencesService] Blur scan limit artırıldı: $currentLimit -> $newLimit (kazanılan: $amount)',
+    );
     return newLimit;
   }
 
@@ -649,7 +706,9 @@ class PreferencesService {
       } else {
         await prefs.remove(_swipeAlbumIdKey);
       }
-      debugPrint('💾 [PreferencesService] Swipe index kaydedildi: $index (album: $albumId)');
+      debugPrint(
+        '💾 [PreferencesService] Swipe index kaydedildi: $index (album: $albumId)',
+      );
     } catch (e) {
       debugPrint('❌ [PreferencesService] Swipe index kaydedilemedi: $e');
     }
@@ -660,17 +719,21 @@ class PreferencesService {
     try {
       final prefs = await SharedPreferences.getInstance();
       final savedAlbumId = prefs.getString(_swipeAlbumIdKey);
-      
+
       // Eğer album ID eşleşmiyorsa, index'i sıfırla
       if (albumId != null && savedAlbumId != albumId) {
-        debugPrint('💾 [PreferencesService] Album ID eşleşmiyor, swipe index sıfırlanıyor');
+        debugPrint(
+          '💾 [PreferencesService] Album ID eşleşmiyor, swipe index sıfırlanıyor',
+        );
         await prefs.remove(_swipeIndexKey);
         await prefs.remove(_swipeAlbumIdKey);
         return null;
       }
-      
+
       final index = prefs.getInt(_swipeIndexKey);
-      debugPrint('💾 [PreferencesService] Swipe index okundu: $index (album: $albumId)');
+      debugPrint(
+        '💾 [PreferencesService] Swipe index okundu: $index (album: $albumId)',
+      );
       return index;
     } catch (e) {
       debugPrint('❌ [PreferencesService] Swipe index okunamadı: $e');
@@ -702,13 +765,17 @@ class PreferencesService {
     final currentCount = await getInterstitialAdCount();
     final newCount = currentCount + 1;
     await _setSecureInt(_interstitialAdCountKey, newCount);
-    debugPrint('💾 [PreferencesService] Interstisial ad sayısı artırıldı: $currentCount -> $newCount');
-    
+    debugPrint(
+      '💾 [PreferencesService] Interstisial ad sayısı artırıldı: $currentCount -> $newCount',
+    );
+
     // 3 reklam görüldükten sonra premium dialog göster
     if (newCount >= _premiumDialogThreshold) {
       // Sayacı sıfırla (bir sonraki 3 reklam için)
       await _setSecureInt(_interstitialAdCountKey, 0);
-      debugPrint('💾 [PreferencesService] Premium dialog gösterilecek (3 reklam tamamlandı)');
+      debugPrint(
+        '💾 [PreferencesService] Premium dialog gösterilecek (3 reklam tamamlandı)',
+      );
       return true;
     }
     return false;
@@ -744,13 +811,17 @@ class PreferencesService {
     final currentCount = await getDeleteCountForPaywall();
     final newCount = currentCount + 1;
     await _setSecureInt(_deleteCountForPaywallKey, newCount);
-    debugPrint('💾 [PreferencesService] Silme sayacı artırıldı: $currentCount -> $newCount');
-    
+    debugPrint(
+      '💾 [PreferencesService] Silme sayacı artırıldı: $currentCount -> $newCount',
+    );
+
     // 3 silme işleminden sonra paywall dialog göster
     if (newCount >= _paywallAfterDeleteThreshold) {
       // Sayacı sıfırla (bir sonraki 3 silme için)
       await _setSecureInt(_deleteCountForPaywallKey, 0);
-      debugPrint('💾 [PreferencesService] Paywall dialog gösterilecek (3 silme tamamlandı)');
+      debugPrint(
+        '💾 [PreferencesService] Paywall dialog gösterilecek (3 silme tamamlandı)',
+      );
       return true;
     }
     return false;
@@ -762,4 +833,3 @@ class PreferencesService {
     debugPrint('💾 [PreferencesService] Silme sayacı sıfırlandı');
   }
 }
-

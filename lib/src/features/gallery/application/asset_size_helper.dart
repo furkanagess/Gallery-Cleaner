@@ -62,4 +62,3 @@ Future<int> estimateAssetSize(pm.AssetEntity asset) async {
 class _RemoteAssetException implements Exception {
   const _RemoteAssetException();
 }
-

@@ -20,7 +20,7 @@ class SettingsPage extends StatelessWidget {
     final locale = context.watch<LocaleCubit>().state;
 
     final theme = Theme.of(context);
-    
+
     return Scaffold(
       backgroundColor: theme.colorScheme.background,
       appBar: AppBar(
@@ -51,213 +51,236 @@ class SettingsPage extends StatelessWidget {
             : null,
         automaticallyImplyLeading: !Platform.isIOS,
       ),
-      body: Stack(
-        children: [
-          // Dekoratif arka plan desenleri
-          Positioned(
-            top: -60,
-            right: -40,
-            child: Container(
-              width: 200,
-              height: 200,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    AppColors.primary.withOpacity(0.1),
-                    AppColors.primary.withOpacity(0.0),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: -50,
-            left: -30,
-            child: Container(
-              width: 150,
-              height: 150,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    AppColors.accent.withOpacity(0.08),
-                    AppColors.accent.withOpacity(0.0),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          // Ana içerik - Kaydırılamaz
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Theme Selection Container - Ayrı
-                Container(
-                  padding: const EdgeInsets.all(14),
+      body: Builder(
+        builder: (builderContext) {
+          // Premium durumunu kontrol et
+          final isPremiumAsync = builderContext.watch<PremiumCubit>().state;
+          final isPremium = isPremiumAsync.maybeWhen(
+            data: (premium) => premium,
+            orElse: () => false,
+          );
+
+          // Bottom navigation bar'daki container rengiyle aynı
+          final containerColor = theme.colorScheme.onPrimaryContainer
+              .withOpacity(0.8);
+
+          return Stack(
+            children: [
+              // Dekoratif arka plan desenleri
+              Positioned(
+                top: -60,
+                right: -40,
+                child: Container(
+                  width: 200,
+                  height: 200,
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
                       colors: [
-                        theme.colorScheme.surfaceContainerHighest.withOpacity(0.4),
-                        theme.colorScheme.surfaceContainerHighest.withOpacity(0.2),
+                        containerColor.withOpacity(0.1),
+                        containerColor.withOpacity(0.0),
                       ],
                     ),
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(
-                      color: theme.colorScheme.primary.withOpacity(0.15),
-                      width: 1.5,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.black.withOpacity(0.05),
-                        blurRadius: 16,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Theme Selection - Modern
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withOpacity(0.15),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Icon(
-                              Icons.palette_rounded,
-                              size: 16,
-                              color: AppColors.primary,
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Text(
-                            l10n.theme,
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w800,
-                              fontSize: 14,
-                              color: theme.colorScheme.onSurface,
-                            ),
+                ),
+              ),
+              Positioned(
+                bottom: -50,
+                left: -30,
+                child: Container(
+                  width: 150,
+                  height: 150,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        AppColors.accent.withOpacity(0.08),
+                        AppColors.accent.withOpacity(0.0),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              // Ana içerik - Kaydırılamaz
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Theme Selection Container - Ayrı
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            theme.colorScheme.surfaceContainerHighest
+                                .withOpacity(0.4),
+                            theme.colorScheme.surfaceContainerHighest
+                                .withOpacity(0.2),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(
+                          color: containerColor.withOpacity(0.15),
+                          width: 1.5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.black.withOpacity(0.05),
+                            blurRadius: 16,
+                            offset: const Offset(0, 3),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 10),
-                      _CompactThemeSelector(
-                        themeMode: themeMode,
-                        onThemeChanged: (mode) {
-                          context.read<ThemeCubit>().setThemeMode(mode);
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-                // Language Selection Container - Ayrı
-                Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        theme.colorScheme.surfaceContainerHighest.withOpacity(0.4),
-                        theme.colorScheme.surfaceContainerHighest.withOpacity(0.2),
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(
-                      color: theme.colorScheme.primary.withOpacity(0.15),
-                      width: 1.5,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.black.withOpacity(0.05),
-                        blurRadius: 16,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Language Selection - Modern
-                      Row(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withOpacity(0.15),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Icon(
-                              Icons.language_rounded,
-                              size: 16,
-                              color: AppColors.primary,
-                            ),
+                          // Theme Selection - Modern
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: containerColor.withOpacity(0.15),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Icon(
+                                  Icons.palette_rounded,
+                                  size: 16,
+                                  color: containerColor,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Text(
+                                l10n.theme,
+                                style: theme.textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 14,
+                                  color: theme.colorScheme.onSurface,
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 10),
-                          Text(
-                            l10n.language,
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w800,
-                              fontSize: 14,
-                              color: theme.colorScheme.onSurface,
-                            ),
+                          const SizedBox(height: 10),
+                          _CompactThemeSelector(
+                            themeMode: themeMode,
+                            onThemeChanged: (mode) {
+                              context.read<ThemeCubit>().setThemeMode(mode);
+                            },
                           ),
                         ],
                       ),
-                      const SizedBox(height: 10),
-                      _CompactLanguageSelector(
-                        locale: locale,
-                        onLocaleChanged: (loc) {
-                          context.read<LocaleCubit>().setAppLocale(loc);
-                        },
+                    ),
+                    const SizedBox(height: 12),
+                    // Language Selection Container - Ayrı
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            theme.colorScheme.surfaceContainerHighest
+                                .withOpacity(0.4),
+                            theme.colorScheme.surfaceContainerHighest
+                                .withOpacity(0.2),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(
+                          color: containerColor.withOpacity(0.15),
+                          width: 1.5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.black.withOpacity(0.05),
+                            blurRadius: 16,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-                // Rate App Section
-                _RateAppSection(),
-                const SizedBox(height: 12),
-                // Premium Section - Rate section'ın altında
-                _PremiumSection(),
-                const Spacer(),
-                // Version info - Modern
-                Center(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: theme.colorScheme.outline.withOpacity(0.1),
-                        width: 1,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Language Selection - Modern
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: containerColor.withOpacity(0.15),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Icon(
+                                  Icons.language_rounded,
+                                  size: 16,
+                                  color: containerColor,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Text(
+                                l10n.language,
+                                style: theme.textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 14,
+                                  color: theme.colorScheme.onSurface,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          _CompactLanguageSelector(
+                            locale: locale,
+                            onLocaleChanged: (loc) {
+                              context.read<LocaleCubit>().setAppLocale(loc);
+                            },
+                          ),
+                        ],
                       ),
                     ),
-                    child: Text(
-                      'v1.0.0',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurface.withOpacity(0.6),
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.5,
+                    const SizedBox(height: 12),
+                    // Rate App Section
+                    _RateAppSection(),
+                    const SizedBox(height: 12),
+                    // Premium Section - Rate section'ın altında
+                    _PremiumSection(),
+                    const Spacer(),
+                    // Version info - Modern
+                    Center(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surfaceContainerHighest
+                              .withOpacity(0.5),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: theme.colorScheme.outline.withOpacity(0.1),
+                            width: 1,
+                          ),
+                        ),
+                        child: Text(
+                          'v1.0.0',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurface.withOpacity(0.6),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
                       ),
                     ),
-                  ),
+                    const SizedBox(height: 16),
+                  ],
                 ),
-                const SizedBox(height: 16),
-              ],
-            ),
-          ),
-        ],
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -285,6 +308,11 @@ class _PremiumSection extends StatelessWidget {
           return const SizedBox.shrink();
         }
 
+        // Bottom navigation bar'daki container rengiyle aynı
+        final containerColor = theme.colorScheme.onPrimaryContainer.withOpacity(
+          0.8,
+        );
+
         // Premium olmayan kullanıcı için modern "Premium Ol" butonu
         return Container(
           decoration: BoxDecoration(
@@ -292,19 +320,19 @@ class _PremiumSection extends StatelessWidget {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                AppColors.primary.withOpacity(0.1),
-                AppColors.accent.withOpacity(0.08),
-                AppColors.secondary.withOpacity(0.05),
+                containerColor.withOpacity(0.1),
+                containerColor.withOpacity(0.08),
+                containerColor.withOpacity(0.05),
               ],
             ),
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
-              color: AppColors.primary.withOpacity(0.25),
+              color: containerColor.withOpacity(0.25),
               width: 2,
             ),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primary.withOpacity(0.2),
+                color: containerColor.withOpacity(0.2),
                 blurRadius: 24,
                 spreadRadius: 0,
                 offset: const Offset(0, 8),
@@ -336,16 +364,19 @@ class _PremiumSection extends StatelessWidget {
                             gradient: LinearGradient(
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
-                              colors: [AppColors.primary, AppColors.accent],
+                              colors: [
+                                containerColor,
+                                containerColor.withOpacity(0.8),
+                              ],
                             ),
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: AppColors.primary.withOpacity(0.3),
+                              color: containerColor.withOpacity(0.3),
                               width: 2,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: AppColors.primary.withOpacity(0.3),
+                                color: containerColor.withOpacity(0.3),
                                 blurRadius: 12,
                                 offset: const Offset(0, 4),
                               ),
@@ -400,16 +431,19 @@ class _PremiumSection extends StatelessWidget {
                           icon: Icons.all_inclusive_rounded,
                           label: l10n.unlimited,
                           theme: theme,
+                          containerColor: containerColor,
                         ),
                         _FeaturePill(
                           icon: Icons.block_rounded,
                           label: l10n.adFree,
                           theme: theme,
+                          containerColor: containerColor,
                         ),
                         _FeaturePill(
                           icon: Icons.verified_rounded,
                           label: l10n.priority,
                           theme: theme,
+                          containerColor: containerColor,
                         ),
                       ],
                     ),
@@ -424,7 +458,7 @@ class _PremiumSection extends StatelessWidget {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                           ),
-                          backgroundColor: AppColors.primary,
+                          backgroundColor: containerColor,
                           foregroundColor: AppColors.white,
                           elevation: 4,
                         ),
@@ -449,34 +483,32 @@ class _PremiumSection extends StatelessWidget {
   }
 }
 
-
 class _FeaturePill extends StatelessWidget {
   const _FeaturePill({
     required this.icon,
     required this.label,
     required this.theme,
+    required this.containerColor,
   });
 
   final IconData icon;
   final String label;
   final ThemeData theme;
+  final Color containerColor;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: theme.colorScheme.primary.withOpacity(0.1),
+        color: containerColor.withOpacity(0.1),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: theme.colorScheme.primary.withOpacity(0.18),
-          width: 1,
-        ),
+        border: Border.all(color: containerColor.withOpacity(0.18), width: 1),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: theme.colorScheme.primary),
+          Icon(icon, size: 14, color: containerColor),
           const SizedBox(width: 6),
           Text(
             label,
@@ -506,6 +538,18 @@ class _CompactThemeSelector extends StatelessWidget {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
 
+    // Premium durumunu kontrol et
+    final isPremiumAsync = context.watch<PremiumCubit>().state;
+    final isPremium = isPremiumAsync.maybeWhen(
+      data: (premium) => premium,
+      orElse: () => false,
+    );
+
+    // Bottom navigation bar'daki container rengiyle aynı
+    final containerColor = theme.colorScheme.onPrimaryContainer.withOpacity(
+      0.8,
+    );
+
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
@@ -518,10 +562,7 @@ class _CompactThemeSelector extends StatelessWidget {
           ],
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: theme.colorScheme.primary.withOpacity(0.15),
-          width: 1.5,
-        ),
+        border: Border.all(color: containerColor.withOpacity(0.15), width: 1.5),
         boxShadow: [
           BoxShadow(
             color: AppColors.black.withOpacity(0.05),
@@ -538,18 +579,21 @@ class _CompactThemeSelector extends StatelessWidget {
             label: l10n.light,
             isSelected: themeMode == AppThemeMode.light,
             onTap: () => onThemeChanged(AppThemeMode.light),
+            containerColor: containerColor,
           ),
           _ModernThemeChip(
             icon: Icons.dark_mode_rounded,
             label: l10n.dark,
             isSelected: themeMode == AppThemeMode.dark,
             onTap: () => onThemeChanged(AppThemeMode.dark),
+            containerColor: containerColor,
           ),
           _ModernThemeChip(
             icon: Icons.brightness_auto_rounded,
             label: l10n.system,
             isSelected: themeMode == AppThemeMode.system,
             onTap: () => onThemeChanged(AppThemeMode.system),
+            containerColor: containerColor,
           ),
         ],
       ),
@@ -563,12 +607,14 @@ class _ModernThemeChip extends StatelessWidget {
     required this.label,
     required this.isSelected,
     required this.onTap,
+    required this.containerColor,
   });
 
   final IconData icon;
   final String label;
   final bool isSelected;
   final VoidCallback onTap;
+  final Color containerColor;
 
   @override
   Widget build(BuildContext context) {
@@ -586,23 +632,20 @@ class _ModernThemeChip extends StatelessWidget {
             gradient: isSelected
                 ? LinearGradient(
                     colors: [
-                      AppColors.primary.withOpacity(0.2),
-                      AppColors.primary.withOpacity(0.15),
+                      containerColor.withOpacity(0.2),
+                      containerColor.withOpacity(0.15),
                     ],
                   )
                 : null,
             color: isSelected ? null : AppColors.transparent,
             borderRadius: BorderRadius.circular(12),
             border: isSelected
-                ? Border.all(
-                    color: AppColors.primary.withOpacity(0.4),
-                    width: 1.5,
-                  )
+                ? Border.all(color: containerColor.withOpacity(0.4), width: 1.5)
                 : null,
             boxShadow: isSelected
                 ? [
                     BoxShadow(
-                      color: AppColors.primary.withOpacity(0.2),
+                      color: containerColor.withOpacity(0.2),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -616,7 +659,7 @@ class _ModernThemeChip extends StatelessWidget {
                 icon,
                 size: 16,
                 color: isSelected
-                    ? AppColors.primary
+                    ? containerColor
                     : theme.colorScheme.onSurface.withOpacity(0.6),
               ),
               const SizedBox(width: 6),
@@ -626,7 +669,7 @@ class _ModernThemeChip extends StatelessWidget {
                   fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
                   fontSize: 11,
                   color: isSelected
-                      ? AppColors.primary
+                      ? containerColor
                       : theme.colorScheme.onSurface.withOpacity(0.7),
                 ),
               ),
@@ -652,6 +695,18 @@ class _CompactLanguageSelector extends StatelessWidget {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
 
+    // Premium durumunu kontrol et
+    final isPremiumAsync = context.watch<PremiumCubit>().state;
+    final isPremium = isPremiumAsync.maybeWhen(
+      data: (premium) => premium,
+      orElse: () => false,
+    );
+
+    // Bottom navigation bar'daki container rengiyle aynı
+    final containerColor = theme.colorScheme.onPrimaryContainer.withOpacity(
+      0.8,
+    );
+
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
@@ -664,10 +719,7 @@ class _CompactLanguageSelector extends StatelessWidget {
           ],
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: theme.colorScheme.primary.withOpacity(0.15),
-          width: 1.5,
-        ),
+        border: Border.all(color: containerColor.withOpacity(0.15), width: 1.5),
         boxShadow: [
           BoxShadow(
             color: AppColors.black.withOpacity(0.05),
@@ -684,18 +736,21 @@ class _CompactLanguageSelector extends StatelessWidget {
             label: l10n.turkish,
             isSelected: locale.languageCode == 'tr',
             onTap: () => onLocaleChanged(AppLocale.tr),
+            containerColor: containerColor,
           ),
           _ModernLanguageChip(
             flag: '🇬🇧',
             label: l10n.english,
             isSelected: locale.languageCode == 'en',
             onTap: () => onLocaleChanged(AppLocale.en),
+            containerColor: containerColor,
           ),
           _ModernLanguageChip(
             flag: '🇪🇸',
             label: l10n.spanish,
             isSelected: locale.languageCode == 'es',
             onTap: () => onLocaleChanged(AppLocale.es),
+            containerColor: containerColor,
           ),
         ],
       ),
@@ -709,12 +764,14 @@ class _ModernLanguageChip extends StatelessWidget {
     required this.label,
     required this.isSelected,
     required this.onTap,
+    required this.containerColor,
   });
 
   final String flag;
   final String label;
   final bool isSelected;
   final VoidCallback onTap;
+  final Color containerColor;
 
   @override
   Widget build(BuildContext context) {
@@ -732,23 +789,20 @@ class _ModernLanguageChip extends StatelessWidget {
             gradient: isSelected
                 ? LinearGradient(
                     colors: [
-                      AppColors.primary.withOpacity(0.2),
-                      AppColors.primary.withOpacity(0.15),
+                      containerColor.withOpacity(0.2),
+                      containerColor.withOpacity(0.15),
                     ],
                   )
                 : null,
             color: isSelected ? null : AppColors.transparent,
             borderRadius: BorderRadius.circular(12),
             border: isSelected
-                ? Border.all(
-                    color: AppColors.primary.withOpacity(0.4),
-                    width: 1.5,
-                  )
+                ? Border.all(color: containerColor.withOpacity(0.4), width: 1.5)
                 : null,
             boxShadow: isSelected
                 ? [
                     BoxShadow(
-                      color: AppColors.primary.withOpacity(0.2),
+                      color: containerColor.withOpacity(0.2),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -766,7 +820,7 @@ class _ModernLanguageChip extends StatelessWidget {
                   fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
                   fontSize: 11,
                   color: isSelected
-                      ? AppColors.primary
+                      ? containerColor
                       : theme.colorScheme.onSurface.withOpacity(0.7),
                 ),
               ),
@@ -872,10 +926,7 @@ class _RateAppSection extends StatelessWidget {
                         gradient: LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
-                          colors: [
-                            AppColors.warning,
-                            AppColors.warningLight,
-                          ],
+                          colors: [AppColors.warning, AppColors.warningLight],
                         ),
                         borderRadius: BorderRadius.circular(14),
                         boxShadow: [
@@ -917,7 +968,9 @@ class _RateAppSection extends StatelessWidget {
                             l10n.rateAppDescription,
                             style: theme.textTheme.bodyMedium?.copyWith(
                               fontSize: 13,
-                              color: theme.colorScheme.onSurface.withOpacity(0.75),
+                              color: theme.colorScheme.onSurface.withOpacity(
+                                0.75,
+                              ),
                               height: 1.4,
                             ),
                             maxLines: 2,
@@ -932,7 +985,10 @@ class _RateAppSection extends StatelessWidget {
                 // Call to Action Button - Modern ve dikkat çekici
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 12,
+                    horizontal: 16,
+                  ),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.centerLeft,

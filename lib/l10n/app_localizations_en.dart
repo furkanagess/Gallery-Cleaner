@@ -329,7 +329,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'We need access to your photos and videos to perform gallery cleaning operations.';
 
   @override
-  String get privacySecurityInfo => '🔒 Your Privacy Matters';
+  String get privacySecurityInfo => 'Your Privacy Matters';
 
   @override
   String get privacySecurityPoint1 =>

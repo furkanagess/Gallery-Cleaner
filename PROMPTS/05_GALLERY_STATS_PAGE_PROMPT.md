@@ -246,3 +246,4 @@ Scaffold
 
 Gallery Stats Page, kullanıcıya galeri hakkında kapsamlı bilgi sunan, albümleri görsel olarak gösteren ve temizleme geçmişini takip eden detaylı bir analiz ekranıdır. Tüm bilgiler düzenli ve erişilebilir bir şekilde sunulmalıdır.
 
+

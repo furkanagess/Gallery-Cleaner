@@ -24,10 +24,13 @@ class BlurTabIndicatorState extends State<BlurTabIndicator> {
 
     // Seçili tab'da sadece icon göster (text yok)
     if (widget.isSelected) {
+      // Seçili item ikon rengi: ekranın arka plan rengiyle aynı
+      final selectedIconColor = theme.colorScheme.background;
+      
       return Icon(
         Icons.blur_on_rounded,
         size: 24,
-        color: theme.colorScheme.onPrimary,
+        color: selectedIconColor,
       );
     }
 

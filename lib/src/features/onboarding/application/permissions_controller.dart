@@ -35,23 +35,59 @@ class PermissionsCubit extends Cubit<GalleryPermissionStatus> {
           state == pm.PermissionState.limited) {
         return GalleryPermissionStatus.authorized;
       }
-      return GalleryPermissionStatus.denied;
+      if (state == pm.PermissionState.denied) {
+        return GalleryPermissionStatus.denied;
+      }
+      // NotDetermined veya başka bir durum - unknown olarak döndür
+      return GalleryPermissionStatus.unknown;
     } catch (e) {
       debugPrint('⚠️ [PermissionsController] _readCurrentStatus error: $e');
-      // Hata durumunda denied olarak döndür
-      return GalleryPermissionStatus.denied;
+      // Hata durumunda unknown olarak döndür (böylece dialog açılabilir)
+      return GalleryPermissionStatus.unknown;
     }
   }
 
   Future<bool> request() async {
     try {
-      final result = await pm.PhotoManager.requestPermissionExtend();
+      // Butona her tıklandığında direkt sistem izin dialogunu aç
+      // İzin durumunu hiç kontrol etmeden direkt requestPermissionExtend() çağır
+      // Bu metod sistem izin dialogunu göstermeye çalışır
+      // requestPermissionExtend() metodu:
+      // - Eğer izin durumu "notDetermined" (ilk defa) ise → sistem dialogunu gösterir
+      // - Eğer izin durumu "denied" ise → sistem dialogu gösterilmez (iOS/Android platform davranışı)
+      // - Eğer izin durumu "authorized" ise → zaten izin verilmiş, dialog gösterilmez
+      final result = await pm.PhotoManager.requestPermissionExtend(
+        requestOption: const pm.PermissionRequestOption(
+          iosAccessLevel: pm.IosAccessLevel.readWrite,
+        ),
+      );
+
+      // İzin durumunu güncelle
       final ok = result.isAuth || result.hasAccess == true;
-      emit(ok ? GalleryPermissionStatus.authorized : GalleryPermissionStatus.denied);
+      if (ok) {
+        emit(GalleryPermissionStatus.authorized);
+      } else {
+        // İzin verilmedi - durumu kontrol et
+        final currentState = await pm.PhotoManager.getPermissionState(
+          requestOption: const pm.PermissionRequestOption(
+            iosAccessLevel: pm.IosAccessLevel.readWrite,
+          ),
+        );
+
+        if (currentState == pm.PermissionState.authorized ||
+            currentState == pm.PermissionState.limited) {
+          emit(GalleryPermissionStatus.authorized);
+        } else {
+          // Denied veya notDetermined - unknown olarak işaretle
+          // Kullanıcı tekrar butona tıklayabilir
+          emit(GalleryPermissionStatus.unknown);
+        }
+      }
+
       return ok;
     } catch (e) {
-      debugPrint('⚠️ [PermissionsController] request error: $e');
-      emit(GalleryPermissionStatus.denied);
+      debugPrint('⚠️ [PermissionsController] İzin isteği hatası: $e');
+      emit(GalleryPermissionStatus.unknown);
       return false;
     }
   }
