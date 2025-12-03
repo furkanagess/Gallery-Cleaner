@@ -679,6 +679,34 @@
   "@loadingYourGalleryDescription": {
     "description": "Description for gallery loading screen"
   },
+  "photosLoaded": "{count} fotos cargadas",
+  "@photosLoaded": {
+    "description": "Indica cuántas fotos se han cargado",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "120"
+      }
+    }
+  },
+  "photosLoadingProgress": "{loaded} / {total} fotos ({percentage}%)",
+  "@photosLoadingProgress": {
+    "description": "Indica el progreso de carga de fotos con porcentaje",
+    "placeholders": {
+      "loaded": {
+        "type": "int",
+        "example": "120"
+      },
+      "total": {
+        "type": "int",
+        "example": "1000"
+      },
+      "percentage": {
+        "type": "int",
+        "example": "12"
+      }
+    }
+  },
   "photoUnit": "fotos",
   "@photoUnit": {
     "description": "Photo unit text"

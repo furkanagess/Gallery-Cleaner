@@ -292,3 +292,6 @@ Stack
 Blur Tab, kullanıcıların bulanık fotoğrafları kolayca bulup temizlemesini sağlayan, görsel ve bilgilendirici bir sekmedir. Tarama öncesi form açıklayıcı, sonuçlar görünümü ise etkileşimli ve kullanışlı olmalıdır.
 
 
+
+
+

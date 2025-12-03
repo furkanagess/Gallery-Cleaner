@@ -223,6 +223,16 @@ class AppLocalizationsEs extends AppLocalizations {
       'Estamos preparando tus fotos y videos. Por favor espera...';
 
   @override
+  String photosLoaded(int count) {
+    return '$count fotos cargadas';
+  }
+
+  @override
+  String photosLoadingProgress(int loaded, int total, int percentage) {
+    return '$loaded / $total fotos ($percentage%)';
+  }
+
+  @override
   String get galleryInfoNotLoaded =>
       'No se pudo cargar la información de la galería';
 

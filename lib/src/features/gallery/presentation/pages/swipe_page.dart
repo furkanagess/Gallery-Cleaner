@@ -2138,7 +2138,7 @@ class _SwipePageState extends State<SwipePage>
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        // Premium badge - en solda (leading)
+        // Premium badge - premium kullanıcılar için
         leading: Builder(
           builder: (context) {
             final isPremiumAsync = context.watch<PremiumCubit>().state;
@@ -2146,19 +2146,13 @@ class _SwipePageState extends State<SwipePage>
               loading: () => const SizedBox.shrink(),
               error: (_, __) => const SizedBox.shrink(),
               data: (isPremium) {
-                // Premium kullanıcıda buton görünür, tıklanabilir ve sarı renkte
-                // Tıklandığında premium success dialog gösterilir
-                // Premium olmayan kullanıcıda paywall page'e yönlendir
+                if (!isPremium) return const SizedBox.shrink();
                 return IconButton(
                   onPressed: isScanning
                       ? null // Scan sırasında tıklanamaz
-                      : isPremium
-                      ? () async {
+                      : () async {
                           // Premium kullanıcıda premium success dialog göster
                           await PremiumSuccessDialog.show(context);
-                        }
-                      : () {
-                          context.push('/paywall');
                         },
                   icon: Icon(
                     Icons.workspace_premium_rounded,
@@ -2168,9 +2162,7 @@ class _SwipePageState extends State<SwipePage>
                   ),
                   tooltip: isScanning
                       ? l10n.doNotLeaveScreenDuringScan
-                      : isPremium
-                      ? 'Premium Aktif'
-                      : l10n.unlockPremiumFeatures,
+                      : 'Premium Aktif',
                 );
               },
             );
@@ -2179,6 +2171,52 @@ class _SwipePageState extends State<SwipePage>
         centerTitle: false,
         backgroundColor: theme.colorScheme.background,
         actions: [
+          // Get Premium button - sadece premium olmayan kullanıcılar için
+          Builder(
+            builder: (context) {
+              final isPremiumAsync = context.watch<PremiumCubit>().state;
+              return isPremiumAsync.when(
+                loading: () => const SizedBox.shrink(),
+                error: (_, __) => const SizedBox.shrink(),
+                data: (isPremium) {
+                  if (isPremium) return const SizedBox.shrink();
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                    child: TextButton.icon(
+                      onPressed: isScanning
+                          ? null
+                          : () {
+                              context.push('/paywall');
+                            },
+                      icon: Icon(
+                        Icons.workspace_premium_rounded,
+                        size: 18,
+                        color: isScanning
+                            ? theme.colorScheme.onSurface.withOpacity(0.38)
+                            : theme.colorScheme.primary,
+                      ),
+                      label: Text(
+                        l10n.goPremium,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: isScanning
+                              ? theme.colorScheme.onSurface.withOpacity(0.38)
+                              : theme.colorScheme.primary,
+                        ),
+                      ),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
           _HistoryButton(
             pulseController: _historyPulseController,
             isScanning: isScanning,

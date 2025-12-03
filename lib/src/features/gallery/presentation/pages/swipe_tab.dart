@@ -28,11 +28,16 @@ class _SwipeTabState extends State<SwipeTab>
   int _currentSwipeIndex = 0;
   int _previousAssetsLength = 0;
   bool _showResetToStartButton = false;
+  bool _isFirstLoad = true; // Uygulama ilk açılışındaki ilk yükleme için
   String? _currentAlbumId;
+  String? _loadingAlbumId; // Yüklenmekte olan albüm ID'si
   VoidCallback? _resetToStartCallback;
   bool _isDeleting = false;
   int? _pendingIndexAdjustment; // Reload sonrası index ayarlaması için
   StreamSubscription? _reviewActionsSubscription;
+  Timer? _shimmerDelayTimer;
+  bool _showShimmer = false;
+  DateTime? _loadingStartTime;
 
   @override
   bool get wantKeepAlive => true;
@@ -65,6 +70,7 @@ class _SwipeTabState extends State<SwipeTab>
   @override
   void dispose() {
     _reviewActionsSubscription?.cancel();
+    _shimmerDelayTimer?.cancel();
     super.dispose();
   }
 
@@ -106,16 +112,39 @@ class _SwipeTabState extends State<SwipeTab>
   }
 
   void _resetToStart() {
-    // Galeriyi yeniden yükle - silinen fotoğraflar artık listede olmayacak
-    context.read<GalleryPagingCubit>().reload();
+    // Build sırasında state güncellemesi yapmamak için postFrameCallback kullan
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      
+      // Önce shimmer flag'lerini ve loading album ID'sini set et
+      final selectedAlbum = context.read<SelectedAlbumCubit>().state;
+      final selectedAlbumId = selectedAlbum?.id;
+      
+      _shimmerDelayTimer?.cancel();
+      cubitSetState(() {
+        _loadingStartTime = DateTime.now();
+        _showShimmer = true; // Reset işlemi yapıldığında direkt shimmer göster
+        _loadingAlbumId = selectedAlbumId; // Loading album ID'sini set et (shimmer gösterilmesi için)
+      });
+      
+      // Reload'ı çağır - bu loading state'ini tetikleyecek
+      context.read<GalleryPagingCubit>().reload();
 
-    _resetToStartCallback?.call();
-    cubitSetState(() {
-      _currentSwipeIndex = 0;
-      _showResetToStartButton = false;
-      _previousAssetsLength = 0; // Reset previous length
+      // Callback'i de postFrameCallback içinde çağır (build sırasında state güncellemesi yapmaması için)
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _resetToStartCallback?.call();
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          cubitSetState(() {
+            _currentSwipeIndex = 0;
+            _showResetToStartButton = false;
+            _previousAssetsLength = 0; // Reset previous length
+          });
+          _saveSwipeIndex(0);
+        });
+      });
     });
-    _saveSwipeIndex(0);
   }
 
   Widget _buildSwipeArea(
@@ -182,12 +211,27 @@ class _SwipeTabState extends State<SwipeTab>
   Widget build(BuildContext context) {
     super.build(context); // AutomaticKeepAliveClientMixin için gerekli
 
-    // Stream listener artık initState'de ekleniyor - burada tekrar ekleme
-
     final selectedAlbum = context.watch<SelectedAlbumCubit>().state;
+    final selectedAlbumId = selectedAlbum?.id;
+    final state = context.watch<GalleryPagingCubit>().state;
 
-    // Album değiştiğinde index'i yükle
-    if (selectedAlbum?.id != _currentAlbumId) {
+    // Albüm değiştiğinde index'i yükle
+    // "All Photos" için selectedAlbumId null olabilir, bu durumu da kontrol et
+    final currentAlbumId = selectedAlbumId ?? 'all_photos';
+    final previousAlbumId = _currentAlbumId ?? 'none';
+    final bool albumChanged = currentAlbumId != previousAlbumId;
+    
+    if (albumChanged) {
+      _currentAlbumId = selectedAlbumId; // null da olabilir (All Photos)
+      _shimmerDelayTimer?.cancel();
+      // Albüm değiştiğinde hemen shimmer göster ve loading albüm ID'sini güncelle
+      _loadingAlbumId = selectedAlbumId;
+      cubitSetState(() {
+        _currentSwipeIndex = 0;
+        _previousAssetsLength = 0;
+        _loadingStartTime = DateTime.now();
+        _showShimmer = true;
+      });
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           _loadSwipeIndex();
@@ -195,53 +239,128 @@ class _SwipeTabState extends State<SwipeTab>
       });
     }
 
-    // Assets listesini selector ile izle - sadece assets listesi gerçekten değiştiğinde rebuild
-    // Loading state değişikliklerini ignore et - dialog/reklam gösterilirken rebuild'i engelle
-    final state = context.watch<GalleryPagingCubit>().state;
+    // Loading state'inde yüklenmekte olan albüm ID'sini takip et
+    state.maybeWhen(
+      loading: () {
+        // "All Photos" için selectedAlbumId null olabilir, bu durumu da kontrol et
+        final currentLoadingId = selectedAlbumId ?? 'all_photos';
+        final previousLoadingId = _loadingAlbumId ?? 'none';
+        
+        // Eğer shimmer zaten gösteriliyorsa (reset işlemi gibi), loading album ID'sini güncelleme
+        if (_showShimmer && _loadingAlbumId != null) {
+          // Shimmer zaten gösteriliyor, sadece loading album ID'sini kontrol et
+          if (currentLoadingId != previousLoadingId) {
+            _loadingAlbumId = selectedAlbumId; // null da olabilir (All Photos)
+          }
+        } else if (currentLoadingId != previousLoadingId) {
+          // Loading başladığında, eğer albüm değiştiyse veya farklı bir albüm yükleniyorsa shimmer göster
+          _loadingAlbumId = selectedAlbumId; // null da olabilir (All Photos)
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              cubitSetState(() {
+                _showShimmer = true;
+                _loadingStartTime = DateTime.now();
+              });
+            }
+          });
+        } else if (_loadingStartTime == null) {
+          // Normal loading - 3 saniye bekle
+          _loadingStartTime = DateTime.now();
+          _shimmerDelayTimer?.cancel();
+          _shimmerDelayTimer = Timer(const Duration(seconds: 3), () {
+            if (mounted && state.isLoading) {
+              cubitSetState(() {
+                _showShimmer = true;
+              });
+            }
+          });
+        }
+      },
+      data: (_) {
+        // Yükleme tamamlandığında loading album ID'sini temizle
+        if (_loadingAlbumId != null) {
+          _loadingAlbumId = null;
+          _shimmerDelayTimer?.cancel();
+          cubitSetState(() {
+            _loadingStartTime = null;
+            _showShimmer = false;
+          });
+        }
+      },
+      error: (_, __) {
+        // Hata durumunda temizle
+        _loadingAlbumId = null;
+        _shimmerDelayTimer?.cancel();
+        cubitSetState(() {
+          _loadingStartTime = null;
+          _showShimmer = false;
+        });
+      },
+      orElse: () {},
+    );
 
-    // Önceki assets listesini sakla - loading state'de kullanmak için
+    // Önceki assets listesini sakla
     final previousAssets = state.maybeWhen(
       data: (assets) => assets,
       orElse: () => <pm.AssetEntity>[],
     );
 
-    // Sadece data state'inde ve assets listesi gerçekten değiştiğinde rebuild yap
-    final galleryPagingState = context.watch<GalleryPagingCubit>().state;
-    final currentAssets = galleryPagingState.maybeWhen(
+    final currentAssets = state.maybeWhen(
       data: (assets) => assets,
-      orElse: () => null, // Loading/error state'lerinde null döndür
+      orElse: () => null,
     );
 
-    // Assets listesi değişmediyse ve loading state'deyse, önceki build'i koru
-    final effectiveAssets = currentAssets ?? previousAssets;
+    // "All Photos" için null kontrolü yap
+    final isSameAlbum = !albumChanged && 
+        ((selectedAlbumId == null && _currentAlbumId == null) || 
+         (selectedAlbumId != null && selectedAlbumId == _currentAlbumId));
+    
+    final effectiveAssets = currentAssets ??
+        (isSameAlbum ? previousAssets : <pm.AssetEntity>[]);
 
-    return state.when(
+    final result = state.when(
       loading: () {
-        // Loading state'de önceki widget'ı koru - dialog/reklam gösterilirken rebuild'i engelle
-        // Eğer önceki assets varsa onu göster, yoksa loading göster
-        if (effectiveAssets.isNotEmpty) {
-          // Önceki assets'i kullan - rebuild'i engelle
-          return _buildContentWithAssets(effectiveAssets, selectedAlbum);
-        }
-        // İlk yükleme ise comprehensive swipe tab shimmer'ı göster
+        // Her türlü loading durumunda (özellikle albüm değişimlerinde)
+        // mutlaka shimmer göster
         return const SwipeTabShimmer();
       },
-      error: (e, _) => Builder(
-        builder: (ctx) {
-          final l10n = AppLocalizations.of(ctx)!;
-          return Center(
-            child: Text(
-              '${l10n.galleryInfoNotAvailable}: $e',
-              overflow: TextOverflow.ellipsis,
-            ),
-          );
-        },
-      ),
+      error: (e, _) {
+        // Hata durumunda shimmer timer'ı iptal et ve state'i sıfırla
+        _loadingAlbumId = null;
+        _shimmerDelayTimer?.cancel();
+        cubitSetState(() {
+          _loadingStartTime = null;
+          _showShimmer = false;
+        });
+        return Builder(
+          builder: (ctx) {
+            final l10n = AppLocalizations.of(ctx)!;
+            return Center(
+              child: Text(
+                '${l10n.galleryInfoNotAvailable}: $e',
+                overflow: TextOverflow.ellipsis,
+              ),
+            );
+          },
+        );
+      },
       data: (_) {
-        // effectiveAssets kullan - loading state'de önceki assets'i koru
+        // İlk başarılı data geldiğinde first-load flag'ini kapat
+        if (_isFirstLoad) {
+          _isFirstLoad = false;
+        }
+        // Yükleme tamamlandı, shimmer timer'ı iptal et ve state'i sıfırla
+        _loadingAlbumId = null;
+        _shimmerDelayTimer?.cancel();
+        cubitSetState(() {
+          _loadingStartTime = null;
+          _showShimmer = false;
+        });
         return _buildContentWithAssets(effectiveAssets, selectedAlbum);
       },
     );
+
+    return result;
   }
 
   Widget _buildContentWithAssets(
@@ -557,15 +676,22 @@ class _SwipeTabState extends State<SwipeTab>
                                 onPressed: () {
                                   final reviewActionsCubit = context
                                       .read<ReviewActionsCubit>();
+                                  final galleryPagingCubit = context
+                                      .read<GalleryPagingCubit>();
 
-                                  // Tüm pending keep/delete işlemlerini iptal et
+                                  // Sadece delete olarak işaretlenen fotoğrafları geri al
+                                  final undoneAssets = <pm.AssetEntity>[];
                                   while (reviewActionsCubit.state.isNotEmpty) {
+                                    final lastAction = reviewActionsCubit.state.last;
+                                    undoneAssets.add(lastAction.asset);
                                     reviewActionsCubit.undoLast();
                                   }
 
-                                  // Tüm işlemler iptal edildikten sonra galeriyi başa sar
-                                  // ve swipe index'ini 0'a al.
-                                  _resetToStart();
+                                  // Undo edilen fotoğrafları assets listesine geri ekle (reload etmeden)
+                                  if (undoneAssets.isNotEmpty) {
+                                    galleryPagingCubit.restoreUndoneAssets(undoneAssets);
+                                    debugPrint('✅ [SwipeTab] ${undoneAssets.length} delete işlemi geri alındı, fotoğraflar geri eklendi');
+                                  }
                                 },
                                 child: Text(
                                   l10n.undo,

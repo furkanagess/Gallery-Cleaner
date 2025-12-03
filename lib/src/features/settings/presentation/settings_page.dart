@@ -9,6 +9,8 @@ import '../application/theme_controller.dart';
 import '../application/locale_controller.dart';
 import '../../gallery/application/gallery_providers.dart';
 import '../../../app/theme/app_colors.dart';
+import '../../../core/services/sound_service.dart';
+import '../../../core/services/preferences_service.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -101,12 +103,15 @@ class SettingsPage extends StatelessWidget {
                   ),
                 ),
               ),
-              // Ana içerik - Kaydırılamaz
-              Padding(
+              // Ana içerik - Scroll edilebilir
+              SingleChildScrollView(
                 padding: const EdgeInsets.all(12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    // Premium Section - En üstte, dikkat çekici
+                    _PremiumSection(),
+                    const SizedBox(height: 12),
                     // Theme Selection Container - Ayrı
                     Container(
                       padding: const EdgeInsets.all(14),
@@ -241,12 +246,12 @@ class SettingsPage extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 12),
+                    // Sound Volume Control Container
+                    _SoundVolumeControl(),
+                    const SizedBox(height: 12),
                     // Rate App Section
                     _RateAppSection(),
                     const SizedBox(height: 12),
-                    // Premium Section - Rate section'ın altında
-                    _PremiumSection(),
-                    const Spacer(),
                     // Version info - Modern
                     Center(
                       child: Container(
@@ -313,19 +318,19 @@ class _PremiumSection extends StatelessWidget {
           0.8,
         );
 
-        // Premium olmayan kullanıcı için modern "Premium Ol" butonu
+        // Premium olmayan kullanıcı için dikkat çekici "Go Premium" bölümü - Rate App gibi
         return Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
+                containerColor.withOpacity(0.15),
                 containerColor.withOpacity(0.1),
                 containerColor.withOpacity(0.08),
-                containerColor.withOpacity(0.05),
               ],
             ),
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: containerColor.withOpacity(0.25),
               width: 2,
@@ -333,14 +338,14 @@ class _PremiumSection extends StatelessWidget {
             boxShadow: [
               BoxShadow(
                 color: containerColor.withOpacity(0.2),
-                blurRadius: 24,
+                blurRadius: 20,
+                offset: const Offset(0, 6),
                 spreadRadius: 0,
-                offset: const Offset(0, 8),
               ),
               BoxShadow(
-                color: AppColors.black.withOpacity(0.08),
+                color: AppColors.black.withOpacity(0.06),
                 blurRadius: 12,
-                offset: const Offset(0, 4),
+                offset: const Offset(0, 3),
               ),
             ],
           ),
@@ -348,18 +353,18 @@ class _PremiumSection extends StatelessWidget {
             color: AppColors.transparent,
             child: InkWell(
               onTap: () => SettingsPage.showPurchaseDialog(context),
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(20),
               child: Padding(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Row(
                       children: [
+                        // Premium Icon Container - Daha büyük ve vurgulu
                         Container(
-                          width: 56,
-                          height: 56,
+                          width: 52,
+                          height: 52,
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
                               begin: Alignment.topLeft,
@@ -369,26 +374,24 @@ class _PremiumSection extends StatelessWidget {
                                 containerColor.withOpacity(0.8),
                               ],
                             ),
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: containerColor.withOpacity(0.3),
-                              width: 2,
-                            ),
+                            borderRadius: BorderRadius.circular(14),
                             boxShadow: [
                               BoxShadow(
-                                color: containerColor.withOpacity(0.3),
-                                blurRadius: 12,
-                                offset: const Offset(0, 4),
+                                color: containerColor.withOpacity(0.5),
+                                blurRadius: 16,
+                                offset: const Offset(0, 6),
+                                spreadRadius: 2,
                               ),
                             ],
                           ),
                           child: Icon(
                             Icons.workspace_premium_rounded,
                             color: AppColors.white,
-                            size: 28,
+                            size: 26,
                           ),
                         ),
-                        const SizedBox(width: 16),
+                        const SizedBox(width: 14),
+                        // Title and Description
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -396,22 +399,22 @@ class _PremiumSection extends StatelessWidget {
                             children: [
                               Text(
                                 l10n.goPremium,
-                                style: theme.textTheme.headlineSmall?.copyWith(
+                                style: theme.textTheme.titleLarge?.copyWith(
                                   fontWeight: FontWeight.w900,
+                                  fontSize: 17,
                                   color: theme.colorScheme.onSurface,
-                                  letterSpacing: -0.5,
-                                  fontSize: 22,
+                                  letterSpacing: -0.4,
+                                  height: 1.2,
                                 ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
                               ),
                               const SizedBox(height: 6),
                               Text(
                                 l10n.premiumDescription,
                                 style: theme.textTheme.bodyMedium?.copyWith(
                                   fontSize: 13,
-                                  color: theme.colorScheme.onSurface
-                                      .withOpacity(0.65),
+                                  color: theme.colorScheme.onSurface.withOpacity(
+                                    0.75,
+                                  ),
                                   height: 1.4,
                                 ),
                                 maxLines: 2,
@@ -422,10 +425,11 @@ class _PremiumSection extends StatelessWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 12),
+                    // Feature Pills - kompakt
                     Wrap(
-                      spacing: 10,
-                      runSpacing: 10,
+                      spacing: 8,
+                      runSpacing: 8,
                       children: [
                         _FeaturePill(
                           icon: Icons.all_inclusive_rounded,
@@ -447,29 +451,51 @@ class _PremiumSection extends StatelessWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 18),
-                    SizedBox(
+                    const SizedBox(height: 12),
+                    // Call to Action Button - Modern ve dikkat çekici
+                    Container(
                       width: double.infinity,
-                      child: FilledButton(
-                        onPressed: () =>
-                            SettingsPage.showPurchaseDialog(context),
-                        style: FilledButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          backgroundColor: containerColor,
-                          foregroundColor: AppColors.white,
-                          elevation: 4,
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 12,
+                        horizontal: 16,
+                      ),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                          colors: [
+                            containerColor.withOpacity(0.9),
+                            containerColor.withOpacity(0.85),
+                          ],
                         ),
-                        child: Text(
-                          l10n.upgradeToPremium,
-                          style: TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 15,
-                            letterSpacing: 0.3,
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [
+                          BoxShadow(
+                            color: containerColor.withOpacity(0.4),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
                           ),
-                        ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.workspace_premium_rounded,
+                            color: AppColors.white,
+                            size: 18,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            l10n.upgradeToPremium,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 14,
+                              color: AppColors.white,
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -1034,6 +1060,155 @@ class _RateAppSection extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _SoundVolumeControl extends StatefulWidget {
+  const _SoundVolumeControl();
+
+  @override
+  State<_SoundVolumeControl> createState() => _SoundVolumeControlState();
+}
+
+class _SoundVolumeControlState extends State<_SoundVolumeControl> {
+  final SoundService _soundService = SoundService();
+  final PreferencesService _prefsService = PreferencesService();
+  double _volume = 1.0;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadVolume();
+  }
+
+  Future<void> _loadVolume() async {
+    final volume = await _prefsService.getSoundVolume();
+    if (mounted) {
+      setState(() {
+        _volume = volume;
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _updateVolume(double newVolume) async {
+    setState(() {
+      _volume = newVolume;
+    });
+    await _soundService.setSoundVolume(newVolume);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    // Bottom navigation bar'daki container rengiyle aynı
+    final containerColor = theme.colorScheme.onPrimaryContainer.withOpacity(0.8);
+
+    if (_isLoading) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            theme.colorScheme.surfaceContainerHighest.withOpacity(0.4),
+            theme.colorScheme.surfaceContainerHighest.withOpacity(0.2),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: containerColor.withOpacity(0.15),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.black.withOpacity(0.05),
+            blurRadius: 16,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Sound Volume Header
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: containerColor.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.volume_up_rounded,
+                  size: 16,
+                  color: containerColor,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                'Sound Volume',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 14,
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Volume Slider
+          Row(
+            children: [
+              Icon(
+                Icons.volume_mute_rounded,
+                size: 20,
+                color: theme.colorScheme.onSurface.withOpacity(0.6),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Slider(
+                  value: _volume,
+                  min: 0.0,
+                  max: 1.0,
+                  divisions: 10,
+                  activeColor: containerColor,
+                  inactiveColor: containerColor.withOpacity(0.3),
+                  onChanged: _updateVolume,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Icon(
+                Icons.volume_up_rounded,
+                size: 20,
+                color: theme.colorScheme.onSurface.withOpacity(0.6),
+              ),
+              const SizedBox(width: 8),
+              // Volume percentage text
+              SizedBox(
+                width: 45,
+                child: Text(
+                  '${(_volume * 100).toInt()}%',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 12,
+                    color: containerColor,
+                  ),
+                  textAlign: TextAlign.right,
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

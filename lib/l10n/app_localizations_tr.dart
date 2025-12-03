@@ -223,6 +223,16 @@ class AppLocalizationsTr extends AppLocalizations {
       'Fotoğraf ve videolarınız hazırlanıyor. Lütfen bekleyiniz...';
 
   @override
+  String photosLoaded(int count) {
+    return '$count fotoğraf yüklendi';
+  }
+
+  @override
+  String photosLoadingProgress(int loaded, int total, int percentage) {
+    return '$loaded / $total fotoğraf (%$percentage)';
+  }
+
+  @override
   String get galleryInfoNotLoaded => 'Galeri bilgileri yüklenemedi';
 
   @override

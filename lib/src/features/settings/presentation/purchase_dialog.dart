@@ -78,9 +78,9 @@ class _PurchaseDialogState extends State<PurchaseDialog>
         return;
       }
       final current = offerings.current!;
-      final target = (current.identifier == RevenueCatService.offeringId)
-          ? current
-          : offerings.all[RevenueCatService.offeringId] ?? current;
+      // Try to find the specified offering, fallback to current
+      final target = offerings.all[RevenueCatService.offeringId] ?? 
+          (current.identifier == RevenueCatService.offeringId ? current : current);
       final base = target;
       Package? package = base.lifetime;
       if (package == null) {

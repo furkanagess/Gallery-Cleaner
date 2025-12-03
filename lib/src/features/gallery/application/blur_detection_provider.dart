@@ -174,6 +174,7 @@ class BlurDetectionCubit extends Cubit<BlurDetectionState> {
       debugPrint(
         '🔍 [BlurDetection] findBlurryPhotosInAlbums çağrılıyor... (threshold: $threshold, maxScanLimit: $remainingScanLimit)',
       );
+      // Scan işlemini çalıştır - isolate'lerde çalıştığı için uygulama arkaplana alındığında da devam edebilir
       final scanResult = await _blurDetectionService.findBlurryPhotosInAlbums(
         albums,
         blurThreshold: threshold,
@@ -205,9 +206,14 @@ class BlurDetectionCubit extends Cubit<BlurDetectionState> {
                 // State güncellemesini frame callback ile yap (UI thread'i bloklamamak için)
                 SchedulerBinding.instance.scheduleFrameCallback((_) {
                   if (!_isCancelled) {
-                    final displayTotalCount = albumTotalCount > 0
-                        ? albumTotalCount
-                        : plannedCount;
+                    // Kullanıcıya gösterilecek toplam fotoğraf sayısı:
+                    // Her scan işleminde maksimum sampleTarget (plannedCount) kadar fotoğraf
+                    // analiz edildiği için, 10.000'lik albümde de 1000/1000 şeklinde gösterilir.
+                    final displayTotalCount = plannedCount > 0
+                        ? plannedCount
+                        : (albumTotalCount > 0
+                              ? albumTotalCount
+                              : plannedCount);
                     final normalizedProgress = displayTotalCount > 0
                         ? (processedCount / displayTotalCount).clamp(0.0, 1.0)
                         : progress.clamp(0.0, 1.0);

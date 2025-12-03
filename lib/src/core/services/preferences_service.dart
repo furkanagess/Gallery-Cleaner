@@ -45,7 +45,10 @@ class PreferencesService {
   static const String _autoAnalyzeOnLaunchKey = 'auto_analyze_on_launch';
   static const String _interstitialAdCountKey = 'interstitial_ad_count';
   static const String _scanSoundEnabledKey = 'scan_sound_enabled';
+  static const String _soundVolumeKey = 'sound_volume';
   static const String _deleteCountForPaywallKey = 'delete_count_for_paywall';
+  static const String _hasShownFirstDeleteReviewKey = 'has_shown_first_delete_review';
+  static const String _lastSelectedAlbumIdKey = 'last_selected_album_id';
   static const int _defaultDeleteLimit = 100;
   static const int _defaultScanLimit = 1000;
   static const int _premiumDialogThreshold =
@@ -799,6 +802,18 @@ class PreferencesService {
     await prefs.setBool(_scanSoundEnabledKey, enabled);
   }
 
+  /// Ses seviyesini al (0.0 - 1.0, varsayılan: 1.0)
+  Future<double> getSoundVolume() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getDouble(_soundVolumeKey) ?? 1.0;
+  }
+
+  /// Ses seviyesini ayarla (0.0 - 1.0)
+  Future<void> setSoundVolume(double volume) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble(_soundVolumeKey, volume.clamp(0.0, 1.0));
+  }
+
   /// Silme sayacını al (paywall dialog için)
   Future<int> getDeleteCountForPaywall() async {
     final count = await _getSecureInt(_deleteCountForPaywallKey);
@@ -831,5 +846,47 @@ class PreferencesService {
   Future<void> resetDeleteCountForPaywall() async {
     await _setSecureInt(_deleteCountForPaywallKey, 0);
     debugPrint('💾 [PreferencesService] Silme sayacı sıfırlandı');
+  }
+
+  /// İlk silme sonrası review dialog'unun gösterilip gösterilmediğini kontrol et
+  Future<bool> hasShownFirstDeleteReview() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_hasShownFirstDeleteReviewKey) ?? false;
+  }
+
+  /// İlk silme sonrası review dialog'unun gösterildiğini işaretle
+  Future<void> setFirstDeleteReviewShown() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_hasShownFirstDeleteReviewKey, true);
+    debugPrint('💾 [PreferencesService] İlk silme review dialog\'u gösterildi olarak işaretlendi');
+  }
+
+  /// Son seçilen albüm ID'sini kaydet
+  Future<void> saveLastSelectedAlbumId(String? albumId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (albumId != null) {
+        await prefs.setString(_lastSelectedAlbumIdKey, albumId);
+        debugPrint('💾 [PreferencesService] Son seçilen albüm ID kaydedildi: $albumId');
+      } else {
+        await prefs.remove(_lastSelectedAlbumIdKey);
+        debugPrint('💾 [PreferencesService] Son seçilen albüm ID temizlendi');
+      }
+    } catch (e) {
+      debugPrint('❌ [PreferencesService] Son seçilen albüm ID kaydedilemedi: $e');
+    }
+  }
+
+  /// Son seçilen albüm ID'sini al
+  Future<String?> getLastSelectedAlbumId() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final albumId = prefs.getString(_lastSelectedAlbumIdKey);
+      debugPrint('💾 [PreferencesService] Son seçilen albüm ID okundu: $albumId');
+      return albumId;
+    } catch (e) {
+      debugPrint('❌ [PreferencesService] Son seçilen albüm ID okunamadı: $e');
+      return null;
+    }
   }
 }

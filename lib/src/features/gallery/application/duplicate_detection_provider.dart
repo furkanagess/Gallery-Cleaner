@@ -106,13 +106,13 @@ class DuplicateDetectionCubit extends Cubit<DuplicateDetectionState> {
     required PermissionsCubit permissionsCubit,
     required AlbumsCubit albumsCubit,
     VoidCallback? onScanLimitChanged,
-  })  : _duplicateDetectionService = duplicateDetectionService,
-        _preferencesService = preferencesService,
-        _mediaLibraryService = mediaLibraryService,
-        _permissionsCubit = permissionsCubit,
-        _albumsCubit = albumsCubit,
-        _onScanLimitChanged = onScanLimitChanged,
-        super(const DuplicateDetectionState());
+  }) : _duplicateDetectionService = duplicateDetectionService,
+       _preferencesService = preferencesService,
+       _mediaLibraryService = mediaLibraryService,
+       _permissionsCubit = permissionsCubit,
+       _albumsCubit = albumsCubit,
+       _onScanLimitChanged = onScanLimitChanged,
+       super(const DuplicateDetectionState());
 
   final DuplicateDetectionService _duplicateDetectionService;
   final PreferencesService _preferencesService;
@@ -141,12 +141,7 @@ class DuplicateDetectionCubit extends Cubit<DuplicateDetectionState> {
 
     if (permission != GalleryPermissionStatus.authorized) {
       debugPrint('❌ [DuplicateDetection] İzin yok! Tarama durduruldu.');
-      emit(
-        state.copyWith(
-        error: 'Permission not granted',
-        isScanning: false,
-        ),
-      );
+      emit(state.copyWith(error: 'Permission not granted', isScanning: false));
       return;
     }
 
@@ -221,9 +216,14 @@ class DuplicateDetectionCubit extends Cubit<DuplicateDetectionState> {
                 // State güncellemesini frame callback ile yap (UI thread'i bloklamamak için)
                 SchedulerBinding.instance.scheduleFrameCallback((_) {
                   if (!_isCancelled) {
-                    final displayTotalCount = albumTotalCount > 0
-                        ? albumTotalCount
-                        : plannedCount;
+                    // Kullanıcıya gösterilecek toplam fotoğraf sayısı:
+                    // Duplicate taramasında da her scan işleminde maksimum sampleTarget (plannedCount)
+                    // kadar fotoğraf analiz edildiği için, 10.000'lik albümde de 1000/1000 şeklinde gösterilir.
+                    final displayTotalCount = plannedCount > 0
+                        ? plannedCount
+                        : (albumTotalCount > 0
+                              ? albumTotalCount
+                              : plannedCount);
                     final normalizedProgress = displayTotalCount > 0
                         ? (processedCount / displayTotalCount).clamp(0.0, 1.0)
                         : progress.clamp(0.0, 1.0);
@@ -393,12 +393,7 @@ class DuplicateDetectionCubit extends Cubit<DuplicateDetectionState> {
   Future<void> scanSelectedAlbums() async {
     final albums = _albumsCubit.state.valueOrNull ?? [];
     if (albums.isEmpty) {
-      emit(
-        state.copyWith(
-          error: 'No albums available',
-          isScanning: false,
-        ),
-      );
+      emit(state.copyWith(error: 'No albums available', isScanning: false));
       return;
     }
     await scanAlbums(albums);
@@ -437,8 +432,7 @@ class DuplicateDetectionCubit extends Cubit<DuplicateDetectionState> {
 
     try {
       // Toplu silme işlemi - tüm ID'leri tek seferde sil
-      final deletedIds =
-          await _mediaLibraryService.deleteBatch(idsToDelete);
+      final deletedIds = await _mediaLibraryService.deleteBatch(idsToDelete);
       final deletedCount = deletedIds.length;
 
       debugPrint(

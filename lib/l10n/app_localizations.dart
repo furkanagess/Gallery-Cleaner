@@ -478,6 +478,18 @@ abstract class AppLocalizations {
   /// **'We are preparing your photos and videos. Please wait...'**
   String get loadingYourGalleryDescription;
 
+  /// Indicates how many photos have been loaded
+  ///
+  /// In en, this message translates to:
+  /// **'{count} photos loaded'**
+  String photosLoaded(int count);
+
+  /// Indicates photo loading progress with percentage
+  ///
+  /// In en, this message translates to:
+  /// **'{loaded} / {total} photos ({percentage}%)'**
+  String photosLoadingProgress(int loaded, int total, int percentage);
+
   /// Error message when gallery info fails to load
   ///
   /// In en, this message translates to:

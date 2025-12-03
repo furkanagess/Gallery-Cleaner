@@ -31,11 +31,13 @@ class RevenueCatService {
   static const String _androidPublicKey = 'goog_RDHXtiyMMTNFGrseBxSNVpiLrfB';
   static const String _iosPublicKey = 'appl_oKgzJzDDTXyZunWhwqbociivoVP';
 
-  /// Your identifiers from RevenueCat dashboard (based on screenshots):
-  /// Offering identifier: gallerycleanerpremiumoffering
+  /// Your identifiers from RevenueCat dashboard:
+  /// Offering identifier: gallery_cleaner_299
+  /// Display Name: Gallery Cleaner Plus
   /// Lifetime package identifier (standard): $rc_lifetime
-  /// Product identifier in stores: lifetime_gallery_cleaner_premium
-  static const String offeringId = 'gallerycleanerpremiumoffering';
+  /// Android Product: gallery_cleaner_ab_399
+  /// iOS Product: gallery_cleaner_299
+  static const String offeringId = 'gallery_cleaner_299';
   static const String lifetimePackageId = '\$rc_lifetime';
   static const String entitlementId = 'premium'; // must match RC entitlement id
 
@@ -72,8 +74,8 @@ class RevenueCatService {
         debugPrint('   📝 Steps:');
         debugPrint('   1. Go to RevenueCat Dashboard > Offerings');
         debugPrint('   2. Create offering with ID: $offeringId');
-        debugPrint('   3. Add product ID: lifetime_gallery_cleaner_premium');
-        debugPrint('   4. Ensure product is active in Google Play Console');
+        debugPrint('   3. Add package with identifier: $lifetimePackageId');
+        debugPrint('   4. Ensure products are active in stores');
       } else {
         debugPrint(
           '✅ [RevenueCat] offerings loaded | current=${o.current?.identifier} '
@@ -104,15 +106,26 @@ class RevenueCatService {
     Offering? targetOffering;
     final current = offerings.current;
 
-    if (current != null &&
-        (offeringId.isEmpty || current.identifier == offeringId)) {
-      targetOffering = current;
-    } else {
+    // Try to find the specified offering first
+    if (offeringId.isNotEmpty && offerings.all.containsKey(offeringId)) {
       targetOffering = offerings.all[offeringId];
-      targetOffering ??= current;
-      targetOffering ??= offerings.all.isNotEmpty
-          ? offerings.all.values.first
-          : null;
+      debugPrint(
+        '✅ [RevenueCat] Using specified offering: $offeringId',
+      );
+    } else if (current != null && current.identifier == offeringId) {
+      targetOffering = current;
+      debugPrint(
+        '✅ [RevenueCat] Using current offering: ${current.identifier}',
+      );
+    } else {
+      // Fallback to current offering if specified offering not found
+      targetOffering = current;
+      if (targetOffering == null && offerings.all.isNotEmpty) {
+        targetOffering = offerings.all.values.first;
+        debugPrint(
+          '⚠️ [RevenueCat] Specified offering "$offeringId" not found, using first available: ${targetOffering.identifier}',
+        );
+      }
     }
 
     if (targetOffering == null) {
@@ -134,6 +147,11 @@ class RevenueCatService {
     if (pkg == null) {
       debugPrint(
         '❌ [RevenueCat] Lifetime package not found in offering "${targetOffering.identifier}".',
+      );
+    } else {
+      debugPrint(
+        '✅ [RevenueCat] Lifetime package found | offering=${targetOffering.identifier} '
+        'price=${pkg.storeProduct.priceString}',
       );
     }
     return pkg;

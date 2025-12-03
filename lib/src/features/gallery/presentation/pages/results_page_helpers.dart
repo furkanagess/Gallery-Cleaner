@@ -2,8 +2,9 @@ import 'dart:typed_data';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:photo_manager/photo_manager.dart' as pm;
+import 'package:intl/intl.dart';
 import 'package:lottie/lottie.dart';
+import 'package:photo_manager/photo_manager.dart' as pm;
 import '../../../../app/theme/app_colors.dart';
 import '../../../../../l10n/app_localizations.dart';
 import '../../../../core/models/blur_photo.dart';
@@ -179,18 +180,60 @@ Widget buildBlurPhotoCard(
                           );
                         }
                         if (snapshot.hasData) {
-                          return Image.memory(
-                            snapshot.data!,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                color: theme.colorScheme.errorContainer,
-                                child: Icon(
-                                  Icons.broken_image,
-                                  color: theme.colorScheme.onErrorContainer,
+                          return Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              Image.memory(
+                                snapshot.data!,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    color: theme.colorScheme.errorContainer,
+                                    child: Icon(
+                                      Icons.broken_image,
+                                      color:
+                                          theme.colorScheme.onErrorContainer,
+                                    ),
+                                  );
+                                },
+                              ),
+                              // Fotoğraf tarihi - sol üst köşe
+                              Positioned(
+                                top: 10,
+                                left: 10,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withOpacity(0.55),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: Colors.white.withOpacity(0.9),
+                                      width: 1,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.35),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 3),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Text(
+                                    DateFormat('dd.MM.yyyy')
+                                        .format(photo.asset.createDateTime),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      letterSpacing: 0.2,
+                                    ),
+                                  ),
                                 ),
-                              );
-                            },
+                              ),
+                            ],
                           );
                         }
                         return Container(
@@ -782,6 +825,48 @@ Widget buildDuplicateGroupCard(
                                           ),
                                         ),
                                       ),
+                                      // Fotoğraf tarihi - sol üst köşe
+                                      Positioned(
+                                          top: 10,
+                                          left: 10,
+                                          child: Container(
+                                            padding:
+                                                const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 4,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: Colors.black
+                                                  .withOpacity(0.55),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                              border: Border.all(
+                                                color: Colors.white
+                                                    .withOpacity(0.9),
+                                                width: 1,
+                                              ),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: Colors.black
+                                                      .withOpacity(0.35),
+                                                  blurRadius: 8,
+                                                  offset: const Offset(0, 3),
+                                                ),
+                                              ],
+                                            ),
+                                            child: Text(
+                                              DateFormat('dd.MM.yyyy').format(
+                                                group.keepAsset.createDateTime,
+                                              ),
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w600,
+                                                letterSpacing: 0.2,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
                                     ],
                                   );
                                 }

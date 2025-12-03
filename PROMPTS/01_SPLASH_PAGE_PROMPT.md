@@ -217,3 +217,6 @@ Scaffold
 Splash Page, kullanıcıya uygulamanın modern ve profesyonel olduğunu hissettiren, marka kimliğini net bir şekilde sunan ve yumuşak bir geçiş sağlayan minimalist bir ekrandır. Tüm animasyonlar ve geçişler akıcı olmalı, kullanıcı deneyimini bozmamalıdır.
 
 
+
+
+

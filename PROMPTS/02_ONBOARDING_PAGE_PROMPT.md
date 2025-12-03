@@ -243,3 +243,6 @@ Scaffold
 Onboarding Page, kullanıcıya uygulamanın temel özelliklerini görsel ve anlaşılır bir şekilde sunan, hızlıca geçilebilen ve etkileşimli bir tanıtım ekranıdır. Her slide, bir özelliği vurgular ve kullanıcıyı uygulamayı kullanmaya teşvik eder.
 
 
+
+
+

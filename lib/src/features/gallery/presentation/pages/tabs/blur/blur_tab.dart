@@ -9,7 +9,6 @@ import 'package:lottie/lottie.dart';
 import '../../../../application/blur_detection_provider.dart';
 import '../../../../application/gallery_providers.dart';
 import '../../../../../../core/services/sound_service.dart';
-import '../../../../../../core/models/blur_photo.dart';
 import '../../../../../../app/theme/app_colors.dart';
 import '../../../../../../app/theme/app_decorations.dart';
 import '../../../../../../../l10n/app_localizations.dart';
@@ -103,13 +102,6 @@ class BlurTabState extends State<BlurTab> with CubitStateMixin<BlurTab> {
     final albumsAsync = context.watch<AlbumsCubit>().state;
     final blurState = context.watch<BlurDetectionCubit>().state;
 
-    // Premium durumunu kontrol et
-    final isPremiumAsync = context.watch<PremiumCubit>().state;
-    final isPremium = isPremiumAsync.maybeWhen(
-      data: (premium) => premium,
-      orElse: () => false,
-    );
-
     // Bottom navigation bar'daki container rengiyle aynı
     final containerColor = theme.colorScheme.onPrimaryContainer.withOpacity(
       0.8,
@@ -170,8 +162,8 @@ class BlurTabState extends State<BlurTab> with CubitStateMixin<BlurTab> {
                         child: SoundToggleButton(
                           isSoundEnabled: _isSoundEnabled,
                           onToggle: () {
-                            // Anında state'i güncelle
-                            setState(() {
+                            // Anında state'i CubitStateMixin ile güncelle
+                            cubitSetState(() {
                               _isSoundEnabled = !_isSoundEnabled;
                             });
                             // Sonra async işlemi yap
@@ -318,14 +310,6 @@ class BlurTabState extends State<BlurTab> with CubitStateMixin<BlurTab> {
                   child: SafeArea(
                     child: Builder(
                       builder: (context) {
-                        // Check if there are actual photos to delete
-                        final allPhotos = <BlurPhoto>[];
-                        for (final entry
-                            in blurState.blurryPhotosByAlbum.entries) {
-                          allPhotos.addAll(entry.value);
-                        }
-                        final hasPhotosToDelete = allPhotos.isNotEmpty;
-
                         final blurScanLimitAsync = context
                             .watch<BlurScanLimitCubit>()
                             .state;
@@ -334,36 +318,18 @@ class BlurTabState extends State<BlurTab> with CubitStateMixin<BlurTab> {
                             .state;
 
                         return blurScanLimitAsync.when(
-                          loading: () => hasPhotosToDelete
-                              ? _buildStartScanButton(
-                                  context,
-                                  theme,
-                                  l10n,
-                                  selectedAlbums,
-                                  isPremiumAsync,
-                                )
-                              : const SizedBox.shrink(),
-                          error: (_, __) => hasPhotosToDelete
-                              ? _buildStartScanButton(
-                                  context,
-                                  theme,
-                                  l10n,
-                                  selectedAlbums,
-                                  isPremiumAsync,
-                                )
-                              : const SizedBox.shrink(),
+                          loading: () => const SizedBox.shrink(),
+                          error: (_, __) => const SizedBox.shrink(),
                           data: (limit) {
-                            final canScan =
-                                limit > 0 || isPremiumAsync.valueOrNull == true;
-                            if (!canScan && !hasPhotosToDelete) {
-                              return const SizedBox.shrink();
-                            }
+                            // Scan hakkı 0 ise her durumda Premium / Get Premium alanı gösterilsin
+                            // (hasPhotosToDelete olsa bile, buton alanında önce premium CTA öncelikli)
                             return _buildStartScanButton(
                               context,
                               theme,
                               l10n,
                               selectedAlbums,
                               isPremiumAsync,
+                              limit,
                             );
                           },
                         );
@@ -460,6 +426,7 @@ class BlurTabState extends State<BlurTab> with CubitStateMixin<BlurTab> {
     AppLocalizations l10n,
     List<pm.AssetPathEntity> selectedAlbums,
     AsyncValue<bool> isPremiumAsync,
+    int scanLimit,
   ) {
     final blurState = context.watch<BlurDetectionCubit>().state;
     final isScanning = blurState.isScanning;
@@ -470,200 +437,199 @@ class BlurTabState extends State<BlurTab> with CubitStateMixin<BlurTab> {
       loading: () => const SizedBox.shrink(),
       error: (_, __) => const SizedBox.shrink(),
       data: (isPremium) {
-        final blurScanLimitAsync = context.watch<BlurScanLimitCubit>().state;
-        return blurScanLimitAsync.when(
-          loading: () => const SizedBox.shrink(),
-          error: (_, __) => const SizedBox.shrink(),
-          data: (scanLimit) {
-            final hasNoScanRights = !isPremium && scanLimit <= 0;
+        final hasNoScanRights = !isPremium && scanLimit <= 0;
 
-            // hasResults durumunda "View Last Results" ve "Start New Scan" butonları göster
-            if (hasResults) {
-              // Bottom navigation bar'daki container rengiyle aynı
-              final containerColor = theme.colorScheme.onPrimaryContainer
-                  .withOpacity(0.8);
+        // Önce varsa önceki sonuçlar için butonlar
+        if (hasResults) {
+          final containerColor =
+              theme.colorScheme.onPrimaryContainer.withOpacity(0.8);
 
-              return Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        // Scan state'ini temizle
-                        context.read<BlurDetectionCubit>().clear();
-                      },
-                      icon: const Icon(Icons.refresh_rounded),
-                      label: Text(l10n.startNewScan),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        minimumSize: const Size(0, 56),
-                        side: BorderSide(
-                          color: containerColor.withOpacity(0.5),
-                          width: 1.5,
-                        ),
-                      ),
+          return Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    context.read<BlurDetectionCubit>().clear();
+                  },
+                  icon: const Icon(Icons.refresh_rounded),
+                  label: Text(l10n.startNewScan),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    minimumSize: const Size(0, 56),
+                    side: BorderSide(
+                      color: containerColor.withOpacity(0.5),
+                      width: 1.5,
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: FilledButton.icon(
-                      onPressed: () {
-                        context.push('/results/blur');
-                      },
-                      icon: const Icon(Icons.visibility_rounded),
-                      label: Text(l10n.viewLastResults),
-                      style: FilledButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        minimumSize: const Size(0, 56),
-                        backgroundColor: containerColor,
-                        foregroundColor: AppColors.white,
-                        side: BorderSide(
-                          color: containerColor.withOpacity(0.9),
-                          width: 1.5,
-                        ),
-                      ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: () {
+                    context.push('/results/blur');
+                  },
+                  icon: const Icon(Icons.visibility_rounded),
+                  label: Text(l10n.viewLastResults),
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    minimumSize: const Size(0, 56),
+                    backgroundColor: containerColor,
+                    foregroundColor: AppColors.white,
+                    side: BorderSide(
+                      color: containerColor.withOpacity(0.9),
+                      width: 1.5,
                     ),
                   ),
-                ],
-              );
-            }
+                ),
+              ),
+            ],
+          );
+        }
 
-            return FutureBuilder<
-              ({
-                int estimatedSeconds,
-                int totalPhotoCount,
-                bool hasLimitWarning,
-              })
-            >(
-              future: estimateBlurScanDuration(selectedAlbums),
-              builder: (context, snapshot) {
-                final estimatedTimeText = snapshot.hasData
-                    ? formatEstimatedTime(snapshot.data!.estimatedSeconds, l10n)
-                    : null;
+        // Scan hakkı yok ve hiç sonuç yoksa - sadece Get Premium butonu (Start Scan ile aynı stil, farklı renk)
+        if (hasNoScanRights && !hasResults) {
+          final premiumColor = AppColors.warningLight;
+          return SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: () => context.push('/paywall'),
+              icon: const Icon(Icons.workspace_premium_rounded),
+              label: Text(l10n.getUnlimitedScans),
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                minimumSize: const Size(double.infinity, 56),
+                backgroundColor: premiumColor,
+                foregroundColor: theme.colorScheme.background,
+                side: BorderSide(
+                  color: premiumColor.withOpacity(0.9),
+                  width: 1.5,
+                ),
+              ),
+            ),
+          );
+        }
 
-                final hasLimitWarning =
-                    snapshot.hasData && snapshot.data!.hasLimitWarning;
-                final totalPhotoCount = snapshot.hasData
-                    ? snapshot.data!.totalPhotoCount
-                    : 0;
+        // Normal durumda Start Scan (ModernScanButton)
+        return FutureBuilder<
+          ({
+            int estimatedSeconds,
+            int totalPhotoCount,
+            bool hasLimitWarning,
+          })
+        >(
+          future: estimateBlurScanDuration(selectedAlbums),
+          builder: (context, snapshot) {
+            final estimatedTimeText = snapshot.hasData
+                ? formatEstimatedTime(snapshot.data!.estimatedSeconds, l10n)
+                : null;
 
-                return ModernScanButton(
-                  context: context,
-                  theme: theme,
-                  l10n: l10n,
-                  onPressed: isScanning || hasNoScanRights
-                      ? null
-                      : () async {
-                          // Seçili albüm isimlerini hazırla
-                          final albumNames = selectedAlbums
-                              .map((a) => a.name)
-                              .join(', ');
+            final hasLimitWarning =
+                snapshot.hasData && snapshot.data!.hasLimitWarning;
+            final totalPhotoCount = snapshot.hasData
+                ? snapshot.data!.totalPhotoCount
+                : 0;
 
-                          // Onay dialogu göster
-                          final confirmed = await showDialog<bool>(
-                            context: context,
-                            builder: (dialogContext) {
-                              // Premium durumunu kontrol et
-                              final isPremiumAsync = dialogContext
-                                  .watch<PremiumCubit>()
-                                  .state;
-                              final isPremium = isPremiumAsync.maybeWhen(
-                                data: (premium) => premium,
-                                orElse: () => false,
-                              );
+            return ModernScanButton(
+              context: context,
+              theme: theme,
+              l10n: l10n,
+              onPressed: isScanning || hasNoScanRights
+                  ? null
+                  : () async {
+                      final albumNames = selectedAlbums
+                          .map((a) => a.name)
+                          .join(', ');
 
-                              // Bottom navigation bar'daki container rengiyle aynı
-                              final containerColor = theme
-                                  .colorScheme
-                                  .onPrimaryContainer
-                                  .withOpacity(0.8);
+                      final confirmed = await showDialog<bool>(
+                        context: context,
+                        builder: (dialogContext) {
+                          final containerColor = theme
+                              .colorScheme
+                              .onPrimaryContainer
+                              .withOpacity(0.8);
 
-                              return AlertDialog(
-                                title: Text(l10n.startScan),
-                                content: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(l10n.blurDetectionDescription),
-                                    const SizedBox(height: 12),
-                                    Container(
-                                      padding: const EdgeInsets.all(12),
-                                      decoration: BoxDecoration(
-                                        color: containerColor.withOpacity(0.3),
-                                        borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(
-                                          color: containerColor.withOpacity(
-                                            0.2,
+                          return AlertDialog(
+                            title: Text(l10n.startScan),
+                            content: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(l10n.blurDetectionDescription),
+                                const SizedBox(height: 12),
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: containerColor.withOpacity(0.3),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: containerColor.withOpacity(0.2),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.folder_rounded,
+                                        size: 20,
+                                        color: containerColor,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          albumNames,
+                                          style: theme.textTheme.bodyMedium
+                                              ?.copyWith(
+                                            color: containerColor,
+                                            fontWeight: FontWeight.w600,
                                           ),
-                                          width: 1,
+                                          maxLines: 3,
+                                          overflow: TextOverflow.ellipsis,
                                         ),
                                       ),
-                                      child: Row(
-                                        children: [
-                                          Icon(
-                                            Icons.folder_rounded,
-                                            size: 20,
-                                            color: containerColor,
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Expanded(
-                                            child: Text(
-                                              albumNames,
-                                              style: theme.textTheme.bodyMedium
-                                                  ?.copyWith(
-                                                    color: containerColor,
-                                                    fontWeight: FontWeight.w600,
-                                                  ),
-                                              maxLines: 3,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () =>
-                                        Navigator.of(dialogContext).pop(false),
-                                    child: Text(l10n.cancel),
-                                  ),
-                                  FilledButton(
-                                    onPressed: () =>
-                                        Navigator.of(dialogContext).pop(true),
-                                    style: FilledButton.styleFrom(
-                                      backgroundColor: containerColor,
-                                    ),
-                                    child: Text(l10n.scan),
-                                  ),
-                                ],
-                              );
-                            },
+                              ],
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () =>
+                                    Navigator.of(dialogContext).pop(false),
+                                child: Text(l10n.cancel),
+                              ),
+                              FilledButton(
+                                onPressed: () =>
+                                    Navigator.of(dialogContext).pop(true),
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: containerColor,
+                                ),
+                                child: Text(l10n.scan),
+                              ),
+                            ],
                           );
-
-                          // Kullanıcı onaylamadıysa veya dialog kapatıldıysa çık
-                          if (confirmed != true || !mounted) return;
-
-                          // Scan başlat
-                          await context.read<BlurDetectionCubit>().scanAlbums(
-                            selectedAlbums,
-                            blurThreshold: _blurThreshold,
-                          );
-
-                          if (!mounted) return;
                         },
-                  icon: hasNoScanRights ? Icons.block : Icons.search_rounded,
-                  label: hasNoScanRights
-                      ? l10n.noScanRightsLeft
-                      : l10n.scanSelectedAlbums,
-                  isEnabled: !isScanning && !hasNoScanRights,
-                  isError: hasNoScanRights,
-                  onErrorPressed: () => context.push('/paywall'),
-                  estimatedTimeText: estimatedTimeText,
-                  hasLimitWarning: hasLimitWarning,
-                  totalPhotoCount: totalPhotoCount,
-                );
-              },
+                      );
+
+                      if (confirmed != true || !mounted) return;
+
+                      await context.read<BlurDetectionCubit>().scanAlbums(
+                        selectedAlbums,
+                        blurThreshold: _blurThreshold,
+                      );
+
+                      if (!mounted) return;
+                    },
+              icon: hasNoScanRights ? Icons.block : Icons.search_rounded,
+              label: hasNoScanRights
+                  ? l10n.noScanRightsLeft
+                  : l10n.scanSelectedAlbums,
+              isEnabled: !isScanning && !hasNoScanRights,
+              isError: hasNoScanRights,
+              onErrorPressed: () => context.push('/paywall'),
+              estimatedTimeText: estimatedTimeText,
+              hasLimitWarning: hasLimitWarning,
+              totalPhotoCount: totalPhotoCount,
             );
           },
         );
@@ -676,13 +642,6 @@ class BlurTabState extends State<BlurTab> with CubitStateMixin<BlurTab> {
     ThemeData theme,
     AppLocalizations l10n,
   ) {
-    // Premium durumunu kontrol et
-    final isPremiumAsync = context.watch<PremiumCubit>().state;
-    final isPremium = isPremiumAsync.maybeWhen(
-      data: (premium) => premium,
-      orElse: () => false,
-    );
-
     // Bottom navigation bar'daki container rengiyle aynı
     final containerColor = theme.colorScheme.onPrimaryContainer.withOpacity(
       0.8,
@@ -781,8 +740,8 @@ class BlurTabState extends State<BlurTab> with CubitStateMixin<BlurTab> {
         BlurSensitivitySelector(
           currentThreshold: _blurThreshold,
           onThresholdChanged: (double threshold) {
-            // Anında mod değişimi - state'i güncelle
-            setState(() {
+            // Anında mod değişimi - state'i CubitStateMixin ile güncelle
+            cubitSetState(() {
               _blurThreshold = threshold;
             });
           },

@@ -125,11 +125,17 @@ void main() async {
           BlocProvider(create: (_) => PermissionsCubit()),
           BlocProvider(create: (_) => ThemeCubit()),
           BlocProvider(create: (_) => LocaleCubit()),
-          BlocProvider(create: (_) => SelectedAlbumCubit()),
+          BlocProvider(
+            create: (context) => SelectedAlbumCubit(
+              preferencesService: context.read<PreferencesService>(),
+            ),
+          ),
           BlocProvider(
             create: (context) => AlbumsCubit(
               mediaLibraryService: context.read<MediaLibraryService>(),
               permissionsCubit: context.read<PermissionsCubit>(),
+              selectedAlbumCubit: context.read<SelectedAlbumCubit>(),
+              preferencesService: context.read<PreferencesService>(),
             ),
           ),
           BlocProvider(create: (_) => AlbumFilterCubit()),

@@ -1,6 +1,4 @@
 import 'dart:async';
-import 'dart:math' as math;
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -15,7 +13,6 @@ import '../../../../../../app/theme/app_decorations.dart';
 import '../../../../../../../l10n/app_localizations.dart';
 import '../../../../../../core/utils/view_refresh_cubit.dart';
 import '../../../../../../core/utils/async_value.dart';
-import '../../swipe_page.dart' show showDeleteSuccessDialog;
 import 'widgets/duplicate_tab_shimmer.dart' show ScanFormShimmer;
 import '../blur/widgets/scan_progress_card.dart' show ScanProgressCard;
 import '../blur/widgets/modern_scan_button.dart' show ModernScanButton;
@@ -187,13 +184,6 @@ class DuplicateTabState extends State<DuplicateTab>
     final albumsAsync = context.watch<AlbumsCubit>().state;
     final duplicateState = context.watch<DuplicateDetectionCubit>().state;
 
-    // Premium durumunu kontrol et
-    final isPremiumAsync = context.watch<PremiumCubit>().state;
-    final isPremium = isPremiumAsync.maybeWhen(
-      data: (premium) => premium,
-      orElse: () => false,
-    );
-
     // Bottom navigation bar'daki container rengiyle aynı
     final containerColor = theme.colorScheme.onPrimaryContainer.withOpacity(
       0.8,
@@ -252,8 +242,8 @@ class DuplicateTabState extends State<DuplicateTab>
                         child: SoundToggleButton(
                           isSoundEnabled: _isSoundEnabled,
                           onToggle: () {
-                            // Anında state'i güncelle
-                            setState(() {
+                            // Anında state'i CubitStateMixin ile güncelle
+                            cubitSetState(() {
                               _isSoundEnabled = !_isSoundEnabled;
                             });
                             // Sonra async işlemi yap
@@ -388,7 +378,6 @@ class DuplicateTabState extends State<DuplicateTab>
                 ),
                 child: _buildScanForm(context, theme, l10n),
               ),
-              // Fixed bottom button
               Positioned(
                 bottom: 0,
                 left: 0,
@@ -401,10 +390,6 @@ class DuplicateTabState extends State<DuplicateTab>
                   child: SafeArea(
                     child: Builder(
                       builder: (context) {
-                        // Check if there are actual duplicate groups to delete
-                        final hasPhotosToDelete =
-                            duplicateState.totalDuplicatePhotos > 0;
-
                         final duplicateScanLimitAsync = context
                             .watch<DuplicateScanLimitCubit>()
                             .state;
@@ -413,115 +398,16 @@ class DuplicateTabState extends State<DuplicateTab>
                             .state;
 
                         return duplicateScanLimitAsync.when(
-                          loading: () => hasPhotosToDelete
-                              ? _buildDeleteAllButton(
-                                  context,
-                                  theme,
-                                  l10n,
-                                  duplicateState,
-                                )
-                              : _buildStartScanButton(
-                                  context,
-                                  theme,
-                                  l10n,
-                                  selectedAlbums,
-                                  isPremiumAsync,
-                                  null,
-                                  false,
-                                  0,
-                                ),
-                          error: (_, __) => hasPhotosToDelete
-                              ? _buildDeleteAllButton(
-                                  context,
-                                  theme,
-                                  l10n,
-                                  duplicateState,
-                                )
-                              : _buildStartScanButton(
-                                  context,
-                                  theme,
-                                  l10n,
-                                  selectedAlbums,
-                                  isPremiumAsync,
-                                  null,
-                                  false,
-                                  0,
-                                ),
+                          loading: () => const SizedBox.shrink(),
+                          error: (_, __) => const SizedBox.shrink(),
                           data: (scanLimit) {
-                            return isPremiumAsync.when(
-                              loading: () => hasPhotosToDelete
-                                  ? _buildDeleteAllButton(
-                                      context,
-                                      theme,
-                                      l10n,
-                                      duplicateState,
-                                    )
-                                  : _buildStartScanButton(
-                                      context,
-                                      theme,
-                                      l10n,
-                                      selectedAlbums,
-                                      isPremiumAsync,
-                                      null,
-                                      false,
-                                      0,
-                                    ),
-                              error: (_, __) => hasPhotosToDelete
-                                  ? _buildDeleteAllButton(
-                                      context,
-                                      theme,
-                                      l10n,
-                                      duplicateState,
-                                    )
-                                  : _buildStartScanButton(
-                                      context,
-                                      theme,
-                                      l10n,
-                                      selectedAlbums,
-                                      isPremiumAsync,
-                                      null,
-                                      false,
-                                      0,
-                                    ),
-                              data: (isPremium) {
-                                return FutureBuilder<
-                                  ({
-                                    int estimatedSeconds,
-                                    int totalPhotoCount,
-                                    bool hasLimitWarning,
-                                  })
-                                >(
-                                  future: estimateDuplicateScanDuration(
-                                    selectedAlbums,
-                                  ),
-                                  builder: (context, snapshot) {
-                                    final estimatedTimeText = snapshot.hasData
-                                        ? formatEstimatedTime(
-                                            snapshot.data!.estimatedSeconds,
-                                            l10n,
-                                          )
-                                        : null;
-
-                                    final hasLimitWarning =
-                                        snapshot.hasData &&
-                                        snapshot.data!.hasLimitWarning;
-                                    final totalPhotoCount = snapshot.hasData
-                                        ? snapshot.data!.totalPhotoCount
-                                        : 0;
-
-                                    return _buildStartScanButton(
-                                      context,
-                                      theme,
-                                      l10n,
-                                      selectedAlbums,
-                                      isPremiumAsync,
-                                      estimatedTimeText,
-                                      hasLimitWarning,
-                                      totalPhotoCount,
-                                    );
-                                  },
-                                );
-                              },
+                            return _buildStartScanButton(
+                              context,
+                              theme,
+                              l10n,
+                              selectedAlbums,
+                              isPremiumAsync,
+                              scanLimit,
                             );
                           },
                         );
@@ -543,9 +429,7 @@ class DuplicateTabState extends State<DuplicateTab>
     AppLocalizations l10n,
     List<pm.AssetPathEntity> selectedAlbums,
     AsyncValue<bool> isPremiumAsync,
-    String? estimatedTimeText,
-    bool hasLimitWarning,
-    int totalPhotoCount,
+    int scanLimit,
   ) {
     final duplicateState = context.watch<DuplicateDetectionCubit>().state;
     final isScanning = duplicateState.isScanning;
@@ -556,64 +440,94 @@ class DuplicateTabState extends State<DuplicateTab>
       loading: () => const SizedBox.shrink(),
       error: (_, __) => const SizedBox.shrink(),
       data: (isPremium) {
-        final duplicateScanLimitAsync = context
-            .watch<DuplicateScanLimitCubit>()
-            .state;
-        return duplicateScanLimitAsync.when(
-          loading: () => const SizedBox.shrink(),
-          error: (_, __) => const SizedBox.shrink(),
-          data: (scanLimit) {
-            final hasNoScanRights = !isPremium && scanLimit <= 0;
+        final hasNoScanRights = !isPremium && scanLimit <= 0;
 
-            // hasResults durumunda "View Last Results" ve "Start New Scan" butonları göster
-            if (hasResults) {
-              // Bottom navigation bar'daki container rengiyle aynı
-              final containerColor = theme.colorScheme.onPrimaryContainer
-                  .withOpacity(0.8);
+        // Önce önceki sonuçlar varsa "Start New Scan" + "View Last Results"
+        if (hasResults) {
+          final containerColor = theme.colorScheme.onPrimaryContainer
+              .withOpacity(0.8);
 
-              return Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        // Scan state'ini temizle
-                        context.read<DuplicateDetectionCubit>().clear();
-                      },
-                      icon: const Icon(Icons.refresh_rounded),
-                      label: Text(l10n.startNewScan),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        minimumSize: const Size(0, 56),
-                        side: BorderSide(
-                          color: containerColor.withOpacity(0.5),
-                          width: 1.5,
-                        ),
-                      ),
+          return Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    context.read<DuplicateDetectionCubit>().clear();
+                  },
+                  icon: const Icon(Icons.refresh_rounded),
+                  label: Text(l10n.startNewScan),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    minimumSize: const Size(0, 56),
+                    side: BorderSide(
+                      color: containerColor.withOpacity(0.5),
+                      width: 1.5,
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: FilledButton.icon(
-                      onPressed: () {
-                        context.push('/results/duplicate');
-                      },
-                      icon: const Icon(Icons.visibility_rounded),
-                      label: Text(l10n.viewLastResults),
-                      style: FilledButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        minimumSize: const Size(0, 56),
-                        backgroundColor: containerColor,
-                        foregroundColor: AppColors.white,
-                        side: BorderSide(
-                          color: containerColor.withOpacity(0.9),
-                          width: 1.5,
-                        ),
-                      ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: () {
+                    context.push('/results/duplicate');
+                  },
+                  icon: const Icon(Icons.visibility_rounded),
+                  label: Text(l10n.viewLastResults),
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    minimumSize: const Size(0, 56),
+                    backgroundColor: containerColor,
+                    foregroundColor: AppColors.white,
+                    side: BorderSide(
+                      color: containerColor.withOpacity(0.9),
+                      width: 1.5,
                     ),
                   ),
-                ],
-              );
-            }
+                ),
+              ),
+            ],
+          );
+        }
+
+        // Scan hakkı yok ve hiç sonuç yoksa - sadece Get Premium butonu (Start Scan ile aynı stil, farklı renk)
+        if (hasNoScanRights && !hasResults) {
+          final premiumColor = AppColors.warningLight;
+          return SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: () => context.push('/paywall'),
+              icon: const Icon(Icons.workspace_premium_rounded),
+              label: Text(l10n.getUnlimitedDeletions),
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                minimumSize: const Size(double.infinity, 56),
+                backgroundColor: premiumColor,
+                foregroundColor: theme.colorScheme.background,
+                side: BorderSide(
+                  color: premiumColor.withOpacity(0.9),
+                  width: 1.5,
+                ),
+              ),
+            ),
+          );
+        }
+
+        // Normal durumda ModernScanButton
+        return FutureBuilder<
+          ({int estimatedSeconds, int totalPhotoCount, bool hasLimitWarning})
+        >(
+          future: estimateDuplicateScanDuration(selectedAlbums),
+          builder: (context, snapshot) {
+            final estimatedTimeText = snapshot.hasData
+                ? formatEstimatedTime(snapshot.data!.estimatedSeconds, l10n)
+                : null;
+
+            final hasLimitWarning =
+                snapshot.hasData && snapshot.data!.hasLimitWarning;
+            final totalPhotoCount = snapshot.hasData
+                ? snapshot.data!.totalPhotoCount
+                : 0;
 
             return ModernScanButton(
               context: context,
@@ -622,25 +536,13 @@ class DuplicateTabState extends State<DuplicateTab>
               onPressed: isScanning || hasNoScanRights
                   ? null
                   : () async {
-                      // Seçili albüm isimlerini hazırla
                       final albumNames = selectedAlbums
                           .map((a) => a.name)
                           .join(', ');
 
-                      // Onay dialogu göster
                       final confirmed = await showDialog<bool>(
                         context: context,
                         builder: (dialogContext) {
-                          // Premium durumunu kontrol et
-                          final isPremiumAsync = dialogContext
-                              .watch<PremiumCubit>()
-                              .state;
-                          final isPremium = isPremiumAsync.maybeWhen(
-                            data: (premium) => premium,
-                            orElse: () => false,
-                          );
-
-                          // Bottom navigation bar'daki container rengiyle aynı
                           final containerColor = theme
                               .colorScheme
                               .onPrimaryContainer
@@ -708,16 +610,14 @@ class DuplicateTabState extends State<DuplicateTab>
                         },
                       );
 
-                      // Kullanıcı onaylamadıysa veya dialog kapatıldıysa çık
-                      if (confirmed != true || !mounted) return;
+                      if (confirmed != true || !context.mounted) return;
 
-                      // Scan başlat
                       await context.read<DuplicateDetectionCubit>().scanAlbums(
                         selectedAlbums,
                         mode: _duplicateMode,
                       );
 
-                      if (!mounted) return;
+                      if (!context.mounted) return;
                     },
               icon: hasNoScanRights ? Icons.block : Icons.search_rounded,
               label: hasNoScanRights
@@ -736,115 +636,11 @@ class DuplicateTabState extends State<DuplicateTab>
     );
   }
 
-  Widget _buildDeleteAllButton(
-    BuildContext context,
-    ThemeData theme,
-    AppLocalizations l10n,
-    DuplicateDetectionState duplicateState,
-  ) {
-    return FilledButton.icon(
-      onPressed: () async {
-        final confirmed = await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: Text(l10n.deleteAllDuplicates),
-            content: Text(
-              l10n.deleteAllDuplicatesMessage(
-                duplicateState.totalDuplicatePhotos,
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: Text(l10n.cancel),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.of(context).pop(true),
-                style: FilledButton.styleFrom(
-                  backgroundColor: theme.colorScheme.error,
-                  side: BorderSide(
-                    color: AppColors.error.withOpacity(0.9),
-                    width: 1.5,
-                  ),
-                ),
-                child: Text(l10n.delete),
-              ),
-            ],
-          ),
-        );
-
-        if (confirmed != true || !mounted) return;
-
-        // Delete limit kontrolü
-        final deleteLimitController = context.read<DeleteLimitCubit>();
-        final deleteLimit = await deleteLimitController.currentLimit();
-        final isPremium = await PreferencesService().isPremium();
-
-        // Toplam silinecek fotoğraf sayısını kontrol et
-        final totalPhotosToDelete = duplicateState.totalDuplicatePhotos;
-
-        // Delete limit'e göre maksimum silinebilecek fotoğraf sayısını belirle
-        final maxDeleteCount = isPremium || deleteLimit >= 999999999
-            ? totalPhotosToDelete
-            : math.min(deleteLimit, totalPhotosToDelete);
-
-        debugPrint(
-          '📊 [DuplicateTab] Toplu silme: $maxDeleteCount/$totalPhotosToDelete fotoğraf silinecek (limit: $deleteLimit)',
-        );
-
-        // Eğer limit varsa, sadece limit kadar fotoğrafı sil
-        int deletedCount = 0;
-        if (maxDeleteCount > 0) {
-          deletedCount = await context
-              .read<DuplicateDetectionCubit>()
-              .deleteAllDuplicates(maxDeleteCount: maxDeleteCount);
-        }
-
-        if (!mounted) return;
-
-        if (deletedCount > 0) {
-          // Silme hakkını azalt
-          await deleteLimitController.decrease(deletedCount);
-
-          debugPrint('✅ [DuplicateTab] $deletedCount fotoğraf silindi');
-
-          // Success dialog göster
-          if (mounted) {
-            await showDeleteSuccessDialog(context, deletedCount);
-          }
-
-          // Reload'u dialog kapandıktan sonra yap
-          if (mounted) {
-            context.read<GalleryPagingCubit>().reload();
-          }
-        } else {
-          debugPrint('⚠️ [DuplicateTab] Silme işlemi başarısız veya limit yok');
-        }
-      },
-      icon: const Icon(Icons.delete_outline),
-      label: Text(l10n.deleteAllDuplicates),
-      style: FilledButton.styleFrom(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        minimumSize: const Size(double.infinity, 56),
-        backgroundColor: AppColors.error.withOpacity(0.85),
-        foregroundColor: theme.colorScheme.onError,
-        side: BorderSide(color: AppColors.error.withOpacity(0.9), width: 1.5),
-      ),
-    );
-  }
-
   Widget _buildScanForm(
     BuildContext context,
     ThemeData theme,
     AppLocalizations l10n,
   ) {
-    // Premium durumunu kontrol et
-    final isPremiumAsync = context.watch<PremiumCubit>().state;
-    final isPremium = isPremiumAsync.maybeWhen(
-      data: (premium) => premium,
-      orElse: () => false,
-    );
-
     // Bottom navigation bar'daki container rengiyle aynı
     final containerColor = theme.colorScheme.onPrimaryContainer.withOpacity(
       0.8,
@@ -944,7 +740,7 @@ class DuplicateTabState extends State<DuplicateTab>
           currentMode: _duplicateMode,
           onModeChanged: (DuplicateDetectionMode mode) {
             // Anında mod değişimi - state'i güncelle
-            setState(() {
+            cubitSetState(() {
               _duplicateMode = mode;
             });
           },

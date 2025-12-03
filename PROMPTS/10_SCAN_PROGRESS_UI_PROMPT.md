@@ -312,3 +312,6 @@ Container
 Scan Progress UI, kullanıcıya tarama durumunu net bir şekilde gösteren, görsel olarak çekici ve bilgilendirici bir overlay ekranıdır. Kullanıcı her zaman ne olduğunu bilmeli ve isterse taramayı iptal edebilmelidir.
 
 
+
+
+

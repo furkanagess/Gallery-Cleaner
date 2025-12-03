@@ -87,138 +87,182 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
     );
 
     return RepaintBoundary(
-      child: Stack(
-        clipBehavior: Clip.none,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // Ana içerik
-          Padding(
-            padding: const EdgeInsets.only(
-              left: 16,
-              right: 16,
-              top: 8,
-              bottom: 16,
-            ),
-            child: Align(
-              alignment: Alignment.topCenter,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 420),
-                child: AspectRatio(
-                  aspectRatio: 3 / 4,
-                  child: AnimatedScale(
-                    scale: _dragScale,
-                    duration: const Duration(milliseconds: 150),
-                    curve: Curves.easeOutCubic,
-                    child: Transform.translate(
-                      offset: _dragOffset,
-                      child: Stack(
-                        fit: StackFit.expand,
-                        clipBehavior: Clip.none,
-                        children: [
-                          PhotoSwipeDeck(
-                            key: ValueKey(
-                              widget.assets.isEmpty
-                                  ? 'empty'
-                                  : '${widget.assets.first.id}_${widget.assets.length}',
-                            ),
-                            assets: widget.assets,
-                            initialIndex: widget.initialIndex,
-                            canDelete: canDelete,
-                            isDraggingToAlbum: () => _isDraggingToAlbum,
-                            onDragUpdate: _handleDragUpdate,
-                            onDragEnd: (asset, pos) {
-                              _handleDragEnd(asset, pos);
-                            },
-                            onDecision: (asset, decision) {
-                              _handleDecision(asset, decision);
-                            },
-                            onNoRightsLeft: () {
-                              _showNoRightsDialog(context);
-                            },
-                            onIndexChanged: widget.onIndexChanged,
-                            onResetCallbackReady: widget.onResetCallbackReady,
-                            onDragOffsetChanged: (offset) {
-                              // Build sırasında setState çağrılmasını engellemek için
-                              // postFrameCallback kullanarak setState'i geciktir
-                              if (!mounted) return;
-
-                              // Pending offset'i güncelle (her zaman en son değeri tut)
-                              _pendingDragOffset = offset;
-
-                              // Eğer zaten bir pending update yoksa, yeni bir tane ekle
-                              // Bu sayede çok fazla postFrameCallback eklenmesini engelleriz
-                              if (!_hasPendingOffsetUpdate) {
-                                _hasPendingOffsetUpdate = true;
-                                WidgetsBinding.instance.addPostFrameCallback((
-                                  _,
-                                ) {
-                                  if (mounted && _pendingDragOffset != null) {
-                                    final offsetToApply = _pendingDragOffset!;
-                                    _pendingDragOffset = null;
-                                    _hasPendingOffsetUpdate = false;
-                                    setState(() {
-                                      _photoSwipeDragOffset = offsetToApply;
-                                    });
-                                  } else if (mounted) {
-                                    _hasPendingOffsetUpdate = false;
-                                  }
-                                });
-                              }
-                            },
-                          ),
-                          // Fotoğraf sayacı - Deck'in hemen altında, fotoğraf kartının altında
-                          if (widget.assets.isNotEmpty)
-                            Positioned(
-                              bottom: 12,
-                              left: 0,
-                              right: 0,
-                              child: Center(
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 8,
+          // Ana içerik - Swipe Deck
+          Expanded(
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(
+                    left: 16,
+                    right: 16,
+                    top: 8,
+                    bottom: 16,
+                  ),
+                  child: Align(
+                    alignment: Alignment.topCenter,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 420),
+                      child: AspectRatio(
+                        aspectRatio: 3 / 4,
+                        child: AnimatedScale(
+                          scale: _dragScale,
+                          duration: const Duration(milliseconds: 150),
+                          curve: Curves.easeOutCubic,
+                          child: Transform.translate(
+                            offset: _dragOffset,
+                            child: Stack(
+                              fit: StackFit.expand,
+                              clipBehavior: Clip.none,
+                              children: [
+                                PhotoSwipeDeck(
+                                  key: ValueKey(
+                                    widget.assets.isEmpty
+                                        ? 'empty'
+                                        : '${widget.assets.first.id}_${widget.assets.length}',
                                   ),
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.surface.withOpacity(0.9),
-                                    borderRadius: BorderRadius.circular(16),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: AppColors.black.withOpacity(0.2),
-                                        blurRadius: 8,
-                                        offset: const Offset(0, 2),
-                                        spreadRadius: 0,
-                                      ),
-                                    ],
-                                  ),
-                                  child: Text(
-                                    '${widget.currentIndex + 1} / ${widget.assets.length}',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodyMedium
-                                        ?.copyWith(
+                                  assets: widget.assets,
+                                  initialIndex: widget.initialIndex,
+                                  canDelete: canDelete,
+                                  isDraggingToAlbum: () => _isDraggingToAlbum,
+                                  onDragUpdate: _handleDragUpdate,
+                                  onDragEnd: (asset, pos) {
+                                    _handleDragEnd(asset, pos);
+                                  },
+                                  onDecision: (asset, decision) {
+                                    _handleDecision(asset, decision);
+                                  },
+                                  onNoRightsLeft: () {
+                                    _showNoRightsDialog(context);
+                                  },
+                                  onIndexChanged: widget.onIndexChanged,
+                                  onResetCallbackReady: widget.onResetCallbackReady,
+                                  onDragOffsetChanged: (offset) {
+                                    // Build sırasında setState çağrılmasını engellemek için
+                                    // postFrameCallback kullanarak setState'i geciktir
+                                    if (!mounted) return;
+
+                                    // Pending offset'i güncelle (her zaman en son değeri tut)
+                                    _pendingDragOffset = offset;
+
+                                    // Eğer zaten bir pending update yoksa, yeni bir tane ekle
+                                    // Bu sayede çok fazla postFrameCallback eklenmesini engelleriz
+                                    if (!_hasPendingOffsetUpdate) {
+                                      _hasPendingOffsetUpdate = true;
+                                      WidgetsBinding.instance.addPostFrameCallback((
+                                        _,
+                                      ) {
+                                        if (mounted && _pendingDragOffset != null) {
+                                          final offsetToApply = _pendingDragOffset!;
+                                          _pendingDragOffset = null;
+                                          _hasPendingOffsetUpdate = false;
+                                          setState(() {
+                                            _photoSwipeDragOffset = offsetToApply;
+                                          });
+                                        } else if (mounted) {
+                                          _hasPendingOffsetUpdate = false;
+                                        }
+                                      });
+                                    }
+                                  },
+                                ),
+                                // Fotoğraf sayacı - Deck içinde
+                                if (widget.assets.isNotEmpty)
+                                  Positioned(
+                                    bottom: 12,
+                                    left: 0,
+                                    right: 0,
+                                    child: Center(
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 16,
+                                          vertical: 8,
+                                        ),
+                                        decoration: BoxDecoration(
                                           color: Theme.of(
                                             context,
-                                          ).colorScheme.onSurface,
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 13,
-                                          letterSpacing: 0.2,
+                                          ).colorScheme.surface.withOpacity(0.9),
+                                          borderRadius: BorderRadius.circular(16),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: AppColors.black.withOpacity(0.2),
+                                              blurRadius: 8,
+                                              offset: const Offset(0, 2),
+                                              spreadRadius: 0,
+                                            ),
+                                          ],
                                         ),
+                                        child: Text(
+                                          '${widget.currentIndex + 1} / ${widget.assets.length}',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodyMedium
+                                              ?.copyWith(
+                                                color: Theme.of(
+                                                  context,
+                                                ).colorScheme.onSurface,
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 13,
+                                                letterSpacing: 0.2,
+                                              ),
+                                        ),
+                                      ),
+                                    ),
                                   ),
-                                ),
-                              ),
+                              ],
                             ),
-                        ],
+                          ),
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
+                // Overlay'ler - Ekranın tam kenarından başlayacak
+                if (widget.assets.isNotEmpty && canDelete)
+                  ..._buildSwipeActionButtons(context),
+              ],
             ),
           ),
-          // Overlay'ler - Ekranın tam kenarından başlayacak
-          if (widget.assets.isNotEmpty && canDelete)
-            ..._buildSwipeActionButtons(context),
+          // Swipe yönlendirme metinleri - Deck'in dışında altında
+          // Undo butonları göründüğünde (pending actions varsa) metinleri gizle
+          if (widget.assets.isNotEmpty)
+            Builder(
+              builder: (context) {
+                final pendingActions = context.watch<ReviewActionsCubit>().state;
+                // Eğer pending actions varsa (undo butonları görünüyorsa) metinleri gösterme
+                if (pendingActions.isNotEmpty) {
+                  return const SizedBox.shrink();
+                }
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Sola kaydır sil
+                      Text(
+                        AppLocalizations.of(context)!.swipeLeftToDelete,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                              fontSize: 12,
+                            ),
+                      ),
+                      const SizedBox(width: 16),
+                      // Sağa kaydır tut
+                      Text(
+                        AppLocalizations.of(context)!.swipeRightToKeep,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                              fontSize: 12,
+                            ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
         ],
       ),
     );

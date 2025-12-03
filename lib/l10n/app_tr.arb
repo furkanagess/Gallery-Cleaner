@@ -807,6 +807,34 @@
   "@loadingYourGalleryDescription": {
     "description": "Description for gallery loading screen"
   },
+  "photosLoaded": "{count} fotoğraf yüklendi",
+  "@photosLoaded": {
+    "description": "Kaç fotoğrafın yüklendiğini gösterir",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "120"
+      }
+    }
+  },
+  "photosLoadingProgress": "{loaded} / {total} fotoğraf (%{percentage})",
+  "@photosLoadingProgress": {
+    "description": "Fotoğraf yükleme ilerlemesini yüzde ile gösterir",
+    "placeholders": {
+      "loaded": {
+        "type": "int",
+        "example": "120"
+      },
+      "total": {
+        "type": "int",
+        "example": "1000"
+      },
+      "percentage": {
+        "type": "int",
+        "example": "12"
+      }
+    }
+  },
   "photoUnit": "fotoğraf",
   "@photoUnit": {
     "description": "Photo unit text"

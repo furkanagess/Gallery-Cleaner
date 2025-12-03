@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:lottie/lottie.dart';
 import 'package:photo_manager/photo_manager.dart' as pm;
 import 'package:image/image.dart' as img;
+import 'package:intl/intl.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../../l10n/app_localizations.dart';
 import '../../../../core/services/sound_service.dart';
@@ -872,47 +873,86 @@ class _PhotoCardState extends State<_PhotoCard> {
           color: AppColors.transparent,
           width: double.infinity,
           height: double.infinity,
-          child: FutureBuilder<Uint8List?>(
-            future: _thumbFuture,
-            initialData: _currentImageData ?? _previousImageData,
-            builder: (context, snapshot) {
-              final imageData =
-                  _currentImageData ?? snapshot.data ?? _previousImageData;
+          child: Stack(
+            children: [
+              FutureBuilder<Uint8List?>(
+                future: _thumbFuture,
+                initialData: _currentImageData ?? _previousImageData,
+                builder: (context, snapshot) {
+                  final imageData =
+                      _currentImageData ?? snapshot.data ?? _previousImageData;
 
-              if (imageData == null) {
-                return placeholder;
-              }
-
-              return AnimatedSwitcher(
-                duration: const Duration(milliseconds: 220),
-                switchInCurve: Curves.easeOutCubic,
-                switchOutCurve: Curves.easeInCubic,
-                child: Image.memory(
-                  imageData,
-                  key: ObjectKey(imageData),
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                  height: double.infinity,
-                  gaplessPlayback: true,
-                  filterQuality: FilterQuality.medium,
-                  cacheWidth: thumbSize.width,
-                  cacheHeight: thumbSize.height,
-                  errorBuilder: (context, error, stackTrace) {
-                    if (_previousImageData != null) {
-                      return Image.memory(
-                        _previousImageData!,
-                        fit: BoxFit.cover,
-                        width: double.infinity,
-                        height: double.infinity,
-                        gaplessPlayback: true,
-                        filterQuality: FilterQuality.medium,
-                      );
-                    }
+                  if (imageData == null) {
                     return placeholder;
-                  },
+                  }
+
+                  return AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 220),
+                    switchInCurve: Curves.easeOutCubic,
+                    switchOutCurve: Curves.easeInCubic,
+                    child: Image.memory(
+                      imageData,
+                      key: ObjectKey(imageData),
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      height: double.infinity,
+                      gaplessPlayback: true,
+                      filterQuality: FilterQuality.medium,
+                      cacheWidth: thumbSize.width,
+                      cacheHeight: thumbSize.height,
+                      errorBuilder: (context, error, stackTrace) {
+                        if (_previousImageData != null) {
+                          return Image.memory(
+                            _previousImageData!,
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            height: double.infinity,
+                            gaplessPlayback: true,
+                            filterQuality: FilterQuality.medium,
+                          );
+                        }
+                        return placeholder;
+                      },
+                    ),
+                  );
+                },
+              ),
+              // Date overlay - sol üstte
+              Positioned(
+                top: 12,
+                left: 12,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.black.withOpacity(0.6),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: AppColors.white.withOpacity(0.2),
+                      width: 1,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.black.withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Text(
+                    DateFormat('dd.MM.yyyy').format(widget.asset.createDateTime),
+                    style: const TextStyle(
+                      color: AppColors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
                 ),
-              );
-            },
+              ),
+            ],
           ),
         ),
       ),

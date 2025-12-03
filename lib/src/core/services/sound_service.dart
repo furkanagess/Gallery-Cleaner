@@ -15,6 +15,7 @@ class SoundService {
   bool _isScannerPlaying = false; // Scanner sesinin çalıp çalmadığını takip et
   bool?
   _isSoundEnabledCache; // Ses durumu cache'i - gereksiz async çağrıları önlemek için
+  double? _soundVolumeCache; // Ses seviyesi cache'i
   final PreferencesService _prefsService = PreferencesService();
 
   /// Ses durumunu cache'den oku veya yükle
@@ -34,7 +35,39 @@ class SoundService {
   /// Cache'i başlangıçta yükle (opsiyonel - performans için)
   Future<void> initializeCache() async {
     _isSoundEnabledCache ??= await _prefsService.isScanSoundEnabled();
+    _soundVolumeCache ??= await _prefsService.getSoundVolume();
+    await _updateAllPlayersVolume();
   }
+
+  /// Ses seviyesini al (cache'den)
+  Future<double> _getSoundVolume() async {
+    if (_soundVolumeCache != null) {
+      return _soundVolumeCache!;
+    }
+    _soundVolumeCache = await _prefsService.getSoundVolume();
+    return _soundVolumeCache!;
+  }
+
+  /// Tüm player'ların volume'unu güncelle
+  Future<void> _updateAllPlayersVolume() async {
+    final volume = await _getSoundVolume();
+    await _audioPlayer.setVolume(volume);
+    await _scannerPlayer.setVolume(volume);
+    for (final player in _deletePlayers) {
+      await player.setVolume(volume);
+    }
+  }
+
+  /// Ses seviyesini ayarla
+  Future<void> setSoundVolume(double volume) async {
+    final clampedVolume = volume.clamp(0.0, 1.0);
+    _soundVolumeCache = clampedVolume;
+    await _prefsService.setSoundVolume(clampedVolume);
+    await _updateAllPlayersVolume();
+  }
+
+  /// Ses seviyesini al
+  double? get soundVolume => _soundVolumeCache;
 
   /// Silme ses efektini çalar (üst üste çalınabilir)
   Future<void> playDeleteSound() async {
@@ -49,6 +82,8 @@ class SoundService {
         _deletePlayers.remove(deletePlayer);
       });
 
+      final volume = await _getSoundVolume();
+      await deletePlayer.setVolume(volume);
       await deletePlayer.play(AssetSource('sound/delete.mp3'));
     } catch (e) {
       // Ses çalma hatası sessizce yok sayılır
@@ -72,6 +107,8 @@ class SoundService {
           return;
         }
       }
+      final volume = await _getSoundVolume();
+      await _audioPlayer.setVolume(volume);
       await _audioPlayer.play(AssetSource('sound/keep.mp3'));
     } catch (e) {
       // Ses çalma hatası sessizce yok sayılır
@@ -108,6 +145,8 @@ class SoundService {
       _isScannerPlaying = true;
       // Release mode'u sadece değiştiyse set et
       await _scannerPlayer.setReleaseMode(ReleaseMode.loop); // Loop modunda çal
+      final volume = await _getSoundVolume();
+      await _scannerPlayer.setVolume(volume);
       await _scannerPlayer.play(AssetSource('sound/scanner.mp3'));
     } catch (e) {
       // Ses çalma hatası sessizce yok sayılır

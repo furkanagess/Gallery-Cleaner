@@ -276,6 +276,34 @@
   "@loadingYourGalleryDescription": {
     "description": "Description for gallery loading screen"
   },
+  "photosLoaded": "{count} photos loaded",
+  "@photosLoaded": {
+    "description": "Indicates how many photos have been loaded",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "120"
+      }
+    }
+  },
+  "photosLoadingProgress": "{loaded} / {total} photos ({percentage}%)",
+  "@photosLoadingProgress": {
+    "description": "Indicates photo loading progress with percentage",
+    "placeholders": {
+      "loaded": {
+        "type": "int",
+        "example": "120"
+      },
+      "total": {
+        "type": "int",
+        "example": "1000"
+      },
+      "percentage": {
+        "type": "int",
+        "example": "12"
+      }
+    }
+  },
   "galleryInfoNotLoaded": "Gallery info could not be loaded",
   "@galleryInfoNotLoaded": {
     "description": "Error message when gallery info fails to load"
