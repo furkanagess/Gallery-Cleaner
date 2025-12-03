@@ -118,6 +118,14 @@ class ReviewHistoryCubit extends Cubit<List<ReviewActionItem>> {
     _updateFirst(assetId, (it) => it.type == ReviewActionType.delete, (it) => it.copyWith(status: ReviewActionStatus.undone));
   }
 
+  void undoKeep(String assetId) {
+    _updateFirst(
+      assetId,
+      (it) => it.type == ReviewActionType.keep,
+      (it) => it.copyWith(status: ReviewActionStatus.undone),
+    );
+  }
+
   void addMove(String assetId, String albumId, {int fileSizeBytes = 0}) {
     _push(ReviewActionItem(
       assetId: assetId,

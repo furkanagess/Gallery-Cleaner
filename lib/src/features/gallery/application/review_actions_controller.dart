@@ -52,6 +52,26 @@ class ReviewActionsCubit extends Cubit<List<PendingDeleteAction>> {
     _pendingDeleteIds.add(asset.id);
   }
 
+  Future<void> undoDecision(
+    pm.AssetEntity asset, {
+    required bool wasKeep,
+  }) async {
+    if (wasKeep) {
+      _historyCubit.undoKeep(asset.id);
+      return;
+    }
+
+    final updatedState = [...state];
+    final removeIndex =
+        updatedState.lastIndexWhere((action) => action.asset.id == asset.id);
+    if (removeIndex != -1) {
+      updatedState.removeAt(removeIndex);
+      emit(updatedState);
+    }
+    _pendingDeleteIds.remove(asset.id);
+    _historyCubit.undoDelete(asset.id);
+  }
+
   void undoLast() {
     if (state.isEmpty) return;
     final last = state.last;

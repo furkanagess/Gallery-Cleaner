@@ -16,6 +16,18 @@ enum SwipeDecision { keep, delete }
 
 pm.ThumbnailSize? _sharedThumbnailSize;
 
+class _SwipeHistoryEntry {
+  _SwipeHistoryEntry({
+    required this.asset,
+    required this.decision,
+    required this.index,
+  });
+
+  final pm.AssetEntity asset;
+  final SwipeDecision decision;
+  final int index;
+}
+
 pm.ThumbnailSize _resolveThumbnailSize() {
   if (_sharedThumbnailSize != null) return _sharedThumbnailSize!;
 
@@ -68,6 +80,7 @@ class PhotoSwipeDeck extends StatefulWidget {
     this.onIndexChanged,
     this.onResetCallbackReady,
     this.onDragOffsetChanged,
+    this.onUndoDecision,
   });
 
   final List<pm.AssetEntity> assets;
@@ -81,6 +94,8 @@ class PhotoSwipeDeck extends StatefulWidget {
   final void Function(int index)? onIndexChanged;
   final void Function(VoidCallback resetCallback)? onResetCallbackReady;
   final void Function(Offset dragOffset)? onDragOffsetChanged;
+  final void Function(pm.AssetEntity asset, SwipeDecision decision)?
+  onUndoDecision;
 
   @override
   State<PhotoSwipeDeck> createState() => _PhotoSwipeDeckState();
@@ -101,6 +116,7 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck>
   SwipeDecision? _pendingDecision;
   bool _didHapticForKeep = false;
   bool _didHapticForDelete = false;
+  final List<_SwipeHistoryEntry> _history = [];
 
   @override
   void initState() {
@@ -165,6 +181,9 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck>
           _topIndex = safeIndex;
           _dragOffset = Offset.zero;
           _dragRotation = 0;
+          if (assetsChanged) {
+            _history.clear();
+          }
         });
         widget.onDragOffsetChanged?.call(Offset.zero);
       }
@@ -195,6 +214,7 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck>
         _dragOffset = Offset.zero;
         _dragRotation = 0;
         _pendingDecision = null;
+        _history.clear();
       });
       widget.onDragOffsetChanged?.call(Offset.zero);
       widget.onIndexChanged?.call(0);
@@ -237,6 +257,7 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck>
   void _finalizeSwipe(SwipeDecision decision) {
     if (_topIndex >= widget.assets.length) return;
     final asset = widget.assets[_topIndex];
+    final currentIndex = _topIndex;
 
     // Ses efekti çal
     final soundService = SoundService();
@@ -251,6 +272,13 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck>
       _dragOffset = Offset.zero;
       _dragRotation = 0;
       _pendingDecision = null;
+      _history.add(
+        _SwipeHistoryEntry(
+          asset: asset,
+          decision: decision,
+          index: currentIndex,
+        ),
+      );
     });
 
     widget.onDragOffsetChanged?.call(Offset.zero);
@@ -260,6 +288,48 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck>
     widget.onDecision(asset, decision);
 
     _prefetchThumbnails();
+  }
+
+  void _undoLastSwipe() {
+    if (_history.isEmpty) return;
+    final last = _history.removeLast();
+    final targetIndex = last.index.clamp(0, widget.assets.length).toInt();
+
+    cubitSetState(() {
+      _topIndex = targetIndex;
+      _dragOffset = Offset.zero;
+      _dragRotation = 0;
+      _pendingDecision = null;
+    });
+
+    widget.onDragOffsetChanged?.call(Offset.zero);
+    widget.onIndexChanged?.call(_topIndex);
+    widget.onUndoDecision?.call(last.asset, last.decision);
+    _prefetchThumbnails();
+  }
+
+  Widget _buildUndoButton(BuildContext context) {
+    final canUndo = _history.isNotEmpty;
+    final l10n = AppLocalizations.of(context);
+    final label = l10n?.undo ?? 'Undo';
+
+    return Tooltip(
+      message: label,
+      child: Material(
+        color: AppColors.black.withOpacity(canUndo ? 0.7 : 0.35),
+        shape: const CircleBorder(),
+        elevation: canUndo ? 6 : 0,
+        child: IconButton(
+          icon: Icon(
+            Icons.undo_rounded,
+            color: AppColors.white.withOpacity(canUndo ? 1 : 0.4),
+          ),
+          onPressed: canUndo ? _undoLastSwipe : null,
+          splashRadius: 24,
+          tooltip: label,
+        ),
+      ),
+    );
   }
 
   void _prefetchThumbnails({int lookAhead = 3}) {
@@ -465,6 +535,11 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck>
                   ),
                 ),
               ),
+            ),
+            Positioned(
+              top: 12,
+              right: 12,
+              child: _buildUndoButton(context),
             ),
           ],
         ),

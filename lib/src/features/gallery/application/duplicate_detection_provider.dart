@@ -213,31 +213,26 @@ class DuplicateDetectionCubit extends Cubit<DuplicateDetectionState> {
                 _lastProgressUpdate = now;
                 _lastProgressPercent = currentProgressPercent;
 
-                // State güncellemesini frame callback ile yap (UI thread'i bloklamamak için)
-                SchedulerBinding.instance.scheduleFrameCallback((_) {
-                  if (!_isCancelled) {
-                    // Kullanıcıya gösterilecek toplam fotoğraf sayısı:
-                    // Duplicate taramasında da her scan işleminde maksimum sampleTarget (plannedCount)
-                    // kadar fotoğraf analiz edildiği için, 10.000'lik albümde de 1000/1000 şeklinde gösterilir.
-                    final displayTotalCount = plannedCount > 0
-                        ? plannedCount
-                        : (albumTotalCount > 0
-                              ? albumTotalCount
-                              : plannedCount);
-                    final normalizedProgress = displayTotalCount > 0
-                        ? (processedCount / displayTotalCount).clamp(0.0, 1.0)
-                        : progress.clamp(0.0, 1.0);
-                    emit(
-                      state.copyWith(
-                        progress: normalizedProgress,
-                        currentAlbum: albumName,
-                        processedCount: processedCount,
-                        totalCount: displayTotalCount,
-                        plannedSampleCount: plannedCount,
-                      ),
-                    );
-                  }
-                });
+                if (!_isCancelled) {
+                  // Kullanıcıya gösterilecek toplam fotoğraf sayısı:
+                  // Duplicate taramasında da her scan işleminde maksimum sampleTarget (plannedCount)
+                  // kadar fotoğraf analiz edildiği için, 10.000'lik albümde de 1000/1000 şeklinde gösterilir.
+                  final displayTotalCount = plannedCount > 0
+                      ? plannedCount
+                      : (albumTotalCount > 0 ? albumTotalCount : plannedCount);
+                  final normalizedProgress = displayTotalCount > 0
+                      ? (processedCount / displayTotalCount).clamp(0.0, 1.0)
+                      : progress.clamp(0.0, 1.0);
+                  emit(
+                    state.copyWith(
+                      progress: normalizedProgress,
+                      currentAlbum: albumName,
+                      processedCount: processedCount,
+                      totalCount: displayTotalCount,
+                      plannedSampleCount: plannedCount,
+                    ),
+                  );
+                }
               }
             },
         shouldCancel: () => _isCancelled,

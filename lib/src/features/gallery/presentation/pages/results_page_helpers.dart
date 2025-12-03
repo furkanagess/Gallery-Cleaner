@@ -825,48 +825,47 @@ Widget buildDuplicateGroupCard(
                                           ),
                                         ),
                                       ),
-                                      // Fotoğraf tarihi - sol üst köşe
+                                      // Fotoğraf tarihi - sol alt köşe
                                       Positioned(
-                                          top: 10,
-                                          left: 10,
-                                          child: Container(
-                                            padding:
-                                                const EdgeInsets.symmetric(
-                                              horizontal: 8,
-                                              vertical: 4,
+                                        bottom: 10,
+                                        left: 10,
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 4,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color:
+                                                Colors.black.withOpacity(0.55),
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                            border: Border.all(
+                                              color: Colors.white
+                                                  .withOpacity(0.9),
+                                              width: 1,
                                             ),
-                                            decoration: BoxDecoration(
-                                              color: Colors.black
-                                                  .withOpacity(0.55),
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                              border: Border.all(
-                                                color: Colors.white
-                                                    .withOpacity(0.9),
-                                                width: 1,
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.black
+                                                    .withOpacity(0.35),
+                                                blurRadius: 8,
+                                                offset: const Offset(0, 3),
                                               ),
-                                              boxShadow: [
-                                                BoxShadow(
-                                                  color: Colors.black
-                                                      .withOpacity(0.35),
-                                                  blurRadius: 8,
-                                                  offset: const Offset(0, 3),
-                                                ),
-                                              ],
+                                            ],
+                                          ),
+                                          child: Text(
+                                            DateFormat('dd.MM.yyyy').format(
+                                              group.keepAsset.createDateTime,
                                             ),
-                                            child: Text(
-                                              DateFormat('dd.MM.yyyy').format(
-                                                group.keepAsset.createDateTime,
-                                              ),
-                                              style: const TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 11,
-                                                fontWeight: FontWeight.w600,
-                                                letterSpacing: 0.2,
-                                              ),
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w600,
+                                              letterSpacing: 0.2,
                                             ),
                                           ),
                                         ),
+                                      ),
                                     ],
                                   );
                                 }

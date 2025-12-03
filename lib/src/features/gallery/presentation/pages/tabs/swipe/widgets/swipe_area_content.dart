@@ -135,6 +135,9 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
                                   onDecision: (asset, decision) {
                                     _handleDecision(asset, decision);
                                   },
+                                  onUndoDecision: (asset, decision) {
+                                    _handleUndoDecision(asset, decision);
+                                  },
                                   onNoRightsLeft: () {
                                     _showNoRightsDialog(context);
                                   },
@@ -368,6 +371,17 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
 
     maybePrefetch(context, widget.assets, asset);
     _resetVisuals();
+  }
+
+  Future<void> _handleUndoDecision(
+    pm.AssetEntity asset,
+    SwipeDecision decision,
+  ) async {
+    final actions = context.read<ReviewActionsCubit>();
+    await actions.undoDecision(
+      asset,
+      wasKeep: decision == SwipeDecision.keep,
+    );
   }
 
   void _resetVisuals() {
