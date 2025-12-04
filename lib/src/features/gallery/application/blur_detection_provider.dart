@@ -8,6 +8,8 @@ import '../../../core/models/blur_photo.dart';
 import '../../../core/services/media_library_service.dart';
 import '../../../core/services/preferences_service.dart';
 import '../../onboarding/application/permissions_controller.dart';
+import 'review_actions_controller.dart';
+import 'asset_size_helper.dart';
 
 /// Blur detection state
 class BlurDetectionState {
@@ -379,17 +381,40 @@ class BlurDetectionCubit extends Cubit<BlurDetectionState> {
   }
 
   /// Blurlu fotoğrafları topluca sil
-  Future<int> deleteBlurryPhotos(List<BlurPhoto> photos) async {
-    if (photos.isEmpty) return 0;
+  Future<DeleteResult> deleteBlurryPhotos(List<BlurPhoto> photos) async {
+    if (photos.isEmpty) {
+      return DeleteResult(deletedCount: 0, deletedSizeMB: 0.0);
+    }
 
-    // Tüm fotoğraf ID'lerini topla
+    // Tüm fotoğraf ID'lerini ve asset'lerini topla
     final photoIds = photos.map((photo) => photo.asset.id).toList();
+    final assetsToDelete = <String, pm.AssetEntity>{};
+    for (final photo in photos) {
+      assetsToDelete[photo.asset.id] = photo.asset;
+    }
 
     debugPrint(
       '🗑️ [BlurDetection] Toplu silme başlatılıyor: ${photoIds.length} fotoğraf',
     );
 
     try {
+      // Silme işleminden ÖNCE asset boyutlarını hesapla ve sakla
+      // Çünkü silme işleminden sonra asset'ler artık mevcut olmayacak
+      final assetSizes = <String, int>{};
+      for (final id in photoIds) {
+        final asset = assetsToDelete[id];
+        if (asset != null) {
+          try {
+            final sizeBytes = await estimateAssetSize(asset);
+            if (sizeBytes > 0) {
+              assetSizes[id] = sizeBytes;
+            }
+          } catch (e) {
+            debugPrint('⚠️ [BlurDetection] Asset boyutu hesaplanamadı (silme öncesi): $id, $e');
+          }
+        }
+      }
+
       // Toplu silme işlemi
       final deletedIds = await _mediaLibraryService.deleteBatch(photoIds);
       final deletedCount = deletedIds.length;
@@ -397,6 +422,15 @@ class BlurDetectionCubit extends Cubit<BlurDetectionState> {
       debugPrint(
         '✅ [BlurDetection] $deletedCount/${photoIds.length} fotoğraf başarıyla silindi',
       );
+
+      // Toplam silinen MB'ı hesapla - saklanan boyutları kullan
+      double totalSizeMB = 0.0;
+      for (final id in deletedIds) {
+        final sizeBytes = assetSizes[id];
+        if (sizeBytes != null && sizeBytes > 0) {
+          totalSizeMB += sizeBytes / (1024 * 1024);
+        }
+      }
 
       // Silinen fotoğrafları state'ten kaldır
       final deletedIdsSet = Set<String>.from(deletedIds);
@@ -418,15 +452,24 @@ class BlurDetectionCubit extends Cubit<BlurDetectionState> {
         '💾 [BlurDetection] State güncellendi: ${updatedMap.length} albüm kaldı',
       );
 
-      return deletedCount;
+      debugPrint(
+        '✅ [BlurDetection] $deletedCount fotoğraf silindi, ${totalSizeMB.toStringAsFixed(2)} MB boşaltıldı',
+      );
+
+      // Silinen fotoğraf ID'lerini kaydet (deck'te tekrar gösterilmemesi için)
+      if (deletedIds.isNotEmpty) {
+        await _preferencesService.addDeletedPhotoIds(deletedIds);
+      }
+
+      return DeleteResult(deletedCount: deletedCount, deletedSizeMB: totalSizeMB);
     } catch (e) {
       debugPrint('❌ [BlurDetection] Toplu silme hatası: $e');
-      return 0;
+      return DeleteResult(deletedCount: 0, deletedSizeMB: 0.0);
     }
   }
 
   /// Tüm blurlu fotoğrafları sil
-  Future<int> deleteAllBlurryPhotos() async {
+  Future<DeleteResult> deleteAllBlurryPhotos() async {
     final allPhotos = state.blurryPhotosByAlbum.values
         .expand((photos) => photos)
         .toList();

@@ -919,7 +919,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get group => 'Group';
 
   @override
-  String get photo => 'Photo';
+  String get photo => 'photo';
 
   @override
   String get blurry => 'Blurry';
@@ -981,6 +981,19 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String cleanupCompleteMessageWithCountAndSize(int count, String size) {
+    return '$count photo(s) have been successfully deleted and $size MB of space freed. Your gallery is now cleaner and lighter.';
+  }
+
+  @override
+  String get photos => 'photos';
+
+  @override
+  String mbFreed(String size) {
+    return '$size MB freed';
+  }
+
+  @override
   String get done => 'Done';
 
   @override
@@ -1011,6 +1024,16 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get rateAppDescription =>
       'Enjoying the app? Please rate us on the store!';
+
+  @override
+  String get rateAppSupportMessage =>
+      'Support our growth! Could you take 3 seconds to rate the app?';
+
+  @override
+  String get thankYou => 'Thank You!';
+
+  @override
+  String get thanksForFeedback => 'Thanks for your feedback!';
 
   @override
   String get couldNotOpenStore => 'Could not open store';

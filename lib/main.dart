@@ -147,6 +147,7 @@ void main() async {
               permissionsCubit: context.read<PermissionsCubit>(),
               albumFilterCubit: context.read<AlbumFilterCubit>(),
               albumSortOrderCubit: context.read<AlbumSortOrderCubit>(),
+              preferencesService: context.read<PreferencesService>(),
             ),
           ),
           BlocProvider(
@@ -178,6 +179,7 @@ void main() async {
             create: (context) => ReviewActionsCubit(
               mediaLibraryService: context.read<MediaLibraryService>(),
               reviewHistoryCubit: context.read<ReviewHistoryCubit>(),
+              preferencesService: context.read<PreferencesService>(),
             ),
           ),
           BlocProvider(

@@ -201,11 +201,13 @@ class GalleryPagingCubit extends Cubit<AsyncValue<List<pm.AssetEntity>>> {
     required PermissionsCubit permissionsCubit,
     required AlbumFilterCubit albumFilterCubit,
     required AlbumSortOrderCubit albumSortOrderCubit,
+    PreferencesService? preferencesService,
   })  : _mediaLibraryService = mediaLibraryService,
         _selectedAlbumCubit = selectedAlbumCubit,
         _permissionsCubit = permissionsCubit,
         _albumFilterCubit = albumFilterCubit,
         _albumSortOrderCubit = albumSortOrderCubit,
+        _preferencesService = preferencesService,
         super(const AsyncLoading()) {
     _albumSubscription = _selectedAlbumCubit.stream.listen((album) {
       // Sadece albüm gerçekten değiştiyse reload yap
@@ -254,6 +256,7 @@ class GalleryPagingCubit extends Cubit<AsyncValue<List<pm.AssetEntity>>> {
   final PermissionsCubit _permissionsCubit;
   final AlbumFilterCubit _albumFilterCubit;
   final AlbumSortOrderCubit _albumSortOrderCubit;
+  final PreferencesService? _preferencesService;
   StreamSubscription<pm.AssetPathEntity?>? _albumSubscription;
   StreamSubscription<DateRangeFilter>? _filterSubscription;
   StreamSubscription<SortOrder>? _sortSubscription;
@@ -354,6 +357,21 @@ class GalleryPagingCubit extends Cubit<AsyncValue<List<pm.AssetEntity>>> {
         cachedPhotos.sort((a, b) {
           return a.createDateTime.compareTo(b.createDateTime);
         });
+      }
+      
+      // Silinen fotoğrafları filtrele
+      if (_preferencesService != null) {
+        final deletedIds = await _preferencesService.getDeletedPhotoIds();
+        if (deletedIds.isNotEmpty) {
+          final beforeCount = cachedPhotos.length;
+          cachedPhotos = cachedPhotos
+              .where((asset) => !deletedIds.contains(asset.id))
+              .toList();
+          final afterCount = cachedPhotos.length;
+          if (beforeCount != afterCount) {
+            debugPrint('🚫 [GalleryPagingCubit] Cache\'den ${beforeCount - afterCount} silinen fotoğraf filtrelendi (${beforeCount} -> ${afterCount})');
+          }
+        }
       }
       
       // State'i güncelle
@@ -589,7 +607,22 @@ class GalleryPagingCubit extends Cubit<AsyncValue<List<pm.AssetEntity>>> {
       // Return all filtered photos (no 60 photo limit)
       // For oldest sort, filtered list is sorted ascending (oldest first),
       // so all photos will be shown starting from the oldest
-      final allFilteredPhotos = filtered.toList();
+      var allFilteredPhotos = filtered.toList();
+      
+      // Silinen fotoğrafları filtrele
+      if (_preferencesService != null) {
+        final deletedIds = await _preferencesService.getDeletedPhotoIds();
+        if (deletedIds.isNotEmpty) {
+          final beforeCount = allFilteredPhotos.length;
+          allFilteredPhotos = allFilteredPhotos
+              .where((asset) => !deletedIds.contains(asset.id))
+              .toList();
+          final afterCount = allFilteredPhotos.length;
+          if (beforeCount != afterCount) {
+            debugPrint('🚫 [GalleryPagingCubit] ${beforeCount - afterCount} silinen fotoğraf filtrelendi (${beforeCount} -> ${afterCount})');
+          }
+        }
+      }
       
       if (sortOrder == SortOrder.oldest && allFilteredPhotos.isNotEmpty) {
         debugPrint('📸 [GalleryPagingCubit] All filtered photos (oldest): ${allFilteredPhotos.length} photos');
@@ -599,7 +632,7 @@ class GalleryPagingCubit extends Cubit<AsyncValue<List<pm.AssetEntity>>> {
       
       // Since we're loading ALL photos, canLoadMore is false (all photos are already loaded)
       _canLoadMore = false;
-      _allFilteredAssets = filtered;
+      _allFilteredAssets = allFilteredPhotos;
       _lastLoadedPage = page;
       
       // Cache'e kaydet
@@ -854,6 +887,19 @@ class PremiumCubit extends Cubit<AsyncValue<bool>> {
       }
       final prefPremium = await _prefs.isPremium();
       emit(AsyncValue.data(prefPremium));
+    } catch (e, st) {
+      emit(AsyncValue.error(e, st));
+    }
+  }
+
+  /// Test için premium durumunu toggle et (sadece debug modunda kullanılmalı)
+  Future<void> togglePremium() async {
+    try {
+      final currentPremium = await _prefs.isPremium();
+      final newPremium = !currentPremium;
+      await _prefs.setPremium(newPremium);
+      emit(AsyncValue.data(newPremium));
+      debugPrint('🧪 [PremiumCubit] Premium durumu toggle edildi: $currentPremium -> $newPremium');
     } catch (e, st) {
       emit(AsyncValue.error(e, st));
     }

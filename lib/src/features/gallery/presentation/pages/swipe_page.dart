@@ -28,6 +28,7 @@ import '../../../settings/presentation/premium_success_dialog.dart';
 import '../../../../core/services/revenuecat_service.dart';
 import 'package:gallery_cleaner/src/core/utils/view_refresh_cubit.dart';
 import 'swipe_tab.dart' show SwipeTab;
+import 'tabs/swipe/widgets/swipe_tab_helpers.dart' show showRateUsDialog;
 import 'tabs/blur/blur_tab.dart' show BlurTab;
 import 'tabs/blur/widgets/blur_tab_indicator.dart' show BlurTabIndicator;
 import 'tabs/duplicate/duplicate_tab.dart' show DuplicateTab;
@@ -205,9 +206,10 @@ Future<void> presentAlbumPicker({
 // Public wrapper for delete success dialog (used by blur_tab.dart and duplicate_tab.dart)
 Future<void> showDeleteSuccessDialog(
   BuildContext context,
-  int deletedCount,
-) async {
-  return _showDeleteSuccessDialog(context, deletedCount);
+  int deletedCount, {
+  double deletedSizeMB = 0.0,
+}) async {
+  return _showDeleteSuccessDialog(context, deletedCount, deletedSizeMB: deletedSizeMB);
 }
 
 Future<void> _presentAlbumPicker({
@@ -2217,6 +2219,24 @@ class _SwipePageState extends State<SwipePage>
               );
             },
           ),
+          // Rate Us Dialog Test Button - sadece debug modunda görünür, Go Premium'un sağında
+          if (kDebugMode)
+            IconButton(
+              onPressed: isScanning
+                  ? null
+                  : () {
+                      showRateUsDialog(context);
+                    },
+              icon: Icon(
+                Icons.star_rounded,
+                color: isScanning
+                    ? theme.colorScheme.onSurface.withOpacity(0.38)
+                    : AppColors.warning,
+              ),
+              tooltip: isScanning
+                  ? l10n.doNotLeaveScreenDuringScan
+                  : 'Rate Us Dialog Test',
+            ),
           _HistoryButton(
             pulseController: _historyPulseController,
             isScanning: isScanning,
@@ -3861,10 +3881,11 @@ class _PermissionFeature extends StatelessWidget {
 
 Future<void> _showDeleteSuccessDialog(
   BuildContext context,
-  int deletedCount,
-) async {
+  int deletedCount, {
+  double deletedSizeMB = 0.0,
+}) async {
   debugPrint(
-    '🎯 [SwipePage] _showDeleteSuccessDialog çağrıldı - deletedCount: $deletedCount',
+    '🎯 [SwipePage] _showDeleteSuccessDialog çağrıldı - deletedCount: $deletedCount, deletedSizeMB: $deletedSizeMB',
   );
 
   if (!context.mounted) {
@@ -4000,53 +4021,117 @@ Future<void> _showDeleteSuccessDialog(
               );
             },
             child: Container(
-              constraints: const BoxConstraints(maxWidth: 380),
+              constraints: const BoxConstraints(maxWidth: 400),
               padding: const EdgeInsets.all(32),
               decoration: BoxDecoration(
                 color: theme.colorScheme.surface,
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.circular(28),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.black.withOpacity(0.15),
-                    blurRadius: 24,
+                    color: AppColors.black.withOpacity(0.2),
+                    blurRadius: 32,
                     spreadRadius: 0,
-                    offset: const Offset(0, 8),
+                    offset: const Offset(0, 12),
                   ),
                 ],
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Lottie animation
-                  SizedBox(
-                    width: 120,
-                    height: 120,
-                    child: Lottie.asset(
-                      'assets/lottie/wipe.json',
-                      fit: BoxFit.contain,
-                      repeat: true,
-                      animate: true,
+                  // Success icon with background
+                  Container(
+                    width: 100,
+                    height: 100,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primaryContainer.withOpacity(0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: SizedBox(
+                        width: 80,
+                        height: 80,
+                        child: Lottie.asset(
+                          'assets/lottie/wipe.json',
+                          fit: BoxFit.contain,
+                          repeat: true,
+                          animate: true,
+                        ),
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 24),
-                  // Title
+                  const SizedBox(height: 28),
                   Text(
                     l10n.cleanupComplete,
                     style: theme.textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
-                      fontSize: 24,
+                      fontSize: 26,
                       color: theme.colorScheme.onSurface,
+                      letterSpacing: -0.5,
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 16),
-                  // Description with deleted count
+                  const SizedBox(height: 20),
+                  // Stats container
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.check_circle_outline,
+                              size: 20,
+                              color: theme.colorScheme.primary,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              '$deletedCount ${deletedCount == 1 ? l10n.photo : l10n.photos}',
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 16,
+                                color: theme.colorScheme.onSurface,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.storage_outlined,
+                              size: 20,
+                              color: theme.colorScheme.primary,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              l10n.mbFreed(deletedSizeMB.toStringAsFixed(1)),
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 16,
+                                color: theme.colorScheme.onSurface,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
                   Text(
-                    l10n.cleanupCompleteMessageWithCount(deletedCount),
+                    l10n.cleanupCompleteMessageWithCountAndSize(
+                      deletedCount,
+                      deletedSizeMB.toStringAsFixed(1),
+                    ),
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurface.withOpacity(0.7),
-                      fontSize: 14,
-                      height: 1.5,
+                      color: theme.colorScheme.onSurface.withOpacity(0.75),
+                      fontSize: 15,
+                      height: 1.6,
                     ),
                     textAlign: TextAlign.center,
                   ),

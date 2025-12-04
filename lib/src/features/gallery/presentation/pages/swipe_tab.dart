@@ -90,7 +90,8 @@ class _SwipeTabState extends State<SwipeTab>
   }
 
   void _onSwipeIndexChanged(int index) {
-    setState(() {
+    // cubitSetState kullan - bu widget'ı rebuild edecek ve currentIndex prop'u güncellenecek
+    cubitSetState(() {
       _currentSwipeIndex = index;
       // Index 0 ise butonu gizle
       if (index == 0) {
@@ -751,14 +752,14 @@ class _SwipeTabState extends State<SwipeTab>
                                 '📊 [SwipePage] Silme işlemi başlatılıyor: $maxDeleteCount/$pendingCount fotoğraf silinecek (limit: $deleteLimit)',
                               );
 
-                              final deletedCount = await context
+                              final deleteResult = await context
                                   .read<ReviewActionsCubit>()
                                   .applyPendingDeletes(
                                     maxDeleteCount: maxDeleteCount,
                                   );
 
                               debugPrint(
-                                '📊 [SwipePage] Silme işlemi tamamlandı: $deletedCount fotoğraf silindi',
+                                '📊 [SwipePage] Silme işlemi tamamlandı: ${deleteResult.deletedCount} fotoğraf silindi, ${deleteResult.deletedSizeMB.toStringAsFixed(2)} MB boşaltıldı',
                               );
 
                               if (!context.mounted) {
@@ -774,16 +775,16 @@ class _SwipeTabState extends State<SwipeTab>
                               }
 
                               // Silme işlemi başarılı olup olmadığını kontrol et
-                              if (deletedCount > 0) {
+                              if (deleteResult.deletedCount > 0) {
                                 debugPrint(
-                                  '✅ [SwipePage] $deletedCount fotoğraf başarıyla silindi, silme hakkı azaltılıyor...',
+                                  '✅ [SwipePage] ${deleteResult.deletedCount} fotoğraf başarıyla silindi, silme hakkı azaltılıyor...',
                                 );
 
                                 try {
                                   final newLimit = await deleteLimitController
-                                      .decrease(deletedCount);
+                                      .decrease(deleteResult.deletedCount);
                                   debugPrint(
-                                    '💾 [SwipePage] Delete limit güncellendi, kalan: $newLimit (azaltılan: $deletedCount)',
+                                    '💾 [SwipePage] Delete limit güncellendi, kalan: $newLimit (azaltılan: ${deleteResult.deletedCount})',
                                   );
 
                                   // Mevcut swipe index'ini kaydet - silme sonrası kaldığı yerden devam etmek için
@@ -796,7 +797,7 @@ class _SwipeTabState extends State<SwipeTab>
                                   // Başarı dialog'unu önce göster - reload'dan önce
                                   // Böylece dialog gösterilirken TabView rebuild olmaz
                                   debugPrint(
-                                    '🎯 [SwipePage] About to show delete success dialog - deletedCount: $deletedCount, context.mounted: ${context.mounted}',
+                                    '🎯 [SwipePage] About to show delete success dialog - deletedCount: ${deleteResult.deletedCount}, deletedSizeMB: ${deleteResult.deletedSizeMB}, context.mounted: ${context.mounted}',
                                   );
                                   if (context.mounted) {
                                     debugPrint(
@@ -804,7 +805,8 @@ class _SwipeTabState extends State<SwipeTab>
                                     );
                                     await showDeleteSuccessDialog(
                                       context,
-                                      deletedCount,
+                                      deleteResult.deletedCount,
+                                      deletedSizeMB: deleteResult.deletedSizeMB,
                                     );
                                     debugPrint(
                                       '✅ [SwipePage] _showDeleteSuccessDialog completed',
@@ -851,25 +853,37 @@ class _SwipeTabState extends State<SwipeTab>
                                   // Reload'u dialog kapandıktan sonra yap
                                   // Böylece dialog gösterilirken TabView rebuild olmaz
                                   if (mounted) {
-                                    context.read<GalleryPagingCubit>().reload();
+                                    // Reload'ı başlat ve tamamlanmasını bekle
+                                    await context.read<GalleryPagingCubit>().reload();
 
-                                    // Reload sonrası, silinen fotoğraflar listeden çıktığı için
+                                    // Reload tamamlandıktan sonra, silinen fotoğraflar listeden çıktığı için
                                     // index'i ayarla (silinen fotoğraflar kadar azalt)
-                                    // Ancak index 0'dan küçük olamaz
-                                    final adjustedIndex =
-                                        (currentIndexBeforeReload -
-                                                deletedCount)
-                                            .clamp(0, 999999999);
+                                    // Ancak index 0'dan küçük olamaz ve assets.length'den büyük olamaz
+                                    if (mounted) {
+                                      final galleryState = context.read<GalleryPagingCubit>().state;
+                                      final currentAssets = galleryState.maybeWhen(
+                                        data: (assets) => assets,
+                                        orElse: () => <pm.AssetEntity>[],
+                                      );
+                                      
+                                      final maxIndex = currentAssets.isNotEmpty 
+                                          ? currentAssets.length - 1 
+                                          : 0;
+                                      final adjustedIndex =
+                                          (currentIndexBeforeReload -
+                                                  deleteResult.deletedCount)
+                                              .clamp(0, maxIndex);
 
-                                    // Index ayarlamasını işaretle - _buildSwipeArea'da uygulanacak
-                                    cubitSetState(() {
-                                      _pendingIndexAdjustment = adjustedIndex;
-                                      _currentSwipeIndex = adjustedIndex;
-                                    });
-                                    _saveSwipeIndex(adjustedIndex);
-                                    debugPrint(
-                                      '💾 [SwipePage] Swipe index ayarlandı: $currentIndexBeforeReload -> $adjustedIndex (silinen: $deletedCount)',
-                                    );
+                                      // Index ayarlamasını işaretle - _buildSwipeArea'da uygulanacak
+                                      cubitSetState(() {
+                                        _pendingIndexAdjustment = adjustedIndex;
+                                        _currentSwipeIndex = adjustedIndex;
+                                      });
+                                      _saveSwipeIndex(adjustedIndex);
+                                      debugPrint(
+                                        '💾 [SwipePage] Swipe index ayarlandı: $currentIndexBeforeReload -> $adjustedIndex (silinen: ${deleteResult.deletedCount}, maxIndex: $maxIndex)',
+                                      );
+                                    }
                                   }
                                 } catch (e, stackTrace) {
                                   debugPrint(
@@ -881,7 +895,7 @@ class _SwipeTabState extends State<SwipeTab>
                                   await deleteLimitController.refresh();
                                   // Hata olsa bile dialog'u göster
                                   debugPrint(
-                                    '🎯 [SwipePage] Error case - About to show delete success dialog - deletedCount: $deletedCount, context.mounted: ${context.mounted}',
+                                    '🎯 [SwipePage] Error case - About to show delete success dialog - deletedCount: ${deleteResult.deletedCount}, deletedSizeMB: ${deleteResult.deletedSizeMB}, context.mounted: ${context.mounted}',
                                   );
                                   if (context.mounted) {
                                     debugPrint(
@@ -889,7 +903,8 @@ class _SwipeTabState extends State<SwipeTab>
                                     );
                                     await showDeleteSuccessDialog(
                                       context,
-                                      deletedCount,
+                                      deleteResult.deletedCount,
+                                      deletedSizeMB: deleteResult.deletedSizeMB,
                                     );
                                     debugPrint(
                                       '✅ [SwipePage] Error case - _showDeleteSuccessDialog completed',
@@ -902,7 +917,7 @@ class _SwipeTabState extends State<SwipeTab>
                                 }
                               } else {
                                 debugPrint(
-                                  '⚠️ [SwipePage] Silme işlemi başarısız veya hiç fotoğraf silinmedi (deletedCount: $deletedCount)',
+                                  '⚠️ [SwipePage] Silme işlemi başarısız veya hiç fotoğraf silinmedi (deletedCount: ${deleteResult.deletedCount})',
                                 );
                                 // Kullanıcıya bilgi ver
                                 if (context.mounted) {

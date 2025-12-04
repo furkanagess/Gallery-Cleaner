@@ -30,6 +30,7 @@ class InterstitialAdsService {
   bool _isShowing = false;
   bool _isDisposed = false;
   Completer<bool>? _showCompleter; // Ad kapatılmasını beklemek için
+  static bool _sdkInitialized = false; // MobileAds.instance.initialize() sadece 1 kez çağrılsın
   
   /// Get ad unit ID based on platform
   String get _adUnitId {
@@ -65,12 +66,15 @@ class InterstitialAdsService {
     }
     
     try {
-      // Ensure ads SDK is initialized
-      try {
-        await MobileAds.instance.initialize();
-        debugPrint('✅ [InterstitialAdsService] Mobile Ads SDK initialized');
-      } catch (e) {
-        debugPrint('⚠️ [InterstitialAdsService] Ads SDK initialization check: $e');
+      // Ensure ads SDK is initialized (sadece bir kez)
+      if (!_sdkInitialized) {
+        try {
+          await MobileAds.instance.initialize();
+          _sdkInitialized = true;
+          debugPrint('✅ [InterstitialAdsService] Mobile Ads SDK initialized');
+        } catch (e) {
+          debugPrint('⚠️ [InterstitialAdsService] Ads SDK initialization check: $e');
+        }
       }
       
       _isLoading = true;

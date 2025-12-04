@@ -924,7 +924,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get group => 'Grup';
 
   @override
-  String get photo => 'Fotoğraf';
+  String get photo => 'fotoğraf';
 
   @override
   String get blurry => 'Blurlu';
@@ -986,6 +986,19 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
+  String cleanupCompleteMessageWithCountAndSize(int count, String size) {
+    return '$count fotoğraf başarıyla silindi ve $size MB alan boşaltıldı. Galeriniz artık daha temiz ve hafif.';
+  }
+
+  @override
+  String get photos => 'fotoğraf';
+
+  @override
+  String mbFreed(String size) {
+    return '$size MB boşaltıldı';
+  }
+
+  @override
   String get done => 'Tamam';
 
   @override
@@ -1016,6 +1029,16 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get rateAppDescription =>
       'Uygulamayı beğendiniz mi? Lütfen mağazada bizi değerlendirin!';
+
+  @override
+  String get rateAppSupportMessage =>
+      'Gelişimimize destek olun! 3 saniye ayırıp uygulamayı değerlendirir misiniz?';
+
+  @override
+  String get thankYou => 'Teşekkürler!';
+
+  @override
+  String get thanksForFeedback => 'Geri bildiriminiz için teşekkürler!';
 
   @override
   String get couldNotOpenStore => 'Mağaza açılamadı';

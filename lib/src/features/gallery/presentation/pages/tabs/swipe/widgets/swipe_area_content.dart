@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:math' as math;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -14,12 +16,83 @@ import '../../../../widgets/photo_swipe_deck.dart'
     show PhotoSwipeDeck, SwipeDecision;
 import '../../../../../../../../src/core/services/sound_service.dart'
     show SoundService;
+import '../../../../../../../../src/core/services/preferences_service.dart'
+    show PreferencesService;
 import 'swipe_tab_helpers.dart'
     show
         isPositionOverWidget,
         getWidgetCenter,
         showAlbumSelectionDialog,
-        maybePrefetch;
+        maybePrefetch,
+        showRateUsDialog;
+
+// iOS için basit sayaç widget'ı - ChangeNotifier ile çalışır
+class _IOSSwipeCounterNotifier extends ChangeNotifier {
+  int _index = 0;
+  int _totalCount = 0;
+
+  int get index => _index;
+  int get totalCount => _totalCount;
+
+  void update(int index, int totalCount) {
+    if (_index != index || _totalCount != totalCount) {
+      _index = index;
+      _totalCount = totalCount;
+      notifyListeners();
+      debugPrint('🔄 [_IOSSwipeCounterNotifier] Güncellendi: $_index / $_totalCount');
+    }
+  }
+}
+
+// iOS için sayaç widget'ı - ChangeNotifier dinler
+class _IOSSwipeCounter extends StatelessWidget {
+  const _IOSSwipeCounter({
+    required this.notifier,
+  });
+
+  final _IOSSwipeCounterNotifier notifier;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: notifier,
+      builder: (context, child) {
+        final index = notifier.index;
+        final totalCount = notifier.totalCount;
+        debugPrint('🎨 [_IOSSwipeCounter] Build - Index: $index / $totalCount');
+        return Container(
+          key: ValueKey('ios_counter_$index'),
+          padding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 8,
+          ),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface.withOpacity(0.9),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.black.withOpacity(0.2),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+                spreadRadius: 0,
+              ),
+            ],
+          ),
+          child: Text(
+            '${index + 1} / $totalCount',
+            key: ValueKey('ios_counter_text_$index'),
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                  letterSpacing: 0.2,
+                ),
+          ),
+        );
+      },
+    );
+  }
+}
 
 class SwipeAreaContent extends StatefulWidget {
   const SwipeAreaContent({
@@ -45,6 +118,11 @@ class SwipeAreaContent extends StatefulWidget {
 
 class SwipeAreaContentState extends State<SwipeAreaContent>
     with CubitStateMixin<SwipeAreaContent> {
+  // Index takibi
+  int _currentIndex = 0;
+  // iOS için ChangeNotifier - sayaç widget'ını güncellemek için
+  _IOSSwipeCounterNotifier? _iosCounterNotifier;
+  
   static const double _verticalActivationOffset = 16.0;
   static const double _verticalMaxTravel = 280.0;
   static const double _verticalMinScale = 0.58;
@@ -64,9 +142,28 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
       false; // Build sırasında update'i geciktirmek için
 
   @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.currentIndex;
+    // iOS için ChangeNotifier başlat
+    if (Platform.isIOS) {
+      _iosCounterNotifier = _IOSSwipeCounterNotifier();
+      _iosCounterNotifier!.update(_currentIndex, widget.assets.length);
+    }
+  }
+
+  @override
+  void dispose() {
+    // iOS için ChangeNotifier dispose
+    _iosCounterNotifier?.dispose();
+    super.dispose();
+  }
+
+  @override
   void didUpdateWidget(covariant SwipeAreaContent oldWidget) {
     super.didUpdateWidget(oldWidget);
 
+    final didAssetCountChange = oldWidget.assets.length != widget.assets.length;
     final oldTopId = oldWidget.assets.isEmpty
         ? null
         : oldWidget.assets.first.id;
@@ -74,6 +171,56 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
 
     if (oldTopId != newTopId) {
       _resetVisuals();
+    }
+
+    // currentIndex prop'u değiştiyse state'i güncelle
+    if (widget.currentIndex != _currentIndex) {
+      _currentIndex = widget.currentIndex;
+      // iOS için ChangeNotifier güncelle
+      if (Platform.isIOS) {
+        _iosCounterNotifier?.update(_currentIndex, widget.assets.length);
+        debugPrint('🍎 [SwipeAreaContent] iOS - sayaç prop ile güncellendi: $_currentIndex');
+      } else {
+        cubitSetState(() {
+          // _currentIndex zaten yukarıda güncellendi
+        });
+        debugPrint('🤖 [SwipeAreaContent] Android - prop ile güncellendi: $_currentIndex');
+      }
+    } else if (didAssetCountChange && Platform.isIOS) {
+      // iOS sayaçta toplam foto sayısını senkron tut
+      _iosCounterNotifier?.update(_currentIndex, widget.assets.length);
+      debugPrint(
+        '🍎 [SwipeAreaContent] iOS - toplam sayı güncellendi: ${widget.assets.length}',
+      );
+    }
+  }
+
+  void _handleIndexChanged(int index) {
+    if (_currentIndex != index) {
+      debugPrint('🔄 [SwipeAreaContent] Index değişiyor: $_currentIndex -> $index');
+      
+      _currentIndex = index;
+      
+      // iOS için ChangeNotifier güncelle - her zaman güncelle
+      if (Platform.isIOS) {
+        // Eğer notifier null ise, yeniden oluştur
+        if (_iosCounterNotifier == null) {
+          _iosCounterNotifier = _IOSSwipeCounterNotifier();
+          debugPrint('⚠️ [SwipeAreaContent] iOS - ChangeNotifier yeniden oluşturuldu');
+        }
+        _iosCounterNotifier!.update(_currentIndex, widget.assets.length);
+        debugPrint('🍎 [SwipeAreaContent] iOS - ChangeNotifier ile güncellendi: $_currentIndex / ${widget.assets.length}');
+      } else {
+        // Android için cubitSetState kullan
+        cubitSetState(() {
+          // _currentIndex zaten yukarıda güncellendi
+        });
+        debugPrint('🤖 [SwipeAreaContent] Android - cubitSetState ile güncellendi: $_currentIndex');
+      }
+      
+      // Parent widget'a da bildir
+      widget.onIndexChanged?.call(index);
+      debugPrint('✅ [SwipeAreaContent] Index güncellendi: $_currentIndex / ${widget.assets.length}');
     }
   }
 
@@ -86,7 +233,9 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
       orElse: () => true, // Loading veya error durumunda varsayılan olarak true
     );
 
-    return RepaintBoundary(
+    // iOS için buildWithCubit kullanma - normal build kullan
+    // Android için buildWithCubit kullan
+    Widget widgetTree = RepaintBoundary(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -141,7 +290,7 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
                                   onNoRightsLeft: () {
                                     _showNoRightsDialog(context);
                                   },
-                                  onIndexChanged: widget.onIndexChanged,
+                                  onIndexChanged: _handleIndexChanged,
                                   onResetCallbackReady: widget.onResetCallbackReady,
                                   onDragOffsetChanged: (offset) {
                                     // Build sırasında setState çağrılmasını engellemek için
@@ -173,46 +322,14 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
                                   },
                                 ),
                                 // Fotoğraf sayacı - Deck içinde
+                                // iOS için özel çözüm - direkt _currentIndex kullan ve her build'de yeni widget oluştur
                                 if (widget.assets.isNotEmpty)
                                   Positioned(
                                     bottom: 12,
                                     left: 0,
                                     right: 0,
                                     child: Center(
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 16,
-                                          vertical: 8,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.surface.withOpacity(0.9),
-                                          borderRadius: BorderRadius.circular(16),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: AppColors.black.withOpacity(0.2),
-                                              blurRadius: 8,
-                                              offset: const Offset(0, 2),
-                                              spreadRadius: 0,
-                                            ),
-                                          ],
-                                        ),
-                                        child: Text(
-                                          '${widget.currentIndex + 1} / ${widget.assets.length}',
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .bodyMedium
-                                              ?.copyWith(
-                                                color: Theme.of(
-                                                  context,
-                                                ).colorScheme.onSurface,
-                                                fontWeight: FontWeight.w600,
-                                                fontSize: 13,
-                                                letterSpacing: 0.2,
-                                              ),
-                                        ),
-                                      ),
+                                      child: _buildCounterWidget(context),
                                     ),
                                   ),
                               ],
@@ -269,6 +386,13 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
         ],
       ),
     );
+    
+    // iOS için direkt döndür, Android için buildWithCubit ile sarmala
+    if (Platform.isIOS) {
+      return widgetTree;
+    } else {
+      return buildWithCubit(() => widgetTree);
+    }
   }
 
   void _handleDragUpdate(Offset globalPos) {
@@ -369,6 +493,19 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
       await actions.onDelete(asset);
     }
 
+    // Swipe sayacını artır ve rate us dialog kontrolü yap
+    final prefsService = PreferencesService();
+    final shouldShowRateUs = await prefsService.incrementSwipeCount();
+    
+    if (shouldShowRateUs && mounted) {
+      // Kısa bir gecikme sonrası dialog göster (kullanıcı deneyimini bozmamak için)
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) {
+          showRateUsDialog(context);
+        }
+      });
+    }
+
     maybePrefetch(context, widget.assets, asset);
     _resetVisuals();
   }
@@ -387,13 +524,87 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
   void _resetVisuals() {
     if (!mounted) return;
 
-    cubitSetState(() {
-      _dragScale = 1.0;
-      _dragOffset = Offset.zero;
-      _isDraggingToAlbum = false;
-      _dragStartPosition = null;
-      _photoSwipeDragOffset = Offset.zero;
-    });
+    if (Platform.isIOS) {
+      setState(() {
+        _dragScale = 1.0;
+        _dragOffset = Offset.zero;
+        _isDraggingToAlbum = false;
+        _dragStartPosition = null;
+        _photoSwipeDragOffset = Offset.zero;
+      });
+    } else {
+      cubitSetState(() {
+        _dragScale = 1.0;
+        _dragOffset = Offset.zero;
+        _isDraggingToAlbum = false;
+        _dragStartPosition = null;
+        _photoSwipeDragOffset = Offset.zero;
+      });
+    }
+  }
+
+  // Sayaç widget builder
+  Widget _buildCounterWidget(BuildContext context) {
+    if (Platform.isIOS) {
+      // iOS için ChangeNotifier ile çalışan widget
+      // Eğer notifier null ise, yeniden oluştur
+      if (_iosCounterNotifier == null) {
+        _iosCounterNotifier = _IOSSwipeCounterNotifier();
+        _iosCounterNotifier!.update(_currentIndex, widget.assets.length);
+        debugPrint('⚠️ [SwipeAreaContent] iOS - ChangeNotifier build sırasında oluşturuldu');
+      }
+      return _IOSSwipeCounter(
+        notifier: _iosCounterNotifier!,
+      );
+    } else {
+      // Android için AnimatedSwitcher kullan
+      final currentIndex = _currentIndex;
+      return AnimatedSwitcher(
+        duration: const Duration(milliseconds: 200),
+        transitionBuilder: (child, animation) {
+          return FadeTransition(
+            opacity: animation,
+            child: child,
+          );
+        },
+        child: Container(
+          key: ValueKey('counter_android_$currentIndex'),
+          padding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 8,
+          ),
+          decoration: BoxDecoration(
+            color: Theme.of(
+              context,
+            ).colorScheme.surface.withOpacity(0.9),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.black.withOpacity(0.2),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+                spreadRadius: 0,
+              ),
+            ],
+          ),
+          child: Text(
+            '${currentIndex + 1} / ${widget.assets.length}',
+            key: ValueKey('counter_text_android_$currentIndex'),
+            style: Theme.of(context)
+                .textTheme
+                .bodyMedium
+                ?.copyWith(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                  letterSpacing: 0.2,
+                ),
+          ),
+        ),
+      );
+    }
   }
 
   List<Widget> _buildSwipeActionButtons(BuildContext context) {

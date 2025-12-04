@@ -1016,6 +1016,35 @@
       }
     }
   },
+  "cleanupCompleteMessageWithCountAndSize": "{count} fotoğraf başarıyla silindi ve {size} MB alan boşaltıldı. Galeriniz artık daha temiz ve hafif.",
+  "@cleanupCompleteMessageWithCountAndSize": {
+    "description": "Message for cleanup complete dialog with deleted count and size",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "photo": "fotoğraf",
+  "@photo": {
+    "description": "Photo singular"
+  },
+  "photos": "fotoğraf",
+  "@photos": {
+    "description": "Photo plural"
+  },
+  "mbFreed": "{size} MB boşaltıldı",
+  "@mbFreed": {
+    "description": "MB freed text",
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
   "done": "Tamam",
   "@done": {
     "description": "Done button text"
@@ -1055,6 +1084,18 @@
   "rateAppDescription": "Uygulamayı beğendiniz mi? Lütfen mağazada bizi değerlendirin!",
   "@rateAppDescription": {
     "description": "Description for rate app section"
+  },
+  "rateAppSupportMessage": "Gelişimimize destek olun! 3 saniye ayırıp uygulamayı değerlendirir misiniz?",
+  "@rateAppSupportMessage": {
+    "description": "Support message for rate app dialog"
+  },
+  "thankYou": "Teşekkürler!",
+  "@thankYou": {
+    "description": "Thank you message"
+  },
+  "thanksForFeedback": "Geri bildiriminiz için teşekkürler!",
+  "@thanksForFeedback": {
+    "description": "Thanks for feedback message"
   },
   "couldNotOpenStore": "Mağaza açılamadı",
   "@couldNotOpenStore": {

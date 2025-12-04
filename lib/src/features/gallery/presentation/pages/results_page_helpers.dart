@@ -312,9 +312,13 @@ Future<void> deleteBlurPhoto(
 
   // BlurDetectionCubit kullanarak silme işlemini yap
   final blurCubit = context.read<BlurDetectionCubit>();
-  final deletedCount = await blurCubit.deleteBlurryPhotos([photo]);
+  final deleteResult = await blurCubit.deleteBlurryPhotos([photo]);
   if (!context.mounted) return;
-  await showDeleteSuccessDialog(context, deletedCount);
+  await showDeleteSuccessDialog(
+    context,
+    deleteResult.deletedCount,
+    deletedSizeMB: deleteResult.deletedSizeMB,
+  );
 }
 
 String getBlurProblemTypeLabel(BlurPhoto photo, AppLocalizations l10n) {
@@ -1140,24 +1144,29 @@ Future<void> deleteDuplicateGroup(
 
   // BLoC kullanarak duplicate'leri sil
   final duplicateCubit = context.read<DuplicateDetectionCubit>();
-  final deletedCount = await duplicateCubit.deleteDuplicates([group]);
+  final deleteResult = await duplicateCubit.deleteDuplicates([group]);
 
   if (!context.mounted) return;
 
   // Delete limit'i azalt
   final deleteLimitCubit = context.read<DeleteLimitCubit>();
-  await deleteLimitCubit.decrease(deletedCount);
+  await deleteLimitCubit.decrease(deleteResult.deletedCount);
 
-  if (!context.mounted || deletedCount <= 0) return;
-  await showDeleteSuccessDialog(context, deletedCount);
+  if (!context.mounted || deleteResult.deletedCount <= 0) return;
+  await showDeleteSuccessDialog(
+    context,
+    deleteResult.deletedCount,
+    deletedSizeMB: deleteResult.deletedSizeMB,
+  );
 }
 
 Future<void> showDeleteSuccessDialog(
   BuildContext context,
-  int deletedCount,
-) async {
+  int deletedCount, {
+  double deletedSizeMB = 0.0,
+}) async {
   debugPrint(
-    '🎯 [ResultsPageHelpers] showDeleteSuccessDialog çağrıldı - deletedCount: $deletedCount',
+    '🎯 [ResultsPageHelpers] showDeleteSuccessDialog çağrıldı - deletedCount: $deletedCount, deletedSizeMB: $deletedSizeMB',
   );
 
   if (!context.mounted || deletedCount <= 0) {
@@ -1240,7 +1249,7 @@ Future<void> showDeleteSuccessDialog(
   }
 
   debugPrint(
-    '✅ [ResultsPageHelpers] Showing cleanup complete dialog - deletedCount: $deletedCount',
+    '✅ [ResultsPageHelpers] Showing cleanup complete dialog - deletedCount: $deletedCount, deletedSizeMB: $deletedSizeMB',
   );
 
   try {
@@ -1285,50 +1294,117 @@ Future<void> showDeleteSuccessDialog(
               );
             },
             child: Container(
-              constraints: const BoxConstraints(maxWidth: 380),
+              constraints: const BoxConstraints(maxWidth: 400),
               padding: const EdgeInsets.all(32),
               decoration: BoxDecoration(
                 color: theme.colorScheme.surface,
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.circular(28),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.black.withOpacity(0.15),
-                    blurRadius: 24,
+                    color: AppColors.black.withOpacity(0.2),
+                    blurRadius: 32,
                     spreadRadius: 0,
-                    offset: const Offset(0, 8),
+                    offset: const Offset(0, 12),
                   ),
                 ],
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  SizedBox(
-                    width: 120,
-                    height: 120,
-                    child: Lottie.asset(
-                      'assets/lottie/wipe.json',
-                      fit: BoxFit.contain,
-                      repeat: true,
-                      animate: true,
+                  // Success icon with background
+                  Container(
+                    width: 100,
+                    height: 100,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primaryContainer.withOpacity(0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: SizedBox(
+                        width: 80,
+                        height: 80,
+                        child: Lottie.asset(
+                          'assets/lottie/wipe.json',
+                          fit: BoxFit.contain,
+                          repeat: true,
+                          animate: true,
+                        ),
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 28),
                   Text(
                     l10n.cleanupComplete,
                     style: theme.textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
-                      fontSize: 24,
+                      fontSize: 26,
                       color: theme.colorScheme.onSurface,
+                      letterSpacing: -0.5,
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
+                  // Stats container
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.check_circle_outline,
+                              size: 20,
+                              color: theme.colorScheme.primary,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              '$deletedCount ${deletedCount == 1 ? l10n.photo : l10n.photos}',
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 16,
+                                color: theme.colorScheme.onSurface,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.storage_outlined,
+                              size: 20,
+                              color: theme.colorScheme.primary,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              l10n.mbFreed(deletedSizeMB.toStringAsFixed(1)),
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 16,
+                                color: theme.colorScheme.onSurface,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
                   Text(
-                    l10n.cleanupCompleteMessageWithCount(deletedCount),
+                    l10n.cleanupCompleteMessageWithCountAndSize(
+                      deletedCount,
+                      deletedSizeMB.toStringAsFixed(1),
+                    ),
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurface.withOpacity(0.7),
-                      fontSize: 14,
-                      height: 1.5,
+                      color: theme.colorScheme.onSurface.withOpacity(0.75),
+                      fontSize: 15,
+                      height: 1.6,
                     ),
                     textAlign: TextAlign.center,
                   ),

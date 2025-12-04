@@ -1702,10 +1702,10 @@ abstract class AppLocalizations {
   /// **'Group'**
   String get group;
 
-  /// Photo label
+  /// Photo singular
   ///
   /// In en, this message translates to:
-  /// **'Photo'**
+  /// **'photo'**
   String get photo;
 
   /// Blurry photo type
@@ -1816,6 +1816,24 @@ abstract class AppLocalizations {
   /// **'{count} photo(s) have been successfully deleted. Your gallery is now cleaner and lighter.'**
   String cleanupCompleteMessageWithCount(int count);
 
+  /// Message for cleanup complete dialog with deleted count and size
+  ///
+  /// In en, this message translates to:
+  /// **'{count} photo(s) have been successfully deleted and {size} MB of space freed. Your gallery is now cleaner and lighter.'**
+  String cleanupCompleteMessageWithCountAndSize(int count, String size);
+
+  /// Photo plural
+  ///
+  /// In en, this message translates to:
+  /// **'photos'**
+  String get photos;
+
+  /// MB freed text
+  ///
+  /// In en, this message translates to:
+  /// **'{size} MB freed'**
+  String mbFreed(String size);
+
   /// Done button text
   ///
   /// In en, this message translates to:
@@ -1875,6 +1893,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Enjoying the app? Please rate us on the store!'**
   String get rateAppDescription;
+
+  /// Support message for rate app dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Support our growth! Could you take 3 seconds to rate the app?'**
+  String get rateAppSupportMessage;
+
+  /// Thank you message
+  ///
+  /// In en, this message translates to:
+  /// **'Thank You!'**
+  String get thankYou;
+
+  /// Thanks for feedback message
+  ///
+  /// In en, this message translates to:
+  /// **'Thanks for your feedback!'**
+  String get thanksForFeedback;
 
   /// Error message when store cannot be opened
   ///

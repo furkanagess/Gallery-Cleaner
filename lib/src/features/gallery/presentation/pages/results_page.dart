@@ -298,7 +298,7 @@ class _BlurResultsTab extends StatelessWidget {
 
             // BLoC kullanarak blur fotoğraflarını sil
             final blurCubit = context.read<BlurDetectionCubit>();
-            final deletedCount = await blurCubit.deleteAllBlurryPhotos();
+            final deleteResult = await blurCubit.deleteAllBlurryPhotos();
 
             if (!context.mounted) return;
 
@@ -310,21 +310,25 @@ class _BlurResultsTab extends StatelessWidget {
 
             // Delete limit'i azalt
             final deleteLimitCubit = context.read<DeleteLimitCubit>();
-            await deleteLimitCubit.decrease(deletedCount);
+            await deleteLimitCubit.decrease(deleteResult.deletedCount);
 
             // Cleanup complete dialogunu göster
             debugPrint(
-              '🎯 [ResultsPage] Blur - About to show delete success dialog - deletedCount: $deletedCount, context.mounted: ${context.mounted}',
+              '🎯 [ResultsPage] Blur - About to show delete success dialog - deletedCount: ${deleteResult.deletedCount}, deletedSizeMB: ${deleteResult.deletedSizeMB}, context.mounted: ${context.mounted}',
             );
 
             // Context mounted kontrolünü decrease'dan sonra tekrar yap
-            if (deletedCount > 0) {
+            if (deleteResult.deletedCount > 0) {
               // Önce normal context'i kontrol et
               if (context.mounted) {
                 debugPrint(
                   '✅ [ResultsPage] Blur - Context is mounted and deletedCount > 0, calling showDeleteSuccessDialog...',
                 );
-                await showDeleteSuccessDialog(context, deletedCount);
+                await showDeleteSuccessDialog(
+                  context,
+                  deleteResult.deletedCount,
+                  deletedSizeMB: deleteResult.deletedSizeMB,
+                );
                 debugPrint(
                   '✅ [ResultsPage] Blur - showDeleteSuccessDialog completed',
                 );
@@ -336,7 +340,11 @@ class _BlurResultsTab extends StatelessWidget {
                 // Bir sonraki frame'de root context ile dene
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   try {
-                    showDeleteSuccessDialog(rootNavigatorContext, deletedCount);
+                    showDeleteSuccessDialog(
+                      rootNavigatorContext,
+                      deleteResult.deletedCount,
+                      deletedSizeMB: deleteResult.deletedSizeMB,
+                    );
                   } catch (e) {
                     debugPrint(
                       '❌ [ResultsPage] Blur - Error showing dialog with rootNavigator context: $e',
@@ -814,7 +822,7 @@ class _DuplicateResultsTab extends StatelessWidget {
 
             // BLoC kullanarak duplicate fotoğrafları sil
             final duplicateCubit = context.read<DuplicateDetectionCubit>();
-            final deletedCount = await duplicateCubit.deleteAllDuplicates();
+            final deleteResult = await duplicateCubit.deleteAllDuplicates();
 
             if (!context.mounted) return;
 
@@ -826,21 +834,25 @@ class _DuplicateResultsTab extends StatelessWidget {
 
             // Delete limit'i azalt
             final deleteLimitCubit = context.read<DeleteLimitCubit>();
-            await deleteLimitCubit.decrease(deletedCount);
+            await deleteLimitCubit.decrease(deleteResult.deletedCount);
 
             // Cleanup complete dialogunu göster
             debugPrint(
-              '🎯 [ResultsPage] Duplicate - About to show delete success dialog - deletedCount: $deletedCount, context.mounted: ${context.mounted}',
+              '🎯 [ResultsPage] Duplicate - About to show delete success dialog - deletedCount: ${deleteResult.deletedCount}, deletedSizeMB: ${deleteResult.deletedSizeMB}, context.mounted: ${context.mounted}',
             );
 
             // Context mounted kontrolünü decrease'dan sonra tekrar yap
-            if (deletedCount > 0) {
+            if (deleteResult.deletedCount > 0) {
               // Önce normal context'i kontrol et
               if (context.mounted) {
                 debugPrint(
                   '✅ [ResultsPage] Duplicate - Context is mounted and deletedCount > 0, calling showDeleteSuccessDialog...',
                 );
-                await showDeleteSuccessDialog(context, deletedCount);
+                await showDeleteSuccessDialog(
+                  context,
+                  deleteResult.deletedCount,
+                  deletedSizeMB: deleteResult.deletedSizeMB,
+                );
                 debugPrint(
                   '✅ [ResultsPage] Duplicate - showDeleteSuccessDialog completed',
                 );
@@ -852,7 +864,11 @@ class _DuplicateResultsTab extends StatelessWidget {
                 // Bir sonraki frame'de root context ile dene
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   try {
-                    showDeleteSuccessDialog(rootNavigatorContext, deletedCount);
+                    showDeleteSuccessDialog(
+                      rootNavigatorContext,
+                      deleteResult.deletedCount,
+                      deletedSizeMB: deleteResult.deletedSizeMB,
+                    );
                   } catch (e) {
                     debugPrint(
                       '❌ [ResultsPage] Duplicate - Error showing dialog with rootNavigator context: $e',

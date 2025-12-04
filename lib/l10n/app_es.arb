@@ -949,6 +949,35 @@
       }
     }
   },
+  "cleanupCompleteMessageWithCountAndSize": "{count} foto(s) han sido eliminadas exitosamente y {size} MB de espacio liberado. Tu galería ahora está más limpia y ligera.",
+  "@cleanupCompleteMessageWithCountAndSize": {
+    "description": "Message for cleanup complete dialog with deleted count and size",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "photo": "foto",
+  "@photo": {
+    "description": "Photo singular"
+  },
+  "photos": "fotos",
+  "@photos": {
+    "description": "Photo plural"
+  },
+  "mbFreed": "{size} MB liberado",
+  "@mbFreed": {
+    "description": "MB freed text",
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
   "done": "Hecho",
   "@done": {
     "description": "Done button text"
@@ -988,6 +1017,18 @@
   "rateAppDescription": "¿Te gusta la app? ¡Por favor califícanos en la tienda!",
   "@rateAppDescription": {
     "description": "Description for rate app section"
+  },
+  "rateAppSupportMessage": "¡Apoya nuestro crecimiento! ¿Podrías tomar 3 segundos para calificar la app?",
+  "@rateAppSupportMessage": {
+    "description": "Support message for rate app dialog"
+  },
+  "thankYou": "¡Gracias!",
+  "@thankYou": {
+    "description": "Thank you message"
+  },
+  "thanksForFeedback": "¡Gracias por tu comentario!",
+  "@thanksForFeedback": {
+    "description": "Thanks for feedback message"
   },
   "couldNotOpenStore": "No se pudo abrir la tienda",
   "@couldNotOpenStore": {

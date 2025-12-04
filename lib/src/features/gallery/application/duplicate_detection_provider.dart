@@ -12,6 +12,8 @@ export '../../../core/services/duplicate_detection_service.dart'
     show DuplicateDetectionMode;
 import '../../onboarding/application/permissions_controller.dart';
 import 'gallery_providers.dart';
+import 'review_actions_controller.dart';
+import 'asset_size_helper.dart';
 
 /// Duplicate detection state
 class DuplicateDetectionState {
@@ -395,24 +397,30 @@ class DuplicateDetectionCubit extends Cubit<DuplicateDetectionState> {
   }
 
   /// Duplicate fotoğrafları topluca sil
-  Future<int> deleteDuplicates(
+  Future<DeleteResult> deleteDuplicates(
     List<DuplicatePhotoGroup> groups, {
     int? maxDeleteCount,
   }) async {
-    if (groups.isEmpty) return 0;
+    if (groups.isEmpty) {
+      return DeleteResult(deletedCount: 0, deletedSizeMB: 0.0);
+    }
 
-    // Tüm silinecek fotoğraf ID'lerini topla
+    // Tüm silinecek fotoğraf ID'lerini ve asset'lerini topla
     final allIdsToDelete = <String>[];
+    final assetsToDelete = <String, pm.AssetEntity>{};
     for (final group in groups) {
       final toDelete = group.duplicatesToDelete;
       if (toDelete.isNotEmpty) {
-        allIdsToDelete.addAll(toDelete.map((asset) => asset.id));
+        for (final asset in toDelete) {
+          allIdsToDelete.add(asset.id);
+          assetsToDelete[asset.id] = asset;
+        }
       }
     }
 
     if (allIdsToDelete.isEmpty) {
       debugPrint('⚠️ [DuplicateDetection] Silinecek fotoğraf bulunamadı');
-      return 0;
+      return DeleteResult(deletedCount: 0, deletedSizeMB: 0.0);
     }
 
     // Eğer maxDeleteCount belirtilmişse, sadece o kadar sil
@@ -426,6 +434,23 @@ class DuplicateDetectionCubit extends Cubit<DuplicateDetectionState> {
     );
 
     try {
+      // Silme işleminden ÖNCE asset boyutlarını hesapla ve sakla
+      // Çünkü silme işleminden sonra asset'ler artık mevcut olmayacak
+      final assetSizes = <String, int>{};
+      for (final id in idsToDelete) {
+        final asset = assetsToDelete[id];
+        if (asset != null) {
+          try {
+            final sizeBytes = await estimateAssetSize(asset);
+            if (sizeBytes > 0) {
+              assetSizes[id] = sizeBytes;
+            }
+          } catch (e) {
+            debugPrint('⚠️ [DuplicateDetection] Asset boyutu hesaplanamadı (silme öncesi): $id, $e');
+          }
+        }
+      }
+
       // Toplu silme işlemi - tüm ID'leri tek seferde sil
       final deletedIds = await _mediaLibraryService.deleteBatch(idsToDelete);
       final deletedCount = deletedIds.length;
@@ -433,6 +458,15 @@ class DuplicateDetectionCubit extends Cubit<DuplicateDetectionState> {
       debugPrint(
         '✅ [DuplicateDetection] ${deletedCount}/${idsToDelete.length} fotoğraf başarıyla silindi',
       );
+
+      // Toplam silinen MB'ı hesapla - saklanan boyutları kullan
+      double totalSizeMB = 0.0;
+      for (final id in deletedIds) {
+        final sizeBytes = assetSizes[id];
+        if (sizeBytes != null && sizeBytes > 0) {
+          totalSizeMB += sizeBytes / (1024 * 1024);
+        }
+      }
 
       // Silinmek istenen grupların hash'lerini topla (referans eşitliği yerine)
       final groupsToDeleteHash = groups.map((g) => g.hash).toSet();
@@ -462,15 +496,24 @@ class DuplicateDetectionCubit extends Cubit<DuplicateDetectionState> {
         '💾 [DuplicateDetection] State güncellendi: ${updatedMap.length} albüm kaldı',
       );
 
-      return deletedCount;
+      debugPrint(
+        '✅ [DuplicateDetection] $deletedCount fotoğraf silindi, ${totalSizeMB.toStringAsFixed(2)} MB boşaltıldı',
+      );
+
+      // Silinen fotoğraf ID'lerini kaydet (deck'te tekrar gösterilmemesi için)
+      if (deletedIds.isNotEmpty) {
+        await _preferencesService.addDeletedPhotoIds(deletedIds);
+      }
+
+      return DeleteResult(deletedCount: deletedCount, deletedSizeMB: totalSizeMB);
     } catch (e) {
       debugPrint('❌ [DuplicateDetection] Toplu silme hatası: $e');
-      return 0;
+      return DeleteResult(deletedCount: 0, deletedSizeMB: 0.0);
     }
   }
 
   /// Tüm duplicate fotoğrafları sil
-  Future<int> deleteAllDuplicates({int? maxDeleteCount}) async {
+  Future<DeleteResult> deleteAllDuplicates({int? maxDeleteCount}) async {
     final allGroups = state.duplicatesByAlbum.values
         .expand((groups) => groups)
         .toList();

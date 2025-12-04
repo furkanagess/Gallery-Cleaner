@@ -42,13 +42,17 @@ class PreferencesService {
   static const String _blurScanLimitKey = 'blur_scan_limit';
   static const String _swipeIndexKey = 'swipe_index';
   static const String _swipeAlbumIdKey = 'swipe_album_id';
+  static const String _deletedPhotoIdsKey = 'deleted_photo_ids';
   static const String _autoAnalyzeOnLaunchKey = 'auto_analyze_on_launch';
   static const String _interstitialAdCountKey = 'interstitial_ad_count';
   static const String _scanSoundEnabledKey = 'scan_sound_enabled';
   static const String _soundVolumeKey = 'sound_volume';
   static const String _deleteCountForPaywallKey = 'delete_count_for_paywall';
   static const String _hasShownFirstDeleteReviewKey = 'has_shown_first_delete_review';
+  static const String _swipeCountKey = 'swipe_count';
+  static const String _hasShownRateUsDialogKey = 'has_shown_rate_us_dialog';
   static const String _lastSelectedAlbumIdKey = 'last_selected_album_id';
+  static const int _rateUsDialogThreshold = 10; // 10 swipe sonrası dialog göster
   static const int _defaultDeleteLimit = 100;
   static const int _defaultScanLimit = 1000;
   static const int _premiumDialogThreshold =
@@ -756,6 +760,57 @@ class PreferencesService {
     }
   }
 
+  /// Silinen fotoğraf ID'lerini kaydet
+  Future<void> addDeletedPhotoIds(List<String> photoIds) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final existingIdsJson = prefs.getString(_deletedPhotoIdsKey);
+      final existingIds = existingIdsJson != null
+          ? (jsonDecode(existingIdsJson) as List<dynamic>)
+              .map((e) => e.toString())
+              .toSet()
+          : <String>{};
+      
+      existingIds.addAll(photoIds);
+      
+      final updatedIdsJson = jsonEncode(existingIds.toList());
+      await prefs.setString(_deletedPhotoIdsKey, updatedIdsJson);
+      debugPrint(
+        '💾 [PreferencesService] ${photoIds.length} silinen fotoğraf ID\'si kaydedildi (toplam: ${existingIds.length})',
+      );
+    } catch (e) {
+      debugPrint('❌ [PreferencesService] Silinen fotoğraf ID\'leri kaydedilemedi: $e');
+    }
+  }
+
+  /// Silinen fotoğraf ID'lerini al
+  Future<Set<String>> getDeletedPhotoIds() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final idsJson = prefs.getString(_deletedPhotoIdsKey);
+      if (idsJson == null) return <String>{};
+      
+      final ids = (jsonDecode(idsJson) as List<dynamic>)
+          .map((e) => e.toString())
+          .toSet();
+      return ids;
+    } catch (e) {
+      debugPrint('❌ [PreferencesService] Silinen fotoğraf ID\'leri okunamadı: $e');
+      return <String>{};
+    }
+  }
+
+  /// Silinen fotoğraf ID'lerini temizle
+  Future<void> clearDeletedPhotoIds() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_deletedPhotoIdsKey);
+      debugPrint('💾 [PreferencesService] Silinen fotoğraf ID\'leri temizlendi');
+    } catch (e) {
+      debugPrint('❌ [PreferencesService] Silinen fotoğraf ID\'leri temizlenemedi: $e');
+    }
+  }
+
   /// Interstisial reklam sayısını al
   Future<int> getInterstitialAdCount() async {
     final count = await _getSecureInt(_interstitialAdCountKey);
@@ -859,6 +914,57 @@ class PreferencesService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_hasShownFirstDeleteReviewKey, true);
     debugPrint('💾 [PreferencesService] İlk silme review dialog\'u gösterildi olarak işaretlendi');
+  }
+
+  /// Swipe sayacını al
+  Future<int> getSwipeCount() async {
+    final count = await _getSecureInt(_swipeCountKey);
+    return count ?? 0;
+  }
+
+  /// Swipe sayacını artır ve rate us dialog gösterilmesi gerekip gerekmediğini kontrol et
+  /// Returns true if rate us dialog should be shown (after 10 swipes)
+  Future<bool> incrementSwipeCount() async {
+    // Eğer dialog zaten gösterildiyse, sayacı artırma
+    final hasShown = await hasShownRateUsDialog();
+    if (hasShown) {
+      return false;
+    }
+
+    final currentCount = await getSwipeCount();
+    final newCount = currentCount + 1;
+    await _setSecureInt(_swipeCountKey, newCount);
+    debugPrint(
+      '💾 [PreferencesService] Swipe sayacı artırıldı: $currentCount -> $newCount',
+    );
+
+    // 10 swipe sonrası rate us dialog göster
+    if (newCount >= _rateUsDialogThreshold) {
+      debugPrint(
+        '💾 [PreferencesService] Rate us dialog gösterilecek (10 swipe tamamlandı)',
+      );
+      return true;
+    }
+    return false;
+  }
+
+  /// Swipe sayacını sıfırla
+  Future<void> resetSwipeCount() async {
+    await _setSecureInt(_swipeCountKey, 0);
+    debugPrint('💾 [PreferencesService] Swipe sayacı sıfırlandı');
+  }
+
+  /// Rate us dialog'unun gösterilip gösterilmediğini kontrol et
+  Future<bool> hasShownRateUsDialog() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_hasShownRateUsDialogKey) ?? false;
+  }
+
+  /// Rate us dialog'unun gösterildiğini işaretle
+  Future<void> setRateUsDialogShown() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_hasShownRateUsDialogKey, true);
+    debugPrint('💾 [PreferencesService] Rate us dialog gösterildi olarak işaretlendi');
   }
 
   /// Son seçilen albüm ID'sini kaydet

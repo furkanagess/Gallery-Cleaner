@@ -1299,6 +1299,35 @@
       }
     }
   },
+  "cleanupCompleteMessageWithCountAndSize": "{count} photo(s) have been successfully deleted and {size} MB of space freed. Your gallery is now cleaner and lighter.",
+  "@cleanupCompleteMessageWithCountAndSize": {
+    "description": "Message for cleanup complete dialog with deleted count and size",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "photo": "photo",
+  "@photo": {
+    "description": "Photo singular"
+  },
+  "photos": "photos",
+  "@photos": {
+    "description": "Photo plural"
+  },
+  "mbFreed": "{size} MB freed",
+  "@mbFreed": {
+    "description": "MB freed text",
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
   "done": "Done",
   "@done": {
     "description": "Done button text"
@@ -1338,6 +1367,18 @@
   "rateAppDescription": "Enjoying the app? Please rate us on the store!",
   "@rateAppDescription": {
     "description": "Description for rate app section"
+  },
+  "rateAppSupportMessage": "Support our growth! Could you take 3 seconds to rate the app?",
+  "@rateAppSupportMessage": {
+    "description": "Support message for rate app dialog"
+  },
+  "thankYou": "Thank You!",
+  "@thankYou": {
+    "description": "Thank you message"
+  },
+  "thanksForFeedback": "Thanks for your feedback!",
+  "@thanksForFeedback": {
+    "description": "Thanks for feedback message"
   },
   "couldNotOpenStore": "Could not open store",
   "@couldNotOpenStore": {
