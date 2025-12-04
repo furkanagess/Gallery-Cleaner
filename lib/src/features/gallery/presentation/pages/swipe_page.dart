@@ -2219,23 +2219,38 @@ class _SwipePageState extends State<SwipePage>
               );
             },
           ),
-          // Rate Us Dialog Test Button - sadece debug modunda görünür, Go Premium'un sağında
+          // Rate Us Dialog Test Button - sadece debug modunda ve kullanıcı henüz rate yapmadıysa görünür
           if (kDebugMode)
-            IconButton(
-              onPressed: isScanning
-                  ? null
-                  : () {
-                      showRateUsDialog(context);
-                    },
-              icon: Icon(
-                Icons.star_rounded,
-                color: isScanning
-                    ? theme.colorScheme.onSurface.withOpacity(0.38)
-                    : AppColors.warning,
-              ),
-              tooltip: isScanning
-                  ? l10n.doNotLeaveScreenDuringScan
-                  : 'Rate Us Dialog Test',
+            Builder(
+              builder: (context) {
+                final prefs = context.read<PreferencesService>();
+                return FutureBuilder<bool>(
+                  future: prefs.hasShownRateUsDialog(),
+                  builder: (context, snapshot) {
+                    final hasRated = snapshot.data ?? false;
+                    if (hasRated) {
+                      // Kullanıcı bir kere rate yaptıysa AppBar'da rate icon'u gösterme
+                      return const SizedBox.shrink();
+                    }
+                    return IconButton(
+                      onPressed: isScanning
+                          ? null
+                          : () {
+                              showRateUsDialog(context);
+                            },
+                      icon: Icon(
+                        Icons.star_rounded,
+                        color: isScanning
+                            ? theme.colorScheme.onSurface.withOpacity(0.38)
+                            : AppColors.warning,
+                      ),
+                      tooltip: isScanning
+                          ? l10n.doNotLeaveScreenDuringScan
+                          : 'Rate Us Dialog Test',
+                    );
+                  },
+                );
+              },
             ),
           _HistoryButton(
             pulseController: _historyPulseController,
