@@ -291,3 +291,6 @@ Settings Page, kullanıcıya uygulama ayarlarını kolayca yönetme imkanı suna
 
 
 
+
+
+
