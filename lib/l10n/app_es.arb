@@ -69,6 +69,9 @@
   "totalSize": "Tamaño Total",
   "galleryInfoLoading": "Cargando información de galería...",
   "loadingMayTakeFewSeconds": "Este proceso puede tardar unos segundos, por favor espera",
+  "loadingDescriptionOptimizingSpace": "Optimizando el espacio de tu galería...",
+  "loadingDescriptionScanningMemories": "Buscando duplicados y fotos borrosas...",
+  "loadingDescriptionPreparingReport": "Preparando tu plan de limpieza...",
   "galleryInfoNotAvailable": "Información de galería no disponible",
   "tryAgain": "Intentar de Nuevo",
   "startCleaningButton": "Comenzar a Limpiar",
@@ -100,9 +103,9 @@
   "cancel": "Cancelar",
   "restore": "Restaurar",
   "photoRestored": "Foto restaurada",
-  "remainingDeletionRights": "Derechos de Eliminación Restantes",
+  "remainingDeletionRights": "Eliminación Diaria Restante",
   "@remainingDeletionRights": {
-    "description": "Remaining deletion rights label"
+    "description": "Remaining deletion rights label (daily)"
   },
   "watchAdToEarn": "Ver Anuncio",
   "@watchAdToEarn": {
@@ -1261,6 +1264,78 @@
   "scanTip15": "🎮 ¡Juega un juego rápido!",
   "@scanTip15": {
     "description": "Tip shown during scan"
+  },
+  "galleryReportTitle": "Informe de Galería",
+  "@galleryReportTitle": {
+    "description": "Title for gallery report page"
+  },
+  "photos": "Fotos",
+  "@photos": {
+    "description": "Photos label"
+  },
+  "videos": "Videos",
+  "@videos": {
+    "description": "Videos label"
+  },
+  "screenshots": "Capturas de Pantalla",
+  "@screenshots": {
+    "description": "Screenshots label"
+  },
+  "media": "Medios",
+  "@media": {
+    "description": "Media label"
+  },
+  "galleryReportDescription": "Nuestros usuarios limpian aproximadamente el 50% de su galería en promedio, liberando significativamente espacio de almacenamiento",
+  "@galleryReportDescription": {
+    "description": "Description text on gallery report page"
+  },
+  "reviewDeletePhotos": "Revisar Fotos para Eliminar",
+  "@reviewDeletePhotos": {
+    "description": "Title for review delete photos page"
+  },
+  "noPhotosToDelete": "No hay fotos para eliminar",
+  "@noPhotosToDelete": {
+    "description": "Message when there are no photos to delete"
+  },
+  "deleteLimitReached": "Solo puedes eliminar {count} fotos por día",
+  "@deleteLimitReached": {
+    "description": "Message when delete limit is reached",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "deleting": "Eliminando...",
+  "@deleting": {
+    "description": "Text shown while deleting photos"
+  },
+  "errorOccurred": "Ocurrió un error",
+  "@errorOccurred": {
+    "description": "Generic error message"
+  },
+  "freeUpStorageSpace": "Liberar Espacio de Almacenamiento",
+  "@freeUpStorageSpace": {
+    "description": "Title for storage cleanup onboarding screen"
+  },
+  "storage": "Almacenamiento",
+  "@storage": {
+    "description": "Storage label"
+  },
+  "youCanClean": "{gb} GB y {media} {mediaLabel} puedes limpiar",
+  "@youCanClean": {
+    "description": "Mensaje que muestra cuánto almacenamiento y medios se pueden limpiar",
+    "placeholders": {
+      "gb": {
+        "type": "String"
+      },
+      "media": {
+        "type": "int"
+      },
+      "mediaLabel": {
+        "type": "String"
+      }
+    }
   }
 }
 

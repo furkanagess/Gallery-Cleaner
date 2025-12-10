@@ -9,7 +9,7 @@ import '../../../core/services/preferences_service.dart';
 import '../application/permissions_controller.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../gallery/application/gallery_providers.dart'
-    show PremiumCubit, AlbumsCubit, GalleryPagingCubit;
+    show AlbumsCubit, GalleryPagingCubit;
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -204,11 +204,6 @@ class _SplashPageState extends State<SplashPage> {
 
     return Builder(
       builder: (builderContext) {
-        final isPremiumAsync = builderContext.watch<PremiumCubit>().state;
-        final isPremium = isPremiumAsync.maybeWhen(
-          data: (premium) => premium,
-          orElse: () => false,
-        );
         final containerColor = theme.colorScheme.onPrimaryContainer.withOpacity(
           0.8,
         );
@@ -253,6 +248,33 @@ class _SplashPageState extends State<SplashPage> {
                           AppColors.transparent,
                         ],
                       ),
+                    ),
+                  ),
+                ),
+                // Decorative New Year elements (subtle)
+                Positioned(
+                  top: 60,
+                  right: 40,
+                  child: Opacity(
+                    opacity: 0.15,
+                    child: Image.asset(
+                      'assets/new_year/christmas-tree.png',
+                      width: 80,
+                      height: 80,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                ),
+                Positioned(
+                  bottom: 80,
+                  left: 30,
+                  child: Opacity(
+                    opacity: 0.12,
+                    child: Image.asset(
+                      'assets/new_year/gift-box.png',
+                      width: 60,
+                      height: 60,
+                      fit: BoxFit.contain,
                     ),
                   ),
                 ),

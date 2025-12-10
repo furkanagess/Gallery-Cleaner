@@ -69,6 +69,9 @@
   "totalSize": "Toplam Boyut",
   "galleryInfoLoading": "Galeri bilgileri yükleniyor...",
   "loadingMayTakeFewSeconds": "Bu işlem birkaç saniye sürebilir lütfen bekleyiniz",
+  "loadingDescriptionOptimizingSpace": "Galeri alanını optimize ediyoruz...",
+  "loadingDescriptionScanningMemories": "Anılarınızı bulanık ve tekrarlar için tarıyoruz...",
+  "loadingDescriptionPreparingReport": "Sizin için temizlik planı hazırlanıyor...",
   "galleryInfoNotAvailable": "Galeri bilgileri alınamadı",
   "tryAgain": "Tekrar Dene",
   "startCleaningButton": "Temizlemeye Başla",
@@ -100,9 +103,9 @@
   "cancel": "İptal",
   "restore": "Geri Al",
   "photoRestored": "Fotoğraf geri alındı",
-  "remainingDeletionRights": "Kalan Silme",
+  "remainingDeletionRights": "Günlük Kalan Silme",
   "@remainingDeletionRights": {
-    "description": "Remaining deletion rights label"
+    "description": "Remaining deletion rights label (daily)"
   },
   "watchAdToEarn": "Reklam İzle",
   "@watchAdToEarn": {
@@ -1328,6 +1331,78 @@
   "scanTip15": "🎮 Bir oyun oynayabilirsin!",
   "@scanTip15": {
     "description": "Tip shown during scan"
+  },
+  "galleryReportTitle": "Galeri Raporu",
+  "@galleryReportTitle": {
+    "description": "Title for gallery report page"
+  },
+  "photos": "Fotoğraf",
+  "@photos": {
+    "description": "Photos label"
+  },
+  "videos": "Video",
+  "@videos": {
+    "description": "Videos label"
+  },
+  "screenshots": "Ekran Görüntüsü",
+  "@screenshots": {
+    "description": "Screenshots label"
+  },
+  "media": "Medya",
+  "@media": {
+    "description": "Media label"
+  },
+  "galleryReportDescription": "Kullanıcılarımız ortalama olarak galerilerinin yaklaşık %50'sini temizleyerek depolama alanlarını önemli ölçüde boşaltıyorlar",
+  "@galleryReportDescription": {
+    "description": "Description text on gallery report page"
+  },
+  "reviewDeletePhotos": "Silinecek Fotoğrafları İncele",
+  "@reviewDeletePhotos": {
+    "description": "Title for review delete photos page"
+  },
+  "noPhotosToDelete": "Silinecek fotoğraf yok",
+  "@noPhotosToDelete": {
+    "description": "Message when there are no photos to delete"
+  },
+  "deleteLimitReached": "Günde sadece {count} fotoğraf silebilirsiniz",
+  "@deleteLimitReached": {
+    "description": "Message when delete limit is reached",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "deleting": "Siliniyor...",
+  "@deleting": {
+    "description": "Text shown while deleting photos"
+  },
+  "errorOccurred": "Bir hata oluştu",
+  "@errorOccurred": {
+    "description": "Generic error message"
+  },
+  "freeUpStorageSpace": "Depolama Alanını Boşalt",
+  "@freeUpStorageSpace": {
+    "description": "Title for storage cleanup onboarding screen"
+  },
+  "storage": "Depolama",
+  "@storage": {
+    "description": "Storage label"
+  },
+  "youCanClean": "{gb} GB ve {media} {mediaLabel} temizleyebilirsiniz",
+  "@youCanClean": {
+    "description": "Ne kadar depolama ve medya temizlenebileceğini gösteren mesaj",
+    "placeholders": {
+      "gb": {
+        "type": "String"
+      },
+      "media": {
+        "type": "int"
+      },
+      "mediaLabel": {
+        "type": "String"
+      }
+    }
   }
 }
 

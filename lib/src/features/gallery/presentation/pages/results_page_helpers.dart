@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:lottie/lottie.dart';
 import 'package:photo_manager/photo_manager.dart' as pm;
 import '../../../../app/theme/app_colors.dart';
+import '../../../../app/theme/app_three_d_button.dart';
 import '../../../../../l10n/app_localizations.dart';
 import '../../../../core/models/blur_photo.dart';
 import '../../../../core/models/duplicate_photo.dart';
@@ -1267,13 +1268,6 @@ Future<void> showDeleteSuccessDialog(
       barrierDismissible: true,
       barrierColor: AppColors.black.withOpacity(0.5),
       builder: (dialogContext) {
-        // Premium durumunu kontrol et
-        final isPremiumAsync = dialogContext.watch<PremiumCubit>().state;
-        final isPremium = isPremiumAsync.maybeWhen(
-          data: (premium) => premium,
-          orElse: () => false,
-        );
-
         // Bottom navigation bar'daki container rengiyle aynı
         final containerColor = theme.colorScheme.onPrimaryContainer.withOpacity(
           0.8,
@@ -1293,7 +1287,9 @@ Future<void> showDeleteSuccessDialog(
                 child: Opacity(opacity: value, child: child),
               );
             },
-            child: Container(
+            child: Stack(
+              children: [
+                Container(
               constraints: const BoxConstraints(maxWidth: 400),
               padding: const EdgeInsets.all(32),
               decoration: BoxDecoration(
@@ -1311,7 +1307,7 @@ Future<void> showDeleteSuccessDialog(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Success icon with background
+                      // Success icon with background - New Year themed
                   Container(
                     width: 100,
                     height: 100,
@@ -1323,13 +1319,13 @@ Future<void> showDeleteSuccessDialog(
                       child: SizedBox(
                         width: 80,
                         height: 80,
-                        child: Lottie.asset(
-                          'assets/lottie/wipe.json',
-                          fit: BoxFit.contain,
-                          repeat: true,
-                          animate: true,
-                        ),
-                      ),
+                    child: Lottie.asset(
+                              'assets/new_year/Santa surprise gift.json',
+                      fit: BoxFit.contain,
+                      repeat: true,
+                      animate: true,
+                    ),
+                  ),
                     ),
                   ),
                   const SizedBox(height: 28),
@@ -1362,7 +1358,7 @@ Future<void> showDeleteSuccessDialog(
                               color: theme.colorScheme.primary,
                             ),
                             const SizedBox(width: 8),
-                            Text(
+                  Text(
                               '$deletedCount ${deletedCount == 1 ? l10n.photo : l10n.photos}',
                               style: theme.textTheme.titleMedium?.copyWith(
                                 fontWeight: FontWeight.w600,
@@ -1409,55 +1405,45 @@ Future<void> showDeleteSuccessDialog(
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 32),
-                  SizedBox(
-                    width: double.infinity,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            containerColor,
-                            containerColor.withOpacity(0.85),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: containerColor.withOpacity(0.35),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                            spreadRadius: 0,
+                      AppThreeDButton(
+                        label: l10n.done,
+                        onPressed: () => Navigator.of(dialogContext).pop(),
+                        baseColor: containerColor,
+                        textColor: AppColors.white,
+                        fullWidth: true,
+                        height: 56,
                           ),
                         ],
                       ),
-                      child: Material(
-                        color: AppColors.transparent,
-                        child: InkWell(
-                          onTap: () => Navigator.of(dialogContext).pop(),
-                          borderRadius: BorderRadius.circular(16),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 16,
-                              horizontal: 24,
-                            ),
-                            child: Text(
-                              l10n.done,
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                                color: AppColors.white,
-                                letterSpacing: 0.5,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                        ),
+                ),
+                // Decorative New Year elements
+                Positioned(
+                  top: -30,
+                  right: -30,
+                  child: Opacity(
+                    opacity: 0.3,
+                    child: Image.asset(
+                      'assets/new_year/gift-box.png',
+                      width: 100,
+                      height: 100,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                ),
+                Positioned(
+                  bottom: -20,
+                  left: -20,
+                  child: Opacity(
+                    opacity: 0.25,
+                    child: Image.asset(
+                      'assets/new_year/candy-cane.png',
+                      width: 80,
+                      height: 80,
+                      fit: BoxFit.contain,
                       ),
                     ),
                   ),
                 ],
-              ),
             ),
           ),
         );

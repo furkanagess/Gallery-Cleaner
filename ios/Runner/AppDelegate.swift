@@ -14,15 +14,12 @@ import FirebaseMessaging
     // Firebase initialization
     FirebaseApp.configure()
 
-    // Notification setup
+    // Notification setup - delegate'i ayarla ama izin isteme (FCMService halledecek)
     if #available(iOS 10.0, *) {
       UNUserNotificationCenter.current().delegate = self
-      let authOptions: UNAuthorizationOptions = [.alert, .badge, .sound]
-      UNUserNotificationCenter.current().requestAuthorization(
-        options: authOptions,
-        completionHandler: { _, _ in }
-      )
+      // İzin isteğini FCMService'e bırakıyoruz, burada sadece delegate ayarlıyoruz
     } else {
+      // iOS 10 öncesi için eski yöntem (artık desteklenmiyor ama yine de)
       let settings: UIUserNotificationSettings =
         UIUserNotificationSettings(types: [.alert, .badge, .sound], categories: nil)
       application.registerUserNotificationSettings(settings)

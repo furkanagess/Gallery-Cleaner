@@ -249,3 +249,7 @@ Onboarding Page, kullanıcıya uygulamanın temel özelliklerini görsel ve anla
 
 
 
+
+
+
+

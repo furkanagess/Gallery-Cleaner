@@ -16,8 +16,8 @@ import '../../../../core/models/gallery_stats.dart';
 import '../../../../core/services/sound_service.dart';
 import '../../../../app/theme/app_theme.dart';
 import '../../../../app/theme/app_colors.dart';
+import '../../../../app/theme/app_three_d_button.dart';
 import 'package:gallery_cleaner/src/core/utils/view_refresh_cubit.dart';
-import '../../application/gallery_providers.dart' show PremiumCubit;
 
 class GalleryStatsPage extends StatefulWidget {
   const GalleryStatsPage({super.key});
@@ -124,17 +124,15 @@ class _GalleryStatsPageState extends State<GalleryStatsPage>
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 16),
-                      FilledButton(
+                      AppThreeDButton(
+                        label: l10n.grantPermission,
+                        icon: Icons.lock_open,
                         onPressed: () => context.go('/permission'),
-                        style: FilledButton.styleFrom(
-                          backgroundColor: theme.colorScheme.primary
-                              .withOpacity(0.85),
-                          side: BorderSide(
-                            color: theme.colorScheme.primary.withOpacity(0.9),
-                            width: 1.5,
-                          ),
+                        baseColor:
+                            theme.colorScheme.onPrimaryContainer.withOpacity(
+                          0.9,
                         ),
-                        child: Text(l10n.grantPermission),
+                        fullWidth: true,
                       ),
                     ],
                   ),
@@ -171,22 +169,14 @@ class _GalleryStatsPageState extends State<GalleryStatsPage>
                               textAlign: TextAlign.center,
                             ),
                             const SizedBox(height: 16),
-                            FilledButton.icon(
-                              icon: const Icon(Icons.refresh),
-                              label: Text(l10n.tryAgain),
+                            AppThreeDButton(
+                              label: l10n.tryAgain,
+                              icon: Icons.refresh,
                               onPressed: () {
                                 context.read<GalleryStatsCubit>().refresh();
                               },
-                              style: FilledButton.styleFrom(
-                                backgroundColor: theme.colorScheme.primary
-                                    .withOpacity(0.85),
-                                side: BorderSide(
-                                  color: theme.colorScheme.primary.withOpacity(
-                                    0.9,
-                                  ),
-                                  width: 1.5,
-                                ),
-                              ),
+                              baseColor: theme.colorScheme.primary,
+                              fullWidth: true,
                             ),
                           ],
                         ),
@@ -213,7 +203,11 @@ class _GalleryStatsPageState extends State<GalleryStatsPage>
                       GalleryStats(
                         albumCount: 0,
                         mediaCount: 0,
+                        photoCount: 0,
+                        videoCount: 0,
                         totalSizeMB: 0.0,
+                        photoSizeMB: 0.0,
+                        videoSizeMB: 0.0,
                       );
 
                   // History'den sil/tut istatistiklerini al
@@ -241,17 +235,20 @@ class _GalleryStatsPageState extends State<GalleryStatsPage>
 
                   // Tarama yapılırken full-screen loading göster
                   if (isScanning) {
-                    return Center(
+                    return Scaffold(
+                      backgroundColor: theme.colorScheme.background,
+                      body: Center(
                       child: Padding(
                         padding: const EdgeInsets.all(32),
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
+                              // Reindeer animation
                             SizedBox(
-                              width: 180,
-                              height: 180,
+                                width: 200,
+                                height: 200,
                               child: Lottie.asset(
-                                'assets/lottie/gallery_loading.json',
+                                  'assets/new_year/Reindeer.json',
                                 fit: BoxFit.contain,
                                 repeat: true,
                                 animate: true,
@@ -276,81 +273,19 @@ class _GalleryStatsPageState extends State<GalleryStatsPage>
                               ),
                               textAlign: TextAlign.center,
                             ),
-                            // Progress bilgisi
-                            if (displayStats.albumCount > 0) ...[
-                              const SizedBox(height: 16),
-                              Builder(
-                                builder: (progressContext) {
-                                  // Premium durumunu kontrol et
-                                  final isPremiumAsync = progressContext
-                                      .watch<PremiumCubit>()
-                                      .state;
-                                  final isPremium = isPremiumAsync.maybeWhen(
-                                    data: (premium) => premium,
-                                    orElse: () => false,
-                                  );
-
-                                  // Bottom navigation bar'daki container rengiyle aynı
-                                  final containerColor = theme
-                                      .colorScheme
-                                      .onPrimaryContainer
-                                      .withOpacity(0.8);
-
-                                  return Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                      vertical: 8,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: containerColor.withOpacity(0.4),
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                        color: containerColor.withOpacity(0.2),
-                                        width: 1,
-                                      ),
-                                    ),
-                                    child: Text(
-                                      l10n.progressFormat(
-                                        '${displayStats.albumDetails.length}/${displayStats.albumCount}',
-                                        displayStats.mediaCount,
-                                      ),
-                                      style: theme.textTheme.bodySmall
-                                          ?.copyWith(
-                                            color: containerColor,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ],
                             const SizedBox(height: 24),
                             // Durdur butonu
-                            FilledButton.icon(
+                                  AppThreeDButton(
+                                    label: l10n.stop,
+                                    icon: Icons.stop,
                               onPressed: () {
                                 context.read<GalleryStatsCubit>().cancel();
                               },
-                              icon: const Icon(Icons.stop),
-                              label: Text(l10n.stop),
-                              style: FilledButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 24,
-                                  vertical: 16,
-                                ),
-                                backgroundColor: AppColors.error.withOpacity(
-                                  0.85,
-                                ),
-                                foregroundColor: theme.colorScheme.onError,
-                                side: BorderSide(
-                                  color: AppColors.error.withOpacity(0.9),
-                                  width: 1.5,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
+                                    baseColor: AppColors.error,
+                                    fullWidth: true,
                             ),
                           ],
+                              ),
                         ),
                       ),
                     );
@@ -497,45 +432,22 @@ class _GalleryStatsPageState extends State<GalleryStatsPage>
                                 Builder(
                                   builder: (buttonContext) {
                                     // Premium durumunu kontrol et
-                                    final isPremiumAsync = buttonContext
-                                        .watch<PremiumCubit>()
-                                        .state;
-                                    final isPremium = isPremiumAsync.maybeWhen(
-                                      data: (premium) => premium,
-                                      orElse: () => false,
-                                    );
-
                                     // Bottom navigation bar'daki container rengiyle aynı
                                     final containerColor = theme
                                         .colorScheme
                                         .onPrimaryContainer
                                         .withOpacity(0.8);
 
-                                    return FilledButton.icon(
+                                    return AppThreeDButton(
+                                      label: l10n.reAnalyze,
+                                      icon: Icons.refresh,
                                       onPressed: () {
                                         context
                                             .read<GalleryStatsCubit>()
                                             .refresh();
                                       },
-                                      icon: const Icon(Icons.refresh),
-                                      label: Text(l10n.reAnalyze),
-                                      style: FilledButton.styleFrom(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 24,
-                                          vertical: 16,
-                                        ),
-                                        backgroundColor: containerColor,
-                                        foregroundColor: AppColors.white,
-                                        side: BorderSide(
-                                          color: containerColor,
-                                          width: 1.5,
-                                        ),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            12,
-                                          ),
-                                        ),
-                                      ),
+                                      baseColor: containerColor,
+                                      fullWidth: true,
                                     );
                                   },
                                 ),
@@ -610,13 +522,6 @@ class _GalleryStatsPageState extends State<GalleryStatsPage>
         const SizedBox(width: 12),
         Builder(
           builder: (builderContext) {
-            // Premium durumunu kontrol et
-            final isPremiumAsync = builderContext.watch<PremiumCubit>().state;
-            final isPremium = isPremiumAsync.maybeWhen(
-              data: (premium) => premium,
-              orElse: () => false,
-            );
-
             // Bottom navigation bar'daki container rengiyle aynı
             final containerColor = theme.colorScheme.onPrimaryContainer
                 .withOpacity(0.8);
@@ -729,15 +634,16 @@ class _GalleryStatsPageState extends State<GalleryStatsPage>
     );
   }
 
-  /// General Statistics Section - 2 cards (Total Photos and Total Size) - Kullanıcı dostu tasarım
+  /// General Statistics Section - 4 cards (Albums, Photos, Videos, Total Size) - Kullanıcı dostu tasarım
   Widget _buildGeneralStatisticsSection(
     BuildContext context,
     ThemeData theme,
     AppLocalizations l10n,
     GalleryStats stats,
   ) {
-    // Use mediaCount for photos (approximation - we don't have separate photo/video counts)
-    final totalPhotos = stats.mediaCount;
+    final albumCount = stats.albumCount;
+    final photoCount = stats.photoCount;
+    final videoCount = stats.videoCount;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -751,49 +657,84 @@ class _GalleryStatsPageState extends State<GalleryStatsPage>
         const SizedBox(height: 16),
         Builder(
           builder: (builderContext) {
-            // Premium durumunu kontrol et
-            final isPremiumAsync = builderContext.watch<PremiumCubit>().state;
-            final isPremium = isPremiumAsync.maybeWhen(
-              data: (premium) => premium,
-              orElse: () => false,
-            );
-
             // Bottom navigation bar'daki container rengiyle aynı
             final containerColor = theme.colorScheme.onPrimaryContainer
                 .withOpacity(0.8);
 
-            return Row(
+            return Column(
               children: [
-                Expanded(
-                  child: _buildStatCardEnhanced(
-                    context: context,
-                    theme: theme,
-                    label: l10n.totalPhotos,
-                    value: _formatNumber(totalPhotos),
-                    iconColor: containerColor,
-                    gradientColors: [
-                      containerColor.withOpacity(0.25),
-                      containerColor.withOpacity(0.15),
-                    ],
-                    borderColor: containerColor.withOpacity(0.4),
-                    shadowColor: containerColor.withOpacity(0.15),
-                  ),
+                // İlk satır: Albums ve Photos
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildStatCardEnhanced(
+                        context: context,
+                        theme: theme,
+                        label: l10n.album,
+                        value: _formatNumber(albumCount),
+                        iconColor: containerColor,
+                        gradientColors: [
+                          containerColor.withOpacity(0.25),
+                          containerColor.withOpacity(0.15),
+                        ],
+                        borderColor: containerColor.withOpacity(0.4),
+                        shadowColor: containerColor.withOpacity(0.15),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildStatCardEnhanced(
+                        context: context,
+                        theme: theme,
+                        label: l10n.totalPhotos,
+                        value: _formatNumber(photoCount),
+                        iconColor: containerColor,
+                        gradientColors: [
+                          containerColor.withOpacity(0.25),
+                          containerColor.withOpacity(0.15),
+                        ],
+                        borderColor: containerColor.withOpacity(0.4),
+                        shadowColor: containerColor.withOpacity(0.15),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildStatCardEnhanced(
-                    context: context,
-                    theme: theme,
-                    label: l10n.totalSize,
-                    value: _formatSizeMB(stats.totalSizeMB),
-                    iconColor: containerColor,
-                    gradientColors: [
-                      containerColor.withOpacity(0.25),
-                      containerColor.withOpacity(0.15),
-                    ],
-                    borderColor: containerColor.withOpacity(0.4),
-                    shadowColor: containerColor.withOpacity(0.15),
-                  ),
+                const SizedBox(height: 12),
+                // İkinci satır: Videos ve Total Size
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildStatCardEnhanced(
+                        context: context,
+                        theme: theme,
+                        label: l10n.videos,
+                        value: _formatNumber(videoCount),
+                        iconColor: containerColor,
+                        gradientColors: [
+                          containerColor.withOpacity(0.25),
+                          containerColor.withOpacity(0.15),
+                        ],
+                        borderColor: containerColor.withOpacity(0.4),
+                        shadowColor: containerColor.withOpacity(0.15),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildStatCardEnhanced(
+                        context: context,
+                        theme: theme,
+                        label: l10n.totalSize,
+                        value: _formatSizeMB(stats.totalSizeMB),
+                        iconColor: containerColor,
+                        gradientColors: [
+                          containerColor.withOpacity(0.25),
+                          containerColor.withOpacity(0.15),
+                        ],
+                        borderColor: containerColor.withOpacity(0.4),
+                        shadowColor: containerColor.withOpacity(0.15),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             );

@@ -192,7 +192,11 @@ class GalleryStatsCubit extends Cubit<GalleryStatsState> {
         stats: GalleryStats(
           albumCount: 0,
           mediaCount: 0,
+          photoCount: 0,
+          videoCount: 0,
           totalSizeMB: 0.0,
+          photoSizeMB: 0.0,
+          videoSizeMB: 0.0,
           albumDetails: [],
           cachedAt: null,
         ),

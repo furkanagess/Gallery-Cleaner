@@ -16,6 +16,7 @@ import '../../../../core/services/sound_service.dart';
 import '../../../../../l10n/app_localizations.dart';
 import '../../../../core/services/preferences_service.dart';
 import '../../../../core/services/fcm_service.dart';
+import '../../../../core/services/delete_limit_tracker_service.dart';
 import '../../application/gallery_providers.dart';
 import '../../application/blur_detection_provider.dart';
 import '../../application/duplicate_detection_provider.dart';
@@ -23,6 +24,7 @@ import '../../../onboarding/application/permissions_controller.dart';
 import '../../../../core/services/interstitial_ads_service.dart';
 import '../../application/gallery_stats_provider.dart';
 import '../../../../app/theme/app_colors.dart';
+import '../../../../app/theme/app_three_d_button.dart';
 import '../../../settings/presentation/settings_page.dart' as settings;
 import '../../../settings/presentation/premium_success_dialog.dart';
 import '../../../../core/services/revenuecat_service.dart';
@@ -2247,14 +2249,81 @@ class _SwipePageState extends State<SwipePage>
                       tooltip: isScanning
                           ? l10n.doNotLeaveScreenDuringScan
                           : 'Rate Us Dialog Test',
-                    );
-                  },
-                );
-              },
+                  );
+                },
+              );
+            },
+          ),
+          // TEST: Firestore tracking test butonu - sadece debug modunda görünür
+          if (kDebugMode)
+            IconButton(
+              onPressed: isScanning
+                  ? null
+                  : () async {
+                      try {
+                        await DeleteLimitTrackerService.instance
+                            .trackDeleteLimitReachedZero();
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                '✅ Test: no-delete-limit değeri 1 artırıldı! Firebase Console\'dan kontrol edebilirsiniz.',
+                              ),
+                              duration: Duration(seconds: 4),
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          final errorString = e.toString();
+                          final isPermissionError = errorString.contains('permission-denied') ||
+                              errorString.contains('PERMISSION_DENIED');
+                          
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                isPermissionError
+                                    ? '⚠️ Firestore güvenlik kuralları eksik! Firebase Console\'dan Rules ayarlayın. (FIRESTORE_SECURITY_RULES.md)'
+                                    : '❌ Test hatası: $e',
+                              ),
+                              duration: const Duration(seconds: 5),
+                              backgroundColor: isPermissionError
+                                  ? Colors.orange
+                                  : Colors.red,
+                            ),
+                          );
+                        }
+                      }
+                    },
+              icon: Icon(
+                Icons.bug_report_rounded,
+                color: isScanning
+                    ? theme.colorScheme.onSurface.withOpacity(0.38)
+                    : AppColors.error,
+              ),
+              tooltip: isScanning
+                  ? l10n.doNotLeaveScreenDuringScan
+                  : 'Test: Firestore no-delete-limit +1',
             ),
           _HistoryButton(
             pulseController: _historyPulseController,
             isScanning: isScanning,
+          ),
+          IconButton(
+            icon: Icon(
+              Icons.assessment_outlined,
+              color: isScanning
+                  ? theme.colorScheme.onSurface.withOpacity(0.38)
+                  : null,
+            ),
+            tooltip: isScanning
+                ? l10n.doNotLeaveScreenDuringScan
+                : l10n.galleryReportTitle,
+            onPressed: isScanning
+                ? null // Scan sırasında tıklanamaz
+                : () {
+                    context.push('/gallery-report');
+                  },
           ),
           IconButton(
             icon: Icon(
@@ -4011,13 +4080,6 @@ Future<void> _showDeleteSuccessDialog(
       builder: (dialogContext) {
         debugPrint('🎬 [SwipePage] Dialog builder called');
 
-        // Premium durumunu kontrol et
-        final isPremiumAsync = dialogContext.watch<PremiumCubit>().state;
-        final isPremium = isPremiumAsync.maybeWhen(
-          data: (premium) => premium,
-          orElse: () => false,
-        );
-
         // Bottom navigation bar'daki container rengiyle aynı
         final containerColor = theme.colorScheme.onPrimaryContainer.withOpacity(0.8);
 
@@ -4035,7 +4097,9 @@ Future<void> _showDeleteSuccessDialog(
                 child: Opacity(opacity: value, child: child),
               );
             },
-            child: Container(
+            child: Stack(
+              children: [
+                Container(
               constraints: const BoxConstraints(maxWidth: 400),
               padding: const EdgeInsets.all(32),
               decoration: BoxDecoration(
@@ -4053,7 +4117,7 @@ Future<void> _showDeleteSuccessDialog(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Success icon with background
+                      // Success icon with background - New Year themed
                   Container(
                     width: 100,
                     height: 100,
@@ -4065,13 +4129,13 @@ Future<void> _showDeleteSuccessDialog(
                       child: SizedBox(
                         width: 80,
                         height: 80,
-                        child: Lottie.asset(
-                          'assets/lottie/wipe.json',
-                          fit: BoxFit.contain,
-                          repeat: true,
-                          animate: true,
-                        ),
-                      ),
+                    child: Lottie.asset(
+                              'assets/new_year/Santa surprise gift.json',
+                      fit: BoxFit.contain,
+                      repeat: true,
+                      animate: true,
+                    ),
+                  ),
                     ),
                   ),
                   const SizedBox(height: 28),
@@ -4104,7 +4168,7 @@ Future<void> _showDeleteSuccessDialog(
                               color: theme.colorScheme.primary,
                             ),
                             const SizedBox(width: 8),
-                            Text(
+                  Text(
                               '$deletedCount ${deletedCount == 1 ? l10n.photo : l10n.photos}',
                               style: theme.textTheme.titleMedium?.copyWith(
                                 fontWeight: FontWeight.w600,
@@ -4151,56 +4215,46 @@ Future<void> _showDeleteSuccessDialog(
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 32),
-                  // Done button - uygulamadaki buton yapısına uygun
-                  SizedBox(
-                    width: double.infinity,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            containerColor,
-                            containerColor.withOpacity(0.85),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: containerColor.withOpacity(0.35),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                            spreadRadius: 0,
+                      // Done button - 3D button
+                      AppThreeDButton(
+                        label: l10n.done,
+                        onPressed: () => Navigator.of(dialogContext).pop(),
+                        baseColor: containerColor,
+                        textColor: AppColors.white,
+                        fullWidth: true,
+                        height: 56,
                           ),
                         ],
                       ),
-                      child: Material(
-                        color: AppColors.transparent,
-                        child: InkWell(
-                          onTap: () => Navigator.of(dialogContext).pop(),
-                          borderRadius: BorderRadius.circular(16),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 16,
-                              horizontal: 24,
-                            ),
-                            child: Text(
-                              l10n.done,
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                                color: AppColors.white,
-                                letterSpacing: 0.5,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                        ),
+                ),
+                // Decorative New Year elements
+                Positioned(
+                  top: -30,
+                  right: -30,
+                  child: Opacity(
+                    opacity: 0.3,
+                    child: Image.asset(
+                      'assets/new_year/gift-box.png',
+                      width: 100,
+                      height: 100,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                ),
+                Positioned(
+                  bottom: -20,
+                  left: -20,
+                  child: Opacity(
+                    opacity: 0.25,
+                    child: Image.asset(
+                      'assets/new_year/candy-cane.png',
+                      width: 80,
+                      height: 80,
+                      fit: BoxFit.contain,
                       ),
                     ),
                   ),
                 ],
-              ),
             ),
           ),
         );

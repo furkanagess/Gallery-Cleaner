@@ -223,3 +223,7 @@ Splash Page, kullanıcıya uygulamanın modern ve profesyonel olduğunu hissetti
 
 
 
+
+
+
+

@@ -204,6 +204,18 @@ class AppLocalizationsTr extends AppLocalizations {
       'Bu işlem birkaç saniye sürebilir lütfen bekleyiniz';
 
   @override
+  String get loadingDescriptionOptimizingSpace =>
+      'Galeri alanını optimize ediyoruz...';
+
+  @override
+  String get loadingDescriptionScanningMemories =>
+      'Anılarınızı bulanık ve tekrarlar için tarıyoruz...';
+
+  @override
+  String get loadingDescriptionPreparingReport =>
+      'Sizin için temizlik planı hazırlanıyor...';
+
+  @override
   String get galleryInfoNotAvailable => 'Galeri bilgileri alınamadı';
 
   @override
@@ -323,7 +335,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get photoRestored => 'Fotoğraf geri alındı';
 
   @override
-  String get remainingDeletionRights => 'Kalan Silme';
+  String get remainingDeletionRights => 'Günlük Kalan Silme';
 
   @override
   String get watchAdToEarn => 'Reklam İzle';
@@ -991,7 +1003,7 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String get photos => 'fotoğraf';
+  String get photos => 'Fotoğraf';
 
   @override
   String mbFreed(String size) {
@@ -1210,4 +1222,48 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get scanTip15 => '🎮 Bir oyun oynayabilirsin!';
+
+  @override
+  String get galleryReportTitle => 'Galeri Raporu';
+
+  @override
+  String get videos => 'Video';
+
+  @override
+  String get screenshots => 'Ekran Görüntüsü';
+
+  @override
+  String get media => 'Medya';
+
+  @override
+  String get galleryReportDescription =>
+      'Kullanıcılarımız ortalama olarak galerilerinin yaklaşık %50\'sini temizleyerek depolama alanlarını önemli ölçüde boşaltıyorlar';
+
+  @override
+  String get reviewDeletePhotos => 'Silinecek Fotoğrafları İncele';
+
+  @override
+  String get noPhotosToDelete => 'Silinecek fotoğraf yok';
+
+  @override
+  String deleteLimitReached(int count) {
+    return 'Günde sadece $count fotoğraf silebilirsiniz';
+  }
+
+  @override
+  String get deleting => 'Siliniyor...';
+
+  @override
+  String get errorOccurred => 'Bir hata oluştu';
+
+  @override
+  String get freeUpStorageSpace => 'Depolama Alanını Boşalt';
+
+  @override
+  String get storage => 'Depolama';
+
+  @override
+  String youCanClean(String gb, int media, String mediaLabel) {
+    return '$gb GB ve $media $mediaLabel temizleyebilirsiniz';
+  }
 }

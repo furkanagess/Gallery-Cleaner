@@ -489,7 +489,11 @@ class MediaLibraryService {
       return GalleryStats(
         albumCount: 0,
         mediaCount: 0,
+        photoCount: 0,
+        videoCount: 0,
         totalSizeMB: 0.0,
+        photoSizeMB: 0.0,
+        videoSizeMB: 0.0,
         albumDetails: [],
         cachedAt: null,
       );
@@ -499,7 +503,11 @@ class MediaLibraryService {
     var partialStats = GalleryStats(
       albumCount: albumCount,
       mediaCount: 0,
+      photoCount: 0,
+      videoCount: 0,
       totalSizeMB: 0.0,
+      photoSizeMB: 0.0,
+      videoSizeMB: 0.0,
       albumDetails: [],
       cachedAt: null,
     );
@@ -521,6 +529,10 @@ class MediaLibraryService {
 
     int totalMediaCount = 0;
     int totalSizeBytes = 0;
+    int photoCount = 0;
+    int videoCount = 0;
+    int photoSizeBytes = 0;
+    int videoSizeBytes = 0;
 
     // Image sayısını say - her analizde 0'dan başla
     if (allImagePath.isNotEmpty) {
@@ -535,10 +547,16 @@ class MediaLibraryService {
           // Image sayımı sırasında sadece image değerlerini göster
           totalMediaCount = count;
           totalSizeBytes = size;
+          photoCount = count;
+          photoSizeBytes = size;
           partialStats = GalleryStats(
             albumCount: albumCount,
             mediaCount: totalMediaCount,
+            photoCount: photoCount,
+            videoCount: videoCount,
             totalSizeMB: totalSizeBytes / (1024 * 1024),
+            photoSizeMB: photoSizeBytes / (1024 * 1024),
+            videoSizeMB: videoSizeBytes / (1024 * 1024),
             albumDetails: [],
             cachedAt: null,
           );
@@ -549,6 +567,8 @@ class MediaLibraryService {
       // Final image sonuçlarını al (onProgress'ten sonra kesin değerler)
       totalMediaCount = imageResult.count;
       totalSizeBytes = imageResult.size;
+      photoCount = imageResult.count;
+      photoSizeBytes = imageResult.size;
       debugPrint(
         '📸 [MediaLibraryService] Image sayımı tamamlandı: $totalMediaCount medya, ${(totalSizeBytes / (1024 * 1024)).toStringAsFixed(2)} MB',
       );
@@ -562,7 +582,11 @@ class MediaLibraryService {
       partialStats = GalleryStats(
         albumCount: albumCount,
         mediaCount: totalMediaCount,
+        photoCount: photoCount,
+        videoCount: videoCount,
         totalSizeMB: totalSizeBytes / (1024 * 1024),
+        photoSizeMB: photoSizeBytes / (1024 * 1024),
+        videoSizeMB: videoSizeBytes / (1024 * 1024),
         albumDetails: [],
         cachedAt: null,
       );
@@ -578,17 +602,23 @@ class MediaLibraryService {
         allVideoPath.first,
         'Video',
         shouldCancel: shouldCancel,
-        onProgress: (videoCount, videoSize) {
+        onProgress: (count, size) {
           // İptal kontrolü
           if (shouldCancel != null && shouldCancel()) return;
 
           // Video sayımı sırasında image + video toplamını göster
-          totalMediaCount = initialImageCount + videoCount;
-          totalSizeBytes = initialImageSize + videoSize;
+          totalMediaCount = initialImageCount + count;
+          totalSizeBytes = initialImageSize + size;
+          videoCount = count;
+          videoSizeBytes = size;
           partialStats = GalleryStats(
             albumCount: albumCount,
             mediaCount: totalMediaCount,
+            photoCount: photoCount,
+            videoCount: videoCount,
             totalSizeMB: totalSizeBytes / (1024 * 1024),
+            photoSizeMB: photoSizeBytes / (1024 * 1024),
+            videoSizeMB: videoSizeBytes / (1024 * 1024),
             albumDetails: [],
             cachedAt: null,
           );
@@ -599,6 +629,8 @@ class MediaLibraryService {
       // Final video sonuçlarını al ve image değerlerine ekle
       totalMediaCount = initialImageCount + videoResult.count;
       totalSizeBytes = initialImageSize + videoResult.size;
+      videoCount = videoResult.count;
+      videoSizeBytes = videoResult.size;
       debugPrint(
         '📸 [MediaLibraryService] Video sayımı tamamlandı: ${videoResult.count} medya, ${(videoResult.size / (1024 * 1024)).toStringAsFixed(2)} MB',
       );
@@ -612,7 +644,11 @@ class MediaLibraryService {
       partialStats = GalleryStats(
         albumCount: albumCount,
         mediaCount: totalMediaCount,
+        photoCount: photoCount,
+        videoCount: videoCount,
         totalSizeMB: totalSizeBytes / (1024 * 1024),
+        photoSizeMB: photoSizeBytes / (1024 * 1024),
+        videoSizeMB: videoSizeBytes / (1024 * 1024),
         albumDetails: [],
         cachedAt: null,
       );
@@ -700,7 +736,11 @@ class MediaLibraryService {
       partialStats = GalleryStats(
         albumCount: albumCount,
         mediaCount: totalMediaCount,
+        photoCount: photoCount,
+        videoCount: videoCount,
         totalSizeMB: totalSizeMB,
+        photoSizeMB: photoSizeBytes / (1024 * 1024),
+        videoSizeMB: videoSizeBytes / (1024 * 1024),
         albumDetails: List.from(albumDetails),
         cachedAt: null,
       );
@@ -723,7 +763,11 @@ class MediaLibraryService {
     return GalleryStats(
       albumCount: albumCount,
       mediaCount: totalMediaCount,
+      photoCount: photoCount,
+      videoCount: videoCount,
       totalSizeMB: totalSizeMB,
+      photoSizeMB: photoSizeBytes / (1024 * 1024),
+      videoSizeMB: videoSizeBytes / (1024 * 1024),
       albumDetails: albumDetails,
       cachedAt: null, // Service'den dönen veri cache değildir
     );
@@ -744,8 +788,9 @@ class MediaLibraryService {
     );
 
     // Optimize sayfa boyutu: daha büyük sayfa = daha az I/O = daha hızlı
-    const pageSize = 500; // 500 medya/sayfa (memory-safe, hızlı)
-    const batchSize = 50; // Paralel işlenecek asset sayısı
+    // Page size limit kaldırıldı - daha hızlı yükleme için artırıldı
+    const pageSize = 2500; // 2500 medya/sayfa (daha hızlı yükleme)
+    const batchSize = 100; // Paralel işlenecek asset sayısı (artırıldı)
 
     int mediaCount = 0;
     int totalSizeBytes = 0;

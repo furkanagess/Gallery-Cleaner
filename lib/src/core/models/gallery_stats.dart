@@ -29,14 +29,22 @@ class AlbumDetail {
 class GalleryStats {
   final int albumCount;
   final int mediaCount; // fotoğraf + video
+  final int photoCount; // sadece fotoğraf sayısı
+  final int videoCount; // sadece video sayısı
   final double totalSizeMB; // toplam boyut MB cinsinden
+  final double photoSizeMB; // sadece fotoğrafların boyutu MB cinsinden
+  final double videoSizeMB; // sadece videoların boyutu MB cinsinden
   final List<AlbumDetail> albumDetails; // Albüm bazında detaylar
   final DateTime? cachedAt; // Cache zamanı (opsiyonel)
 
   const GalleryStats({
     required this.albumCount,
     required this.mediaCount,
+    this.photoCount = 0,
+    this.videoCount = 0,
     required this.totalSizeMB,
+    this.photoSizeMB = 0.0,
+    this.videoSizeMB = 0.0,
     this.albumDetails = const [],
     this.cachedAt,
   });
@@ -46,7 +54,11 @@ class GalleryStats {
     return {
       'albumCount': albumCount,
       'mediaCount': mediaCount,
+      'photoCount': photoCount,
+      'videoCount': videoCount,
       'totalSizeMB': totalSizeMB,
+      'photoSizeMB': photoSizeMB,
+      'videoSizeMB': videoSizeMB,
       'albumDetails': albumDetails.map((e) => e.toJson()).toList(),
       'cachedAt': cachedAt?.toIso8601String(),
     };
@@ -58,7 +70,11 @@ class GalleryStats {
     return GalleryStats(
       albumCount: json['albumCount'] as int,
       mediaCount: json['mediaCount'] as int,
+      photoCount: (json['photoCount'] as int?) ?? 0,
+      videoCount: (json['videoCount'] as int?) ?? 0,
       totalSizeMB: (json['totalSizeMB'] as num).toDouble(),
+      photoSizeMB: (json['photoSizeMB'] as num?)?.toDouble() ?? 0.0,
+      videoSizeMB: (json['videoSizeMB'] as num?)?.toDouble() ?? 0.0,
       albumDetails: detailsJson != null
           ? detailsJson.map((e) => AlbumDetail.fromJson(e as Map<String, dynamic>)).toList()
           : const [],
@@ -72,14 +88,22 @@ class GalleryStats {
   GalleryStats copyWith({
     int? albumCount,
     int? mediaCount,
+    int? photoCount,
+    int? videoCount,
     double? totalSizeMB,
+    double? photoSizeMB,
+    double? videoSizeMB,
     List<AlbumDetail>? albumDetails,
     DateTime? cachedAt,
   }) {
     return GalleryStats(
       albumCount: albumCount ?? this.albumCount,
       mediaCount: mediaCount ?? this.mediaCount,
+      photoCount: photoCount ?? this.photoCount,
+      videoCount: videoCount ?? this.videoCount,
       totalSizeMB: totalSizeMB ?? this.totalSizeMB,
+      photoSizeMB: photoSizeMB ?? this.photoSizeMB,
+      videoSizeMB: videoSizeMB ?? this.videoSizeMB,
       albumDetails: albumDetails ?? this.albumDetails,
       cachedAt: cachedAt ?? this.cachedAt,
     );

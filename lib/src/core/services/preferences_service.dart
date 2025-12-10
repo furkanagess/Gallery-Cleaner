@@ -1,9 +1,12 @@
 import 'dart:convert';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:crypto/crypto.dart';
 import '../../features/settings/application/theme_controller.dart';
 import '../models/gallery_stats.dart';
+import 'delete_limit_tracker_service.dart';
 
 class PreferencesService {
   // Secure Storage instance (Keychain/Keystore)
@@ -52,8 +55,9 @@ class PreferencesService {
   static const String _swipeCountKey = 'swipe_count';
   static const String _hasShownRateUsDialogKey = 'has_shown_rate_us_dialog';
   static const String _lastSelectedAlbumIdKey = 'last_selected_album_id';
+  static const String _uniqueUserIdKey = 'unique_user_id';
   static const int _rateUsDialogThreshold = 10; // 10 swipe sonrası dialog göster
-  static const int _defaultDeleteLimit = 100;
+  static const int _defaultDeleteLimit = 25; // Günlük silme hakkı: 25 fotoğraf
   static const int _defaultScanLimit = 1000;
   static const int _premiumDialogThreshold =
       3; // 3 reklam sonrası premium dialog göster
@@ -425,6 +429,21 @@ class PreferencesService {
       // Tekrar dene
       await _setSecureInt(_deleteLimitKey, newLimit);
       await prefs.setInt(_deleteLimitKey, newLimit);
+    }
+
+    // Silme hakkı pozitiften 0'a düştüyse Firestore'a kayıt ekle
+    if (currentLimit > 0 && newLimit == 0) {
+      debugPrint(
+        '📊 [PreferencesService] Silme hakkı sıfıra düştü, Firestore\'a kayıt ekleniyor...',
+      );
+      // Firestore'a kayıt ekle (async olarak çalışır, hata olsa bile uygulama devam eder)
+      DeleteLimitTrackerService.instance
+          .trackDeleteLimitReachedZero()
+          .catchError((error) {
+        debugPrint(
+          '⚠️ [PreferencesService] Firestore kayıt hatası (devam ediliyor): $error',
+        );
+      });
     }
 
     return newLimit;
@@ -993,6 +1012,41 @@ class PreferencesService {
     } catch (e) {
       debugPrint('❌ [PreferencesService] Son seçilen albüm ID okunamadı: $e');
       return null;
+    }
+  }
+
+  /// Unique user ID oluştur veya mevcut olanı döndür
+  /// Bu ID her cihaz için benzersizdir ve Firestore'da kullanıcı takibi için kullanılır
+  Future<String> getOrCreateUniqueUserId() async {
+    try {
+      // Önce mevcut ID'yi kontrol et
+      final existingId = await _getSecureString(_uniqueUserIdKey);
+      if (existingId != null && existingId.isNotEmpty) {
+        return existingId;
+      }
+
+      // Yeni ID oluştur
+      final random = Random.secure();
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final randomBytes = List<int>.generate(16, (_) => random.nextInt(256));
+      final combined = '$timestamp${randomBytes.join()}';
+      
+      // SHA256 hash ile unique ID oluştur
+      final bytes = utf8.encode(combined);
+      final digest = sha256.convert(bytes);
+      final uniqueId = digest.toString().substring(0, 20); // 20 karakterlik ID
+
+      // Secure storage'a kaydet
+      await _setSecureString(_uniqueUserIdKey, uniqueId);
+      debugPrint('💾 [PreferencesService] Yeni unique user ID oluşturuldu: $uniqueId');
+      
+      return uniqueId;
+    } catch (e) {
+      debugPrint('❌ [PreferencesService] Unique user ID oluşturulamadı: $e');
+      // Hata durumunda fallback ID döndür
+      final fallbackId = 'user_${DateTime.now().millisecondsSinceEpoch}';
+      await _setSecureString(_uniqueUserIdKey, fallbackId);
+      return fallbackId;
     }
   }
 }

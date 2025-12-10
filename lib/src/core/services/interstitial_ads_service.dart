@@ -68,12 +68,12 @@ class InterstitialAdsService {
     try {
       // Ensure ads SDK is initialized (sadece bir kez)
       if (!_sdkInitialized) {
-        try {
-          await MobileAds.instance.initialize();
+      try {
+        await MobileAds.instance.initialize();
           _sdkInitialized = true;
-          debugPrint('✅ [InterstitialAdsService] Mobile Ads SDK initialized');
-        } catch (e) {
-          debugPrint('⚠️ [InterstitialAdsService] Ads SDK initialization check: $e');
+        debugPrint('✅ [InterstitialAdsService] Mobile Ads SDK initialized');
+      } catch (e) {
+        debugPrint('⚠️ [InterstitialAdsService] Ads SDK initialization check: $e');
         }
       }
       

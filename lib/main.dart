@@ -18,6 +18,7 @@ import 'src/core/services/media_library_service.dart';
 import 'src/core/services/blur_detection_service.dart';
 import 'src/core/services/duplicate_detection_service.dart';
 import 'src/core/services/fcm_service.dart';
+import 'src/core/services/delete_limit_tracker_service.dart';
 import 'src/features/onboarding/application/onboarding_controller.dart';
 import 'src/features/onboarding/application/permissions_controller.dart';
 import 'src/features/settings/application/theme_controller.dart';
@@ -81,6 +82,18 @@ void main() async {
       }
     } catch (e) {
       AppLogger.e('⚠️ [main] Failed to initialize FCM: $e');
+    }
+
+    // TEST: Silme hakkı takip servisini test et (Firebase'den kontrol için)
+    // TODO: Bu test kodunu Firebase'den kontrol ettikten sonra kaldırın
+    try {
+      AppLogger.i('🧪 [TEST] Silme hakkı takip servisi test ediliyor...');
+      await DeleteLimitTrackerService.instance.trackDeleteLimitReachedZero();
+      AppLogger.i(
+        '✅ [TEST] Test başarılı! Firebase Console\'dan kontrol edebilirsiniz.',
+      );
+    } catch (e, stackTrace) {
+      AppLogger.e('❌ [TEST] Test hatası: $e', e, stackTrace);
     }
   } catch (e) {
     AppLogger.e('⚠️ [main] Failed to initialize Firebase: $e');
@@ -175,6 +188,7 @@ void main() async {
                 FolderTargetsCubit(albumsCubit: context.read<AlbumsCubit>()),
           ),
           BlocProvider(create: (_) => ReviewHistoryCubit()),
+          BlocProvider(create: (_) => ReviewDeleteSelectionCubit()),
           BlocProvider(
             create: (context) => ReviewActionsCubit(
               mediaLibraryService: context.read<MediaLibraryService>(),

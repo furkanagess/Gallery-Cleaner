@@ -1,7 +1,7 @@
 import 'dart:async';
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:photo_manager/photo_manager.dart' as pm;
 import 'package:lottie/lottie.dart';
 import '../../../../core/services/preferences_service.dart';
@@ -12,7 +12,7 @@ import '../../application/gallery_providers.dart';
 import '../../application/review_actions_controller.dart';
 import '../../../../core/utils/view_refresh_cubit.dart';
 import 'swipe_page.dart'
-    show presentAlbumPicker, showDeleteSuccessDialog, SwipePage;
+    show presentAlbumPicker;
 import 'tabs/swipe/widgets/swipe_tab_shimmer.dart' show SwipeTabShimmer;
 import 'tabs/swipe/widgets/swipe_area_content.dart' show SwipeAreaContent;
 
@@ -24,7 +24,7 @@ class SwipeTab extends StatefulWidget {
 }
 
 class _SwipeTabState extends State<SwipeTab>
-    with AutomaticKeepAliveClientMixin, CubitStateMixin<SwipeTab> {
+    with AutomaticKeepAliveClientMixin, CubitStateMixin<SwipeTab>, TickerProviderStateMixin {
   int _currentSwipeIndex = 0;
   int _previousAssetsLength = 0;
   bool _showResetToStartButton = false;
@@ -38,6 +38,12 @@ class _SwipeTabState extends State<SwipeTab>
   Timer? _shimmerDelayTimer;
   bool _showShimmer = false;
   DateTime? _loadingStartTime;
+  
+  // 3D buton animasyon controller'ları
+  late AnimationController _undoButtonController;
+  late Animation<double> _undoButtonScaleAnimation;
+  late AnimationController _deleteButtonController;
+  late Animation<double> _deleteButtonScaleAnimation;
 
   @override
   bool get wantKeepAlive => true;
@@ -46,6 +52,32 @@ class _SwipeTabState extends State<SwipeTab>
   void initState() {
     super.initState();
     _loadSwipeIndex();
+    
+    // Undo butonu animasyon controller'ı
+    _undoButtonController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 150),
+    );
+    _undoButtonScaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.95,
+    ).animate(CurvedAnimation(
+      parent: _undoButtonController,
+      curve: Curves.easeInOut,
+    ));
+    
+    // Delete butonu animasyon controller'ı
+    _deleteButtonController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 150),
+    );
+    _deleteButtonScaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.95,
+    ).animate(CurvedAnimation(
+      parent: _deleteButtonController,
+      curve: Curves.easeInOut,
+    ));
 
     // Stream listener'ı ekle
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -71,6 +103,8 @@ class _SwipeTabState extends State<SwipeTab>
   void dispose() {
     _reviewActionsSubscription?.cancel();
     _shimmerDelayTimer?.cancel();
+    _undoButtonController.dispose();
+    _deleteButtonController.dispose();
     super.dispose();
   }
 
@@ -673,8 +707,101 @@ class _SwipeTabState extends State<SwipeTab>
 
                             return Expanded(
                               flex: 1,
-                              child: OutlinedButton(
-                                onPressed: () {
+                              child: AnimatedBuilder(
+                                animation: _undoButtonController,
+                                builder: (context, child) {
+                                  final scale = _undoButtonScaleAnimation.value;
+                                  final isPressed = scale < 1.0;
+                                  
+                                  return Transform.scale(
+                                    scale: scale,
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(12),
+                                        boxShadow: isPressed
+                                            ? [
+                                                // Basılı durumda - içe doğru gölge
+                                                BoxShadow(
+                                                  color: AppColors.black.withOpacity(0.3),
+                                                  blurRadius: 6,
+                                                  offset: const Offset(0, 2),
+                                                  spreadRadius: 0,
+                                                ),
+                                                BoxShadow(
+                                                  color: AppColors.black.withOpacity(0.15),
+                                                  blurRadius: 3,
+                                                  offset: const Offset(0, 1),
+                                                  spreadRadius: 0,
+                                                ),
+                                              ]
+                                            : [
+                                                // Normal durumda - daktilo tuşu gölgesi
+                                                BoxShadow(
+                                                  color: AppColors.black.withOpacity(0.3),
+                                                  blurRadius: 0,
+                                                  offset: const Offset(0, 5),
+                                                  spreadRadius: 0,
+                                                ),
+                                                BoxShadow(
+                                                  color: AppColors.black.withOpacity(0.2),
+                                                  blurRadius: 0,
+                                                  offset: const Offset(0, 3),
+                                                  spreadRadius: 0,
+                                                ),
+                                                BoxShadow(
+                                                  color: AppColors.black.withOpacity(0.15),
+                                                  blurRadius: 0,
+                                                  offset: const Offset(0, 1),
+                                                  spreadRadius: 0,
+                                                ),
+                                                // Alt derin gölge
+                                                BoxShadow(
+                                                  color: AppColors.black.withOpacity(0.2),
+                                                  blurRadius: 6,
+                                                  offset: const Offset(0, 3),
+                                                  spreadRadius: 0,
+                                                ),
+                                              ],
+                                      ),
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          color: containerColor.withOpacity(0.08),
+                                          borderRadius: BorderRadius.circular(12),
+                                          border: Border(
+                                            top: BorderSide(
+                                              color: isPressed
+                                                  ? AppColors.black.withOpacity(0.2)
+                                                  : AppColors.white.withOpacity(0.5),
+                                              width: isPressed ? 1.0 : 1.5,
+                                            ),
+                                            left: BorderSide(
+                                              color: isPressed
+                                                  ? AppColors.black.withOpacity(0.2)
+                                                  : AppColors.white.withOpacity(0.5),
+                                              width: isPressed ? 1.0 : 1.5,
+                                            ),
+                                            right: BorderSide(
+                                              color: isPressed
+                                                  ? AppColors.white.withOpacity(0.2)
+                                                  : AppColors.black.withOpacity(0.3),
+                                              width: isPressed ? 1.0 : 1.5,
+                                            ),
+                                            bottom: BorderSide(
+                                              color: isPressed
+                                                  ? AppColors.white.withOpacity(0.2)
+                                                  : AppColors.black.withOpacity(0.3),
+                                              width: isPressed ? 1.0 : 1.5,
+                                            ),
+                                          ),
+                                        ),
+                                        child: Material(
+                                          color: Colors.transparent,
+                                          child: InkWell(
+                                            onTapDown: (_) {
+                                              _undoButtonController.forward();
+                                            },
+                                            onTapUp: (_) {
+                                              _undoButtonController.reverse();
                                   final reviewActionsCubit = context
                                       .read<ReviewActionsCubit>();
                                   final galleryPagingCubit = context
@@ -694,6 +821,15 @@ class _SwipeTabState extends State<SwipeTab>
                                     debugPrint('✅ [SwipeTab] ${undoneAssets.length} delete işlemi geri alındı, fotoğraflar geri eklendi');
                                   }
                                 },
+                                            onTapCancel: () {
+                                              _undoButtonController.reverse();
+                                            },
+                                            borderRadius: BorderRadius.circular(12),
+                                            child: Container(
+                                              padding: const EdgeInsets.symmetric(
+                                                vertical: 16,
+                                              ),
+                                              child: Center(
                                 child: Text(
                                   l10n.undo,
                                   overflow: TextOverflow.ellipsis,
@@ -702,20 +838,14 @@ class _SwipeTabState extends State<SwipeTab>
                                     fontWeight: FontWeight.w700,
                                   ),
                                 ),
-                                style: OutlinedButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 16,
                                   ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
                                   ),
-                                  side: BorderSide(
-                                    color: containerColor.withOpacity(0.6),
-                                    width: 1.5,
                                   ),
-                                  foregroundColor: containerColor,
-                                  backgroundColor: AppColors.transparent,
+                                        ),
                                 ),
+                                    ),
+                                  );
+                                },
                               ),
                             );
                           },
@@ -724,269 +854,153 @@ class _SwipeTabState extends State<SwipeTab>
                       if (pendingCount > 0)
                         Expanded(
                           flex: 3,
-                          child: FilledButton(
-                            onPressed: () async {
-                              final l10n = AppLocalizations.of(context)!;
-                              final theme = Theme.of(context);
-
-                              cubitSetState(() {
-                                _isDeleting = true;
-                              });
-
-                              // Delete limit'i kontrol et
-                              final deleteLimitController = context
-                                  .read<DeleteLimitCubit>();
-                              final deleteLimit = await deleteLimitController
-                                  .currentLimit();
-                              final pendingCount = context
-                                  .read<ReviewActionsCubit>()
-                                  .state
-                                  .length;
-
-                              // Delete limit'e göre maksimum silinebilecek fotoğraf sayısını belirle
-                              final maxDeleteCount = deleteLimit < 999999999
-                                  ? math.min(deleteLimit, pendingCount)
-                                  : pendingCount;
-
-                              debugPrint(
-                                '📊 [SwipePage] Silme işlemi başlatılıyor: $maxDeleteCount/$pendingCount fotoğraf silinecek (limit: $deleteLimit)',
-                              );
-
-                              final deleteResult = await context
-                                  .read<ReviewActionsCubit>()
-                                  .applyPendingDeletes(
-                                    maxDeleteCount: maxDeleteCount,
-                                  );
-
-                              debugPrint(
-                                '📊 [SwipePage] Silme işlemi tamamlandı: ${deleteResult.deletedCount} fotoğraf silindi, ${deleteResult.deletedSizeMB.toStringAsFixed(2)} MB boşaltıldı',
-                              );
-
-                              if (!context.mounted) {
-                                debugPrint(
-                                  '⚠️ [SwipePage] Context mounted değil, işlem iptal edildi',
-                                );
-                                if (mounted) {
-                                  cubitSetState(() {
-                                    _isDeleting = false;
-                                  });
-                                }
-                                return;
-                              }
-
-                              // Silme işlemi başarılı olup olmadığını kontrol et
-                              if (deleteResult.deletedCount > 0) {
-                                debugPrint(
-                                  '✅ [SwipePage] ${deleteResult.deletedCount} fotoğraf başarıyla silindi, silme hakkı azaltılıyor...',
-                                );
-
-                                try {
-                                  final newLimit = await deleteLimitController
-                                      .decrease(deleteResult.deletedCount);
-                                  debugPrint(
-                                    '💾 [SwipePage] Delete limit güncellendi, kalan: $newLimit (azaltılan: ${deleteResult.deletedCount})',
-                                  );
-
-                                  // Mevcut swipe index'ini kaydet - silme sonrası kaldığı yerden devam etmek için
-                                  final currentIndexBeforeReload =
-                                      _currentSwipeIndex;
-                                  debugPrint(
-                                    '💾 [SwipePage] Mevcut swipe index kaydedildi: $currentIndexBeforeReload',
-                                  );
-
-                                  // Başarı dialog'unu önce göster - reload'dan önce
-                                  // Böylece dialog gösterilirken TabView rebuild olmaz
-                                  debugPrint(
-                                    '🎯 [SwipePage] About to show delete success dialog - deletedCount: ${deleteResult.deletedCount}, deletedSizeMB: ${deleteResult.deletedSizeMB}, context.mounted: ${context.mounted}',
-                                  );
-                                  if (context.mounted) {
-                                    debugPrint(
-                                      '✅ [SwipePage] Context is mounted, calling _showDeleteSuccessDialog...',
-                                    );
-                                    await showDeleteSuccessDialog(
-                                      context,
-                                      deleteResult.deletedCount,
-                                      deletedSizeMB: deleteResult.deletedSizeMB,
-                                    );
-                                    debugPrint(
-                                      '✅ [SwipePage] _showDeleteSuccessDialog completed',
-                                    );
-                                  } else {
-                                    debugPrint(
-                                      '❌ [SwipePage] Context not mounted, cannot show dialog',
-                                    );
-                                  }
-
-                                  // Her 3 silme işleminden sonra paywall dialog göster (premium olmayan kullanıcılar için)
-                                  if (context.mounted) {
-                                    try {
-                                      final prefsService = PreferencesService();
-                                      final isPremium = await prefsService
-                                          .isPremium();
-
-                                      if (!isPremium) {
-                                        final shouldShowPaywall =
-                                            await prefsService
-                                                .incrementDeleteCountForPaywall();
-                                        if (shouldShowPaywall) {
-                                          debugPrint(
-                                            '💰 [SwipeTab] 3 silme işlemi tamamlandı, paywall dialog gösteriliyor...',
-                                          );
-                                          // Kısa bir gecikme sonra paywall dialog göster
-                                          await Future.delayed(
-                                            const Duration(milliseconds: 500),
-                                          );
-                                          if (context.mounted) {
-                                            await SwipePage.showPaywallDialogAfterDelete(
-                                              context,
-                                            );
-                                          }
-                                        }
-                                      }
-                                    } catch (e) {
-                                      debugPrint(
-                                        '❌ [SwipeTab] Paywall dialog kontrolünde hata: $e',
-                                      );
-                                    }
-                                  }
-
-                                  // Reload'u dialog kapandıktan sonra yap
-                                  // Böylece dialog gösterilirken TabView rebuild olmaz
-                                  if (mounted) {
-                                    // Reload'ı başlat ve tamamlanmasını bekle
-                                    await context.read<GalleryPagingCubit>().reload();
-
-                                    // Reload tamamlandıktan sonra, silinen fotoğraflar listeden çıktığı için
-                                    // index'i ayarla (silinen fotoğraflar kadar azalt)
-                                    // Ancak index 0'dan küçük olamaz ve assets.length'den büyük olamaz
-                                    if (mounted) {
-                                      final galleryState = context.read<GalleryPagingCubit>().state;
-                                      final currentAssets = galleryState.maybeWhen(
-                                        data: (assets) => assets,
-                                        orElse: () => <pm.AssetEntity>[],
-                                      );
-                                      
-                                      final maxIndex = currentAssets.isNotEmpty 
-                                          ? currentAssets.length - 1 
-                                          : 0;
-                                      final adjustedIndex =
-                                          (currentIndexBeforeReload -
-                                                  deleteResult.deletedCount)
-                                              .clamp(0, maxIndex);
-
-                                      // Index ayarlamasını işaretle - _buildSwipeArea'da uygulanacak
-                                      cubitSetState(() {
-                                        _pendingIndexAdjustment = adjustedIndex;
-                                        _currentSwipeIndex = adjustedIndex;
-                                      });
-                                      _saveSwipeIndex(adjustedIndex);
-                                      debugPrint(
-                                        '💾 [SwipePage] Swipe index ayarlandı: $currentIndexBeforeReload -> $adjustedIndex (silinen: ${deleteResult.deletedCount}, maxIndex: $maxIndex)',
-                                      );
-                                    }
-                                  }
-                                } catch (e, stackTrace) {
-                                  debugPrint(
-                                    '❌ [SwipePage] Silme hakkı azaltılırken hata: $e',
-                                  );
-                                  debugPrint(
-                                    '❌ [SwipePage] Stack trace: $stackTrace',
-                                  );
-                                  await deleteLimitController.refresh();
-                                  // Hata olsa bile dialog'u göster
-                                  debugPrint(
-                                    '🎯 [SwipePage] Error case - About to show delete success dialog - deletedCount: ${deleteResult.deletedCount}, deletedSizeMB: ${deleteResult.deletedSizeMB}, context.mounted: ${context.mounted}',
-                                  );
-                                  if (context.mounted) {
-                                    debugPrint(
-                                      '✅ [SwipePage] Error case - Context is mounted, calling _showDeleteSuccessDialog...',
-                                    );
-                                    await showDeleteSuccessDialog(
-                                      context,
-                                      deleteResult.deletedCount,
-                                      deletedSizeMB: deleteResult.deletedSizeMB,
-                                    );
-                                    debugPrint(
-                                      '✅ [SwipePage] Error case - _showDeleteSuccessDialog completed',
-                                    );
-                                  } else {
-                                    debugPrint(
-                                      '❌ [SwipePage] Error case - Context not mounted, cannot show dialog',
-                                    );
-                                  }
-                                }
-                              } else {
-                                debugPrint(
-                                  '⚠️ [SwipePage] Silme işlemi başarısız veya hiç fotoğraf silinmedi (deletedCount: ${deleteResult.deletedCount})',
-                                );
-                                // Kullanıcıya bilgi ver
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(l10n.deleteOperationFailed),
-                                      backgroundColor: theme.colorScheme.error,
-                                      duration: const Duration(seconds: 2),
+                          child: AnimatedBuilder(
+                            animation: _deleteButtonController,
+                            builder: (context, child) {
+                              final scale = _deleteButtonScaleAnimation.value;
+                              final isPressed = scale < 1.0;
+                              final errorColor = Theme.of(context).extension<AppSemanticColors>()?.delete ??
+                                  Theme.of(context).colorScheme.error;
+                              
+                              return Transform.scale(
+                                scale: scale,
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(12),
+                                    boxShadow: isPressed
+                                        ? [
+                                            // Basılı durumda - içe doğru gölge
+                                            BoxShadow(
+                                              color: AppColors.black.withOpacity(0.4),
+                                              blurRadius: 8,
+                                              offset: const Offset(0, 2),
+                                              spreadRadius: 0,
+                                            ),
+                                            BoxShadow(
+                                              color: AppColors.black.withOpacity(0.2),
+                                              blurRadius: 4,
+                                              offset: const Offset(0, 1),
+                                              spreadRadius: 0,
+                                            ),
+                                          ]
+                                        : [
+                                            // Normal durumda - daktilo tuşu gölgesi
+                                            BoxShadow(
+                                              color: AppColors.black.withOpacity(0.4),
+                                              blurRadius: 0,
+                                              offset: const Offset(0, 6),
+                                              spreadRadius: 0,
+                                            ),
+                                            BoxShadow(
+                                              color: AppColors.black.withOpacity(0.3),
+                                              blurRadius: 0,
+                                              offset: const Offset(0, 4),
+                                              spreadRadius: 0,
+                                            ),
+                                            BoxShadow(
+                                              color: AppColors.black.withOpacity(0.2),
+                                              blurRadius: 0,
+                                              offset: const Offset(0, 2),
+                                              spreadRadius: 0,
+                                            ),
+                                            // Alt derin gölge
+                                            BoxShadow(
+                                              color: AppColors.black.withOpacity(0.25),
+                                              blurRadius: 8,
+                                              offset: const Offset(0, 4),
+                                              spreadRadius: 0,
+                                            ),
+                                          ],
+                                  ),
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: errorColor,
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border(
+                                        top: BorderSide(
+                                          color: isPressed
+                                              ? AppColors.black.withOpacity(0.3)
+                                              : AppColors.white.withOpacity(0.6),
+                                          width: isPressed ? 1.0 : 2.0,
+                                        ),
+                                        left: BorderSide(
+                                          color: isPressed
+                                              ? AppColors.black.withOpacity(0.3)
+                                              : AppColors.white.withOpacity(0.6),
+                                          width: isPressed ? 1.0 : 2.0,
+                                        ),
+                                        right: BorderSide(
+                                          color: isPressed
+                                              ? AppColors.white.withOpacity(0.3)
+                                              : AppColors.black.withOpacity(0.4),
+                                          width: isPressed ? 1.0 : 2.0,
+                                        ),
+                                        bottom: BorderSide(
+                                          color: isPressed
+                                              ? AppColors.white.withOpacity(0.3)
+                                              : AppColors.black.withOpacity(0.4),
+                                          width: isPressed ? 1.0 : 2.0,
+                                        ),
+                                      ),
                                     ),
-                                  );
-                                }
-                              }
-                              // Animasyonu 1 saniye sonra durdur
-                              Future.delayed(
-                                const Duration(milliseconds: 1000),
-                                () {
-                                  if (mounted) {
-                                    cubitSetState(() {
-                                      _isDeleting = false;
-                                    });
-                                  }
-                                },
-                              );
-                            },
-                            style: FilledButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              backgroundColor:
-                                  Theme.of(
-                                    context,
-                                  ).extension<AppSemanticColors>()?.delete ??
-                                  Theme.of(context).colorScheme.error,
-                              foregroundColor: Theme.of(
-                                context,
-                              ).colorScheme.onError,
-                              side: BorderSide(
-                                color: AppColors.error.withOpacity(
-                                  0.9,
-                                ), // Kırmızı border
-                                width: 1.5,
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: ColorFiltered(
-                                    colorFilter: ColorFilter.mode(
-                                      Theme.of(context).colorScheme.onError,
-                                      BlendMode.srcATop,
-                                    ),
-                                    child: Lottie.asset(
-                                      'assets/lottie/trash.json',
-                                      width: 20,
-                                      height: 20,
-                                      fit: BoxFit.contain,
-                                      repeat: _isDeleting,
-                                      options: LottieOptions(
-                                        enableMergePaths: true,
+                                    child: Material(
+                                      color: Colors.transparent,
+                                      child: InkWell(
+                                        onTapDown: (_) {
+                                          _deleteButtonController.forward();
+                                        },
+                                        onTapUp: (_) {
+                                          _deleteButtonController.reverse();
+                                          // Yeni sayfaya yönlendir
+                                          context.go('/review-delete-photos');
+                                        },
+                                        onTapCancel: () {
+                                          _deleteButtonController.reverse();
+                                        },
+                                        borderRadius: BorderRadius.circular(12),
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(vertical: 16),
+                                          child: Row(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              SizedBox(
+                                                width: 20,
+                                                height: 20,
+                                                child: ColorFiltered(
+                                                  colorFilter: ColorFilter.mode(
+                                                    Theme.of(context).colorScheme.onError,
+                                                    BlendMode.srcATop,
+                                                  ),
+                                                  child: Lottie.asset(
+                                                    'assets/lottie/trash.json',
+                                                    width: 20,
+                                                    height: 20,
+                                                    fit: BoxFit.contain,
+                                                    repeat: _isDeleting,
+                                                    options: LottieOptions(
+                                                      enableMergePaths: true,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Text(
+                                                l10n.deletePhotos(pendingCount),
+                                                style: TextStyle(
+                                                  color: Theme.of(context).colorScheme.onError,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
                                       ),
                                     ),
                                   ),
                                 ),
-                                const SizedBox(width: 8),
-                                Text(l10n.deletePhotos(pendingCount)),
-                              ],
-                            ),
+                              );
+                            },
                           ),
                         ),
                     ],

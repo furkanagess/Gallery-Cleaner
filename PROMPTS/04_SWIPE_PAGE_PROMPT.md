@@ -340,3 +340,7 @@ Swipe Page, uygulamanın kalbi olan, kullanıcıların fotoğrafları hızlıca 
 
 
 
+
+
+
+

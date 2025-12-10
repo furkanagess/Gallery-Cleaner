@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'app_colors.dart';
 
 class AppThemeData {
@@ -150,6 +151,11 @@ AppThemeData buildAppTheme() {
       surfaceTint: AppColors.primary,
     );
 
+    // Base text theme with Poppins
+    final baseTextTheme = ThemeData(
+      brightness: brightness,
+    ).textTheme.apply(fontFamily: 'Poppins');
+
     final baseButtonShape = RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(18),
     );
@@ -274,6 +280,10 @@ AppThemeData buildAppTheme() {
     return ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,
+      fontFamily: 'Poppins',
+      textTheme: baseTextTheme,
+      primaryTextTheme: baseTextTheme,
+      typography: Typography.material2021(platform: defaultTargetPlatform),
       visualDensity: VisualDensity.adaptivePlatformDensity,
       // Disable ripple/splash effects globally
       splashFactory: NoSplash.splashFactory,

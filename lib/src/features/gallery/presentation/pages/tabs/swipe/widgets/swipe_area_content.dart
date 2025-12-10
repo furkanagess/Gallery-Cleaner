@@ -140,6 +140,9 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
   Offset? _pendingDragOffset; // Build sırasında update'i geciktirmek için
   bool _hasPendingOffsetUpdate =
       false; // Build sırasında update'i geciktirmek için
+  // Animasyonlu opacity değerleri - kaybolurken animasyon için
+  double _animatedDeleteOpacity = 0.0;
+  double _animatedKeepOpacity = 0.0;
 
   @override
   void initState() {
@@ -311,8 +314,30 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
                                           final offsetToApply = _pendingDragOffset!;
                                           _pendingDragOffset = null;
                                           _hasPendingOffsetUpdate = false;
+                                          
+                                          // Opacity değerlerini hesapla
+                                          final dragDx = offsetToApply.dx;
+                                          final deleteOffsetAbs = dragDx < 0 ? dragDx.abs() : 0.0;
+                                          final deleteProgress = deleteOffsetAbs >= 10.0
+                                              ? ((deleteOffsetAbs - 10.0) / 100.0).clamp(0.0, 1.0)
+                                              : 0.0;
+                                          final targetDeleteOpacity = deleteProgress > 0.0
+                                              ? (0.3 + (deleteProgress * 0.7)).clamp(0.3, 1.0)
+                                              : 0.0;
+                                          
+                                          final keepOffset = dragDx > 0 ? dragDx : 0.0;
+                                          final keepProgress = keepOffset >= 10.0
+                                              ? ((keepOffset - 10.0) / 100.0).clamp(0.0, 1.0)
+                                              : 0.0;
+                                          final targetKeepOpacity = keepProgress > 0.0
+                                              ? (0.3 + (keepProgress * 0.7)).clamp(0.3, 1.0)
+                                              : 0.0;
+                                          
                                           setState(() {
                                             _photoSwipeDragOffset = offsetToApply;
+                                            // Animasyonlu opacity değerlerini güncelle (AnimatedOpacity animasyonu yapacak)
+                                            _animatedDeleteOpacity = targetDeleteOpacity;
+                                            _animatedKeepOpacity = targetKeepOpacity;
                                           });
                                         } else if (mounted) {
                                           _hasPendingOffsetUpdate = false;
@@ -331,9 +356,9 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
                                     child: Center(
                                       child: _buildCounterWidget(context),
                                     ),
-                                  ),
-                              ],
-                            ),
+                                            ),
+                                          ],
+                                        ),
                           ),
                         ),
                       ),
@@ -533,13 +558,13 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
         _photoSwipeDragOffset = Offset.zero;
       });
     } else {
-      cubitSetState(() {
-        _dragScale = 1.0;
-        _dragOffset = Offset.zero;
-        _isDraggingToAlbum = false;
-        _dragStartPosition = null;
-        _photoSwipeDragOffset = Offset.zero;
-      });
+    cubitSetState(() {
+      _dragScale = 1.0;
+      _dragOffset = Offset.zero;
+      _isDraggingToAlbum = false;
+      _dragStartPosition = null;
+      _photoSwipeDragOffset = Offset.zero;
+    });
     }
   }
 
@@ -635,10 +660,6 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
     final deleteProgress = deleteOffsetAbs >= 10.0
         ? ((deleteOffsetAbs - 10.0) / 100.0).clamp(0.0, 1.0)
         : 0.0;
-    // Minimum %30 opacity ile başla, maksimum %100
-    final deleteOpacity = deleteProgress > 0.0
-        ? (0.3 + (deleteProgress * 0.7)).clamp(0.3, 1.0)
-        : 0.0;
 
     // Sağ swipe (keep) hesaplamaları
     final keepOffset = dragDx > 0 ? dragDx : 0.0;
@@ -646,10 +667,10 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
     final keepProgress = keepOffset >= 10.0
         ? ((keepOffset - 10.0) / 100.0).clamp(0.0, 1.0)
         : 0.0;
-    // Minimum %30 opacity ile başla, maksimum %100
-    final keepOpacity = keepProgress > 0.0
-        ? (0.3 + (keepProgress * 0.7)).clamp(0.3, 1.0)
-        : 0.0;
+    
+    // Animasyonlu opacity değerlerini kullan (drag offset callback'inde güncelleniyor)
+    final deleteOpacity = _animatedDeleteOpacity;
+    final keepOpacity = _animatedKeepOpacity;
 
     // Overlay genişlikleri - ekranın kenarlarından butonlara kadar
     final leftButtonRightEdge = leftButtonCenterX + (buttonSize / 2);
@@ -661,7 +682,7 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
 
     return [
       // Sol overlay - Ekranın en solundan sol butonun sağına kadar
-      if (deleteOpacity > 0.0)
+      if (deleteOpacity > 0.0 || _animatedDeleteOpacity > 0.0)
         Positioned(
           left: 0,
           top: buttonCenterY - (buttonSize / 2),
@@ -669,8 +690,9 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
           width: deleteOverlayWidth,
           child: IgnorePointer(
             child: AnimatedOpacity(
-              opacity: deleteOpacity,
-              duration: const Duration(milliseconds: 150),
+              opacity: _animatedDeleteOpacity,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOut,
               child: Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -688,7 +710,7 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
           ),
         ),
       // Sağ overlay - Ekranın en sağından sağ butonun soluna kadar
-      if (keepOpacity > 0.0)
+      if (keepOpacity > 0.0 || _animatedKeepOpacity > 0.0)
         Positioned(
           right: 0,
           top: buttonCenterY - (buttonSize / 2),
@@ -696,8 +718,9 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
           width: keepOverlayWidth,
           child: IgnorePointer(
             child: AnimatedOpacity(
-              opacity: keepOpacity,
-              duration: const Duration(milliseconds: 150),
+              opacity: _animatedKeepOpacity,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOut,
               child: Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -715,29 +738,83 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
           ),
         ),
       // Sol buton - Sil
-      if (deleteOpacity > 0.0)
+      if (deleteOpacity > 0.0 || _animatedDeleteOpacity > 0.0)
         Positioned(
           left: leftButtonCenterX - (buttonSize / 2),
           top: buttonCenterY - (buttonSize / 2),
           child: IgnorePointer(
             child: AnimatedOpacity(
-              opacity: deleteOpacity,
-              duration: const Duration(milliseconds: 150),
+              opacity: _animatedDeleteOpacity,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOut,
               child: AnimatedScale(
-                scale: 1.0,
-                duration: const Duration(milliseconds: 150),
+                scale: _animatedDeleteOpacity > 0.0 ? 1.0 : 0.8,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOut,
                 child: Container(
                   width: buttonSize,
                   height: buttonSize,
                   decoration: BoxDecoration(
                     color: AppColors.error,
                     shape: BoxShape.circle,
+                    boxShadow: [
+                      // Normal durumda - daktilo tuşu gölgesi
+                      BoxShadow(
+                        color: AppColors.black.withOpacity(0.4),
+                        blurRadius: 0,
+                        offset: const Offset(0, 6),
+                        spreadRadius: 0,
+                      ),
+                      BoxShadow(
+                        color: AppColors.black.withOpacity(0.3),
+                        blurRadius: 0,
+                        offset: const Offset(0, 4),
+                        spreadRadius: 0,
+                      ),
+                      BoxShadow(
+                        color: AppColors.black.withOpacity(0.2),
+                        blurRadius: 0,
+                        offset: const Offset(0, 2),
+                        spreadRadius: 0,
+                      ),
+                      // Alt derin gölge
+                      BoxShadow(
+                        color: AppColors.black.withOpacity(0.25),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                        spreadRadius: 0,
+                      ),
+                    ],
                   ),
-                  child: Center(
-                    child: Icon(
-                      Icons.delete_outline_rounded,
-                      color: AppColors.white,
-                      size: buttonIconSize,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.error,
+                      shape: BoxShape.circle,
+                      border: Border(
+                        top: BorderSide(
+                          color: AppColors.white.withOpacity(0.6),
+                          width: 2.0,
+                        ),
+                        left: BorderSide(
+                          color: AppColors.white.withOpacity(0.6),
+                          width: 2.0,
+                        ),
+                        right: BorderSide(
+                          color: AppColors.black.withOpacity(0.4),
+                          width: 2.0,
+                        ),
+                        bottom: BorderSide(
+                          color: AppColors.black.withOpacity(0.4),
+                          width: 2.0,
+                        ),
+                      ),
+                    ),
+                    child: Center(
+                      child: Icon(
+                        Icons.delete_outline_rounded,
+                        color: AppColors.white,
+                        size: buttonIconSize,
+                      ),
                     ),
                   ),
                 ),
@@ -746,29 +823,83 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
           ),
         ),
       // Sağ buton - Tut
-      if (keepOpacity > 0.0)
+      if (keepOpacity > 0.0 || _animatedKeepOpacity > 0.0)
         Positioned(
           left: rightButtonCenterX - (buttonSize / 2),
           top: buttonCenterY - (buttonSize / 2),
           child: IgnorePointer(
             child: AnimatedOpacity(
-              opacity: keepOpacity,
-              duration: const Duration(milliseconds: 150),
+              opacity: _animatedKeepOpacity,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOut,
               child: AnimatedScale(
-                scale: 1.0,
-                duration: const Duration(milliseconds: 150),
+                scale: _animatedKeepOpacity > 0.0 ? 1.0 : 0.8,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOut,
                 child: Container(
                   width: buttonSize,
                   height: buttonSize,
                   decoration: BoxDecoration(
                     color: AppColors.success,
                     shape: BoxShape.circle,
+                    boxShadow: [
+                      // Normal durumda - daktilo tuşu gölgesi
+                      BoxShadow(
+                        color: AppColors.black.withOpacity(0.4),
+                        blurRadius: 0,
+                        offset: const Offset(0, 6),
+                        spreadRadius: 0,
+                      ),
+                      BoxShadow(
+                        color: AppColors.black.withOpacity(0.3),
+                        blurRadius: 0,
+                        offset: const Offset(0, 4),
+                        spreadRadius: 0,
+                      ),
+                      BoxShadow(
+                        color: AppColors.black.withOpacity(0.2),
+                        blurRadius: 0,
+                        offset: const Offset(0, 2),
+                        spreadRadius: 0,
+                      ),
+                      // Alt derin gölge
+                      BoxShadow(
+                        color: AppColors.black.withOpacity(0.25),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                        spreadRadius: 0,
+                      ),
+                    ],
                   ),
-                  child: Center(
-                    child: Icon(
-                      Icons.check_circle_outline_rounded,
-                      color: AppColors.white,
-                      size: buttonIconSize,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.success,
+                      shape: BoxShape.circle,
+                      border: Border(
+                        top: BorderSide(
+                          color: AppColors.white.withOpacity(0.6),
+                          width: 2.0,
+                        ),
+                        left: BorderSide(
+                          color: AppColors.white.withOpacity(0.6),
+                          width: 2.0,
+                        ),
+                        right: BorderSide(
+                          color: AppColors.black.withOpacity(0.4),
+                          width: 2.0,
+                        ),
+                        bottom: BorderSide(
+                          color: AppColors.black.withOpacity(0.4),
+                          width: 2.0,
+                        ),
+                      ),
+                    ),
+                    child: Center(
+                      child: Icon(
+                        Icons.check_circle_outline_rounded,
+                        color: AppColors.white,
+                        size: buttonIconSize,
+                      ),
                     ),
                   ),
                 ),

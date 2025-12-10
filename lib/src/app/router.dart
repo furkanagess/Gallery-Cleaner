@@ -6,7 +6,9 @@ import '../features/onboarding/presentation/onboarding_page.dart';
 import '../features/onboarding/presentation/permission_request_page.dart';
 import '../features/gallery/presentation/pages/swipe_page.dart';
 import '../features/gallery/presentation/pages/gallery_stats_page.dart';
+import '../features/gallery/presentation/pages/gallery_report_page.dart';
 import '../features/gallery/presentation/pages/results_page.dart';
+import '../features/gallery/presentation/pages/review_delete_photos_page.dart';
 import '../features/settings/presentation/settings_page.dart';
 import '../features/settings/presentation/paywall_page.dart';
 
@@ -22,6 +24,8 @@ GoRouter createAppRouter() {
           location == '/onboarding' ||
           location == '/permission' ||
           location == '/swipe' ||
+          location == '/gallery-report' ||
+          location == '/review-delete-photos' ||
           location.startsWith('/settings') ||
           location.startsWith('/duplicates') ||
           location.startsWith('/blur') ||
@@ -88,6 +92,11 @@ GoRouter createAppRouter() {
         builder: (context, state) => const GalleryStatsPage(),
       ),
       GoRoute(
+        path: '/gallery-report',
+        name: 'galleryReport',
+        builder: (context, state) => const GalleryReportPage(),
+      ),
+      GoRoute(
         path: '/results/:type',
         name: 'results',
         builder: (BuildContext context, GoRouterState state) {
@@ -97,6 +106,11 @@ GoRouter createAppRouter() {
       ),
       // Fallback route for /results without type parameter
       GoRoute(path: '/results', redirect: (context, state) => '/results/blur'),
+      GoRoute(
+        path: '/review-delete-photos',
+        name: 'reviewDeletePhotos',
+        builder: (context, state) => const ReviewDeletePhotosPage(),
+      ),
     ],
     errorBuilder: (context, state) => Scaffold(
       body: Center(

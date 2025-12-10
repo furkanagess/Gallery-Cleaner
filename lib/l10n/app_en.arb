@@ -252,6 +252,18 @@
   "@loadingMayTakeFewSeconds": {
     "description": "Message during gallery info loading"
   },
+  "loadingDescriptionOptimizingSpace": "Optimizing your gallery space...",
+  "@loadingDescriptionOptimizingSpace": {
+    "description": "Loading description while optimizing storage"
+  },
+  "loadingDescriptionScanningMemories": "Scanning your memories for duplicates and blur...",
+  "@loadingDescriptionScanningMemories": {
+    "description": "Loading description while scanning media"
+  },
+  "loadingDescriptionPreparingReport": "Preparing your cleanup plan...",
+  "@loadingDescriptionPreparingReport": {
+    "description": "Loading description while preparing report"
+  },
   "galleryInfoNotAvailable": "Gallery info not available",
   "@galleryInfoNotAvailable": {
     "description": "Error message when gallery info cannot be retrieved"
@@ -412,9 +424,9 @@
   "@photoRestored": {
     "description": "Success message when photo is restored"
   },
-  "remainingDeletionRights": "Remaining Deletion",
+  "remainingDeletionRights": "Daily Remaining Deletion",
   "@remainingDeletionRights": {
-    "description": "Remaining deletion rights label"
+    "description": "Remaining deletion rights label (daily)"
   },
   "watchAdToEarn": "Watch Ad",
   "@watchAdToEarn": {
@@ -1611,6 +1623,78 @@
   "scanTip15": "🎮 Play a quick game!",
   "@scanTip15": {
     "description": "Tip shown during scan"
+  },
+  "galleryReportTitle": "Gallery Report",
+  "@galleryReportTitle": {
+    "description": "Title for gallery report page"
+  },
+  "photos": "Photos",
+  "@photos": {
+    "description": "Photos label"
+  },
+  "videos": "Videos",
+  "@videos": {
+    "description": "Videos label"
+  },
+  "screenshots": "Screenshots",
+  "@screenshots": {
+    "description": "Screenshots label"
+  },
+  "media": "Media",
+  "@media": {
+    "description": "Media label"
+  },
+  "galleryReportDescription": "Our users clean approximately 50% of their gallery on average, significantly freeing up storage space",
+  "@galleryReportDescription": {
+    "description": "Description text on gallery report page"
+  },
+  "reviewDeletePhotos": "Review Photos to Delete",
+  "@reviewDeletePhotos": {
+    "description": "Title for review delete photos page"
+  },
+  "noPhotosToDelete": "No photos to delete",
+  "@noPhotosToDelete": {
+    "description": "Message when there are no photos to delete"
+  },
+  "deleteLimitReached": "You can only delete {count} photos per day",
+  "@deleteLimitReached": {
+    "description": "Message when delete limit is reached",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "deleting": "Deleting...",
+  "@deleting": {
+    "description": "Text shown while deleting photos"
+  },
+  "errorOccurred": "An error occurred",
+  "@errorOccurred": {
+    "description": "Generic error message"
+  },
+  "freeUpStorageSpace": "Free Up Storage Space",
+  "@freeUpStorageSpace": {
+    "description": "Title for storage cleanup onboarding screen"
+  },
+  "storage": "Storage",
+  "@storage": {
+    "description": "Storage label"
+  },
+  "youCanClean": "{gb} GB and {media} {mediaLabel} you can clean",
+  "@youCanClean": {
+    "description": "Message showing how much storage and media can be cleaned",
+    "placeholders": {
+      "gb": {
+        "type": "String"
+      },
+      "media": {
+        "type": "int"
+      },
+      "mediaLabel": {
+        "type": "String"
+      }
+    }
   }
 }
 

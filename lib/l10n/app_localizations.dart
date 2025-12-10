@@ -442,6 +442,24 @@ abstract class AppLocalizations {
   /// **'This process may take a few seconds, please wait'**
   String get loadingMayTakeFewSeconds;
 
+  /// Loading description while optimizing storage
+  ///
+  /// In en, this message translates to:
+  /// **'Optimizing your gallery space...'**
+  String get loadingDescriptionOptimizingSpace;
+
+  /// Loading description while scanning media
+  ///
+  /// In en, this message translates to:
+  /// **'Scanning your memories for duplicates and blur...'**
+  String get loadingDescriptionScanningMemories;
+
+  /// Loading description while preparing report
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing your cleanup plan...'**
+  String get loadingDescriptionPreparingReport;
+
   /// Error message when gallery info cannot be retrieved
   ///
   /// In en, this message translates to:
@@ -652,10 +670,10 @@ abstract class AppLocalizations {
   /// **'Photo restored'**
   String get photoRestored;
 
-  /// Remaining deletion rights label
+  /// Remaining deletion rights label (daily)
   ///
   /// In en, this message translates to:
-  /// **'Remaining Deletion'**
+  /// **'Daily Remaining Deletion'**
   String get remainingDeletionRights;
 
   /// Button text to watch ad
@@ -1822,10 +1840,10 @@ abstract class AppLocalizations {
   /// **'{count} photo(s) have been successfully deleted and {size} MB of space freed. Your gallery is now cleaner and lighter.'**
   String cleanupCompleteMessageWithCountAndSize(int count, String size);
 
-  /// Photo plural
+  /// Photos label
   ///
   /// In en, this message translates to:
-  /// **'photos'**
+  /// **'Photos'**
   String get photos;
 
   /// MB freed text
@@ -2217,6 +2235,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'🎮 Play a quick game!'**
   String get scanTip15;
+
+  /// Title for gallery report page
+  ///
+  /// In en, this message translates to:
+  /// **'Gallery Report'**
+  String get galleryReportTitle;
+
+  /// Videos label
+  ///
+  /// In en, this message translates to:
+  /// **'Videos'**
+  String get videos;
+
+  /// Screenshots label
+  ///
+  /// In en, this message translates to:
+  /// **'Screenshots'**
+  String get screenshots;
+
+  /// Media label
+  ///
+  /// In en, this message translates to:
+  /// **'Media'**
+  String get media;
+
+  /// Description text on gallery report page
+  ///
+  /// In en, this message translates to:
+  /// **'Our users clean approximately 50% of their gallery on average, significantly freeing up storage space'**
+  String get galleryReportDescription;
+
+  /// Title for review delete photos page
+  ///
+  /// In en, this message translates to:
+  /// **'Review Photos to Delete'**
+  String get reviewDeletePhotos;
+
+  /// Message when there are no photos to delete
+  ///
+  /// In en, this message translates to:
+  /// **'No photos to delete'**
+  String get noPhotosToDelete;
+
+  /// Message when delete limit is reached
+  ///
+  /// In en, this message translates to:
+  /// **'You can only delete {count} photos per day'**
+  String deleteLimitReached(int count);
+
+  /// Text shown while deleting photos
+  ///
+  /// In en, this message translates to:
+  /// **'Deleting...'**
+  String get deleting;
+
+  /// Generic error message
+  ///
+  /// In en, this message translates to:
+  /// **'An error occurred'**
+  String get errorOccurred;
+
+  /// Title for storage cleanup onboarding screen
+  ///
+  /// In en, this message translates to:
+  /// **'Free Up Storage Space'**
+  String get freeUpStorageSpace;
+
+  /// Storage label
+  ///
+  /// In en, this message translates to:
+  /// **'Storage'**
+  String get storage;
+
+  /// Message showing how much storage and media can be cleaned
+  ///
+  /// In en, this message translates to:
+  /// **'{gb} GB and {media} {mediaLabel} you can clean'**
+  String youCanClean(String gb, int media, String mediaLabel);
 }
 
 class _AppLocalizationsDelegate

@@ -204,6 +204,18 @@ class AppLocalizationsEs extends AppLocalizations {
       'Este proceso puede tardar unos segundos, por favor espera';
 
   @override
+  String get loadingDescriptionOptimizingSpace =>
+      'Optimizando el espacio de tu galería...';
+
+  @override
+  String get loadingDescriptionScanningMemories =>
+      'Buscando duplicados y fotos borrosas...';
+
+  @override
+  String get loadingDescriptionPreparingReport =>
+      'Preparando tu plan de limpieza...';
+
+  @override
   String get galleryInfoNotAvailable => 'Información de galería no disponible';
 
   @override
@@ -325,7 +337,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get photoRestored => 'Foto restaurada';
 
   @override
-  String get remainingDeletionRights => 'Derechos de Eliminación Restantes';
+  String get remainingDeletionRights => 'Eliminación Diaria Restante';
 
   @override
   String get watchAdToEarn => 'Ver Anuncio';
@@ -994,7 +1006,7 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get photos => 'fotos';
+  String get photos => 'Fotos';
 
   @override
   String mbFreed(String size) {
@@ -1213,4 +1225,48 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get scanTip15 => '🎮 ¡Juega un juego rápido!';
+
+  @override
+  String get galleryReportTitle => 'Informe de Galería';
+
+  @override
+  String get videos => 'Videos';
+
+  @override
+  String get screenshots => 'Capturas de Pantalla';
+
+  @override
+  String get media => 'Medios';
+
+  @override
+  String get galleryReportDescription =>
+      'Nuestros usuarios limpian aproximadamente el 50% de su galería en promedio, liberando significativamente espacio de almacenamiento';
+
+  @override
+  String get reviewDeletePhotos => 'Revisar Fotos para Eliminar';
+
+  @override
+  String get noPhotosToDelete => 'No hay fotos para eliminar';
+
+  @override
+  String deleteLimitReached(int count) {
+    return 'Solo puedes eliminar $count fotos por día';
+  }
+
+  @override
+  String get deleting => 'Eliminando...';
+
+  @override
+  String get errorOccurred => 'Ocurrió un error';
+
+  @override
+  String get freeUpStorageSpace => 'Liberar Espacio de Almacenamiento';
+
+  @override
+  String get storage => 'Almacenamiento';
+
+  @override
+  String youCanClean(String gb, int media, String mediaLabel) {
+    return '$gb GB y $media $mediaLabel puedes limpiar';
+  }
 }

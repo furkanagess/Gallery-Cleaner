@@ -955,6 +955,46 @@ class BlurScanLimitCubit extends BaseScanLimitCubit {
   Future<int> loadLimit() => _prefs.getBlurScanLimit();
 }
 
+class ReviewDeleteSelectionCubit extends Cubit<Set<String>> {
+  ReviewDeleteSelectionCubit() : super({});
+
+  void selectAll(List<String> photoIds) {
+    emit(Set<String>.from(photoIds));
+  }
+
+  void toggleSelection(String photoId) {
+    final updated = Set<String>.from(state);
+    if (updated.contains(photoId)) {
+      updated.remove(photoId);
+    } else {
+      updated.add(photoId);
+    }
+    emit(updated);
+  }
+
+  void selectPhoto(String photoId) {
+    if (!state.contains(photoId)) {
+      emit({...state, photoId});
+    }
+  }
+
+  void deselectPhoto(String photoId) {
+    if (state.contains(photoId)) {
+      final updated = Set<String>.from(state);
+      updated.remove(photoId);
+      emit(updated);
+    }
+  }
+
+  void clear() {
+    emit({});
+  }
+
+  bool isSelected(String photoId) {
+    return state.contains(photoId);
+  }
+}
+
 class TabSelectionCubit extends Cubit<int> {
   TabSelectionCubit() : super(0);
 
