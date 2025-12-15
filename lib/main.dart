@@ -71,8 +71,8 @@ void main() async {
       // Background message handler'ı register et
       FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
-      // FCM servisini initialize et
-      await FCMService.instance.initialize();
+      // FCM servisini initialize et (izin isteme swipe page'e taşındı)
+      await FCMService.instance.initialize(requestPermissionOnInit: false);
       AppLogger.i('✅ [main] FCM initialized');
 
       // FCM token'ı al ve logla (test için)

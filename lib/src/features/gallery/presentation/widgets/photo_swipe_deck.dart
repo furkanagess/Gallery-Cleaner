@@ -582,7 +582,7 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Success icon with gradient background
+            // Success animation (wipe lottie)
             Container(
               width: 120,
               height: 120,
@@ -598,10 +598,14 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck>
                   ),
                 ],
               ),
-              child: const Icon(
-                Icons.check_circle,
-                size: 80,
-                color: AppColors.white,
+              child: Center(
+                child: Lottie.asset(
+                  'assets/lottie/wipe.json',
+                  width: 90,
+                  height: 90,
+                  fit: BoxFit.contain,
+                  repeat: false,
+                ),
               ),
             ),
             const SizedBox(height: 24),

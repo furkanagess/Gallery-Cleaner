@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:photo_manager/photo_manager.dart' as pm;
 import '../../../../../../../core/utils/view_refresh_cubit.dart';
 import '../../../../../application/gallery_providers.dart';
@@ -14,6 +15,7 @@ import '../../../../../../../../l10n/app_localizations.dart'
     show AppLocalizations;
 import '../../../../widgets/photo_swipe_deck.dart'
     show PhotoSwipeDeck, SwipeDecision;
+import '../../../../widgets/new_year_event_card.dart' show NewYearEventCard;
 import '../../../../../../../../src/core/services/sound_service.dart'
     show SoundService;
 import '../../../../../../../../src/core/services/preferences_service.dart'
@@ -23,8 +25,8 @@ import 'swipe_tab_helpers.dart'
         isPositionOverWidget,
         getWidgetCenter,
         showAlbumSelectionDialog,
-        maybePrefetch,
-        showRateUsDialog;
+        maybePrefetch;
+import 'album_selection_sheet.dart' show AlbumSelectionSheet;
 
 // iOS için basit sayaç widget'ı - ChangeNotifier ile çalışır
 class _IOSSwipeCounterNotifier extends ChangeNotifier {
@@ -39,16 +41,16 @@ class _IOSSwipeCounterNotifier extends ChangeNotifier {
       _index = index;
       _totalCount = totalCount;
       notifyListeners();
-      debugPrint('🔄 [_IOSSwipeCounterNotifier] Güncellendi: $_index / $_totalCount');
+      debugPrint(
+        '🔄 [_IOSSwipeCounterNotifier] Güncellendi: $_index / $_totalCount',
+      );
     }
   }
 }
 
 // iOS için sayaç widget'ı - ChangeNotifier dinler
 class _IOSSwipeCounter extends StatelessWidget {
-  const _IOSSwipeCounter({
-    required this.notifier,
-  });
+  const _IOSSwipeCounter({required this.notifier});
 
   final _IOSSwipeCounterNotifier notifier;
 
@@ -62,10 +64,7 @@ class _IOSSwipeCounter extends StatelessWidget {
         debugPrint('🎨 [_IOSSwipeCounter] Build - Index: $index / $totalCount');
         return Container(
           key: ValueKey('ios_counter_$index'),
-          padding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 8,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface.withOpacity(0.9),
             borderRadius: BorderRadius.circular(16),
@@ -82,11 +81,11 @@ class _IOSSwipeCounter extends StatelessWidget {
             '${index + 1} / $totalCount',
             key: ValueKey('ios_counter_text_$index'),
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13,
-                  letterSpacing: 0.2,
-                ),
+              color: Theme.of(context).colorScheme.onSurface,
+              fontWeight: FontWeight.w600,
+              fontSize: 13,
+              letterSpacing: 0.2,
+            ),
           ),
         );
       },
@@ -117,12 +116,12 @@ class SwipeAreaContent extends StatefulWidget {
 }
 
 class SwipeAreaContentState extends State<SwipeAreaContent>
-    with CubitStateMixin<SwipeAreaContent> {
+    with CubitStateMixin<SwipeAreaContent>, TickerProviderStateMixin {
   // Index takibi
   int _currentIndex = 0;
   // iOS için ChangeNotifier - sayaç widget'ını güncellemek için
   _IOSSwipeCounterNotifier? _iosCounterNotifier;
-  
+
   static const double _verticalActivationOffset = 16.0;
   static const double _verticalMaxTravel = 280.0;
   static const double _verticalMinScale = 0.58;
@@ -143,6 +142,13 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
   // Animasyonlu opacity değerleri - kaybolurken animasyon için
   double _animatedDeleteOpacity = 0.0;
   double _animatedKeepOpacity = 0.0;
+  // New Year Event Card görünürlüğü
+  bool _showNewYearEventCard = true;
+  // Titreme animasyonları için controller'lar
+  late AnimationController _deleteShakeController;
+  late AnimationController _keepShakeController;
+  late Animation<double> _deleteShakeAnimation;
+  late Animation<double> _keepShakeAnimation;
 
   @override
   void initState() {
@@ -153,12 +159,37 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
       _iosCounterNotifier = _IOSSwipeCounterNotifier();
       _iosCounterNotifier!.update(_currentIndex, widget.assets.length);
     }
+    // Titreme animasyon controller'ları
+    _deleteShakeController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 50),
+    );
+    _keepShakeController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 50),
+    );
+    // Titreme animasyonları - rastgele yönlerde titreme
+    _deleteShakeAnimation = Tween<double>(begin: -3.0, end: 3.0).animate(
+      CurvedAnimation(
+        parent: _deleteShakeController,
+        curve: Curves.easeInOut,
+      ),
+    );
+    _keepShakeAnimation = Tween<double>(begin: -3.0, end: 3.0).animate(
+      CurvedAnimation(
+        parent: _keepShakeController,
+        curve: Curves.easeInOut,
+      ),
+    );
   }
 
   @override
   void dispose() {
     // iOS için ChangeNotifier dispose
     _iosCounterNotifier?.dispose();
+    // Titreme animasyon controller'ları dispose
+    _deleteShakeController.dispose();
+    _keepShakeController.dispose();
     super.dispose();
   }
 
@@ -182,12 +213,16 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
       // iOS için ChangeNotifier güncelle
       if (Platform.isIOS) {
         _iosCounterNotifier?.update(_currentIndex, widget.assets.length);
-        debugPrint('🍎 [SwipeAreaContent] iOS - sayaç prop ile güncellendi: $_currentIndex');
+        debugPrint(
+          '🍎 [SwipeAreaContent] iOS - sayaç prop ile güncellendi: $_currentIndex',
+        );
       } else {
         cubitSetState(() {
           // _currentIndex zaten yukarıda güncellendi
         });
-        debugPrint('🤖 [SwipeAreaContent] Android - prop ile güncellendi: $_currentIndex');
+        debugPrint(
+          '🤖 [SwipeAreaContent] Android - prop ile güncellendi: $_currentIndex',
+        );
       }
     } else if (didAssetCountChange && Platform.isIOS) {
       // iOS sayaçta toplam foto sayısını senkron tut
@@ -200,30 +235,40 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
 
   void _handleIndexChanged(int index) {
     if (_currentIndex != index) {
-      debugPrint('🔄 [SwipeAreaContent] Index değişiyor: $_currentIndex -> $index');
-      
+      debugPrint(
+        '🔄 [SwipeAreaContent] Index değişiyor: $_currentIndex -> $index',
+      );
+
       _currentIndex = index;
-      
+
       // iOS için ChangeNotifier güncelle - her zaman güncelle
       if (Platform.isIOS) {
         // Eğer notifier null ise, yeniden oluştur
         if (_iosCounterNotifier == null) {
           _iosCounterNotifier = _IOSSwipeCounterNotifier();
-          debugPrint('⚠️ [SwipeAreaContent] iOS - ChangeNotifier yeniden oluşturuldu');
+          debugPrint(
+            '⚠️ [SwipeAreaContent] iOS - ChangeNotifier yeniden oluşturuldu',
+          );
         }
         _iosCounterNotifier!.update(_currentIndex, widget.assets.length);
-        debugPrint('🍎 [SwipeAreaContent] iOS - ChangeNotifier ile güncellendi: $_currentIndex / ${widget.assets.length}');
+        debugPrint(
+          '🍎 [SwipeAreaContent] iOS - ChangeNotifier ile güncellendi: $_currentIndex / ${widget.assets.length}',
+        );
       } else {
         // Android için cubitSetState kullan
         cubitSetState(() {
           // _currentIndex zaten yukarıda güncellendi
         });
-        debugPrint('🤖 [SwipeAreaContent] Android - cubitSetState ile güncellendi: $_currentIndex');
+        debugPrint(
+          '🤖 [SwipeAreaContent] Android - cubitSetState ile güncellendi: $_currentIndex',
+        );
       }
-      
+
       // Parent widget'a da bildir
       widget.onIndexChanged?.call(index);
-      debugPrint('✅ [SwipeAreaContent] Index güncellendi: $_currentIndex / ${widget.assets.length}');
+      debugPrint(
+        '✅ [SwipeAreaContent] Index güncellendi: $_currentIndex / ${widget.assets.length}',
+      );
     }
   }
 
@@ -242,6 +287,25 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          // New Year Event Card - Altta, Swipe Deck'in üstünde
+          if (_showNewYearEventCard)
+            NewYearEventCard(
+              onDismiss: () {
+                if (Platform.isIOS) {
+                  setState(() {
+                    _showNewYearEventCard = false;
+                  });
+                } else {
+                  cubitSetState(() {
+                    _showNewYearEventCard = false;
+                  });
+                }
+              },
+              onTap: () {
+                // Event card'a tıklandığında yapılacak işlem
+                // Örneğin: Event detay sayfasına git veya paywall göster
+              },
+            ),
           // Ana içerik - Swipe Deck
           Expanded(
             child: Stack(
@@ -270,6 +334,66 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
                               fit: StackFit.expand,
                               clipBehavior: Clip.none,
                               children: [
+                                // Kar birikimi efekti - Alt kısım
+                                Positioned(
+                                  bottom: 0,
+                                  left: 0,
+                                  right: 0,
+                                  height: 40,
+                                  child: IgnorePointer(
+                                    child: ClipRRect(
+                                      borderRadius: const BorderRadius.only(
+                                        bottomLeft: Radius.circular(20),
+                                        bottomRight: Radius.circular(20),
+                                      ),
+                                      child: _buildSnowAccumulation(
+                                        width: double.infinity,
+                                        height: 40,
+                                        isHorizontal: true,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                // Kar birikimi efekti - Sol kenar
+                                Positioned(
+                                  left: 0,
+                                  top: 0,
+                                  bottom: 0,
+                                  width: 30,
+                                  child: IgnorePointer(
+                                    child: ClipRRect(
+                                      borderRadius: const BorderRadius.only(
+                                        topLeft: Radius.circular(20),
+                                        bottomLeft: Radius.circular(20),
+                                      ),
+                                      child: _buildSnowAccumulation(
+                                        width: 30,
+                                        height: double.infinity,
+                                        isHorizontal: false,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                // Kar birikimi efekti - Sağ kenar
+                                Positioned(
+                                  right: 0,
+                                  top: 0,
+                                  bottom: 0,
+                                  width: 30,
+                                  child: IgnorePointer(
+                                    child: ClipRRect(
+                                      borderRadius: const BorderRadius.only(
+                                        topRight: Radius.circular(20),
+                                        bottomRight: Radius.circular(20),
+                                      ),
+                                      child: _buildSnowAccumulation(
+                                        width: 30,
+                                        height: double.infinity,
+                                        isHorizontal: false,
+                                      ),
+                                    ),
+                                  ),
+                                ),
                                 PhotoSwipeDeck(
                                   key: ValueKey(
                                     widget.assets.isEmpty
@@ -294,7 +418,8 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
                                     _showNoRightsDialog(context);
                                   },
                                   onIndexChanged: _handleIndexChanged,
-                                  onResetCallbackReady: widget.onResetCallbackReady,
+                                  onResetCallbackReady:
+                                      widget.onResetCallbackReady,
                                   onDragOffsetChanged: (offset) {
                                     // Build sırasında setState çağrılmasını engellemek için
                                     // postFrameCallback kullanarak setState'i geciktir
@@ -310,35 +435,72 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
                                       WidgetsBinding.instance.addPostFrameCallback((
                                         _,
                                       ) {
-                                        if (mounted && _pendingDragOffset != null) {
-                                          final offsetToApply = _pendingDragOffset!;
+                                        if (mounted &&
+                                            _pendingDragOffset != null) {
+                                          final offsetToApply =
+                                              _pendingDragOffset!;
                                           _pendingDragOffset = null;
                                           _hasPendingOffsetUpdate = false;
-                                          
+
                                           // Opacity değerlerini hesapla
                                           final dragDx = offsetToApply.dx;
-                                          final deleteOffsetAbs = dragDx < 0 ? dragDx.abs() : 0.0;
-                                          final deleteProgress = deleteOffsetAbs >= 10.0
-                                              ? ((deleteOffsetAbs - 10.0) / 100.0).clamp(0.0, 1.0)
+                                          final deleteOffsetAbs = dragDx < 0
+                                              ? dragDx.abs()
                                               : 0.0;
-                                          final targetDeleteOpacity = deleteProgress > 0.0
-                                              ? (0.3 + (deleteProgress * 0.7)).clamp(0.3, 1.0)
+                                          final deleteProgress =
+                                              deleteOffsetAbs >= 10.0
+                                              ? ((deleteOffsetAbs - 10.0) /
+                                                        100.0)
+                                                    .clamp(0.0, 1.0)
                                               : 0.0;
-                                          
-                                          final keepOffset = dragDx > 0 ? dragDx : 0.0;
-                                          final keepProgress = keepOffset >= 10.0
-                                              ? ((keepOffset - 10.0) / 100.0).clamp(0.0, 1.0)
+                                          final targetDeleteOpacity =
+                                              deleteProgress > 0.0
+                                              ? (0.3 + (deleteProgress * 0.7))
+                                                    .clamp(0.3, 1.0)
                                               : 0.0;
-                                          final targetKeepOpacity = keepProgress > 0.0
-                                              ? (0.3 + (keepProgress * 0.7)).clamp(0.3, 1.0)
+
+                                          final keepOffset = dragDx > 0
+                                              ? dragDx
                                               : 0.0;
-                                          
+                                          final keepProgress =
+                                              keepOffset >= 10.0
+                                              ? ((keepOffset - 10.0) / 100.0)
+                                                    .clamp(0.0, 1.0)
+                                              : 0.0;
+                                          final targetKeepOpacity =
+                                              keepProgress > 0.0
+                                              ? (0.3 + (keepProgress * 0.7))
+                                                    .clamp(0.3, 1.0)
+                                              : 0.0;
+
                                           setState(() {
-                                            _photoSwipeDragOffset = offsetToApply;
+                                            _photoSwipeDragOffset =
+                                                offsetToApply;
                                             // Animasyonlu opacity değerlerini güncelle (AnimatedOpacity animasyonu yapacak)
-                                            _animatedDeleteOpacity = targetDeleteOpacity;
-                                            _animatedKeepOpacity = targetKeepOpacity;
+                                            _animatedDeleteOpacity =
+                                                targetDeleteOpacity;
+                                            _animatedKeepOpacity =
+                                                targetKeepOpacity;
                                           });
+                                          
+                                          // Titreme animasyonlarını başlat/durdur
+                                          if (targetDeleteOpacity > 0.0) {
+                                            if (!_deleteShakeController.isAnimating) {
+                                              _deleteShakeController.repeat();
+                                            }
+                                          } else {
+                                            _deleteShakeController.stop();
+                                            _deleteShakeController.reset();
+                                          }
+                                          
+                                          if (targetKeepOpacity > 0.0) {
+                                            if (!_keepShakeController.isAnimating) {
+                                              _keepShakeController.repeat();
+                                            }
+                                          } else {
+                                            _keepShakeController.stop();
+                                            _keepShakeController.reset();
+                                          }
                                         } else if (mounted) {
                                           _hasPendingOffsetUpdate = false;
                                         }
@@ -356,9 +518,9 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
                                     child: Center(
                                       child: _buildCounterWidget(context),
                                     ),
-                                            ),
-                                          ],
-                                        ),
+                                  ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -371,47 +533,10 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
               ],
             ),
           ),
-          // Swipe yönlendirme metinleri - Deck'in dışında altında
-          // Undo butonları göründüğünde (pending actions varsa) metinleri gizle
-          if (widget.assets.isNotEmpty)
-            Builder(
-              builder: (context) {
-                final pendingActions = context.watch<ReviewActionsCubit>().state;
-                // Eğer pending actions varsa (undo butonları görünüyorsa) metinleri gösterme
-                if (pendingActions.isNotEmpty) {
-                  return const SizedBox.shrink();
-                }
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // Sola kaydır sil
-                      Text(
-                        AppLocalizations.of(context)!.swipeLeftToDelete,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                              fontSize: 12,
-                            ),
-                      ),
-                      const SizedBox(width: 16),
-                      // Sağa kaydır tut
-                      Text(
-                        AppLocalizations.of(context)!.swipeRightToKeep,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                              fontSize: 12,
-                            ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
         ],
       ),
     );
-    
+
     // iOS için direkt döndür, Android için buildWithCubit ile sarmala
     if (Platform.isIOS) {
       return widgetTree;
@@ -518,18 +643,9 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
       await actions.onDelete(asset);
     }
 
-    // Swipe sayacını artır ve rate us dialog kontrolü yap
+    // Swipe sayacını artır (rate us dialog artık gösterilmiyor)
     final prefsService = PreferencesService();
-    final shouldShowRateUs = await prefsService.incrementSwipeCount();
-    
-    if (shouldShowRateUs && mounted) {
-      // Kısa bir gecikme sonrası dialog göster (kullanıcı deneyimini bozmamak için)
-      Future.delayed(const Duration(milliseconds: 500), () {
-        if (mounted) {
-          showRateUsDialog(context);
-        }
-      });
-    }
+    await prefsService.incrementSwipeCount();
 
     maybePrefetch(context, widget.assets, asset);
     _resetVisuals();
@@ -540,10 +656,7 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
     SwipeDecision decision,
   ) async {
     final actions = context.read<ReviewActionsCubit>();
-    await actions.undoDecision(
-      asset,
-      wasKeep: decision == SwipeDecision.keep,
-    );
+    await actions.undoDecision(asset, wasKeep: decision == SwipeDecision.keep);
   }
 
   void _resetVisuals() {
@@ -558,14 +671,64 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
         _photoSwipeDragOffset = Offset.zero;
       });
     } else {
-    cubitSetState(() {
-      _dragScale = 1.0;
-      _dragOffset = Offset.zero;
-      _isDraggingToAlbum = false;
-      _dragStartPosition = null;
-      _photoSwipeDragOffset = Offset.zero;
-    });
+      cubitSetState(() {
+        _dragScale = 1.0;
+        _dragOffset = Offset.zero;
+        _isDraggingToAlbum = false;
+        _dragStartPosition = null;
+        _photoSwipeDragOffset = Offset.zero;
+      });
     }
+  }
+
+
+  // Kar birikimi efekti builder
+  Widget _buildSnowAccumulation({
+    required double width,
+    required double height,
+    required bool isHorizontal,
+  }) {
+    const double snowSize = 20.0; // snow.png görselinin boyutu
+
+    // Infinity veya NaN kontrolü
+    final safeWidth = width.isFinite && width > 0 ? width : 0.0;
+    final safeHeight = height.isFinite && height > 0 ? height : 0.0;
+
+    final int count = isHorizontal
+        ? (safeWidth / snowSize).ceil().clamp(
+            0,
+            1000,
+          ) // Maksimum 1000 ile sınırla
+        : (safeHeight / snowSize).ceil().clamp(
+            0,
+            1000,
+          ); // Maksimum 1000 ile sınırla
+
+    return isHorizontal
+        ? Row(
+            mainAxisSize: MainAxisSize.min,
+            children: List.generate(
+              count,
+              (index) => Image.asset(
+                'assets/new_year/snow.png',
+                width: snowSize,
+                height: snowSize,
+                fit: BoxFit.cover,
+              ),
+            ),
+          )
+        : Column(
+            mainAxisSize: MainAxisSize.min,
+            children: List.generate(
+              count,
+              (index) => Image.asset(
+                'assets/new_year/snow.png',
+                width: snowSize,
+                height: snowSize,
+                fit: BoxFit.cover,
+              ),
+            ),
+          );
   }
 
   // Sayaç widget builder
@@ -576,32 +739,24 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
       if (_iosCounterNotifier == null) {
         _iosCounterNotifier = _IOSSwipeCounterNotifier();
         _iosCounterNotifier!.update(_currentIndex, widget.assets.length);
-        debugPrint('⚠️ [SwipeAreaContent] iOS - ChangeNotifier build sırasında oluşturuldu');
+        debugPrint(
+          '⚠️ [SwipeAreaContent] iOS - ChangeNotifier build sırasında oluşturuldu',
+        );
       }
-      return _IOSSwipeCounter(
-        notifier: _iosCounterNotifier!,
-      );
+      return _IOSSwipeCounter(notifier: _iosCounterNotifier!);
     } else {
       // Android için AnimatedSwitcher kullan
       final currentIndex = _currentIndex;
       return AnimatedSwitcher(
         duration: const Duration(milliseconds: 200),
         transitionBuilder: (child, animation) {
-          return FadeTransition(
-            opacity: animation,
-            child: child,
-          );
+          return FadeTransition(opacity: animation, child: child);
         },
         child: Container(
           key: ValueKey('counter_android_$currentIndex'),
-          padding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 8,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
-            color: Theme.of(
-              context,
-            ).colorScheme.surface.withOpacity(0.9),
+            color: Theme.of(context).colorScheme.surface.withOpacity(0.9),
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
@@ -615,17 +770,12 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
           child: Text(
             '${currentIndex + 1} / ${widget.assets.length}',
             key: ValueKey('counter_text_android_$currentIndex'),
-            style: Theme.of(context)
-                .textTheme
-                .bodyMedium
-                ?.copyWith(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.onSurface,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13,
-                  letterSpacing: 0.2,
-                ),
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurface,
+              fontWeight: FontWeight.w600,
+              fontSize: 13,
+              letterSpacing: 0.2,
+            ),
           ),
         ),
       );
@@ -667,7 +817,7 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
     final keepProgress = keepOffset >= 10.0
         ? ((keepOffset - 10.0) / 100.0).clamp(0.0, 1.0)
         : 0.0;
-    
+
     // Animasyonlu opacity değerlerini kullan (drag offset callback'inde güncelleniyor)
     final deleteOpacity = _animatedDeleteOpacity;
     final keepOpacity = _animatedKeepOpacity;
@@ -747,77 +897,32 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
               opacity: _animatedDeleteOpacity,
               duration: const Duration(milliseconds: 300),
               curve: Curves.easeOut,
-              child: AnimatedScale(
-                scale: _animatedDeleteOpacity > 0.0 ? 1.0 : 0.8,
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeOut,
-                child: Container(
-                  width: buttonSize,
-                  height: buttonSize,
-                  decoration: BoxDecoration(
-                    color: AppColors.error,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      // Normal durumda - daktilo tuşu gölgesi
-                      BoxShadow(
-                        color: AppColors.black.withOpacity(0.4),
-                        blurRadius: 0,
-                        offset: const Offset(0, 6),
-                        spreadRadius: 0,
+              child: AnimatedBuilder(
+                animation: _deleteShakeAnimation,
+                builder: (context, child) {
+                  return Transform.translate(
+                    offset: Offset(
+                      _deleteShakeAnimation.value * math.sin(_deleteShakeController.value * math.pi * 4),
+                      _deleteShakeAnimation.value * math.cos(_deleteShakeController.value * math.pi * 4),
+                    ),
+                    child: Container(
+                      width: buttonSize,
+                      height: buttonSize,
+                      decoration: BoxDecoration(
+                        color: AppColors.error,
+                        shape: BoxShape.circle,
                       ),
-                      BoxShadow(
-                        color: AppColors.black.withOpacity(0.3),
-                        blurRadius: 0,
-                        offset: const Offset(0, 4),
-                        spreadRadius: 0,
-                      ),
-                      BoxShadow(
-                        color: AppColors.black.withOpacity(0.2),
-                        blurRadius: 0,
-                        offset: const Offset(0, 2),
-                        spreadRadius: 0,
-                      ),
-                      // Alt derin gölge
-                      BoxShadow(
-                        color: AppColors.black.withOpacity(0.25),
-                        blurRadius: 8,
-                        offset: const Offset(0, 4),
-                        spreadRadius: 0,
-                      ),
-                    ],
-                  ),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: AppColors.error,
-                      shape: BoxShape.circle,
-                      border: Border(
-                        top: BorderSide(
-                          color: AppColors.white.withOpacity(0.6),
-                          width: 2.0,
-                        ),
-                        left: BorderSide(
-                          color: AppColors.white.withOpacity(0.6),
-                          width: 2.0,
-                        ),
-                        right: BorderSide(
-                          color: AppColors.black.withOpacity(0.4),
-                          width: 2.0,
-                        ),
-                        bottom: BorderSide(
-                          color: AppColors.black.withOpacity(0.4),
-                          width: 2.0,
+                      child: Center(
+                        child: Image.asset(
+                          'assets/new_year/christmas-tree.png',
+                          width: buttonIconSize,
+                          height: buttonIconSize,
+                          fit: BoxFit.contain,
                         ),
                       ),
                     ),
-                    child: Center(
-                      child: Icon(
-                        Icons.delete_outline_rounded,
-                        color: AppColors.white,
-                        size: buttonIconSize,
-                      ),
-                    ),
-                  ),
-                ),
+                  );
+                },
               ),
             ),
           ),
@@ -832,77 +937,32 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
               opacity: _animatedKeepOpacity,
               duration: const Duration(milliseconds: 300),
               curve: Curves.easeOut,
-              child: AnimatedScale(
-                scale: _animatedKeepOpacity > 0.0 ? 1.0 : 0.8,
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeOut,
-                child: Container(
-                  width: buttonSize,
-                  height: buttonSize,
-                  decoration: BoxDecoration(
-                    color: AppColors.success,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      // Normal durumda - daktilo tuşu gölgesi
-                      BoxShadow(
-                        color: AppColors.black.withOpacity(0.4),
-                        blurRadius: 0,
-                        offset: const Offset(0, 6),
-                        spreadRadius: 0,
+              child: AnimatedBuilder(
+                animation: _keepShakeAnimation,
+                builder: (context, child) {
+                  return Transform.translate(
+                    offset: Offset(
+                      _keepShakeAnimation.value * math.sin(_keepShakeController.value * math.pi * 4),
+                      _keepShakeAnimation.value * math.cos(_keepShakeController.value * math.pi * 4),
+                    ),
+                    child: Container(
+                      width: buttonSize,
+                      height: buttonSize,
+                      decoration: BoxDecoration(
+                        color: AppColors.success,
+                        shape: BoxShape.circle,
                       ),
-                      BoxShadow(
-                        color: AppColors.black.withOpacity(0.3),
-                        blurRadius: 0,
-                        offset: const Offset(0, 4),
-                        spreadRadius: 0,
-                      ),
-                      BoxShadow(
-                        color: AppColors.black.withOpacity(0.2),
-                        blurRadius: 0,
-                        offset: const Offset(0, 2),
-                        spreadRadius: 0,
-                      ),
-                      // Alt derin gölge
-                      BoxShadow(
-                        color: AppColors.black.withOpacity(0.25),
-                        blurRadius: 8,
-                        offset: const Offset(0, 4),
-                        spreadRadius: 0,
-                      ),
-                    ],
-                  ),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: AppColors.success,
-                      shape: BoxShape.circle,
-                      border: Border(
-                        top: BorderSide(
-                          color: AppColors.white.withOpacity(0.6),
-                          width: 2.0,
-                        ),
-                        left: BorderSide(
-                          color: AppColors.white.withOpacity(0.6),
-                          width: 2.0,
-                        ),
-                        right: BorderSide(
-                          color: AppColors.black.withOpacity(0.4),
-                          width: 2.0,
-                        ),
-                        bottom: BorderSide(
-                          color: AppColors.black.withOpacity(0.4),
-                          width: 2.0,
+                      child: Center(
+                        child: Image.asset(
+                          'assets/new_year/candy-cane.png',
+                          width: buttonIconSize,
+                          height: buttonIconSize,
+                          fit: BoxFit.contain,
                         ),
                       ),
                     ),
-                    child: Center(
-                      child: Icon(
-                        Icons.check_circle_outline_rounded,
-                        color: AppColors.white,
-                        size: buttonIconSize,
-                      ),
-                    ),
-                  ),
-                ),
+                  );
+                },
               ),
             ),
           ),
@@ -1082,5 +1142,335 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
       // Dialog kapandığında flag'i sıfırla
       _isDialogShowing = false;
     });
+  }
+}
+
+// Modern Delete Limit Badge (swipe tab ile blur/duplicate ile aynı yapı)
+class _ModernDeleteLimitBadge extends StatelessWidget {
+  const _ModernDeleteLimitBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
+    final deleteLimitAsync = context.watch<DeleteLimitCubit>().state;
+    final isPremiumAsync = context.watch<PremiumCubit>().state;
+
+    return deleteLimitAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (deleteLimit) {
+        return isPremiumAsync.when(
+          loading: () => const SizedBox.shrink(),
+          error: (_, __) => const SizedBox.shrink(),
+          data: (isPremium) {
+            final displayValue = isPremium ? '∞' : '$deleteLimit';
+            final bgColors = [
+              theme.colorScheme.surfaceContainerHighest.withOpacity(0.92),
+              theme.colorScheme.surfaceContainerHighest.withOpacity(0.86),
+            ];
+            final borderColor = theme.colorScheme.outlineVariant.withOpacity(
+              0.35,
+            );
+
+            return Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              constraints: const BoxConstraints(minHeight: 44),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: bgColors,
+                ),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: borderColor, width: 1.2),
+                boxShadow: [
+                  BoxShadow(
+                    color: theme.colorScheme.shadow.withOpacity(0.12),
+                    blurRadius: 12,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    l10n.remainingDeletionRights,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 10,
+                      color: theme.colorScheme.onPrimaryContainer.withOpacity(
+                        0.8,
+                      ),
+                      letterSpacing: 0.3,
+                      shadows: null,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    displayValue,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 20,
+                      color: theme.colorScheme.onPrimaryContainer,
+                      letterSpacing: -0.5,
+                      height: 1,
+                      shadows: isPremium
+                          ? [
+                              Shadow(
+                                color: theme.colorScheme.primary.withOpacity(
+                                  0.45,
+                                ),
+                                blurRadius: 10,
+                              ),
+                            ]
+                          : null,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+// Modern Album Selection Button (swipe tab ile blur/duplicate ile aynı yapı)
+class _ModernAlbumSelectionButton extends StatelessWidget {
+  const _ModernAlbumSelectionButton();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
+    final albumsAsync = context.watch<AlbumsCubit>().state;
+    final selectedAlbum = context.watch<SelectedAlbumCubit>().state;
+    final dateFilter = context.watch<AlbumFilterCubit>().state;
+    final sortOrder = context.watch<AlbumSortOrderCubit>().state;
+    final albumsData = albumsAsync.valueOrNull;
+    final canOpenAlbumPicker = albumsData != null && albumsData.isNotEmpty;
+    final displayAlbumName = selectedAlbum?.name ?? l10n.allPhotos;
+
+    final hasDateFilter = dateFilter.hasFilter;
+    final sortText = sortOrder == SortOrder.newest ? l10n.newest : l10n.oldest;
+
+    Future<void> openAlbumPicker() async {
+      final availableAlbums = albumsData;
+      if (availableAlbums == null || availableAlbums.isEmpty) return;
+
+      final filteredAlbums = availableAlbums
+          .where((album) => !album.isAll)
+          .toList();
+      if (filteredAlbums.isEmpty) return;
+
+      final selectedAlbum = await showModalBottomSheet<pm.AssetPathEntity>(
+        context: context,
+        showDragHandle: true,
+        isScrollControlled: true,
+        backgroundColor: AppColors.transparent,
+        builder: (context) => AlbumSelectionSheet(albums: filteredAlbums),
+      );
+
+      // Bottom sheet kapandıktan sonra albüm seçimini async olarak yap
+      // Bu şekilde UI thread bloke olmaz
+      if (selectedAlbum != null && context.mounted) {
+        // Microtask ile bir sonraki frame'de çalıştır
+        Future.microtask(() {
+          if (context.mounted) {
+            context.read<SelectedAlbumCubit>().select(selectedAlbum);
+          }
+        });
+      }
+    }
+
+    return Material(
+      color: AppColors.transparent,
+      child: InkWell(
+        onTap: canOpenAlbumPicker ? openAlbumPicker : null,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          constraints: const BoxConstraints(minHeight: 44),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                theme.colorScheme.surfaceContainerHighest.withOpacity(0.8),
+                theme.colorScheme.surfaceContainerHighest.withOpacity(0.7),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: theme.colorScheme.outline.withOpacity(0.2),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: theme.colorScheme.shadow.withOpacity(0.1),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+                spreadRadius: 0,
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (!hasDateFilter && sortOrder == SortOrder.newest) ...[
+                      Text(
+                        l10n.albumSettings,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 10,
+                          color: canOpenAlbumPicker
+                              ? theme.colorScheme.onSurface.withOpacity(0.8)
+                              : theme.colorScheme.onSurface.withOpacity(0.3),
+                          letterSpacing: 0.3,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                    ],
+                    Text(
+                      displayAlbumName,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        fontSize: hasDateFilter || sortOrder != SortOrder.newest
+                            ? 11
+                            : 12,
+                        color: canOpenAlbumPicker
+                            ? theme.colorScheme.onSurface
+                            : theme.colorScheme.onSurface.withOpacity(0.3),
+                        letterSpacing: 0.2,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                    ),
+                    if (hasDateFilter || sortOrder != SortOrder.newest) ...[
+                      const SizedBox(height: 4),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
+                        children: [
+                          if (hasDateFilter)
+                            Builder(
+                              builder: (badgeContext) {
+                                final isPremiumAsync = badgeContext
+                                    .watch<PremiumCubit>()
+                                    .state;
+                                final isPremium = isPremiumAsync.maybeWhen(
+                                  data: (premium) => premium,
+                                  orElse: () => false,
+                                );
+                                final containerColor = theme
+                                    .colorScheme
+                                    .onPrimaryContainer
+                                    .withOpacity(0.8);
+
+                                return Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: containerColor.withOpacity(0.3),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.calendar_today_rounded,
+                                        size: 10,
+                                        color: containerColor,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Flexible(
+                                        child: Text(
+                                          '${dateFilter.startDate != null ? DateFormat('dd.MM').format(dateFilter.startDate!) : ''}${dateFilter.startDate != null && dateFilter.endDate != null ? ' - ' : ''}${dateFilter.endDate != null ? DateFormat('dd.MM').format(dateFilter.endDate!) : ''}',
+                                          style: theme.textTheme.labelSmall
+                                              ?.copyWith(
+                                                fontSize: 9,
+                                                fontWeight: FontWeight.w600,
+                                                color: containerColor,
+                                              ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
+                          if (sortOrder != SortOrder.newest)
+                            Builder(
+                              builder: (badgeContext) {
+                                final containerColor = theme
+                                    .colorScheme
+                                    .onPrimaryContainer
+                                    .withOpacity(0.8);
+                                return Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: containerColor.withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        sortOrder == SortOrder.newest
+                                            ? Icons.south_rounded
+                                            : Icons.north_rounded,
+                                        size: 10,
+                                        color: containerColor,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        sortText,
+                                        style: theme.textTheme.labelSmall
+                                            ?.copyWith(
+                                              fontSize: 9,
+                                              fontWeight: FontWeight.w600,
+                                              color: containerColor,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.arrow_drop_down_rounded,
+                color: canOpenAlbumPicker
+                    ? theme.colorScheme.onSurface.withOpacity(0.6)
+                    : theme.colorScheme.onSurface.withOpacity(0.3),
+                size: 20,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

@@ -367,56 +367,45 @@ class DuplicateTabState extends State<DuplicateTab>
             _stopTipRotation();
           }
 
-          return Stack(
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(
-                  top: 8,
-                  left: 16,
-                  right: 16,
-                  bottom: 80,
-                ),
-                child: _buildScanForm(context, theme, l10n),
-              ),
-              Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.background,
-                  ),
-                  child: SafeArea(
-                    child: Builder(
-                      builder: (context) {
-                        final duplicateScanLimitAsync = context
-                            .watch<DuplicateScanLimitCubit>()
-                            .state;
-                        final isPremiumAsync = context
-                            .watch<PremiumCubit>()
-                            .state;
+          return SingleChildScrollView(
+            padding: const EdgeInsets.only(
+              top: 8,
+              left: 16,
+              right: 16,
+              bottom: 16,
+            ),
+            child: Column(
+              children: [
+                _buildScanForm(context, theme, l10n),
+                const SizedBox(height: 16),
+                Builder(
+                  builder: (context) {
+                    final duplicateScanLimitAsync = context
+                        .watch<DuplicateScanLimitCubit>()
+                        .state;
+                    final isPremiumAsync = context
+                        .watch<PremiumCubit>()
+                        .state;
 
-                        return duplicateScanLimitAsync.when(
-                          loading: () => const SizedBox.shrink(),
-                          error: (_, __) => const SizedBox.shrink(),
-                          data: (scanLimit) {
-                            return _buildStartScanButton(
-                              context,
-                              theme,
-                              l10n,
-                              selectedAlbums,
-                              isPremiumAsync,
-                              scanLimit,
-                            );
-                          },
+                    return duplicateScanLimitAsync.when(
+                      loading: () => const SizedBox.shrink(),
+                      error: (_, __) => const SizedBox.shrink(),
+                      data: (scanLimit) {
+                        return _buildStartScanButton(
+                          context,
+                          theme,
+                          l10n,
+                          selectedAlbums,
+                          isPremiumAsync,
+                          scanLimit,
                         );
                       },
-                    ),
-                  ),
+                    );
+                  },
                 ),
-              ),
-            ],
+                SizedBox(height: MediaQuery.of(context).padding.bottom),
+              ],
+            ),
           );
         },
       ),

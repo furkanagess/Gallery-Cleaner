@@ -682,18 +682,15 @@ class _OnboardingSlide1State extends State<_OnboardingSlide1>
               ),
             ),
           ),
-          const SizedBox(height: 48),
+          const SizedBox(height: 24),
           Builder(
             builder: (ctx) {
               final l10n = AppLocalizations.of(ctx)!;
-              return SizedBox(
-                height: 64, // 2 satır fix yükseklik
-                child: Text(
-                  l10n.swipeLeftToDeleteTitle,
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              return Text(
+                l10n.swipeLeftToDeleteTitle,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
                 ),
               );
             },
@@ -1407,18 +1404,15 @@ class _OnboardingSlide4State extends State<_OnboardingSlide4>
               ),
             ),
           ),
-          const SizedBox(height: 48),
+          const SizedBox(height: 24),
           Builder(
             builder: (ctx) {
               final l10n = AppLocalizations.of(ctx)!;
-              return SizedBox(
-                height: 64, // 2 satır fix yükseklik
-                child: Text(
-                  l10n.blurDetectionOnboardingTitle,
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              return Text(
+                l10n.blurDetectionOnboardingTitle,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
                 ),
               );
             },
@@ -1870,18 +1864,15 @@ class _OnboardingSlide5State extends State<_OnboardingSlide5>
               ),
             ),
           ),
-          const SizedBox(height: 48),
+          const SizedBox(height: 24),
           Builder(
             builder: (ctx) {
               final l10n = AppLocalizations.of(ctx)!;
-              return SizedBox(
-                height: 64, // 2 satır fix yükseklik
-                child: Text(
-                  l10n.duplicateDetectionOnboardingTitle,
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              return Text(
+                l10n.duplicateDetectionOnboardingTitle,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
                 ),
               );
             },
@@ -2154,6 +2145,7 @@ class _OnboardingSlide6State extends State<_OnboardingSlide6>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     return Padding(
       padding: const EdgeInsets.all(24),
@@ -2283,7 +2275,7 @@ class _OnboardingSlide6State extends State<_OnboardingSlide6>
                                                       .spaceBetween,
                                               children: [
                                                 Text(
-                                                  'Storage',
+                                                  l10n.storage,
                                                   style: theme
                                                       .textTheme
                                                       .titleSmall
@@ -2817,15 +2809,12 @@ class _OnboardingSlide6State extends State<_OnboardingSlide6>
               ),
             ),
           ),
-          const SizedBox(height: 48),
-          SizedBox(
-            height: 64, // 2 satır fix yükseklik
-            child: Text(
-              'Free Up Storage Space',
-              textAlign: TextAlign.center,
-              style: theme.textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+          const SizedBox(height: 24),
+          Text(
+            l10n.freeUpStorageSpace,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.headlineMedium?.copyWith(
+              fontWeight: FontWeight.bold,
             ),
           ),
         ],

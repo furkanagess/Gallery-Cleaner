@@ -72,9 +72,10 @@ flutter:
     - assets/lottie/wipe.json
     - assets/new_year/Reindeer.json
     - assets/new_year/Santa surprise gift.json
+    - assets/new_year/Santa's Sleigh.json
     - assets/new_year/Snowing.json
     - assets/new_year/snowman.json
-    - assets/new_year/Confetti.json
+    - assets/lottie/Confeti.json
     - assets/new_year/candy-cane.png
     - assets/new_year/christmas-tree.png
     - assets/new_year/christmas-wreath.png
@@ -83,6 +84,7 @@ flutter:
     - assets/new_year/new-year.png
     - assets/new_year/santa-claus.png
     - assets/new_year/snowman.png
+    - assets/icon/document.png
     - assets/image/example1.jpeg
     - assets/image/example2.jpeg
     - assets/image/example3.jpeg

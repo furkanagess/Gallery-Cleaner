@@ -1,18 +1,18 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:photo_manager/photo_manager.dart' as pm;
-import 'package:lottie/lottie.dart';
 import '../../../../core/services/preferences_service.dart';
 import '../../../../../l10n/app_localizations.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_theme.dart';
+import '../../../../app/theme/app_three_d_button.dart';
 import '../../application/gallery_providers.dart';
 import '../../application/review_actions_controller.dart';
 import '../../../../core/utils/view_refresh_cubit.dart';
-import 'swipe_page.dart'
-    show presentAlbumPicker;
+import 'swipe_page.dart' show presentAlbumPicker;
 import 'tabs/swipe/widgets/swipe_tab_shimmer.dart' show SwipeTabShimmer;
 import 'tabs/swipe/widgets/swipe_area_content.dart' show SwipeAreaContent;
 
@@ -24,7 +24,10 @@ class SwipeTab extends StatefulWidget {
 }
 
 class _SwipeTabState extends State<SwipeTab>
-    with AutomaticKeepAliveClientMixin, CubitStateMixin<SwipeTab>, TickerProviderStateMixin {
+    with
+        AutomaticKeepAliveClientMixin,
+        CubitStateMixin<SwipeTab>,
+        TickerProviderStateMixin {
   int _currentSwipeIndex = 0;
   int _previousAssetsLength = 0;
   bool _showResetToStartButton = false;
@@ -32,18 +35,11 @@ class _SwipeTabState extends State<SwipeTab>
   String? _currentAlbumId;
   String? _loadingAlbumId; // Yüklenmekte olan albüm ID'si
   VoidCallback? _resetToStartCallback;
-  bool _isDeleting = false;
   int? _pendingIndexAdjustment; // Reload sonrası index ayarlaması için
   StreamSubscription? _reviewActionsSubscription;
   Timer? _shimmerDelayTimer;
   bool _showShimmer = false;
   DateTime? _loadingStartTime;
-  
-  // 3D buton animasyon controller'ları
-  late AnimationController _undoButtonController;
-  late Animation<double> _undoButtonScaleAnimation;
-  late AnimationController _deleteButtonController;
-  late Animation<double> _deleteButtonScaleAnimation;
 
   @override
   bool get wantKeepAlive => true;
@@ -52,32 +48,6 @@ class _SwipeTabState extends State<SwipeTab>
   void initState() {
     super.initState();
     _loadSwipeIndex();
-    
-    // Undo butonu animasyon controller'ı
-    _undoButtonController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 150),
-    );
-    _undoButtonScaleAnimation = Tween<double>(
-      begin: 1.0,
-      end: 0.95,
-    ).animate(CurvedAnimation(
-      parent: _undoButtonController,
-      curve: Curves.easeInOut,
-    ));
-    
-    // Delete butonu animasyon controller'ı
-    _deleteButtonController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 150),
-    );
-    _deleteButtonScaleAnimation = Tween<double>(
-      begin: 1.0,
-      end: 0.95,
-    ).animate(CurvedAnimation(
-      parent: _deleteButtonController,
-      curve: Curves.easeInOut,
-    ));
 
     // Stream listener'ı ekle
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -100,11 +70,41 @@ class _SwipeTabState extends State<SwipeTab>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Review ekranından geri dönüldüğünde index'i kontrol et
+    // Eğer index 0 olarak kaydedilmişse, deck'i başa al
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      final selectedAlbum = context.read<SelectedAlbumCubit>().state;
+      final albumId = selectedAlbum?.id;
+      final prefsService = PreferencesService();
+      final savedIndex = await prefsService.getSwipeIndex(albumId);
+
+      // Eğer kaydedilmiş index 0 ise ve şu anki index 0 değilse, başa al
+      if (savedIndex == 0 && _currentSwipeIndex > 0 && !_isFirstLoad) {
+        cubitSetState(() {
+          _currentSwipeIndex = 0;
+        });
+        // Reset callback'i çağır
+        if (_resetToStartCallback != null) {
+          _resetToStartCallback!();
+        }
+      } else if (savedIndex != null && savedIndex > 0 && !_isFirstLoad) {
+        // Normal durumda index'i yükle
+        if (_currentSwipeIndex != savedIndex) {
+          cubitSetState(() {
+            _currentSwipeIndex = savedIndex;
+          });
+        }
+      }
+    });
+  }
+
+  @override
   void dispose() {
     _reviewActionsSubscription?.cancel();
     _shimmerDelayTimer?.cancel();
-    _undoButtonController.dispose();
-    _deleteButtonController.dispose();
     super.dispose();
   }
 
@@ -150,18 +150,19 @@ class _SwipeTabState extends State<SwipeTab>
     // Build sırasında state güncellemesi yapmamak için postFrameCallback kullan
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      
+
       // Önce shimmer flag'lerini ve loading album ID'sini set et
       final selectedAlbum = context.read<SelectedAlbumCubit>().state;
       final selectedAlbumId = selectedAlbum?.id;
-      
+
       _shimmerDelayTimer?.cancel();
       cubitSetState(() {
         _loadingStartTime = DateTime.now();
         _showShimmer = true; // Reset işlemi yapıldığında direkt shimmer göster
-        _loadingAlbumId = selectedAlbumId; // Loading album ID'sini set et (shimmer gösterilmesi için)
+        _loadingAlbumId =
+            selectedAlbumId; // Loading album ID'sini set et (shimmer gösterilmesi için)
       });
-      
+
       // Reload'ı çağır - bu loading state'ini tetikleyecek
       context.read<GalleryPagingCubit>().reload();
 
@@ -202,6 +203,33 @@ class _SwipeTabState extends State<SwipeTab>
 
     // Eğer pending index adjustment varsa, onu kullan
     int adjustedIndex = _pendingIndexAdjustment ?? _currentSwipeIndex;
+
+    // Review ekranından geri dönüldüğünde index'i koru
+    // Eğer index 0 ise ve assets yüklenmişse, PreferencesService'den yükle
+    // Bu sadece ilk yükleme değilse çalışır (review ekranından geri dönüldüğünde)
+    if (adjustedIndex == 0 && assets.isNotEmpty && !_isFirstLoad) {
+      final selectedAlbum = context.read<SelectedAlbumCubit>().state;
+      final currentAlbumId = selectedAlbum?.id;
+      // Aynı albümdeyse ve index 0 ise, kaydedilmiş index'i yükle
+      if (_currentAlbumId == (currentAlbumId ?? 'all_photos')) {
+        // Async yükleme için postFrameCallback kullan
+        WidgetsBinding.instance.addPostFrameCallback((_) async {
+          if (!mounted) return;
+          final prefsService = PreferencesService();
+          final savedIndex = await prefsService.getSwipeIndex(currentAlbumId);
+          if (savedIndex != null &&
+              savedIndex > 0 &&
+              savedIndex < assets.length) {
+            // Index'i güncelle ve SwipeAreaContent'e bildir
+            cubitSetState(() {
+              _currentSwipeIndex = savedIndex;
+              adjustedIndex = savedIndex;
+            });
+            _saveSwipeIndex(savedIndex);
+          }
+        });
+      }
+    }
 
     if (assets.isNotEmpty) {
       final maxIndex = assets.length - 1;
@@ -255,7 +283,7 @@ class _SwipeTabState extends State<SwipeTab>
     final currentAlbumId = selectedAlbumId ?? 'all_photos';
     final previousAlbumId = _currentAlbumId ?? 'none';
     final bool albumChanged = currentAlbumId != previousAlbumId;
-    
+
     if (albumChanged) {
       _currentAlbumId = selectedAlbumId; // null da olabilir (All Photos)
       _shimmerDelayTimer?.cancel();
@@ -280,7 +308,7 @@ class _SwipeTabState extends State<SwipeTab>
         // "All Photos" için selectedAlbumId null olabilir, bu durumu da kontrol et
         final currentLoadingId = selectedAlbumId ?? 'all_photos';
         final previousLoadingId = _loadingAlbumId ?? 'none';
-        
+
         // Eğer shimmer zaten gösteriliyorsa (reset işlemi gibi), loading album ID'sini güncelleme
         if (_showShimmer && _loadingAlbumId != null) {
           // Shimmer zaten gösteriliyor, sadece loading album ID'sini kontrol et
@@ -346,12 +374,13 @@ class _SwipeTabState extends State<SwipeTab>
     );
 
     // "All Photos" için null kontrolü yap
-    final isSameAlbum = !albumChanged && 
-        ((selectedAlbumId == null && _currentAlbumId == null) || 
-         (selectedAlbumId != null && selectedAlbumId == _currentAlbumId));
-    
-    final effectiveAssets = currentAssets ??
-        (isSameAlbum ? previousAssets : <pm.AssetEntity>[]);
+    final isSameAlbum =
+        !albumChanged &&
+        ((selectedAlbumId == null && _currentAlbumId == null) ||
+            (selectedAlbumId != null && selectedAlbumId == _currentAlbumId));
+
+    final effectiveAssets =
+        currentAssets ?? (isSameAlbum ? previousAssets : <pm.AssetEntity>[]);
 
     final result = state.when(
       loading: () {
@@ -518,7 +547,10 @@ class _SwipeTabState extends State<SwipeTab>
                           );
 
                           // Bottom navigation bar'daki container rengiyle aynı
-                          final containerColor = theme.colorScheme.onPrimaryContainer.withOpacity(0.8);
+                          final containerColor = theme
+                              .colorScheme
+                              .onPrimaryContainer
+                              .withOpacity(0.8);
 
                           return Container(
                             width: double.infinity,
@@ -681,329 +713,78 @@ class _SwipeTabState extends State<SwipeTab>
                 final pending = context.watch<ReviewActionsCubit>().state;
                 final pendingCount = pending.length;
 
-                if (pendingCount == 0 && !_showResetToStartButton) {
-                  return const SizedBox.shrink();
-                }
-
+                // Container'ı her zaman göster - layout shift'i önlemek için
                 return Container(
                   width: double.infinity,
                   margin: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                  child: Row(
-                    children: [
-                      if (pendingCount > 0)
-                        Builder(
-                          builder: (buttonContext) {
-                            // Premium durumunu kontrol et
-                            final isPremiumAsync = buttonContext
-                                .watch<PremiumCubit>()
-                                .state;
-                            final isPremium = isPremiumAsync.maybeWhen(
-                              data: (premium) => premium,
-                              orElse: () => false,
-                            );
-
-                            // Bottom navigation bar'daki container rengiyle aynı
-                            final containerColor = Theme.of(buttonContext).colorScheme.onPrimaryContainer.withOpacity(0.8);
-
-                            return Expanded(
-                              flex: 1,
-                              child: AnimatedBuilder(
-                                animation: _undoButtonController,
-                                builder: (context, child) {
-                                  final scale = _undoButtonScaleAnimation.value;
-                                  final isPressed = scale < 1.0;
-                                  
-                                  return Transform.scale(
-                                    scale: scale,
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(12),
-                                        boxShadow: isPressed
-                                            ? [
-                                                // Basılı durumda - içe doğru gölge
-                                                BoxShadow(
-                                                  color: AppColors.black.withOpacity(0.3),
-                                                  blurRadius: 6,
-                                                  offset: const Offset(0, 2),
-                                                  spreadRadius: 0,
-                                                ),
-                                                BoxShadow(
-                                                  color: AppColors.black.withOpacity(0.15),
-                                                  blurRadius: 3,
-                                                  offset: const Offset(0, 1),
-                                                  spreadRadius: 0,
-                                                ),
-                                              ]
-                                            : [
-                                                // Normal durumda - daktilo tuşu gölgesi
-                                                BoxShadow(
-                                                  color: AppColors.black.withOpacity(0.3),
-                                                  blurRadius: 0,
-                                                  offset: const Offset(0, 5),
-                                                  spreadRadius: 0,
-                                                ),
-                                                BoxShadow(
-                                                  color: AppColors.black.withOpacity(0.2),
-                                                  blurRadius: 0,
-                                                  offset: const Offset(0, 3),
-                                                  spreadRadius: 0,
-                                                ),
-                                                BoxShadow(
-                                                  color: AppColors.black.withOpacity(0.15),
-                                                  blurRadius: 0,
-                                                  offset: const Offset(0, 1),
-                                                  spreadRadius: 0,
-                                                ),
-                                                // Alt derin gölge
-                                                BoxShadow(
-                                                  color: AppColors.black.withOpacity(0.2),
-                                                  blurRadius: 6,
-                                                  offset: const Offset(0, 3),
-                                                  spreadRadius: 0,
-                                                ),
-                                              ],
-                                      ),
-                                      child: Container(
-                                        decoration: BoxDecoration(
-                                          color: containerColor.withOpacity(0.08),
-                                          borderRadius: BorderRadius.circular(12),
-                                          border: Border(
-                                            top: BorderSide(
-                                              color: isPressed
-                                                  ? AppColors.black.withOpacity(0.2)
-                                                  : AppColors.white.withOpacity(0.5),
-                                              width: isPressed ? 1.0 : 1.5,
-                                            ),
-                                            left: BorderSide(
-                                              color: isPressed
-                                                  ? AppColors.black.withOpacity(0.2)
-                                                  : AppColors.white.withOpacity(0.5),
-                                              width: isPressed ? 1.0 : 1.5,
-                                            ),
-                                            right: BorderSide(
-                                              color: isPressed
-                                                  ? AppColors.white.withOpacity(0.2)
-                                                  : AppColors.black.withOpacity(0.3),
-                                              width: isPressed ? 1.0 : 1.5,
-                                            ),
-                                            bottom: BorderSide(
-                                              color: isPressed
-                                                  ? AppColors.white.withOpacity(0.2)
-                                                  : AppColors.black.withOpacity(0.3),
-                                              width: isPressed ? 1.0 : 1.5,
-                                            ),
-                                          ),
-                                        ),
-                                        child: Material(
-                                          color: Colors.transparent,
-                                          child: InkWell(
-                                            onTapDown: (_) {
-                                              _undoButtonController.forward();
-                                            },
-                                            onTapUp: (_) {
-                                              _undoButtonController.reverse();
-                                  final reviewActionsCubit = context
-                                      .read<ReviewActionsCubit>();
-                                  final galleryPagingCubit = context
-                                      .read<GalleryPagingCubit>();
-
-                                  // Sadece delete olarak işaretlenen fotoğrafları geri al
-                                  final undoneAssets = <pm.AssetEntity>[];
-                                  while (reviewActionsCubit.state.isNotEmpty) {
-                                    final lastAction = reviewActionsCubit.state.last;
-                                    undoneAssets.add(lastAction.asset);
-                                    reviewActionsCubit.undoLast();
-                                  }
-
-                                  // Undo edilen fotoğrafları assets listesine geri ekle (reload etmeden)
-                                  if (undoneAssets.isNotEmpty) {
-                                    galleryPagingCubit.restoreUndoneAssets(undoneAssets);
-                                    debugPrint('✅ [SwipeTab] ${undoneAssets.length} delete işlemi geri alındı, fotoğraflar geri eklendi');
-                                  }
-                                },
-                                            onTapCancel: () {
-                                              _undoButtonController.reverse();
-                                            },
-                                            borderRadius: BorderRadius.circular(12),
-                                            child: Container(
-                                              padding: const EdgeInsets.symmetric(
-                                                vertical: 16,
-                                              ),
-                                              child: Center(
-                                child: Text(
-                                  l10n.undo,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color: containerColor,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                  ),
-                                  ),
-                                  ),
-                                        ),
-                                ),
-                                    ),
-                                  );
-                                },
-                              ),
-                            );
-                          },
-                        ),
-                      if (pendingCount > 0) const SizedBox(width: 12),
-                      if (pendingCount > 0)
-                        Expanded(
-                          flex: 3,
-                          child: AnimatedBuilder(
-                            animation: _deleteButtonController,
-                            builder: (context, child) {
-                              final scale = _deleteButtonScaleAnimation.value;
-                              final isPressed = scale < 1.0;
-                              final errorColor = Theme.of(context).extension<AppSemanticColors>()?.delete ??
-                                  Theme.of(context).colorScheme.error;
-                              
-                              return Transform.scale(
-                                scale: scale,
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(12),
-                                    boxShadow: isPressed
-                                        ? [
-                                            // Basılı durumda - içe doğru gölge
-                                            BoxShadow(
-                                              color: AppColors.black.withOpacity(0.4),
-                                              blurRadius: 8,
-                                              offset: const Offset(0, 2),
-                                              spreadRadius: 0,
-                                            ),
-                                            BoxShadow(
-                                              color: AppColors.black.withOpacity(0.2),
-                                              blurRadius: 4,
-                                              offset: const Offset(0, 1),
-                                              spreadRadius: 0,
-                                            ),
-                                          ]
-                                        : [
-                                            // Normal durumda - daktilo tuşu gölgesi
-                                            BoxShadow(
-                                              color: AppColors.black.withOpacity(0.4),
-                                              blurRadius: 0,
-                                              offset: const Offset(0, 6),
-                                              spreadRadius: 0,
-                                            ),
-                                            BoxShadow(
-                                              color: AppColors.black.withOpacity(0.3),
-                                              blurRadius: 0,
-                                              offset: const Offset(0, 4),
-                                              spreadRadius: 0,
-                                            ),
-                                            BoxShadow(
-                                              color: AppColors.black.withOpacity(0.2),
-                                              blurRadius: 0,
-                                              offset: const Offset(0, 2),
-                                              spreadRadius: 0,
-                                            ),
-                                            // Alt derin gölge
-                                            BoxShadow(
-                                              color: AppColors.black.withOpacity(0.25),
-                                              blurRadius: 8,
-                                              offset: const Offset(0, 4),
-                                              spreadRadius: 0,
-                                            ),
-                                          ],
-                                  ),
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      color: errorColor,
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border(
-                                        top: BorderSide(
-                                          color: isPressed
-                                              ? AppColors.black.withOpacity(0.3)
-                                              : AppColors.white.withOpacity(0.6),
-                                          width: isPressed ? 1.0 : 2.0,
-                                        ),
-                                        left: BorderSide(
-                                          color: isPressed
-                                              ? AppColors.black.withOpacity(0.3)
-                                              : AppColors.white.withOpacity(0.6),
-                                          width: isPressed ? 1.0 : 2.0,
-                                        ),
-                                        right: BorderSide(
-                                          color: isPressed
-                                              ? AppColors.white.withOpacity(0.3)
-                                              : AppColors.black.withOpacity(0.4),
-                                          width: isPressed ? 1.0 : 2.0,
-                                        ),
-                                        bottom: BorderSide(
-                                          color: isPressed
-                                              ? AppColors.white.withOpacity(0.3)
-                                              : AppColors.black.withOpacity(0.4),
-                                          width: isPressed ? 1.0 : 2.0,
-                                        ),
-                                      ),
-                                    ),
-                                    child: Material(
-                                      color: Colors.transparent,
-                                      child: InkWell(
-                                        onTapDown: (_) {
-                                          _deleteButtonController.forward();
-                                        },
-                                        onTapUp: (_) {
-                                          _deleteButtonController.reverse();
-                                          // Yeni sayfaya yönlendir
-                                          context.go('/review-delete-photos');
-                                        },
-                                        onTapCancel: () {
-                                          _deleteButtonController.reverse();
-                                        },
-                                        borderRadius: BorderRadius.circular(12),
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(vertical: 16),
-                                          child: Row(
-                                            mainAxisAlignment: MainAxisAlignment.center,
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              SizedBox(
-                                                width: 20,
-                                                height: 20,
-                                                child: ColorFiltered(
-                                                  colorFilter: ColorFilter.mode(
-                                                    Theme.of(context).colorScheme.onError,
-                                                    BlendMode.srcATop,
-                                                  ),
-                                                  child: Lottie.asset(
-                                                    'assets/lottie/trash.json',
-                                                    width: 20,
-                                                    height: 20,
-                                                    fit: BoxFit.contain,
-                                                    repeat: _isDeleting,
-                                                    options: LottieOptions(
-                                                      enableMergePaths: true,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                              const SizedBox(width: 8),
-                                              Text(
-                                                l10n.deletePhotos(pendingCount),
-                                                style: TextStyle(
-                                                  color: Theme.of(context).colorScheme.onError,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 220),
+                    switchInCurve: Curves.easeOut,
+                    switchOutCurve: Curves.easeIn,
+                    transitionBuilder: (child, animation) {
+                      // Renk kararmasını engellemek için fade yerine doğrudan göster
+                      return child;
+                    },
+                    child: pendingCount > 0
+                        ? TweenAnimationBuilder<double>(
+                            key: ValueKey('delete_active_$pendingCount'),
+                            duration: const Duration(milliseconds: 420),
+                            tween: Tween(begin: 0.0, end: 1.0),
+                            curve: Curves.easeOut,
+                            builder: (context, value, child) {
+                              // Shake + hafif scale
+                              final shake =
+                                  math.sin(value * math.pi * 6) *
+                                  (1 - value) *
+                                  4;
+                              final scale = 1 + (1 - value) * 0.02;
+                              return Transform.translate(
+                                offset: Offset(shake, 0),
+                                child: Transform.scale(
+                                  scale: scale,
+                                  child: child,
                                 ),
                               );
                             },
+                            child: AppThreeDButton(
+                              label: l10n.deletePhotos(pendingCount),
+                              icon: Icons.delete_outline_rounded,
+                              onPressed: () {
+                                // Yeni sayfaya yönlendir - push kullanarak daha hızlı route
+                                context.push('/review-delete-photos');
+                              },
+                              baseColor:
+                                  Theme.of(
+                                    context,
+                                  ).extension<AppSemanticColors>()?.delete ??
+                                  Theme.of(context).colorScheme.error,
+                              textColor: AppColors.white,
+                              fullWidth: true,
+                              height: 56,
+                              fontSize: 14,
+                            ),
+                          )
+                        : IgnorePointer(
+                            key: const ValueKey('delete_inactive'),
+                            ignoring: true,
+                            child: Opacity(
+                              opacity: 0.45,
+                              child: AppThreeDButton(
+                                label: l10n.deletePhotos(0),
+                                icon: Icons.delete_outline_rounded,
+                                onPressed: () {},
+                                baseColor: Theme.of(
+                                  context,
+                                ).colorScheme.onSurface.withOpacity(0.15),
+                                textColor: Theme.of(
+                                  context,
+                                ).colorScheme.onSurface.withOpacity(0.6),
+                                fullWidth: true,
+                                height: 56,
+                                fontSize: 14,
+                              ),
+                            ),
                           ),
-                        ),
-                    ],
                   ),
                 );
               },

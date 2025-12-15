@@ -18,8 +18,11 @@ class SplashPage extends StatefulWidget {
   State<SplashPage> createState() => _SplashPageState();
 }
 
-class _SplashPageState extends State<SplashPage> {
+class _SplashPageState extends State<SplashPage>
+    with SingleTickerProviderStateMixin {
   bool _isAnimationCompleted = false;
+  late AnimationController _sleighController;
+  late Animation<double> _sleighAnimation;
 
   void _onAnimationComplete() {
     if (!mounted || _isAnimationCompleted) return;
@@ -192,6 +195,27 @@ class _SplashPageState extends State<SplashPage> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    _sleighController = AnimationController(
+      duration: const Duration(seconds: 6),
+      vsync: this,
+    )..repeat();
+    _sleighAnimation = Tween<double>(begin: -300, end: 1200).animate(
+      CurvedAnimation(
+        parent: _sleighController,
+        curve: Curves.linear,
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _sleighController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final brightness = theme.brightness;
@@ -278,12 +302,37 @@ class _SplashPageState extends State<SplashPage> {
                     ),
                   ),
                 ),
+                // Santa's Sleigh Lottie - Soldan sağa animasyonlu
+                AnimatedBuilder(
+                  animation: _sleighAnimation,
+                  builder: (context, child) {
+                    return Positioned(
+                      top: 80,
+                      left: _sleighAnimation.value,
+                      child: ColorFiltered(
+                        colorFilter: const ColorFilter.mode(
+                          Colors.white,
+                          BlendMode.srcATop,
+                        ),
+                        child: SizedBox(
+                          width: 300,
+                          height: 220,
+                          child: Lottie.asset(
+                            'assets/new_year/Santa\'s Sleigh.json',
+                            fit: BoxFit.contain,
+                            repeat: true,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
                 // Main content
                 Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Lottie animasyonu with modern styling
+                      // Gallery Lottie animasyonu with modern styling (sabit)
                       Container(
                         width: 280,
                         height: 280,

@@ -334,25 +334,27 @@ class _SwipeTabShimmerState extends State<SwipeTabShimmer> {
                       // Açıklama alanı (overlay - shimmer'ın üzerinde) - sadece 3 saniyeden fazla sürdüyse göster
                       if (_showProgress)
                         Positioned.fill(
-                          child: Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(20),
-                              color: theme.colorScheme.surface.withOpacity(0.85),
-                            ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                // Lottie animasyonu
-                                SizedBox(
-                                  width: 200,
-                                  height: 200,
-                                  child: Lottie.asset(
-                                    'assets/lottie/gallery_loading.json',
-                                    fit: BoxFit.contain,
-                                    repeat: true,
-                                    animate: true,
-                                  ),
+                          child: Stack(
+                            children: [
+                              Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(20),
+                                  color: theme.colorScheme.surface.withOpacity(0.85),
                                 ),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    // Lottie animasyonu
+                                    SizedBox(
+                                      width: 200,
+                                      height: 200,
+                                      child: Lottie.asset(
+                                        'assets/lottie/gallery_loading.json',
+                                        fit: BoxFit.contain,
+                                        repeat: true,
+                                        animate: true,
+                                      ),
+                                    ),
                                 const SizedBox(height: 32),
                                 // Samimi mesaj
                                 Padding(
@@ -408,8 +410,30 @@ class _SwipeTabShimmerState extends State<SwipeTabShimmer> {
                                     ],
                                   ),
                                 ),
-                              ],
-                            ),
+                                  ],
+                                ),
+                              ),
+                              // Kar yağma efekti - arka planda
+                              Positioned.fill(
+                                child: IgnorePointer(
+                                  child: Opacity(
+                                    opacity: 0.6,
+                                    child: ColorFiltered(
+                                      colorFilter: const ColorFilter.mode(
+                                        Colors.white,
+                                        BlendMode.srcATop,
+                                      ),
+                                      child: Lottie.asset(
+                                        'assets/new_year/Snowing.json',
+                                        fit: BoxFit.cover,
+                                        repeat: true,
+                                        animate: true,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                     ],

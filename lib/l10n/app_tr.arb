@@ -1403,6 +1403,37 @@
         "type": "String"
       }
     }
+  },
+  "potentialSavingsMessage": "Uygulamayı en verimli şekilde kullanırsanız {gb} GB ve {media} {mediaLabel} kadar alan kazanabilirsiniz.",
+  "@potentialSavingsMessage": {
+    "description": "Uygulama en iyi kullanıldığında potansiyel kazanç mesajı",
+    "placeholders": {
+      "gb": {
+        "type": "String"
+      },
+      "media": {
+        "type": "int"
+      },
+      "mediaLabel": {
+        "type": "String"
+      }
+    }
+  },
+  "beforeLabel": "Önce",
+  "@beforeLabel": {
+    "description": "Önce durum etiketi"
+  },
+  "afterLabel": "Sonra",
+  "@afterLabel": {
+    "description": "Sonra durum etiketi"
+  },
+  "optimalUseSubtitle": "En iyi kullanım ile",
+  "@optimalUseSubtitle": {
+    "description": "En iyi kullanım senaryosu alt başlığı"
+  },
+  "afterUsingThisApp": "Bu uygulamayı kullandıktan sonra",
+  "@afterUsingThisApp": {
+    "description": "After durum başlığı"
   }
 }
 

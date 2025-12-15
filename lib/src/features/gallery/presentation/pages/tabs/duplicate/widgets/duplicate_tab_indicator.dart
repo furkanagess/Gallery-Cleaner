@@ -25,10 +25,14 @@ class _DuplicateTabIndicatorState extends State<DuplicateTabIndicator> {
       // Seçili item ikon rengi: ekranın arka plan rengiyle aynı
       final selectedIconColor = theme.colorScheme.background;
       
-      return Icon(
-        Icons.content_copy_rounded,
-        size: 24,
-        color: selectedIconColor,
+      return ColorFiltered(
+        colorFilter: ColorFilter.mode(selectedIconColor, BlendMode.srcIn),
+        child: Image.asset(
+          'assets/icon/document.png',
+          width: 20,
+          height: 20,
+          fit: BoxFit.contain,
+        ),
       );
     }
 
@@ -37,12 +41,21 @@ class _DuplicateTabIndicatorState extends State<DuplicateTabIndicator> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Icon(
-          Icons.content_copy_rounded,
-          size: 22,
-          color: hasCompleted ? theme.colorScheme.primary : null,
+        ColorFiltered(
+          colorFilter: ColorFilter.mode(
+            hasCompleted
+                ? theme.colorScheme.primary
+                : theme.colorScheme.onSurface.withOpacity(0.7),
+            BlendMode.srcIn,
+          ),
+          child: Image.asset(
+            'assets/icon/document.png',
+            width: 18,
+            height: 18,
+            fit: BoxFit.contain,
+          ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 2),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
@@ -54,7 +67,10 @@ class _DuplicateTabIndicatorState extends State<DuplicateTabIndicator> {
                 textAlign: TextAlign.center,
                 overflow: TextOverflow.ellipsis,
                 maxLines: 1,
-                style: const TextStyle(height: 1.2),
+                style: const TextStyle(
+                  height: 1.1,
+                  fontSize: 11,
+                ),
               ),
             ),
             if (hasCompleted) ...[

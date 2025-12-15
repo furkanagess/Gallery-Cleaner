@@ -286,59 +286,47 @@ class BlurTabState extends State<BlurTab> with CubitStateMixin<BlurTab> {
             _stopTipRotation();
           }
 
-          return Stack(
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(
-                  top: 8,
-                  left: 16,
-                  right: 16,
-                  bottom: 80,
-                ),
-                child: _buildScanForm(context, theme, l10n),
-              ),
-              // Fixed bottom button
-              Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.background,
-                  ),
-                  child: SafeArea(
-                    child: Builder(
-                      builder: (context) {
-                        final blurScanLimitAsync = context
-                            .watch<BlurScanLimitCubit>()
-                            .state;
-                        final isPremiumAsync = context
-                            .watch<PremiumCubit>()
-                            .state;
+          return SingleChildScrollView(
+            padding: const EdgeInsets.only(
+              top: 8,
+              left: 16,
+              right: 16,
+              bottom: 16,
+            ),
+            child: Column(
+              children: [
+                _buildScanForm(context, theme, l10n),
+                const SizedBox(height: 16),
+                Builder(
+                  builder: (context) {
+                    final blurScanLimitAsync = context
+                        .watch<BlurScanLimitCubit>()
+                        .state;
+                    final isPremiumAsync = context
+                        .watch<PremiumCubit>()
+                        .state;
 
-                        return blurScanLimitAsync.when(
-                          loading: () => const SizedBox.shrink(),
-                          error: (_, __) => const SizedBox.shrink(),
-                          data: (limit) {
-                            // Scan hakkı 0 ise her durumda Premium / Get Premium alanı gösterilsin
-                            // (hasPhotosToDelete olsa bile, buton alanında önce premium CTA öncelikli)
-                            return _buildStartScanButton(
-                              context,
-                              theme,
-                              l10n,
-                              selectedAlbums,
-                              isPremiumAsync,
-                              limit,
-                            );
-                          },
+                    return blurScanLimitAsync.when(
+                      loading: () => const SizedBox.shrink(),
+                      error: (_, __) => const SizedBox.shrink(),
+                      data: (limit) {
+                        // Scan hakkı 0 ise her durumda Premium / Get Premium alanı gösterilsin
+                        // (hasPhotosToDelete olsa bile, buton alanında önce premium CTA öncelikli)
+                        return _buildStartScanButton(
+                          context,
+                          theme,
+                          l10n,
+                          selectedAlbums,
+                          isPremiumAsync,
+                          limit,
                         );
                       },
-                    ),
-                  ),
+                    );
+                  },
                 ),
-              ),
-            ],
+                SizedBox(height: MediaQuery.of(context).padding.bottom),
+              ],
+            ),
           );
         },
       ),

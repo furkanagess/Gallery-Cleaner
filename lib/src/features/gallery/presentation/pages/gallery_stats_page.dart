@@ -237,23 +237,45 @@ class _GalleryStatsPageState extends State<GalleryStatsPage>
                   if (isScanning) {
                     return Scaffold(
                       backgroundColor: theme.colorScheme.background,
-                      body: Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(32),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                              // Reindeer animation
-                            SizedBox(
-                                width: 200,
-                                height: 200,
-                              child: Lottie.asset(
-                                  'assets/new_year/Reindeer.json',
-                                fit: BoxFit.contain,
-                                repeat: true,
-                                animate: true,
+                      body: Stack(
+                        children: [
+                          // Kar yağma efekti - arka planda
+                          Positioned.fill(
+                            child: IgnorePointer(
+                              child: Opacity(
+                                opacity: 0.6,
+                                child: ColorFiltered(
+                                  colorFilter: const ColorFilter.mode(
+                                    Colors.white,
+                                    BlendMode.srcATop,
+                                  ),
+                                  child: Lottie.asset(
+                                    'assets/new_year/Snowing.json',
+                                    fit: BoxFit.cover,
+                                    repeat: true,
+                                    animate: true,
+                                  ),
+                                ),
                               ),
                             ),
+                          ),
+                          Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(32),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  // Reindeer animation
+                                  SizedBox(
+                                    width: 200,
+                                    height: 200,
+                                    child: Lottie.asset(
+                                      'assets/new_year/Reindeer.json',
+                                      fit: BoxFit.contain,
+                                      repeat: true,
+                                      animate: true,
+                                    ),
+                                  ),
                             const SizedBox(height: 24),
                             Text(
                               l10n.galleryInfoLoading,
@@ -283,10 +305,12 @@ class _GalleryStatsPageState extends State<GalleryStatsPage>
                               },
                                     baseColor: AppColors.error,
                                     fullWidth: true,
-                            ),
-                          ],
+                                  ),
+                                ],
                               ),
-                        ),
+                            ),
+                          ),
+                        ],
                       ),
                     );
                   }

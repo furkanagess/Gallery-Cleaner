@@ -1258,4 +1258,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String youCanClean(String gb, int media, String mediaLabel) {
     return '$gb GB and $media $mediaLabel you can clean';
   }
+
+  @override
+  String potentialSavingsMessage(String gb, int media, String mediaLabel) {
+    return 'If you use the app optimally, you can save up to $gb GB and $media $mediaLabel.';
+  }
+
+  @override
+  String get beforeLabel => 'Before';
+
+  @override
+  String get afterLabel => 'After';
+
+  @override
+  String get optimalUseSubtitle => 'With optimal use';
+
+  @override
+  String get afterUsingThisApp => 'After using this app';
 }

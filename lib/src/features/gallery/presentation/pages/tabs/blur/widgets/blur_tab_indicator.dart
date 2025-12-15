@@ -29,7 +29,7 @@ class BlurTabIndicatorState extends State<BlurTabIndicator> {
       
       return Icon(
         Icons.blur_on_rounded,
-        size: 24,
+        size: 20,
         color: selectedIconColor,
       );
     }
@@ -42,10 +42,12 @@ class BlurTabIndicatorState extends State<BlurTabIndicator> {
       children: [
         Icon(
           Icons.blur_on_rounded,
-          size: 22,
-          color: hasCompleted ? theme.colorScheme.primary : null,
+          size: 18,
+          color: hasCompleted
+              ? theme.colorScheme.primary
+              : theme.colorScheme.onSurface.withOpacity(0.7),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 2),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
@@ -57,7 +59,10 @@ class BlurTabIndicatorState extends State<BlurTabIndicator> {
                 textAlign: TextAlign.center,
                 overflow: TextOverflow.ellipsis,
                 maxLines: 1,
-                style: const TextStyle(height: 1.2),
+                style: const TextStyle(
+                  height: 1.1,
+                  fontSize: 11,
+                ),
               ),
             ),
             if (hasCompleted) ...[

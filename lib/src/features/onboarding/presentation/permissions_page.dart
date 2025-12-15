@@ -46,9 +46,10 @@ class _PermissionsPageState extends State<PermissionsPage> {
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            const SizedBox(height: 12),
             Builder(
               builder: (iconContext) {
                 final isPremiumAsync = iconContext.watch<PremiumCubit>().state;

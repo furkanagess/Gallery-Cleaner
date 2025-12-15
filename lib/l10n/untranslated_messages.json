@@ -1,0 +1,18 @@
+{
+  "es": [
+    "duplicatePhotos",
+    "scanForDuplicates",
+    "scanningDuplicates",
+    "noDuplicatesFound",
+    "duplicatesFound",
+    "totalDuplicates",
+    "spaceToSave",
+    "deleteDuplicates",
+    "selectAlbumsToScan",
+    "scanSelectedAlbums",
+    "duplicateGroup",
+    "photosInGroup",
+    "keepOldest",
+    "scanningAlbum"
+  ]
+}

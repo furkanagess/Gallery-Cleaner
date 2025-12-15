@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:lottie/lottie.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../application/theme_controller.dart';
 import '../application/locale_controller.dart';
@@ -25,117 +26,300 @@ class SettingsPage extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: theme.colorScheme.background,
-      appBar: AppBar(
-        title: Text(
-          l10n.settings,
-          overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        centerTitle: true,
-        backgroundColor: theme.colorScheme.background,
-        elevation: 0,
-        leading: Platform.isIOS
-            ? IconButton(
-                icon: Icon(
-                  CupertinoIcons.chevron_left,
-                  color: theme.colorScheme.onSurface,
-                ),
-                onPressed: () {
-                  if (context.canPop()) {
-                    context.pop();
-                  } else {
-                    context.go('/swipe');
-                  }
-                },
-              )
-            : null,
-        automaticallyImplyLeading: !Platform.isIOS,
-      ),
       body: Builder(
         builder: (builderContext) {
-          // Premium durumunu kontrol et
-          final isPremiumAsync = builderContext.watch<PremiumCubit>().state;
-          final isPremium = isPremiumAsync.maybeWhen(
-            data: (premium) => premium,
-            orElse: () => false,
-          );
-
-          // Bottom navigation bar'daki container rengiyle aynı
-          final containerColor = theme.colorScheme.onPrimaryContainer
-              .withOpacity(0.8);
-
-          return Stack(
-            children: [
-              // Dekoratif arka plan desenleri
-              Positioned(
-                top: -60,
-                right: -40,
-                child: Container(
-                  width: 200,
-                  height: 200,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [
-                        containerColor.withOpacity(0.1),
-                        containerColor.withOpacity(0.0),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              Positioned(
-                bottom: -50,
-                left: -30,
-                child: Container(
-                  width: 150,
-                  height: 150,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [
-                        AppColors.accent.withOpacity(0.08),
-                        AppColors.accent.withOpacity(0.0),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              // Ana içerik - Scroll edilebilir
-              SingleChildScrollView(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Yeni Yıl Başlık Kartı - Özgün tasarım
+                Stack(
+                  clipBehavior: Clip.hardEdge,
                   children: [
-                    // Premium Section - En üstte, dikkat çekici
-                    _PremiumSection(),
-                    const SizedBox(height: 12),
-                    // Theme Selection Container - Ayrı
                     Container(
-                      padding: const EdgeInsets.all(14),
+                      margin: const EdgeInsets.only(bottom: 20),
+                      padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: [
                             theme.colorScheme.surfaceContainerHighest
-                                .withOpacity(0.4),
+                                .withOpacity(0.5),
                             theme.colorScheme.surfaceContainerHighest
-                                .withOpacity(0.2),
+                                .withOpacity(0.25),
                           ],
                         ),
-                        borderRadius: BorderRadius.circular(18),
+                        borderRadius: BorderRadius.circular(24),
                         border: Border.all(
-                          color: containerColor.withOpacity(0.15),
+                          color: theme.colorScheme.primary.withOpacity(0.35),
+                          width: 2,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: theme.colorScheme.primary.withOpacity(0.25),
+                            blurRadius: 24,
+                            offset: const Offset(0, 8),
+                            spreadRadius: 2,
+                          ),
+                        ],
+                      ),
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          Row(
+                            children: [
+                              // Santa Claus ikonu
+                              Container(
+                                width: 60,
+                                height: 60,
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.primary.withOpacity(
+                                    0.18,
+                                  ),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: theme.colorScheme.primary
+                                        .withOpacity(0.4),
+                                    width: 2,
+                                  ),
+                                ),
+                                child: Center(
+                                  child: Image.asset(
+                                    'assets/new_year/santa-claus.png',
+                                    width: 40,
+                                    height: 40,
+                                    fit: BoxFit.contain,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Happy New Year 2026',
+                                      style: theme.textTheme.titleLarge
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.w900,
+                                            fontSize: 20,
+                                            color: theme.colorScheme.onSurface,
+                                            letterSpacing: -0.5,
+                                          ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Settings',
+                                      style: theme.textTheme.bodyMedium
+                                          ?.copyWith(
+                                            fontSize: 13,
+                                            color: theme.colorScheme.onSurface
+                                                .withOpacity(0.7),
+                                          ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          // Dekoratif görseller
+                          Positioned(
+                            top: -10,
+                            right: -10,
+                            child: Opacity(
+                              opacity: 0.35,
+                              child: Image.asset(
+                                'assets/new_year/christmas-wreath.png',
+                                width: 80,
+                                height: 80,
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            bottom: -15,
+                            right: 20,
+                            child: Opacity(
+                              opacity: 0.28,
+                              child: Image.asset(
+                                'assets/new_year/christmas-tree.png',
+                                width: 60,
+                                height: 60,
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Kar efekti kart içinde
+                    Positioned.fill(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(24),
+                        child: Opacity(
+                          opacity: 0.2,
+                          child: ColorFiltered(
+                            colorFilter: const ColorFilter.mode(
+                              AppColors.white,
+                              BlendMode.srcATop,
+                            ),
+                            child: Lottie.asset(
+                              'assets/new_year/Snowing.json',
+                              fit: BoxFit.cover,
+                              repeat: true,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                // Premium Section - En üstte, dikkat çekici
+                _PremiumSection(),
+                const SizedBox(height: 12),
+                // Quick Actions Container - History ve Gallery Report
+                Stack(
+                  clipBehavior: Clip.hardEdge,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            theme.colorScheme.surfaceContainerHighest
+                                .withOpacity(0.5),
+                            theme.colorScheme.surfaceContainerHighest
+                                .withOpacity(0.25),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: theme.colorScheme.primary.withOpacity(0.35),
                           width: 1.5,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.black.withOpacity(0.05),
+                            color: theme.colorScheme.primary.withOpacity(0.2),
                             blurRadius: 16,
-                            offset: const Offset(0, 3),
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                'Quick Actions',
+                                style: theme.textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 15,
+                                  color: theme.colorScheme.onSurface,
+                                  letterSpacing: 0.2,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildActionButton(
+                                  context: builderContext,
+                                  theme: theme,
+                                  icon: Icons.history,
+                                  label: l10n.history,
+                                  onTap: () {
+                                    builderContext.push('/gallery/stats');
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: _buildActionButton(
+                                  context: builderContext,
+                                  theme: theme,
+                                  icon: Icons.assessment_outlined,
+                                  label: l10n.galleryReportTitle,
+                                  onTap: () {
+                                    builderContext.push('/gallery-report');
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Kar efekti
+                    Positioned.fill(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: Opacity(
+                          opacity: 0.18,
+                          child: ColorFiltered(
+                            colorFilter: const ColorFilter.mode(
+                              AppColors.white,
+                              BlendMode.srcATop,
+                            ),
+                            child: Lottie.asset(
+                              'assets/new_year/Snowing.json',
+                              fit: BoxFit.cover,
+                              repeat: true,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Decorative image
+                    Positioned(
+                      right: 10,
+                      bottom: 10,
+                      child: Opacity(
+                        opacity: 0.25,
+                        child: Image.asset(
+                          'assets/new_year/gift-box.png',
+                          width: 55,
+                          height: 55,
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                // Theme Selection Container - Ayrı (tek tip renk ve kar efekti)
+                Stack(
+                  clipBehavior: Clip.hardEdge,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            theme.colorScheme.surfaceContainerHighest
+                                .withOpacity(0.5),
+                            theme.colorScheme.surfaceContainerHighest
+                                .withOpacity(0.25),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: theme.colorScheme.primary.withOpacity(0.35),
+                          width: 1.5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: theme.colorScheme.primary.withOpacity(0.2),
+                            blurRadius: 16,
+                            offset: const Offset(0, 4),
                           ),
                         ],
                       ),
@@ -145,25 +329,13 @@ class SettingsPage extends StatelessWidget {
                           // Theme Selection - Modern
                           Row(
                             children: [
-                              Container(
-                                padding: const EdgeInsets.all(6),
-                                decoration: BoxDecoration(
-                                  color: containerColor.withOpacity(0.15),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Icon(
-                                  Icons.palette_rounded,
-                                  size: 16,
-                                  color: containerColor,
-                                ),
-                              ),
-                              const SizedBox(width: 10),
                               Text(
                                 l10n.theme,
                                 style: theme.textTheme.titleSmall?.copyWith(
                                   fontWeight: FontWeight.w800,
-                                  fontSize: 14,
+                                  fontSize: 15,
                                   color: theme.colorScheme.onSurface,
+                                  letterSpacing: 0.2,
                                 ),
                               ),
                             ],
@@ -178,31 +350,69 @@ class SettingsPage extends StatelessWidget {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    // Language Selection Container - Ayrı
+                    Positioned.fill(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: Opacity(
+                          opacity: 0.18,
+                          child: ColorFiltered(
+                            colorFilter: const ColorFilter.mode(
+                              AppColors.white,
+                              BlendMode.srcATop,
+                            ),
+                            child: Lottie.asset(
+                              'assets/new_year/Snowing.json',
+                              fit: BoxFit.cover,
+                              repeat: true,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Decorative image
+                    Positioned(
+                      right: 10,
+                      bottom: 10,
+                      child: Opacity(
+                        opacity: 0.25,
+                        child: Image.asset(
+                          'assets/new_year/gift-box.png',
+                          width: 55,
+                          height: 55,
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                // Language Selection Container - Ayrı (tek tip renk ve kar efekti)
+                Stack(
+                  clipBehavior: Clip.hardEdge,
+                  children: [
                     Container(
-                      padding: const EdgeInsets.all(14),
+                      padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: [
                             theme.colorScheme.surfaceContainerHighest
-                                .withOpacity(0.4),
+                                .withOpacity(0.5),
                             theme.colorScheme.surfaceContainerHighest
-                                .withOpacity(0.2),
+                                .withOpacity(0.25),
                           ],
                         ),
-                        borderRadius: BorderRadius.circular(18),
+                        borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: containerColor.withOpacity(0.15),
+                          color: theme.colorScheme.primary.withOpacity(0.35),
                           width: 1.5,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.black.withOpacity(0.05),
+                            color: theme.colorScheme.primary.withOpacity(0.2),
                             blurRadius: 16,
-                            offset: const Offset(0, 3),
+                            offset: const Offset(0, 4),
                           ),
                         ],
                       ),
@@ -212,25 +422,13 @@ class SettingsPage extends StatelessWidget {
                           // Language Selection - Modern
                           Row(
                             children: [
-                              Container(
-                                padding: const EdgeInsets.all(6),
-                                decoration: BoxDecoration(
-                                  color: containerColor.withOpacity(0.15),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Icon(
-                                  Icons.language_rounded,
-                                  size: 16,
-                                  color: containerColor,
-                                ),
-                              ),
-                              const SizedBox(width: 10),
                               Text(
                                 l10n.language,
                                 style: theme.textTheme.titleSmall?.copyWith(
                                   fontWeight: FontWeight.w800,
-                                  fontSize: 14,
+                                  fontSize: 15,
                                   color: theme.colorScheme.onSurface,
+                                  letterSpacing: 0.2,
                                 ),
                               ),
                             ],
@@ -245,45 +443,102 @@ class SettingsPage extends StatelessWidget {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    // Sound Volume Control Container
-                    _SoundVolumeControl(),
-                    const SizedBox(height: 12),
-                    // Rate App Section
-                    _RateAppSection(),
-                    const SizedBox(height: 12),
-                    // Version info - Modern
-                    Center(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.surfaceContainerHighest
-                              .withOpacity(0.5),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: theme.colorScheme.outline.withOpacity(0.1),
-                            width: 1,
-                          ),
-                        ),
-                        child: Text(
-                          'v1.0.0',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurface.withOpacity(0.6),
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.5,
+                    Positioned.fill(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: Opacity(
+                          opacity: 0.18,
+                          child: ColorFiltered(
+                            colorFilter: const ColorFilter.mode(
+                              AppColors.white,
+                              BlendMode.srcATop,
+                            ),
+                            child: Lottie.asset(
+                              'assets/new_year/Snowing.json',
+                              fit: BoxFit.cover,
+                              repeat: true,
+                            ),
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    // Decorative image
+                    Positioned(
+                      right: 10,
+                      bottom: 10,
+                      child: Opacity(
+                        opacity: 0.25,
+                        child: Image.asset(
+                          'assets/new_year/santa-claus.png',
+                          width: 55,
+                          height: 55,
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
-              ),
-            ],
+                const SizedBox(height: 12),
+                // Sound Volume Control Container (tek tip renk ve kar efekti)
+                Stack(
+                  clipBehavior: Clip.hardEdge,
+                  children: [
+                    _SoundVolumeControl(),
+                    Positioned.fill(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: Opacity(
+                          opacity: 0.18,
+                          child: ColorFiltered(
+                            colorFilter: const ColorFilter.mode(
+                              AppColors.white,
+                              BlendMode.srcATop,
+                            ),
+                            child: Lottie.asset(
+                              'assets/new_year/Snowing.json',
+                              fit: BoxFit.cover,
+                              repeat: true,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                // Rate App Section
+                _RateAppSection(),
+                const SizedBox(height: 12),
+                // Version info - Modern
+                Center(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceContainerHighest
+                          .withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: theme.colorScheme.outline.withOpacity(0.1),
+                        width: 1,
+                      ),
+                    ),
+                    child: Text(
+                      'v1.0.0',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurface.withOpacity(0.6),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+            ),
           );
         },
       ),
@@ -292,6 +547,55 @@ class SettingsPage extends StatelessWidget {
 
   static void showPurchaseDialog(BuildContext context) {
     context.push('/paywall');
+  }
+
+  Widget _buildActionButton({
+    required BuildContext context,
+    required ThemeData theme,
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    final containerColor = theme.colorScheme.onPrimaryContainer.withOpacity(
+      0.8,
+    );
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+          decoration: BoxDecoration(
+            color: containerColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: containerColor.withOpacity(0.2),
+              width: 1,
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 24, color: containerColor),
+              const SizedBox(height: 6),
+              Text(
+                label,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: theme.colorScheme.onSurface,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -412,9 +716,8 @@ class _PremiumSection extends StatelessWidget {
                                 l10n.premiumDescription,
                                 style: theme.textTheme.bodyMedium?.copyWith(
                                   fontSize: 13,
-                                  color: theme.colorScheme.onSurface.withOpacity(
-                                    0.75,
-                                  ),
+                                  color: theme.colorScheme.onSurface
+                                      .withOpacity(0.75),
                                   height: 1.4,
                                 ),
                                 maxLines: 2,
@@ -563,15 +866,6 @@ class _CompactThemeSelector extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
-
-    // Premium durumunu kontrol et
-    final isPremiumAsync = context.watch<PremiumCubit>().state;
-    final isPremium = isPremiumAsync.maybeWhen(
-      data: (premium) => premium,
-      orElse: () => false,
-    );
-
-    // Bottom navigation bar'daki container rengiyle aynı
     final containerColor = theme.colorScheme.onPrimaryContainer.withOpacity(
       0.8,
     );
@@ -720,15 +1014,6 @@ class _CompactLanguageSelector extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
-
-    // Premium durumunu kontrol et
-    final isPremiumAsync = context.watch<PremiumCubit>().state;
-    final isPremium = isPremiumAsync.maybeWhen(
-      data: (premium) => premium,
-      orElse: () => false,
-    );
-
-    // Bottom navigation bar'daki container rengiyle aynı
     final containerColor = theme.colorScheme.onPrimaryContainer.withOpacity(
       0.8,
     );
@@ -1106,110 +1391,119 @@ class _SoundVolumeControlState extends State<_SoundVolumeControl> {
     final theme = Theme.of(context);
 
     // Bottom navigation bar'daki container rengiyle aynı
-    final containerColor = theme.colorScheme.onPrimaryContainer.withOpacity(0.8);
+    final containerColor = theme.colorScheme.onPrimaryContainer.withOpacity(
+      0.8,
+    );
 
     if (_isLoading) {
       return const SizedBox.shrink();
     }
 
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            theme.colorScheme.surfaceContainerHighest.withOpacity(0.4),
-            theme.colorScheme.surfaceContainerHighest.withOpacity(0.2),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: containerColor.withOpacity(0.15),
-          width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.black.withOpacity(0.05),
-            blurRadius: 16,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Sound Volume Header
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: containerColor.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(
-                  Icons.volume_up_rounded,
-                  size: 16,
-                  color: containerColor,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Text(
-                'Sound Volume',
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 14,
-                  color: theme.colorScheme.onSurface,
-                ),
+    return Stack(
+      clipBehavior: Clip.hardEdge,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                theme.colorScheme.primary.withOpacity(0.12),
+                theme.colorScheme.primary.withOpacity(0.06),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: theme.colorScheme.primary.withOpacity(0.25),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: theme.colorScheme.primary.withOpacity(0.15),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          // Volume Slider
-          Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(
-                Icons.volume_mute_rounded,
-                size: 20,
-                color: theme.colorScheme.onSurface.withOpacity(0.6),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Slider(
-                  value: _volume,
-                  min: 0.0,
-                  max: 1.0,
-                  divisions: 10,
-                  activeColor: containerColor,
-                  inactiveColor: containerColor.withOpacity(0.3),
-                  onChanged: _updateVolume,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Icon(
-                Icons.volume_up_rounded,
-                size: 20,
-                color: theme.colorScheme.onSurface.withOpacity(0.6),
-              ),
-              const SizedBox(width: 8),
-              // Volume percentage text
-              SizedBox(
-                width: 45,
-                child: Text(
-                  '${(_volume * 100).toInt()}%',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 12,
-                    color: containerColor,
+              // Sound Volume Header
+              Row(
+                children: [
+                  Text(
+                    'Sound Volume',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 15,
+                      color: theme.colorScheme.primary,
+                      letterSpacing: 0.2,
+                    ),
                   ),
-                  textAlign: TextAlign.right,
-                ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              // Volume Slider
+              Row(
+                children: [
+                  Icon(
+                    Icons.volume_mute_rounded,
+                    size: 20,
+                    color: theme.colorScheme.onSurface.withOpacity(0.6),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Slider(
+                      value: _volume,
+                      min: 0.0,
+                      max: 1.0,
+                      divisions: 10,
+                      activeColor: containerColor,
+                      inactiveColor: containerColor.withOpacity(0.3),
+                      onChanged: _updateVolume,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Icon(
+                    Icons.volume_up_rounded,
+                    size: 20,
+                    color: theme.colorScheme.onSurface.withOpacity(0.6),
+                  ),
+                  const SizedBox(width: 8),
+                  // Volume percentage text
+                  SizedBox(
+                    width: 45,
+                    child: Text(
+                      '${(_volume * 100).toInt()}%',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12,
+                        color: containerColor,
+                      ),
+                      textAlign: TextAlign.right,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-        ],
-      ),
+        ),
+        // Snowman görseli sağ altta
+        Positioned(
+          right: 10,
+          bottom: 10,
+          child: Opacity(
+            opacity: 0.25,
+            child: Image.asset(
+              'assets/new_year/snowman.png',
+              width: 55,
+              height: 55,
+              fit: BoxFit.contain,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

@@ -20,9 +20,13 @@ class SelectedAlbumCubit extends Cubit<pm.AssetPathEntity?> {
 
   void select(pm.AssetPathEntity? album) {
     emit(album);
-    // Albüm seçildiğinde PreferencesService'e kaydet
-    if (_preferencesService != null) {
-      _preferencesService.saveLastSelectedAlbumId(album?.id);
+    // Albüm seçildiğinde PreferencesService'e kaydet (non-blocking)
+    final preferencesService = _preferencesService;
+    if (preferencesService != null) {
+      // Preferences kaydetme işlemini async olarak çalıştır, UI thread'i bloke etme
+      Future.microtask(() {
+        preferencesService.saveLastSelectedAlbumId(album?.id);
+      });
     }
   }
 }

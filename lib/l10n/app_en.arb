@@ -1695,6 +1695,37 @@
         "type": "String"
       }
     }
+  },
+  "potentialSavingsMessage": "If you use the app optimally, you can save up to {gb} GB and {media} {mediaLabel}.",
+  "@potentialSavingsMessage": {
+    "description": "Message showing potential savings when the app is used optimally",
+    "placeholders": {
+      "gb": {
+        "type": "String"
+      },
+      "media": {
+        "type": "int"
+      },
+      "mediaLabel": {
+        "type": "String"
+      }
+    }
+  },
+  "beforeLabel": "Before",
+  "@beforeLabel": {
+    "description": "Label for the 'before' state"
+  },
+  "afterLabel": "After",
+  "@afterLabel": {
+    "description": "Label for the 'after' state"
+  },
+  "optimalUseSubtitle": "With optimal use",
+  "@optimalUseSubtitle": {
+    "description": "Subtitle indicating optimal usage scenario"
+  },
+  "afterUsingThisApp": "After using this app",
+  "@afterUsingThisApp": {
+    "description": "Label shown above the after state / stats"
   }
 }
 

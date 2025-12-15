@@ -1336,6 +1336,37 @@
         "type": "String"
       }
     }
+  },
+  "potentialSavingsMessage": "Si usas la app de forma óptima, puedes ahorrar hasta {gb} GB y {media} {mediaLabel}.",
+  "@potentialSavingsMessage": {
+    "description": "Mensaje que muestra el ahorro potencial usando la app de forma óptima",
+    "placeholders": {
+      "gb": {
+        "type": "String"
+      },
+      "media": {
+        "type": "int"
+      },
+      "mediaLabel": {
+        "type": "String"
+      }
+    }
+  },
+  "beforeLabel": "Antes",
+  "@beforeLabel": {
+    "description": "Etiqueta para el estado 'antes'"
+  },
+  "afterLabel": "Después",
+  "@afterLabel": {
+    "description": "Etiqueta para el estado 'después'"
+  },
+  "optimalUseSubtitle": "Con uso óptimo",
+  "@optimalUseSubtitle": {
+    "description": "Subtítulo que indica el escenario de uso óptimo"
+  },
+  "afterUsingThisApp": "Después de usar esta app",
+  "@afterUsingThisApp": {
+    "description": "Título mostrado sobre el estado/después"
   }
 }
 

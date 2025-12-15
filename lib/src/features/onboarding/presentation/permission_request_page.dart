@@ -5,12 +5,16 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:photo_manager/photo_manager.dart' as pm;
 
 import '../application/permissions_controller.dart';
 import '../../gallery/application/gallery_providers.dart';
 import '../../gallery/application/gallery_stats_provider.dart';
+import '../../gallery/application/blur_detection_provider.dart';
+import '../../gallery/application/duplicate_detection_provider.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../app/theme/app_three_d_button.dart';
+import '../../../core/services/fcm_service.dart';
 
 class PermissionRequestPage extends StatefulWidget {
   const PermissionRequestPage({super.key});
@@ -22,6 +26,7 @@ class PermissionRequestPage extends StatefulWidget {
 class _PermissionRequestPageState extends State<PermissionRequestPage> {
   StreamSubscription<GalleryPermissionStatus>? _permissionSubscription;
   GalleryPermissionStatus? _lastPermission;
+  bool _notificationPrompted = false;
 
   @override
   void initState() {
@@ -82,6 +87,8 @@ class _PermissionRequestPageState extends State<PermissionRequestPage> {
       '🔄 [PermissionRequestPage] İzin verildi, fotoğrafların yüklenmesi bekleniyor...',
     );
 
+    List<pm.AssetPathEntity>? readyAlbums;
+
     // İlk gecikme - PhotoManager'ın hazır olması için
     final initialDelay = Platform.isIOS
         ? const Duration(milliseconds: 500)
@@ -98,13 +105,14 @@ class _PermissionRequestPageState extends State<PermissionRequestPage> {
       final albumsAsync = context.read<AlbumsCubit>().state;
       final albums = albumsAsync.maybeWhen(
         data: (albums) => albums,
-        orElse: () => <dynamic>[],
+        orElse: () => <pm.AssetPathEntity>[],
       );
 
       if (albums.isNotEmpty) {
         debugPrint(
           '✅ [PermissionRequestPage] Album listesi yüklendi: ${albums.length} album',
         );
+        readyAlbums = albums;
         albumsReady = true;
         break;
       }
@@ -127,6 +135,7 @@ class _PermissionRequestPageState extends State<PermissionRequestPage> {
       debugPrint(
         '⚠️ [PermissionRequestPage] Album listesi yüklenemedi, yine de swipe page\'e geçiliyor...',
       );
+      await _requestNotificationPermissionIfNeeded();
       // Yine de gallery report page'e geç (kullanıcı deneyimi için)
       if (mounted && context.mounted) {
         context.go('/gallery-report');
@@ -177,6 +186,7 @@ class _PermissionRequestPageState extends State<PermissionRequestPage> {
       debugPrint(
         '⚠️ [PermissionRequestPage] Fotoğraflar yüklenemedi, yine de gallery report page\'e geçiliyor...',
       );
+      await _requestNotificationPermissionIfNeeded();
       // Yine de gallery report page'e geç (kullanıcı deneyimi için)
       if (mounted && context.mounted) {
         context.go('/gallery-report');
@@ -188,10 +198,50 @@ class _PermissionRequestPageState extends State<PermissionRequestPage> {
     debugPrint(
       '✅ [PermissionRequestPage] Fotoğraflar hazır, gallery stats arka planda başlatılıyor...',
     );
+    await _requestNotificationPermissionIfNeeded();
+    await _startAutoDetections(context, readyAlbums ?? const []);
     context.read<GalleryStatsCubit>().refresh();
 
     if (mounted && context.mounted) {
       context.go('/gallery-report');
+    }
+  }
+
+  Future<void> _requestNotificationPermissionIfNeeded() async {
+    if (_notificationPrompted) return;
+    _notificationPrompted = true;
+    try {
+      await FCMService.instance.requestNotificationPermission();
+      debugPrint('🔔 [PermissionRequestPage] Notification permission requested.');
+    } catch (e) {
+      debugPrint('⚠️ [PermissionRequestPage] Notification permission request failed: $e');
+    }
+  }
+
+  Future<void> _startAutoDetections(
+    BuildContext context,
+    List<pm.AssetPathEntity> albums,
+  ) async {
+    if (!mounted || albums.isEmpty) return;
+
+    final usableAlbums = albums.where((a) => !a.isAll).toList();
+    if (usableAlbums.isEmpty) return;
+
+    final blurCubit = context.read<BlurDetectionCubit>();
+    final duplicateCubit = context.read<DuplicateDetectionCubit>();
+
+    final blurState = blurCubit.state;
+    if (!blurState.isScanning &&
+        !blurState.hasCompletedScan &&
+        blurState.totalBlurryPhotos == 0) {
+      unawaited(blurCubit.scanAlbums(usableAlbums));
+    }
+
+    final duplicateState = duplicateCubit.state;
+    if (!duplicateState.isScanning &&
+        !duplicateState.hasCompletedScan &&
+        duplicateState.totalDuplicatePhotos == 0) {
+      unawaited(duplicateCubit.scanAlbums(usableAlbums));
     }
   }
 
@@ -253,8 +303,9 @@ class _PermissionRequestPageState extends State<PermissionRequestPage> {
             child: Padding(
               padding: const EdgeInsets.all(24),
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.start,
                 children: [
+                  const SizedBox(height: 12),
                   Builder(
                     builder: (iconContext) {
                       final containerColor = theme
@@ -377,6 +428,7 @@ class _PermissionRequestPageState extends State<PermissionRequestPage> {
                     },
                   ),
                   const SizedBox(height: 32),
+                  const Spacer(),
                   Builder(
                     builder: (ctx) {
                       final l10n = AppLocalizations.of(ctx)!;

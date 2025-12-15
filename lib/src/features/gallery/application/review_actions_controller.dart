@@ -12,8 +12,13 @@ import 'review_history_controller.dart';
 import 'asset_size_helper.dart';
 
 class PendingDeleteAction {
-  PendingDeleteAction({required this.asset});
+  PendingDeleteAction({
+    required this.asset,
+    required this.fileSizeBytes,
+  });
+
   final pm.AssetEntity asset;
+  final int fileSizeBytes;
 }
 
 class DeleteResult {
@@ -60,7 +65,13 @@ class ReviewActionsCubit extends Cubit<List<PendingDeleteAction>> {
       asset.id,
       fileSizeBytes: fileSize,
     );
-    emit([...state, PendingDeleteAction(asset: asset)]);
+    emit([
+      ...state,
+      PendingDeleteAction(
+        asset: asset,
+        fileSizeBytes: fileSize,
+      ),
+    ]);
     
     // Add to batch queue (no automatic deletion)
     _pendingDeleteIds.add(asset.id);
@@ -374,6 +385,8 @@ class ReviewActionsCubit extends Cubit<List<PendingDeleteAction>> {
       // Silinen fotoğraf ID'lerini kaydet (deck'te tekrar gösterilmemesi için)
       if (_preferencesService != null && successfulIds.isNotEmpty) {
         await _preferencesService.addDeletedPhotoIds(successfulIds.toList());
+        // Yeni Yıl Event sayacını artır
+        await _preferencesService.incrementNewYearEventDeleteCount(deletedCount);
       }
       
       return DeleteResult(deletedCount: deletedCount, deletedSizeMB: totalSizeMB);

@@ -25,13 +25,15 @@ class _GalleryReportPageState extends State<GalleryReportPage>
   late Animation<double> _cleanupProgressAnimation;
   late AnimationController _confettiController;
   bool _showConfetti = false;
+  bool _hasStartedAnimation = false;
+  String? _lastAnimatedStatsKey;
   Timer? _loadingDescriptionTimer;
   int _loadingDescriptionIndex = 0;
 
   @override
   void initState() {
     super.initState();
-    
+
     // Cleanup animation controller - single play
     _cleanupAnimationController = AnimationController(
       vsync: this,
@@ -48,7 +50,7 @@ class _GalleryReportPageState extends State<GalleryReportPage>
     // Confetti animation controller
     _confettiController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2000),
+      duration: const Duration(milliseconds: 4000), // slower/smoother confetti
     );
     _confettiController.addStatusListener((status) {
       if (status == AnimationStatus.completed && mounted) {
@@ -68,18 +70,6 @@ class _GalleryReportPageState extends State<GalleryReportPage>
         });
       },
     );
-
-    // Start cleanup animation and trigger confetti when done
-    _cleanupAnimationController.forward().then((_) {
-      if (mounted) {
-        setState(() {
-          _showConfetti = true;
-        });
-        _confettiController
-          ..reset()
-          ..forward();
-      }
-    });
     // Sayfa açıldığında eğer stats yoksa yükle
     // Permission request page'den geliyorsa zaten yüklenmiş olmalı
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -164,12 +154,41 @@ class _GalleryReportPageState extends State<GalleryReportPage>
     final isScanning = statsState.isScanning;
     final error = statsState.error;
 
+    if (!isScanning && stats != null) {
+      _maybeRestartAnimations(stats);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _startAnimationsIfNeeded();
+        }
+      });
+    }
+
     // Loading durumu
     if (isScanning || stats == null) {
       return Scaffold(
         backgroundColor: theme.colorScheme.background,
         body: Stack(
           children: [
+            // Kar yağma efekti - arka planda
+            Positioned.fill(
+              child: IgnorePointer(
+                child: Opacity(
+                  opacity: 0.6,
+                  child: ColorFiltered(
+                    colorFilter: const ColorFilter.mode(
+                      Colors.white,
+                      BlendMode.srcATop,
+                    ),
+                    child: Lottie.asset(
+                      'assets/new_year/Snowing.json',
+                      fit: BoxFit.cover,
+                      repeat: true,
+                      animate: true,
+                    ),
+                  ),
+                ),
+              ),
+            ),
             // Decorative elements
             Positioned(
               top: 40,
@@ -211,22 +230,22 @@ class _GalleryReportPageState extends State<GalleryReportPage>
               ),
             ),
             Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
+              child: Padding(
+                padding: const EdgeInsets.all(32),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
                     // Reindeer animation
-              SizedBox(
+                    SizedBox(
                       width: 200,
                       height: 200,
-                child: Lottie.asset(
+                      child: Lottie.asset(
                         'assets/new_year/Reindeer.json',
-                  fit: BoxFit.contain,
-                  repeat: true,
-                  animate: true,
-                ),
-              ),
+                        fit: BoxFit.contain,
+                        repeat: true,
+                        animate: true,
+                      ),
+                    ),
               const SizedBox(height: 24),
               Text(
                 l10n.galleryInfoLoading,
@@ -293,42 +312,87 @@ class _GalleryReportPageState extends State<GalleryReportPage>
     }
 
     // İstatistikleri göster
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-              // Storage cleanup potential animation
-              _buildStorageCleanupAnimation(context, theme, l10n, stats),
-          const SizedBox(height: 32),
-
-          // Medya breakdown
-          _buildMediaBreakdown(context, theme, l10n, stats),
-          const SizedBox(height: 32),
-
-          // Açıklama metni
-          Text(
-            l10n.galleryReportDescription,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurface.withOpacity(0.7),
+    return Column(
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  l10n.galleryStatsTitle,
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                  textAlign: TextAlign.left,
+                ),
+                const SizedBox(height: 16),
+                // Medya breakdown (üstte)
+                _buildMediaBreakdown(context, theme, l10n, stats),
+                const SizedBox(height: 24),
+                Center(
+                  child: Text(
+                    l10n.afterUsingThisApp,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      color: theme.colorScheme.onSurface.withOpacity(0.7),
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // Storage cleanup potential animation
+                _buildStorageCleanupAnimation(context, theme, l10n, stats),
+                const SizedBox(height: 24),
+                // Media saved + optimal use (altta)
+                _buildSavedAndOptimalSection(theme, l10n, stats),
+                const SizedBox(height: 24),
+              ],
             ),
-            textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 32),
-
-              // Start Cleaning butonu - 3D button
-              AppThreeDButton(
-                label: l10n.startCleaningButton,
-                icon: Icons.cleaning_services,
-                onPressed: () => context.go('/swipe'),
-                baseColor: theme.colorScheme.onPrimaryContainer.withOpacity(0.8),
-                textColor: AppColors.white,
-                fullWidth: true,
-                height: 56,
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+          child: AppThreeDButton(
+            label: l10n.startCleaningButton,
+            icon: Icons.cleaning_services,
+            onPressed: () => context.go('/swipe'),
+            baseColor: theme.colorScheme.onPrimaryContainer.withOpacity(0.8),
+            textColor: theme.colorScheme.background,
+            fullWidth: true,
+            height: 56,
           ),
-        ],
-      ),
+        ),
+      ],
     );
+  }
+
+  void _maybeRestartAnimations(GalleryStats stats) {
+    final key =
+        '${stats.mediaCount}-${stats.videoCount}-${stats.totalSizeMB.toStringAsFixed(2)}';
+    if (_lastAnimatedStatsKey != key) {
+      _lastAnimatedStatsKey = key;
+      _hasStartedAnimation = false;
+      _showConfetti = false;
+      _cleanupAnimationController.reset();
+      _confettiController.reset();
+    }
+  }
+
+  void _startAnimationsIfNeeded() {
+    if (_hasStartedAnimation) return;
+    _hasStartedAnimation = true;
+
+    _cleanupAnimationController.forward().then((_) {
+      if (!mounted) return;
+      setState(() {
+        _showConfetti = true;
+      });
+      _confettiController
+        ..reset()
+        ..forward();
+    });
   }
 
   Widget _buildStorageCleanupAnimation(
@@ -337,16 +401,10 @@ class _GalleryReportPageState extends State<GalleryReportPage>
     AppLocalizations l10n,
     GalleryStats stats,
   ) {
-    final totalMedia = stats.mediaCount;
     final totalSizeGB = stats.totalSizeMB / 1024;
-    
-    // %60 cleanup potential
-    final cleanupPercentage = 0.6;
-    final potentialFreedGB = totalSizeGB * cleanupPercentage;
-    final potentialFreedMedia = (totalMedia * cleanupPercentage).round();
 
     return Stack(
-            children: [
+      children: [
         AnimatedBuilder(
           animation: Listenable.merge([
             _cleanupProgressAnimation,
@@ -354,189 +412,58 @@ class _GalleryReportPageState extends State<GalleryReportPage>
           ]),
           builder: (context, child) {
             final progress = _cleanupProgressAnimation.value;
-            
             // Animate from current to after cleanup
-            final currentGB = totalSizeGB - (totalSizeGB * cleanupPercentage * progress);
-            final currentMedia = totalMedia - (potentialFreedMedia * progress);
+            // Before -> 90% used (red), 10% available (green)
+            // After  -> 30% used (red), 70% available (green)
+            final double usedBefore = totalSizeGB * 0.9;
+            final double usedAfter =
+                (totalSizeGB * (0.9 - (0.6 * progress))).clamp(0, totalSizeGB);
 
-    return Container(
-          padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
-            theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
-            theme.colorScheme.surfaceContainerHighest.withOpacity(0.2),
-          ],
-          stops: const [0.0, 0.5, 1.0],
-        ),
-        borderRadius: BorderRadius.circular(32),
-        border: Border.all(
-          color: theme.colorScheme.outline.withOpacity(0.12),
-          width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: theme.colorScheme.shadow.withOpacity(0.1),
-            blurRadius: 24,
-            offset: const Offset(0, 10),
-            spreadRadius: 0,
-          ),
-          BoxShadow(
-            color: theme.colorScheme.shadow.withOpacity(0.05),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-            spreadRadius: 0,
-          ),
-        ],
-      ),
-      child: Column(
-      children: [
-                  // Current storage info
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                            '${currentGB.toStringAsFixed(1)} GB',
-                            style: theme.textTheme.headlineMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                                fontSize: 28,
-                                color: theme.colorScheme.onSurface,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                            '${_formatNumber(currentMedia.round())} ${l10n.media}',
-                            style: theme.textTheme.bodyLarge?.copyWith(
-                              color: theme.colorScheme.onSurface.withOpacity(0.7),
-                              fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      // Christmas tree image
-                      Image.asset(
-                        'assets/new_year/christmas-tree.png',
-                        width: 60,
-                        height: 60,
-                        fit: BoxFit.contain,
-                      ),
-                    ],
-                  ),
-              const SizedBox(height: 24),
-              // Progress bar showing cleanup
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  final barWidth = constraints.maxWidth;
-                  final usedWidth = barWidth * (1 - (cleanupPercentage * progress));
-                  final availableWidth = barWidth * (cleanupPercentage * progress + (1 - cleanupPercentage));
-                  
-                  return Stack(
-                    children: [
-                      // Background
-                      Container(
-                        width: barWidth,
-                        height: 12,
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.surface,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                      ),
-                      // Used storage (red)
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 300),
-                        height: 12,
-                        width: usedWidth,
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.error,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                      ),
-                      // Available storage (green)
-                      Positioned(
-                        right: 0,
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 300),
-                          height: 12,
-                          width: availableWidth,
-                          decoration: BoxDecoration(
-                            color: AppColors.success,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              ),
-              const SizedBox(height: 16),
-              // Potential savings info
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.success.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: AppColors.success.withOpacity(0.3),
-                    width: 1.5,
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                final topAlbums = _getTopAlbums(stats);
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Icon(
-                      Icons.arrow_downward,
-                      color: AppColors.success,
-                      size: 20,
+                    _buildStorageUsageCard(
+                      theme: theme,
+                      title: l10n.beforeLabel,
+                      used: usedBefore,
+                      total: totalSizeGB,
+                      usedColor: theme.colorScheme.error,
+                      availableColor: AppColors.success,
+                      animate: false,
+                      topAlbums: topAlbums,
                     ),
-                    const SizedBox(width: 8),
-                    Flexible(
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text(
-                          l10n.youCanClean(
-                            potentialFreedGB.toStringAsFixed(1),
-                            potentialFreedMedia,
-                            l10n.media,
-                          ),
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: AppColors.success,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                  ),
-                ),
-            ],
-          ),
+                    const SizedBox(height: 12),
+                    _buildStorageUsageCard(
+                      theme: theme,
+                      title: l10n.afterLabel,
+                      used: usedAfter,
+                      total: totalSizeGB,
+                      usedColor: theme.colorScheme.error,
+                      availableColor: AppColors.success,
+                      animate: true,
+                      topAlbums: topAlbums,
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                );
+          },
         ),
-      ],
-      ),
-        );
-      },
-    ),
-    // Confetti animation - appears at bottom when cleanup animation completes
-    if (_showConfetti)
-      Positioned(
-        bottom: 0,
-        left: 0,
-        right: 0,
-        height: 200,
-        child: IgnorePointer(
-          child: Lottie.asset(
-            'assets/new_year/Confetti.json',
-            controller: _confettiController,
-            fit: BoxFit.cover,
-            repeat: false,
+        if (_showConfetti)
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: 200,
+            child: IgnorePointer(
+              child: Lottie.asset(
+                'assets/lottie/Confeti.json',
+                controller: _confettiController,
+                fit: BoxFit.cover,
+                repeat: false,
+              ),
+            ),
           ),
-        ),
-      ),
       ],
     );
   }
@@ -690,6 +617,213 @@ class _GalleryReportPageState extends State<GalleryReportPage>
     );
   }
 
+  Widget _buildStorageUsageCard({
+    required ThemeData theme,
+    required String title,
+    required double used,
+    required double total,
+    required Color usedColor,
+    required Color availableColor,
+    required bool animate,
+    List<AlbumDetail>? topAlbums,
+  }) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final barWidth = constraints.maxWidth;
+        final usedFraction = total > 0 ? (used / total).clamp(0.0, 1.0) : 0.0;
+        final minUsedWidth = 3.0;
+        final currentUsedWidth =
+            (barWidth * usedFraction).clamp(minUsedWidth, barWidth);
+        final availableWidth =
+            (barWidth - currentUsedWidth).clamp(0.0, barWidth);
+
+        return Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: theme.colorScheme.outline.withOpacity(0.12),
+              width: 1.2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: theme.colorScheme.shadow.withOpacity(0.06),
+                blurRadius: 14,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    title,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                  ),
+                  Text(
+                    '${_formatSizeDynamic(used)} of ${_formatSizeDynamic(total)} Used',
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: theme.colorScheme.onSurface.withOpacity(0.7),
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Stack(
+                children: [
+                  Container(
+                    width: barWidth,
+                    height: 14,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceTint.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(7),
+                    ),
+                  ),
+                  AnimatedContainer(
+                    duration: animate
+                        ? const Duration(milliseconds: 350)
+                        : Duration.zero,
+                    curve: Curves.easeInOut,
+                    height: 14,
+                    width: currentUsedWidth,
+                    decoration: BoxDecoration(
+                      color: usedColor,
+                      borderRadius: BorderRadius.circular(7),
+                    ),
+                  ),
+                  Positioned(
+                    right: 0,
+                    child: AnimatedContainer(
+                      duration: animate
+                          ? const Duration(milliseconds: 350)
+                          : Duration.zero,
+                      curve: Curves.easeInOut,
+                      height: 14,
+                      width: availableWidth,
+                      decoration: BoxDecoration(
+                        color: availableColor,
+                        borderRadius: BorderRadius.circular(7),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              if (topAlbums != null && topAlbums.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: topAlbums.map((album) {
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 12),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text('• ', style: TextStyle(fontSize: 14)),
+                            Text(
+                              album.albumName,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color:
+                                    theme.colorScheme.onSurface.withOpacity(0.8),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSavedAndOptimalSection(
+    ThemeData theme,
+    AppLocalizations l10n,
+    GalleryStats stats,
+  ) {
+    return AnimatedBuilder(
+      animation: _cleanupProgressAnimation,
+      builder: (context, child) {
+        final totalMedia = stats.mediaCount;
+        final totalSizeGB = stats.totalSizeMB / 1024;
+        const cleanupPercentage = 0.6;
+        final progress = _cleanupProgressAnimation.value;
+        final optimalReveal = progress.clamp(0.0, 1.0);
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Opacity(
+              opacity: optimalReveal,
+              child: Transform.translate(
+                offset: Offset(0, 12 * (1 - optimalReveal)),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        AppColors.success.withOpacity(0.14),
+                        AppColors.success.withOpacity(0.08),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: AppColors.success.withOpacity(0.35),
+                      width: 1.4,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        l10n.optimalUseSubtitle,
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          color: theme.colorScheme.onSurface.withOpacity(0.75),
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        _buildPotentialSavingsMessage(
+                          l10n,
+                          totalSizeGB * cleanupPercentage,
+                          (totalMedia * cleanupPercentage).round(),
+                          l10n.media,
+                        ),
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurface.withOpacity(0.8),
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+
   List<String> _getLoadingDescriptions(AppLocalizations l10n) {
     return [
       l10n.loadingDescriptionOptimizingSpace,
@@ -705,12 +839,43 @@ class _GalleryReportPageState extends State<GalleryReportPage>
     return '${sizeMB.toStringAsFixed(1)} MB';
   }
 
-  /// Format number with commas
-  String _formatNumber(int number) {
-    return number.toString().replaceAllMapped(
-      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-      (Match m) => '${m[1]},',
+  // GB değeri küçükse MB olarak göster
+  String _formatSizeDynamic(double sizeInGB) {
+    if (sizeInGB >= 1.0) {
+      return '${sizeInGB.toStringAsFixed(1)} GB';
+    }
+    final sizeMB = sizeInGB * 1024;
+    // 1 GB altı değerler için MB göster
+    return '${sizeMB.toStringAsFixed(sizeMB >= 10 ? 0 : 1)} MB';
+  }
+
+  // GB metnini küçük boyutlarda kaldırarak çeviri çıktısını düzelt
+  String _buildPotentialSavingsMessage(
+    AppLocalizations l10n,
+    double sizeGB,
+    int mediaCount,
+    String mediaLabel,
+  ) {
+    final text = l10n.potentialSavingsMessage(
+      _formatSizeDynamic(sizeGB),
+      mediaCount,
+      mediaLabel,
     );
+
+    if (sizeGB < 1.0) {
+      // "12 MB GB" gibi çıktıları "12 MB" olarak düzelt
+      return text.replaceAll(RegExp(r'\s?GB\b', caseSensitive: false), '');
+    }
+    return text;
+  }
+
+  List<AlbumDetail> _getTopAlbums(GalleryStats stats) {
+    final albums = stats.albumDetails;
+    if (albums.isEmpty) return const [];
+
+    final topAlbums = [...albums]
+      ..sort((a, b) => b.sizeMB.compareTo(a.sizeMB));
+    return topAlbums.take(3).toList();
   }
 }
 

@@ -94,7 +94,41 @@ GoRouter createAppRouter() {
       GoRoute(
         path: '/gallery-report',
         name: 'galleryReport',
-        builder: (context, state) => const GalleryReportPage(),
+        pageBuilder: (context, state) {
+          return CustomTransitionPage(
+            key: state.pageKey,
+            child: const GalleryReportPage(),
+            transitionDuration: const Duration(milliseconds: 500),
+            reverseTransitionDuration: const Duration(milliseconds: 400),
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+              final curved = CurvedAnimation(
+                parent: animation,
+                curve: Curves.easeOutCubic,
+                reverseCurve: Curves.easeInCubic,
+              );
+              final slideTween =
+                  Tween<Offset>(begin: const Offset(0, 0.08), end: Offset.zero)
+                      .chain(CurveTween(curve: Curves.easeOut));
+              final fadeTween =
+                  Tween<double>(begin: 0.0, end: 1.0).chain(
+                CurveTween(curve: Curves.easeOut),
+              );
+
+              return FadeTransition(
+                opacity: curved.drive(fadeTween),
+                child: SlideTransition(
+                  position: curved.drive(slideTween),
+                  child: ScaleTransition(
+                    scale: Tween<double>(begin: 0.985, end: 1.0)
+                        .animate(curved),
+                    child: child,
+                  ),
+                ),
+              );
+            },
+          );
+        },
       ),
       GoRoute(
         path: '/results/:type',

@@ -1266,4 +1266,21 @@ class AppLocalizationsTr extends AppLocalizations {
   String youCanClean(String gb, int media, String mediaLabel) {
     return '$gb GB ve $media $mediaLabel temizleyebilirsiniz';
   }
+
+  @override
+  String potentialSavingsMessage(String gb, int media, String mediaLabel) {
+    return 'Uygulamayı en verimli şekilde kullanırsanız $gb GB ve $media $mediaLabel kadar alan kazanabilirsiniz.';
+  }
+
+  @override
+  String get beforeLabel => 'Önce';
+
+  @override
+  String get afterLabel => 'Sonra';
+
+  @override
+  String get optimalUseSubtitle => 'En iyi kullanım ile';
+
+  @override
+  String get afterUsingThisApp => 'Bu uygulamayı kullandıktan sonra';
 }

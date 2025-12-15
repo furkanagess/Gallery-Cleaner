@@ -56,6 +56,7 @@ class PreferencesService {
   static const String _hasShownRateUsDialogKey = 'has_shown_rate_us_dialog';
   static const String _lastSelectedAlbumIdKey = 'last_selected_album_id';
   static const String _uniqueUserIdKey = 'unique_user_id';
+  static const String _newYearEventDeleteCountKey = 'new_year_event_delete_count';
   static const int _rateUsDialogThreshold = 10; // 10 swipe sonrası dialog göster
   static const int _defaultDeleteLimit = 25; // Günlük silme hakkı: 25 fotoğraf
   static const int _defaultScanLimit = 1000;
@@ -1048,5 +1049,26 @@ class PreferencesService {
       await _setSecureString(_uniqueUserIdKey, fallbackId);
       return fallbackId;
     }
+  }
+
+  /// Yeni Yıl Event silme sayacını al (1000 hedefi için)
+  Future<int> getNewYearEventDeleteCount() async {
+    final count = await _getSecureInt(_newYearEventDeleteCountKey);
+    return count ?? 0;
+  }
+
+  /// Yeni Yıl Event silme sayacını artır
+  Future<int> incrementNewYearEventDeleteCount(int incrementBy) async {
+    final currentCount = await getNewYearEventDeleteCount();
+    final newCount = (currentCount + incrementBy).clamp(0, 1000);
+    await _setSecureInt(_newYearEventDeleteCountKey, newCount);
+    debugPrint('💾 [PreferencesService] Yeni Yıl Event silme sayacı: $currentCount -> $newCount');
+    return newCount;
+  }
+
+  /// Yeni Yıl Event silme sayacını sıfırla
+  Future<void> resetNewYearEventDeleteCount() async {
+    await _setSecureInt(_newYearEventDeleteCountKey, 0);
+    debugPrint('💾 [PreferencesService] Yeni Yıl Event silme sayacı sıfırlandı');
   }
 }

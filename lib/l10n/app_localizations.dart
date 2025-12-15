@@ -2313,6 +2313,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{gb} GB and {media} {mediaLabel} you can clean'**
   String youCanClean(String gb, int media, String mediaLabel);
+
+  /// Message showing potential savings when the app is used optimally
+  ///
+  /// In en, this message translates to:
+  /// **'If you use the app optimally, you can save up to {gb} GB and {media} {mediaLabel}.'**
+  String potentialSavingsMessage(String gb, int media, String mediaLabel);
+
+  /// Label for the 'before' state
+  ///
+  /// In en, this message translates to:
+  /// **'Before'**
+  String get beforeLabel;
+
+  /// Label for the 'after' state
+  ///
+  /// In en, this message translates to:
+  /// **'After'**
+  String get afterLabel;
+
+  /// Subtitle indicating optimal usage scenario
+  ///
+  /// In en, this message translates to:
+  /// **'With optimal use'**
+  String get optimalUseSubtitle;
+
+  /// Label shown above the after state / stats
+  ///
+  /// In en, this message translates to:
+  /// **'After using this app'**
+  String get afterUsingThisApp;
 }
 
 class _AppLocalizationsDelegate
