@@ -1282,4 +1282,7 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get noPhotosInSelectedAlbums =>
       'The selected albums do not contain any photos. Please select albums with photos.';
+
+  @override
+  String get youWillBeSaved => 'You will be saved';
 }

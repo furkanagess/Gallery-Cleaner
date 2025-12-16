@@ -146,13 +146,11 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
   // Animasyonlu opacity değerleri - kaybolurken animasyon için
   double _animatedDeleteOpacity = 0.0;
   double _animatedKeepOpacity = 0.0;
+  // Overlay genişlikleri - titremeyi önlemek için cache
+  double _cachedDeleteOverlayWidth = 0.0;
+  double _cachedKeepOverlayWidth = 0.0;
   // New Year Event Card görünürlüğü
   bool _showNewYearEventCard = true;
-  // Titreme animasyonları için controller'lar
-  late AnimationController _deleteShakeController;
-  late AnimationController _keepShakeController;
-  late Animation<double> _deleteShakeAnimation;
-  late Animation<double> _keepShakeAnimation;
 
   @override
   void initState() {
@@ -163,31 +161,12 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
       _iosCounterNotifier = _IOSSwipeCounterNotifier();
       _iosCounterNotifier!.update(_currentIndex, widget.assets.length);
     }
-    // Titreme animasyon controller'ları
-    _deleteShakeController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 50),
-    );
-    _keepShakeController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 50),
-    );
-    // Titreme animasyonları - rastgele yönlerde titreme
-    _deleteShakeAnimation = Tween<double>(begin: -3.0, end: 3.0).animate(
-      CurvedAnimation(parent: _deleteShakeController, curve: Curves.easeInOut),
-    );
-    _keepShakeAnimation = Tween<double>(begin: -3.0, end: 3.0).animate(
-      CurvedAnimation(parent: _keepShakeController, curve: Curves.easeInOut),
-    );
   }
 
   @override
   void dispose() {
     // iOS için ChangeNotifier dispose
     _iosCounterNotifier?.dispose();
-    // Titreme animasyon controller'ları dispose
-    _deleteShakeController.dispose();
-    _keepShakeController.dispose();
     super.dispose();
   }
 
@@ -436,65 +415,76 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
 
                                           // Opacity değerlerini hesapla
                                           final dragDx = offsetToApply.dx;
-                                          final deleteOffsetAbs = dragDx < 0
+                                          final deleteOffsetAbsCalc = dragDx < 0
                                               ? dragDx.abs()
                                               : 0.0;
-                                          final deleteProgress =
-                                              deleteOffsetAbs >= 10.0
-                                              ? ((deleteOffsetAbs - 10.0) /
+                                          final deleteProgressCalc =
+                                              deleteOffsetAbsCalc >= 10.0
+                                              ? ((deleteOffsetAbsCalc - 10.0) /
                                                         100.0)
                                                     .clamp(0.0, 1.0)
                                               : 0.0;
                                           final targetDeleteOpacity =
-                                              deleteProgress > 0.0
-                                              ? (0.3 + (deleteProgress * 0.7))
+                                              deleteProgressCalc > 0.0
+                                              ? (0.3 + (deleteProgressCalc * 0.7))
                                                     .clamp(0.3, 1.0)
                                               : 0.0;
 
-                                          final keepOffset = dragDx > 0
+                                          final keepOffsetCalc = dragDx > 0
                                               ? dragDx
                                               : 0.0;
-                                          final keepProgress =
-                                              keepOffset >= 10.0
-                                              ? ((keepOffset - 10.0) / 100.0)
+                                          final keepProgressCalc =
+                                              keepOffsetCalc >= 10.0
+                                              ? ((keepOffsetCalc - 10.0) / 100.0)
                                                     .clamp(0.0, 1.0)
                                               : 0.0;
                                           final targetKeepOpacity =
-                                              keepProgress > 0.0
-                                              ? (0.3 + (keepProgress * 0.7))
+                                              keepProgressCalc > 0.0
+                                              ? (0.3 + (keepProgressCalc * 0.7))
                                                     .clamp(0.3, 1.0)
                                               : 0.0;
 
-                                          setState(() {
-                                            _photoSwipeDragOffset =
-                                                offsetToApply;
-                                            // Animasyonlu opacity değerlerini güncelle (AnimatedOpacity animasyonu yapacak)
-                                            _animatedDeleteOpacity =
-                                                targetDeleteOpacity;
-                                            _animatedKeepOpacity =
-                                                targetKeepOpacity;
-                                          });
-
-                                          // Titreme animasyonlarını başlat/durdur
-                                          if (targetDeleteOpacity > 0.0) {
-                                            if (!_deleteShakeController
-                                                .isAnimating) {
-                                              _deleteShakeController.repeat();
-                                            }
-                                          } else {
-                                            _deleteShakeController.stop();
-                                            _deleteShakeController.reset();
+                                          // Overlay genişliklerini hesapla (sadece gerekli olduğunda)
+                                          final screenWidth = MediaQuery.of(context).size.width;
+                                          const buttonSize = 80.0;
+                                          final leftButtonCenterX = screenWidth / 2 - 70;
+                                          final rightButtonCenterX = screenWidth / 2 + 70;
+                                          final leftButtonRightEdge = leftButtonCenterX + (buttonSize / 2);
+                                          final rightButtonLeftEdge = rightButtonCenterX - (buttonSize / 2);
+                                          final leftToButton = leftButtonRightEdge;
+                                          final rightToButton = screenWidth - rightButtonLeftEdge;
+                                          
+                                          final newDeleteOverlayWidth = deleteProgressCalc * leftToButton;
+                                          final newKeepOverlayWidth = keepProgressCalc * rightToButton;
+                                          
+                                          // Titremeyi önlemek için minimum threshold kontrolü
+                                          // Sadece 0.05'ten büyük değişikliklerde güncelle
+                                          final deleteOpacityDelta = (targetDeleteOpacity - _animatedDeleteOpacity).abs();
+                                          final keepOpacityDelta = (targetKeepOpacity - _animatedKeepOpacity).abs();
+                                          
+                                          // Overlay genişlik değişikliklerini kontrol et (2 pixel threshold)
+                                          final deleteWidthDelta = (newDeleteOverlayWidth - _cachedDeleteOverlayWidth).abs();
+                                          final keepWidthDelta = (newKeepOverlayWidth - _cachedKeepOverlayWidth).abs();
+                                          
+                                          if (deleteOpacityDelta > 0.05 || keepOpacityDelta > 0.05 || 
+                                              deleteWidthDelta > 2.0 || keepWidthDelta > 2.0 ||
+                                              (targetDeleteOpacity == 0.0 && _animatedDeleteOpacity > 0.0) ||
+                                              (targetKeepOpacity == 0.0 && _animatedKeepOpacity > 0.0)) {
+                                            setState(() {
+                                              _photoSwipeDragOffset =
+                                                  offsetToApply;
+                                              // Animasyonlu opacity değerlerini güncelle (AnimatedOpacity animasyonu yapacak)
+                                              _animatedDeleteOpacity =
+                                                  targetDeleteOpacity;
+                                              _animatedKeepOpacity =
+                                                  targetKeepOpacity;
+                                              // Overlay genişliklerini güncelle
+                                              _cachedDeleteOverlayWidth = newDeleteOverlayWidth;
+                                              _cachedKeepOverlayWidth = newKeepOverlayWidth;
+                                            });
                                           }
 
-                                          if (targetKeepOpacity > 0.0) {
-                                            if (!_keepShakeController
-                                                .isAnimating) {
-                                              _keepShakeController.repeat();
-                                            }
-                                          } else {
-                                            _keepShakeController.stop();
-                                            _keepShakeController.reset();
-                                          }
+                                          // Titreme animasyonları kaldırıldı - titremeyi önlemek için
                                         } else if (mounted) {
                                           _hasPendingOffsetUpdate = false;
                                         }
@@ -875,39 +865,13 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
     final leftButtonCenterX = screenWidth / 2 - 70;
     final rightButtonCenterX = screenWidth / 2 + 70;
 
-    // Drag offset değerlerini al
-    final dragDx = _photoSwipeDragOffset.dx;
-
-    // Debug: Her zaman offset değerini logla
-    if (dragDx.abs() > 5.0) {
-      debugPrint('🎯 [SwipeActionButtons] Drag dx: $dragDx');
-    }
-
-    // Sol swipe (delete) hesaplamaları
-    final deleteOffsetAbs = dragDx < 0 ? dragDx.abs() : 0.0;
-    // Çok düşük threshold - 10px'den itibaren görünür
-    final deleteProgress = deleteOffsetAbs >= 10.0
-        ? ((deleteOffsetAbs - 10.0) / 100.0).clamp(0.0, 1.0)
-        : 0.0;
-
-    // Sağ swipe (keep) hesaplamaları
-    final keepOffset = dragDx > 0 ? dragDx : 0.0;
-    // Çok düşük threshold - 10px'den itibaren görünür
-    final keepProgress = keepOffset >= 10.0
-        ? ((keepOffset - 10.0) / 100.0).clamp(0.0, 1.0)
-        : 0.0;
-
     // Animasyonlu opacity değerlerini kullan (drag offset callback'inde güncelleniyor)
     final deleteOpacity = _animatedDeleteOpacity;
     final keepOpacity = _animatedKeepOpacity;
 
-    // Overlay genişlikleri - ekranın kenarlarından butonlara kadar
-    final leftButtonRightEdge = leftButtonCenterX + (buttonSize / 2);
-    final rightButtonLeftEdge = rightButtonCenterX - (buttonSize / 2);
-    final leftToButton = leftButtonRightEdge;
-    final rightToButton = screenWidth - rightButtonLeftEdge;
-    final deleteOverlayWidth = deleteProgress * leftToButton;
-    final keepOverlayWidth = keepProgress * rightToButton;
+    // Overlay genişlikleri - cache'lenmiş değerleri kullan (titremeyi önlemek için)
+    final deleteOverlayWidth = _cachedDeleteOverlayWidth;
+    final keepOverlayWidth = _cachedKeepOverlayWidth;
 
     return [
       // Sol overlay - Ekranın en solundan sol butonun sağına kadar
@@ -918,20 +882,20 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
           height: buttonSize,
           width: deleteOverlayWidth,
           child: IgnorePointer(
-            child: AnimatedOpacity(
-              opacity: _animatedDeleteOpacity,
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeOut,
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                    colors: [
-                      AppColors.error.withOpacity(0.6),
-                      AppColors.error.withOpacity(0.0),
-                    ],
-                    stops: const [0.0, 1.0],
+            child: RepaintBoundary(
+              child: Opacity(
+                opacity: _animatedDeleteOpacity,
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: [
+                        AppColors.error.withOpacity(0.6),
+                        AppColors.error.withOpacity(0.0),
+                      ],
+                      stops: const [0.0, 1.0],
+                    ),
                   ),
                 ),
               ),
@@ -946,20 +910,20 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
           height: buttonSize,
           width: keepOverlayWidth,
           child: IgnorePointer(
-            child: AnimatedOpacity(
-              opacity: _animatedKeepOpacity,
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeOut,
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.centerRight,
-                    end: Alignment.centerLeft,
-                    colors: [
-                      AppColors.success.withOpacity(0.6),
-                      AppColors.success.withOpacity(0.0),
-                    ],
-                    stops: const [0.0, 1.0],
+            child: RepaintBoundary(
+              child: Opacity(
+                opacity: _animatedKeepOpacity,
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.centerRight,
+                      end: Alignment.centerLeft,
+                      colors: [
+                        AppColors.success.withOpacity(0.6),
+                        AppColors.success.withOpacity(0.0),
+                      ],
+                      stops: const [0.0, 1.0],
+                    ),
                   ),
                 ),
               ),
@@ -972,38 +936,25 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
           left: leftButtonCenterX - (buttonSize / 2),
           top: buttonCenterY - (buttonSize / 2),
           child: IgnorePointer(
-            child: AnimatedOpacity(
-              opacity: _animatedDeleteOpacity,
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeOut,
-              child: AnimatedBuilder(
-                animation: _deleteShakeAnimation,
-                builder: (context, child) {
-                  return Transform.translate(
-                    offset: Offset(
-                      _deleteShakeAnimation.value *
-                          math.sin(_deleteShakeController.value * math.pi * 4),
-                      _deleteShakeAnimation.value *
-                          math.cos(_deleteShakeController.value * math.pi * 4),
+            child: RepaintBoundary(
+              child: Opacity(
+                opacity: _animatedDeleteOpacity,
+                child: Container(
+                  width: buttonSize,
+                  height: buttonSize,
+                  decoration: BoxDecoration(
+                    color: AppColors.error,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Image.asset(
+                      'assets/new_year/christmas-tree.png',
+                      width: buttonIconSize,
+                      height: buttonIconSize,
+                      fit: BoxFit.contain,
                     ),
-                    child: Container(
-                      width: buttonSize,
-                      height: buttonSize,
-                      decoration: BoxDecoration(
-                        color: AppColors.error,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Center(
-                        child: Image.asset(
-                          'assets/new_year/christmas-tree.png',
-                          width: buttonIconSize,
-                          height: buttonIconSize,
-                          fit: BoxFit.contain,
-                        ),
-                      ),
-                    ),
-                  );
-                },
+                  ),
+                ),
               ),
             ),
           ),
@@ -1014,38 +965,25 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
           left: rightButtonCenterX - (buttonSize / 2),
           top: buttonCenterY - (buttonSize / 2),
           child: IgnorePointer(
-            child: AnimatedOpacity(
-              opacity: _animatedKeepOpacity,
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeOut,
-              child: AnimatedBuilder(
-                animation: _keepShakeAnimation,
-                builder: (context, child) {
-                  return Transform.translate(
-                    offset: Offset(
-                      _keepShakeAnimation.value *
-                          math.sin(_keepShakeController.value * math.pi * 4),
-                      _keepShakeAnimation.value *
-                          math.cos(_keepShakeController.value * math.pi * 4),
+            child: RepaintBoundary(
+              child: Opacity(
+                opacity: _animatedKeepOpacity,
+                child: Container(
+                  width: buttonSize,
+                  height: buttonSize,
+                  decoration: BoxDecoration(
+                    color: AppColors.success,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Image.asset(
+                      'assets/new_year/candy-cane.png',
+                      width: buttonIconSize,
+                      height: buttonIconSize,
+                      fit: BoxFit.contain,
                     ),
-                    child: Container(
-                      width: buttonSize,
-                      height: buttonSize,
-                      decoration: BoxDecoration(
-                        color: AppColors.success,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Center(
-                        child: Image.asset(
-                          'assets/new_year/candy-cane.png',
-                          width: buttonIconSize,
-                          height: buttonIconSize,
-                          fit: BoxFit.contain,
-                        ),
-                      ),
-                    ),
-                  );
-                },
+                  ),
+                ),
               ),
             ),
           ),

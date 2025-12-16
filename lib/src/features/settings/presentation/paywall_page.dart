@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lottie/lottie.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../core/services/revenuecat_service.dart';
 import '../../gallery/application/gallery_providers.dart';
@@ -255,26 +254,7 @@ class _PaywallPageState extends State<PaywallPage>
       () => Scaffold(
         backgroundColor: theme.colorScheme.background,
         body: SafeArea(
-          child: Stack(
-            children: [
-              // New Year snowing background
-              Positioned.fill(
-                child: Opacity(
-                  opacity: 0.4,
-                  child: ColorFiltered(
-                    colorFilter: const ColorFilter.mode(
-                      AppColors.white,
-                      BlendMode.srcATop,
-                    ),
-                    child: Lottie.asset(
-                      'assets/new_year/Snowing.json',
-                      fit: BoxFit.cover,
-                      repeat: true,
-                    ),
-                  ),
-                ),
-              ),
-              Column(
+          child: Column(
                 children: [
                   // Header with close and restore buttons
                   Padding(
@@ -978,8 +958,6 @@ class _PaywallPageState extends State<PaywallPage>
                   ],
                 ],
               ),
-            ],
-          ),
         ),
       ),
     );

@@ -412,6 +412,7 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck>
         : baseScale; // Background cards maintain fixed scale
 
     // Karartı overlay'i kaldırıldı - tüm kartlar tam görünür, animasyon yok
+    // AnimatedContainer kaldırıldı - titremeyi önlemek için
     Widget card = Transform.translate(
       offset: offset,
       child: Transform.rotate(
@@ -419,9 +420,7 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck>
         child: Transform.scale(
           scale: cardScale,
           child: RepaintBoundary(
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 150),
-              curve: Curves.easeOut,
+            child: Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(20),
                 // Şeffaf arka plan - siyah alan sorununu önlemek için
@@ -464,13 +463,17 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck>
           // Yalnızca yatay hareket - dikey hareketi sıfırla
           final newOffset = Offset(_dragOffset.dx + details.delta.dx, 0.0);
 
-          // Optimize: Sadece değişiklik varsa cubitSetState çağır
+          // Optimize: Sadece belirli bir threshold'dan büyük değişikliklerde güncelle
+          // Bu titremeyi önler
+          final deltaX = (newOffset.dx - _dragOffset.dx).abs();
           final newRotation = (newOffset.dx / 12).clamp(
             -_rotationMaxDeg,
             _rotationMaxDeg,
           );
+          final rotationDelta = (newRotation - _dragRotation).abs();
 
-          if (_dragOffset != newOffset || _dragRotation != newRotation) {
+          // Minimum threshold: 0.5 pixel veya 0.1 derece değişiklik
+          if (deltaX > 0.5 || rotationDelta > 0.1) {
             cubitSetState(() {
               _dragOffset = newOffset;
               _dragRotation = newRotation;

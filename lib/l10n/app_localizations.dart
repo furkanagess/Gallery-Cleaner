@@ -2355,6 +2355,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The selected albums do not contain any photos. Please select albums with photos.'**
   String get noPhotosInSelectedAlbums;
+
+  /// Text indicating how much space will be saved when deleting photos
+  ///
+  /// In en, this message translates to:
+  /// **'You will be saved'**
+  String get youWillBeSaved;
 }
 
 class _AppLocalizationsDelegate

@@ -1290,4 +1290,7 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get noPhotosInSelectedAlbums =>
       'Seçilen albümlerde hiç fotoğraf bulunmuyor. Lütfen fotoğraf içeren albümleri seçin.';
+
+  @override
+  String get youWillBeSaved => 'Tasarruf edilecek';
 }

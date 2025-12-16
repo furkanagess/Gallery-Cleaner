@@ -1375,6 +1375,10 @@
   "noPhotosInSelectedAlbums": "Los álbumes seleccionados no contienen fotos. Por favor, selecciona álbumes con fotos.",
   "@noPhotosInSelectedAlbums": {
     "description": "Mensaje cuando los álbumes seleccionados no tienen fotos"
+  },
+  "youWillBeSaved": "Se ahorrará",
+  "@youWillBeSaved": {
+    "description": "Texto que indica cuánto espacio se ahorrará al eliminar fotos"
   }
 }
 

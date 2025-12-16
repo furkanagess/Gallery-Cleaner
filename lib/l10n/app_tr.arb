@@ -1442,6 +1442,10 @@
   "noPhotosInSelectedAlbums": "Seçilen albümlerde hiç fotoğraf bulunmuyor. Lütfen fotoğraf içeren albümleri seçin.",
   "@noPhotosInSelectedAlbums": {
     "description": "Seçilen albümlerde fotoğraf olmadığında mesaj"
+  },
+  "youWillBeSaved": "Tasarruf edilecek",
+  "@youWillBeSaved": {
+    "description": "Fotoğrafları silerken ne kadar alan tasarruf edileceğini gösteren metin"
   }
 }
 

@@ -35,9 +35,9 @@ class RevenueCatService {
   /// Offering identifier: gallery_cleaner_299
   /// Display Name: Gallery Cleaner Plus
   /// Lifetime package identifier (standard): $rc_lifetime
-  /// Android Product: gallery_cleaner_ab_399
-  /// iOS Product: gallery_cleaner_299
-  static const String offeringId = 'gallery_cleaner_299';
+  /// Android Product: gallery_cleaner_ab_test_4.99
+  /// iOS Product: gallery_cleaner_499
+  static const String offeringId = 'gallery_cleaner_499';
   static const String lifetimePackageId = '\$rc_lifetime';
   static const String entitlementId = 'premium'; // must match RC entitlement id
 
@@ -109,9 +109,7 @@ class RevenueCatService {
     // Try to find the specified offering first
     if (offeringId.isNotEmpty && offerings.all.containsKey(offeringId)) {
       targetOffering = offerings.all[offeringId];
-      debugPrint(
-        '✅ [RevenueCat] Using specified offering: $offeringId',
-      );
+      debugPrint('✅ [RevenueCat] Using specified offering: $offeringId');
     } else if (current != null && current.identifier == offeringId) {
       targetOffering = current;
       debugPrint(

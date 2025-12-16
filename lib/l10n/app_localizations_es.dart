@@ -1293,4 +1293,7 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get noPhotosInSelectedAlbums =>
       'Los álbumes seleccionados no contienen fotos. Por favor, selecciona álbumes con fotos.';
+
+  @override
+  String get youWillBeSaved => 'Se ahorrará';
 }

@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:typed_data';
+import 'dart:math' as math;
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -190,6 +191,55 @@ class _ReviewDeletePhotosPageState extends State<ReviewDeletePhotosPage> {
     context.read<ReviewDeleteSelectionCubit>().toggleSelection(photoId);
   }
 
+  Widget _buildSnowflakesBackground(ThemeData theme) {
+    final isDark = theme.brightness == Brightness.dark;
+    final random = math.Random();
+
+    // Tema uyumlu renk paleti
+    final List<Color> palette = isDark
+        ? [
+            Colors.white.withOpacity(0.75),
+            theme.colorScheme.primary.withOpacity(0.82),
+            theme.colorScheme.secondary.withOpacity(0.68),
+          ]
+        : [
+            theme.colorScheme.primary.withOpacity(0.72),
+            theme.colorScheme.secondary.withOpacity(0.65),
+            Colors.white.withOpacity(0.6),
+          ];
+
+    return Stack(
+      children: List.generate(20, (index) {
+        final top = random.nextDouble() * 1000; // Random top position
+        final left = random.nextDouble() * 400; // Random left position
+        final opacity = 0.15 + random.nextDouble() * 0.45; // Random opacity
+        final size = 18.0 + random.nextDouble() * 12.0; // Random size
+        final rotationDeg = random.nextDouble() * 360; // Random rotation
+        final color = palette[random.nextInt(palette.length)]; // Random color from palette
+
+        return Positioned(
+          top: top,
+          left: left,
+          child: Opacity(
+            opacity: opacity.clamp(0.15, 0.8),
+            child: Transform.rotate(
+              angle: rotationDeg * math.pi / 180,
+              child: Image.asset(
+                'assets/new_year/snowflake.png',
+                width: size,
+                height: size,
+                fit: BoxFit.contain,
+                color: color,
+                colorBlendMode: BlendMode.srcIn,
+              ),
+            ),
+          ),
+        );
+      }),
+    );
+  }
+
+
   Future<void> _deleteSelectedPhotos() async {
     final selectedIds = context.read<ReviewDeleteSelectionCubit>().state;
     if (selectedIds.isEmpty || _isDeleting) return;
@@ -371,44 +421,53 @@ class _ReviewDeletePhotosPageState extends State<ReviewDeletePhotosPage> {
         await deleteLimitCubit.decrease(deleteResult.deletedCount);
 
         if (mounted) {
-          // Kalan tüm pending actions'ları temizle
-          final remainingPendingActions = reviewActionsCubit.state;
-          if (remainingPendingActions.isNotEmpty) {
-            // Tüm kalan pending actions'ları undo et
-            for (final action in remainingPendingActions) {
-              await reviewActionsCubit.undoDecision(
-                action.asset,
-                wasKeep: false,
-              );
-            }
-          }
-
-          // Silinen fotoğrafları deckte tekrar görünmemesi için galeriyi yenile
-          try {
-            context.read<GalleryPagingCubit>().reload();
-          } catch (e) {
-            debugPrint('⚠️ [ReviewDeletePhotosPage] Gallery reload failed: $e');
-          }
-
-          // Başarılı silme sonrası animasyonlu özet dialog'u göster
-          await showDialog<void>(
+          // Başarılı silme sonrası animasyonlu özet bottom sheet'ini göster
+          // Dialog'u hemen göster ki "no photos to delete" ekranı görünmesin
+          await showModalBottomSheet<void>(
             context: context,
-            barrierDismissible: false,
-            builder: (dialogContext) {
-              return _DeleteSummaryDialog(
+            isScrollControlled: true,
+            backgroundColor: AppColors.transparent,
+            isDismissible: false,
+            enableDrag: false,
+            builder: (sheetContext) {
+              return _DeleteSummaryBottomSheet(
                 deletedCount: deleteResult.deletedCount,
                 deletedSizeMB: deleteResult.deletedSizeMB,
+                onDone: () async {
+                  Navigator.of(sheetContext).pop();
+                  
+                  if (mounted) {
+                    // Kalan tüm pending actions'ları temizle
+                    final remainingPendingActions = reviewActionsCubit.state;
+                    if (remainingPendingActions.isNotEmpty) {
+                      // Tüm kalan pending actions'ları undo et
+                      for (final action in remainingPendingActions) {
+                        await reviewActionsCubit.undoDecision(
+                          action.asset,
+                          wasKeep: false,
+                        );
+                      }
+                    }
+
+                    // Silinen fotoğrafları deckte tekrar görünmemesi için galeriyi yenile
+                    try {
+                      context.read<GalleryPagingCubit>().reload();
+                    } catch (e) {
+                      debugPrint('⚠️ [ReviewDeletePhotosPage] Gallery reload failed: $e');
+                    }
+
+                    // Swipe tab'ına geri dön ve swipe deck'i başa al
+                    // Swipe index'ini 0 yap
+                    final prefsService = PreferencesService();
+                    final selectedAlbum = context.read<SelectedAlbumCubit>().state;
+                    await prefsService.saveSwipeIndex(0, selectedAlbum?.id);
+
+                    context.go('/swipe');
+                  }
+                },
               );
             },
           );
-
-          // Swipe tab'ına geri dön ve swipe deck'i başa al
-          // Swipe index'ini 0 yap
-          final prefsService = PreferencesService();
-          final selectedAlbum = context.read<SelectedAlbumCubit>().state;
-          await prefsService.saveSwipeIndex(0, selectedAlbum?.id);
-
-          context.go('/swipe');
         }
       } else {
         if (mounted) {
@@ -491,22 +550,9 @@ class _ReviewDeletePhotosPageState extends State<ReviewDeletePhotosPage> {
       ),
       body: Stack(
         children: [
-          // New Year snowing background
+          // New Year snowflakes background
           Positioned.fill(
-            child: Opacity(
-              opacity: 0.45,
-              child: ColorFiltered(
-                colorFilter: const ColorFilter.mode(
-                  AppColors.white,
-                  BlendMode.srcATop,
-                ),
-                child: Lottie.asset(
-                  'assets/new_year/Snowing.json',
-                  fit: BoxFit.cover,
-                  repeat: true,
-                ),
-              ),
-            ),
+            child: _buildSnowflakesBackground(theme),
           ),
           BlocBuilder<ReviewActionsCubit, List<PendingDeleteAction>>(
             builder: (context, pendingActions) {
@@ -676,7 +722,7 @@ class _ReviewDeletePhotosPageState extends State<ReviewDeletePhotosPage> {
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
                                             Text(
-                                              'you will be saved',
+                                              l10n.youWillBeSaved,
                                               style: theme.textTheme.bodySmall
                                                   ?.copyWith(
                                                     fontWeight: FontWeight.w600,
@@ -857,20 +903,22 @@ class _ReviewDeletePhotosPageState extends State<ReviewDeletePhotosPage> {
   }
 }
 
-class _DeleteSummaryDialog extends StatefulWidget {
-  const _DeleteSummaryDialog({
+class _DeleteSummaryBottomSheet extends StatefulWidget {
+  const _DeleteSummaryBottomSheet({
     required this.deletedCount,
     required this.deletedSizeMB,
+    required this.onDone,
   });
 
   final int deletedCount;
   final double deletedSizeMB;
+  final VoidCallback onDone;
 
   @override
-  State<_DeleteSummaryDialog> createState() => _DeleteSummaryDialogState();
+  State<_DeleteSummaryBottomSheet> createState() => _DeleteSummaryBottomSheetState();
 }
 
-class _DeleteSummaryDialogState extends State<_DeleteSummaryDialog>
+class _DeleteSummaryBottomSheetState extends State<_DeleteSummaryBottomSheet>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   late final Animation<double> _countAnimation;
@@ -917,212 +965,259 @@ class _DeleteSummaryDialogState extends State<_DeleteSummaryDialog>
     super.dispose();
   }
 
+  Widget _buildDialogSnowflakes(ThemeData theme) {
+    final isDark = theme.brightness == Brightness.dark;
+    final random = math.Random();
+
+    // Tema uyumlu renk paleti (daha hafif opacity)
+    final List<Color> palette = isDark
+        ? [
+            Colors.white.withOpacity(0.5),
+            theme.colorScheme.primary.withOpacity(0.55),
+            theme.colorScheme.secondary.withOpacity(0.45),
+          ]
+        : [
+            theme.colorScheme.primary.withOpacity(0.48),
+            theme.colorScheme.secondary.withOpacity(0.43),
+            Colors.white.withOpacity(0.4),
+          ];
+
+    return Opacity(
+      opacity: 0.18,
+      child: Stack(
+        children: List.generate(15, (index) {
+          final top = random.nextDouble() * 300; // Random top position
+          final left = random.nextDouble() * 300; // Random left position
+          final opacity = 0.1 + random.nextDouble() * 0.3; // Random opacity
+          final size = 14.0 + random.nextDouble() * 10.0; // Random size
+          final rotationDeg = random.nextDouble() * 360; // Random rotation
+          final color = palette[random.nextInt(palette.length)]; // Random color from palette
+
+          return Positioned(
+            top: top,
+            left: left,
+            child: Opacity(
+              opacity: opacity.clamp(0.1, 0.6),
+              child: Transform.rotate(
+                angle: rotationDeg * math.pi / 180,
+                child: Image.asset(
+                  'assets/new_year/snowflake.png',
+                  width: size,
+                  height: size,
+                  fit: BoxFit.contain,
+                  color: color,
+                  colorBlendMode: BlendMode.srcIn,
+                ),
+              ),
+            ),
+          );
+        }),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
 
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(24),
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  theme.colorScheme.surface.withOpacity(0.98),
-                  theme.colorScheme.surfaceContainerHighest.withOpacity(0.98),
-                ],
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: theme.colorScheme.shadow.withOpacity(0.35),
-                  blurRadius: 30,
-                  offset: const Offset(0, 16),
-                ),
-              ],
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(24),
+          topRight: Radius.circular(24),
+        ),
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            theme.colorScheme.surface.withOpacity(0.98),
+            theme.colorScheme.surfaceContainerHighest.withOpacity(0.98),
+          ],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: theme.colorScheme.shadow.withOpacity(0.35),
+            blurRadius: 30,
+            offset: const Offset(0, -8),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(24),
+          topRight: Radius.circular(24),
+        ),
+        child: Stack(
+          children: [
+            // Hafif kar efekti arka plan
+            Positioned.fill(
+              child: _buildDialogSnowflakes(theme),
             ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(24),
-              child: Stack(
-                children: [
-                  // Hafif kar efekti arka plan
-                  Positioned.fill(
-                    child: Opacity(
-                      opacity: 0.18,
-                      child: ColorFiltered(
-                        colorFilter: const ColorFilter.mode(
-                          AppColors.white,
-                          BlendMode.srcATop,
-                        ),
-                        child: Lottie.asset(
-                          'assets/new_year/Snowing.json',
-                          fit: BoxFit.cover,
-                          repeat: true,
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 22, 20, 32),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Handle bar
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.onSurface.withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(2),
                         ),
                       ),
                     ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 22, 20, 16),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                    Row(
                       children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: theme.colorScheme.primary.withOpacity(
-                                  0.12,
-                                ),
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              child: Image.asset(
-                                'assets/new_year/christmas-tree.png',
-                                width: 26,
-                                height: 26,
-                                fit: BoxFit.contain,
-                              ),
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.primary.withOpacity(
+                              0.12,
                             ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                l10n.cleanupCompleteMessage,
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: -0.2,
-                                  color: theme.colorScheme.onSurface,
-                                ),
-                              ),
-                            ),
-                          ],
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Image.asset(
+                            'assets/new_year/christmas-tree.png',
+                            width: 26,
+                            height: 26,
+                            fit: BoxFit.contain,
+                          ),
                         ),
-                        const SizedBox(height: 16),
-                        AnimatedBuilder(
-                          animation: _controller,
-                          builder: (context, _) {
-                            final animatedCount = _countAnimation.value
-                                .round()
-                                .clamp(0, widget.deletedCount);
-                            final animatedMB = _sizeAnimation.value.clamp(
-                              0.0,
-                              widget.deletedSizeMB,
-                            );
-                            final sizeText = animatedMB.toStringAsFixed(
-                              animatedMB >= 100 ? 0 : 1,
-                            );
-
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Text(
-                                      animatedCount.toString(),
-                                      style: theme.textTheme.displaySmall
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.w900,
-                                            color: theme.colorScheme.primary,
-                                          ),
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      l10n.photoUnit,
-                                      style: theme.textTheme.titleMedium
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.w600,
-                                            color: theme.colorScheme.onSurface
-                                                .withOpacity(0.8),
-                                          ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 4),
-                                Row(
-                                  children: [
-                                    Text(
-                                      sizeText,
-                                      style: theme.textTheme.headlineSmall
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.w800,
-                                            color: theme.colorScheme.error,
-                                          ),
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      'MB',
-                                      style: theme.textTheme.titleSmall
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.w600,
-                                            color: theme.colorScheme.onSurface
-                                                .withOpacity(0.8),
-                                          ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  l10n.mbFreed(sizeText),
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: theme.colorScheme.onSurface
-                                        .withOpacity(0.75),
-                                  ),
-                                ),
-                              ],
-                            );
-                          },
-                        ),
-                        const SizedBox(height: 20),
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: TextButton(
-                            onPressed: () {
-                              Navigator.of(context).pop();
-                            },
-                            style: TextButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 18,
-                                vertical: 8,
-                              ),
-                              foregroundColor: theme.colorScheme.primary,
-                            ),
-                            child: Text(
-                              l10n.done,
-                              style: theme.textTheme.labelLarge?.copyWith(
-                                fontWeight: FontWeight.w700,
-                              ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            l10n.cleanupCompleteMessage,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.2,
+                              color: theme.colorScheme.onSurface,
                             ),
                           ),
                         ),
                       ],
                     ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          if (_showConfetti)
-            Positioned(
-              top: -40,
-              left: -10,
-              right: -10,
-              height: 160,
-              child: IgnorePointer(
-                child: Lottie.asset(
-                  'assets/lottie/Confeti.json',
-                  fit: BoxFit.cover,
-                  repeat: false,
+                    const SizedBox(height: 16),
+                    AnimatedBuilder(
+                      animation: _controller,
+                      builder: (context, _) {
+                        final animatedCount = _countAnimation.value
+                            .round()
+                            .clamp(0, widget.deletedCount);
+                        final animatedMB = _sizeAnimation.value.clamp(
+                          0.0,
+                          widget.deletedSizeMB,
+                        );
+                        final sizeText = animatedMB.toStringAsFixed(
+                          animatedMB >= 100 ? 0 : 1,
+                        );
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Text(
+                                  animatedCount.toString(),
+                                  style: theme.textTheme.displaySmall
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.w900,
+                                        color: theme.colorScheme.primary,
+                                      ),
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  l10n.photoUnit,
+                                  style: theme.textTheme.titleMedium
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                        color: theme.colorScheme.onSurface
+                                            .withOpacity(0.8),
+                                      ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                Text(
+                                  sizeText,
+                                  style: theme.textTheme.headlineSmall
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.w800,
+                                        color: theme.colorScheme.error,
+                                      ),
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'MB',
+                                  style: theme.textTheme.titleSmall
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                        color: theme.colorScheme.onSurface
+                                            .withOpacity(0.8),
+                                      ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              l10n.mbFreed(sizeText),
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurface
+                                    .withOpacity(0.75),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 20),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: widget.onDone,
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 18,
+                            vertical: 8,
+                          ),
+                          foregroundColor: theme.colorScheme.primary,
+                        ),
+                        child: Text(
+                          l10n.done,
+                          style: theme.textTheme.labelLarge?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
-        ],
+            if (_showConfetti)
+              Positioned(
+                top: -40,
+                left: -10,
+                right: -10,
+                height: 160,
+                child: IgnorePointer(
+                  child: Lottie.asset(
+                    'assets/lottie/Confeti.json',
+                    fit: BoxFit.cover,
+                    repeat: false,
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

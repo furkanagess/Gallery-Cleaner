@@ -1734,6 +1734,10 @@
   "noPhotosInSelectedAlbums": "The selected albums do not contain any photos. Please select albums with photos.",
   "@noPhotosInSelectedAlbums": {
     "description": "Message when selected albums have no photos"
+  },
+  "youWillBeSaved": "You will be saved",
+  "@youWillBeSaved": {
+    "description": "Text indicating how much space will be saved when deleting photos"
   }
 }
 

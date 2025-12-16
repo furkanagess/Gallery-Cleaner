@@ -732,6 +732,7 @@ class _OnboardingSlide4State extends State<_OnboardingSlide4>
   bool _isDeleting = false;
   bool _showStorageMessage = false;
   bool _showRedOverlay = false;
+  bool _showConfetti = false;
   int _deletedCount = 0;
   bool _loopStarted = false;
 
@@ -884,12 +885,17 @@ class _OnboardingSlide4State extends State<_OnboardingSlide4>
     });
     _storageMessageController.forward().then((_) {
       if (mounted && widget.isActive) {
+        // Start confetti animation when storage message animation completes
+        setState(() {
+          _showConfetti = true;
+        });
         Future.delayed(const Duration(milliseconds: 1500), () {
           if (mounted && widget.isActive) {
             _storageMessageController.reverse().then((_) {
               if (mounted && widget.isActive) {
                 setState(() {
                   _showStorageMessage = false;
+                  _showConfetti = false; // Hide confetti when restarting
                 });
                 // Restart animation loop
                 _loopStarted = false;
@@ -922,6 +928,7 @@ class _OnboardingSlide4State extends State<_OnboardingSlide4>
     _showRedOverlay = false;
     _isDeleting = false;
     _showStorageMessage = false;
+    _showConfetti = false;
     _loopStarted = false;
   }
 
@@ -1301,6 +1308,17 @@ class _OnboardingSlide4State extends State<_OnboardingSlide4>
                         ),
                       ),
 
+                    // Confetti animation
+                    if (_showConfetti)
+                      Positioned.fill(
+                        child: IgnorePointer(
+                          child: Lottie.asset(
+                            'assets/lottie/Confeti.json',
+                            fit: BoxFit.cover,
+                            repeat: false,
+                          ),
+                        ),
+                      ),
                     // Storage saved message
                     if (_showStorageMessage)
                       Positioned.fill(
@@ -1447,6 +1465,7 @@ class _OnboardingSlide5State extends State<_OnboardingSlide5>
   late Animation<double> _savedAnimation;
   bool _loopStarted = false;
   bool _showSaved = false;
+  bool _showConfetti = false;
   int _deletedCount = 0;
 
   final List<String> _duplicateImages = [
@@ -1523,6 +1542,7 @@ class _OnboardingSlide5State extends State<_OnboardingSlide5>
       _savedController.reset();
       _loopStarted = false;
       _showSaved = false;
+      _showConfetti = false;
     }
   }
 
@@ -1540,13 +1560,18 @@ class _OnboardingSlide5State extends State<_OnboardingSlide5>
       _deletedCount = 8; // 8 duplicates merged (4 per image, 2 images)
     });
     _savedController.forward().then((_) {
-      if (!mounted) return;
+      if (!mounted || !widget.isActive) return;
+      // Show confetti when saved message animation completes
+      setState(() {
+        _showConfetti = true;
+      });
       Future.delayed(const Duration(milliseconds: 1500), () {
-        if (!mounted) return;
+        if (!mounted || !widget.isActive) return;
         _savedController.reverse().then((_) {
-          if (mounted) {
+          if (mounted && widget.isActive) {
             setState(() {
               _showSaved = false;
+              _showConfetti = false; // Hide confetti when restarting
             });
           }
         });
@@ -1709,6 +1734,17 @@ class _OnboardingSlide5State extends State<_OnboardingSlide5>
                                   image: _duplicateImages[1],
                                   baseOffset: const Offset(0, 70),
                                 ),
+                                // Confetti animation
+                                if (_showConfetti)
+                                  Positioned.fill(
+                                    child: IgnorePointer(
+                                      child: Lottie.asset(
+                                        'assets/lottie/Confeti.json',
+                                        fit: BoxFit.cover,
+                                        repeat: false,
+                                      ),
+                                    ),
+                                  ),
                                 if (_showSaved)
                                   Positioned.fill(
                                     child: IgnorePointer(
@@ -1919,6 +1955,7 @@ class _OnboardingSlide6State extends State<_OnboardingSlide6>
   bool _isDeleting = false;
   bool _showRedOverlay = false;
   bool _showSaved = false;
+  bool _showConfetti = false;
   int _deletedCount = 0;
   final List<String> _storageImages = const [
     'assets/image/blur1.jpeg',
@@ -2076,12 +2113,17 @@ class _OnboardingSlide6State extends State<_OnboardingSlide6>
           });
           _savedController.forward().then((_) {
             if (!mounted || !widget.isActive) return;
+            // Show confetti when saved message animation completes
+            setState(() {
+              _showConfetti = true;
+            });
             Future.delayed(const Duration(milliseconds: 800), () {
               if (!mounted || !widget.isActive) return;
               _savedController.reverse().then((_) {
                 if (!mounted || !widget.isActive) return;
                 setState(() {
                   _showSaved = false;
+                  _showConfetti = false; // Hide confetti when restarting
                 });
                 Future.delayed(const Duration(milliseconds: 500), () {
                   if (!mounted || !widget.isActive) return;
@@ -2106,6 +2148,7 @@ class _OnboardingSlide6State extends State<_OnboardingSlide6>
     _isDeleting = false;
     _showRedOverlay = false;
     _showSaved = false;
+    _showConfetti = false;
     _deletedCount = 0;
   }
 
@@ -2621,6 +2664,17 @@ class _OnboardingSlide6State extends State<_OnboardingSlide6>
                                             ),
                                           ),
                                         ),
+                                      ),
+                                    ),
+                                  ),
+                                // Confetti animation
+                                if (_showConfetti)
+                                  Positioned.fill(
+                                    child: IgnorePointer(
+                                      child: Lottie.asset(
+                                        'assets/lottie/Confeti.json',
+                                        fit: BoxFit.cover,
+                                        repeat: false,
                                       ),
                                     ),
                                   ),

@@ -2555,6 +2555,57 @@ class _ModernTopInfoBarState extends State<_ModernTopInfoBar>
   }
 }
 
+// Helper widget for snowflakes background
+Widget _buildSnowflakesBackground(BuildContext context) {
+  final theme = Theme.of(context);
+  final isDark = theme.brightness == Brightness.dark;
+
+  // Tema uyumlu renk paleti
+  final palette = isDark
+      ? [
+          AppColors.white.withOpacity(0.82),
+          theme.colorScheme.secondary.withOpacity(0.78),
+          theme.colorScheme.primary.withOpacity(0.72),
+        ]
+      : [
+          theme.colorScheme.primary.withOpacity(0.72),
+          theme.colorScheme.secondary.withOpacity(0.68),
+          theme.colorScheme.onSurface.withOpacity(0.45),
+        ];
+
+  // Rastgele snowflake'ler - container boyutuna göre optimize edilmiş
+  final flakes = List.generate(15, (index) {
+    final top = (index * 47 + 18 * (index % 3)) % 80;
+    final left = (index * 61 + 23 * (index % 4)) % 200;
+    final opacity =
+        (isDark ? 0.18 : 0.14) + (index % 6) * (isDark ? 0.05 : 0.04);
+    final size = 10.0 + (index % 5) * 4.0 + ((index % 3 == 0) ? 2.0 : 0.0);
+    final rotationDeg = (index * 17 + 11 * (index % 5)) % 360;
+    final color = palette[index % palette.length];
+
+    return Positioned(
+      top: top.toDouble(),
+      left: left.toDouble(),
+      child: Opacity(
+        opacity: opacity.clamp(0.12, 0.9),
+        child: Transform.rotate(
+          angle: rotationDeg * math.pi / 180,
+          child: Image.asset(
+            'assets/new_year/snowflake.png',
+            width: size,
+            height: size,
+            fit: BoxFit.contain,
+            color: color,
+            colorBlendMode: BlendMode.srcIn,
+          ),
+        ),
+      ),
+    );
+  });
+
+  return Stack(children: flakes);
+}
+
 // Modern Delete Limit Badge
 class _ModernDeleteLimitBadge extends StatelessWidget {
   const _ModernDeleteLimitBadge();
@@ -2656,24 +2707,11 @@ class _ModernDeleteLimitBadge extends StatelessWidget {
                     ],
                   ),
                 ),
-                // Kar efekti arka plan
+                // Rastgele snowflake PNG'leri arka plan
                 Positioned.fill(
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(16),
-                    child: Opacity(
-                      opacity: 0.3,
-                      child: ColorFiltered(
-                        colorFilter: const ColorFilter.mode(
-                          AppColors.white,
-                          BlendMode.srcATop,
-                        ),
-                        child: Lottie.asset(
-                          'assets/new_year/Snowing.json',
-                          fit: BoxFit.cover,
-                          repeat: true,
-                        ),
-                      ),
-                    ),
+                    child: _buildSnowflakesBackground(context),
                   ),
                 ),
                 // Snowman görseli container içinde sağ altta
@@ -2817,24 +2855,11 @@ class _ModernScanLimitBadge extends StatelessWidget {
                     ],
                   ),
                 ),
-                // Kar efekti arka plan
+                // Rastgele snowflake PNG'leri arka plan
                 Positioned.fill(
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(16),
-                    child: Opacity(
-                      opacity: 0.3,
-                      child: ColorFiltered(
-                        colorFilter: const ColorFilter.mode(
-                          AppColors.white,
-                          BlendMode.srcATop,
-                        ),
-                        child: Lottie.asset(
-                          'assets/new_year/Snowing.json',
-                          fit: BoxFit.cover,
-                          repeat: true,
-                        ),
-                      ),
-                    ),
+                    child: _buildSnowflakesBackground(context),
                   ),
                 ),
                 // Snowman görseli container içinde sağ altta
@@ -3101,24 +3126,11 @@ class _ModernAlbumSelectionButton extends StatelessWidget {
                 ],
               ),
             ),
-            // Kar efekti arka plan
+            // Rastgele snowflake PNG'leri arka plan
             Positioned.fill(
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(16),
-                child: Opacity(
-                  opacity: 0.25,
-                  child: ColorFiltered(
-                    colorFilter: const ColorFilter.mode(
-                      AppColors.white,
-                      BlendMode.srcATop,
-                    ),
-                    child: Lottie.asset(
-                      'assets/new_year/Snowing.json',
-                      fit: BoxFit.cover,
-                      repeat: true,
-                    ),
-                  ),
-                ),
+                child: _buildSnowflakesBackground(context),
               ),
             ),
             // Christmas Wreath görseli sağ altta
@@ -3743,82 +3755,27 @@ class _LiquidGlassBottomNavBar extends StatefulWidget {
       _LiquidGlassBottomNavBarState();
 }
 
-class _LiquidGlassBottomNavBarState extends State<_LiquidGlassBottomNavBar>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _indicatorController;
-  late Animation<double> _indicatorAnimation;
-  double _snowmanPosition =
-      0.0; // Snowman'ın double pozisyonu (smooth geçiş için)
-  int _currentTabIndex = 0;
-
+class _LiquidGlassBottomNavBarState extends State<_LiquidGlassBottomNavBar> {
   @override
   void initState() {
     super.initState();
-    _currentTabIndex = widget.tabController.index;
-    _snowmanPosition = _currentTabIndex.toDouble();
-    _indicatorController = AnimationController(
-      vsync: this,
-      duration: const Duration(
-        milliseconds: 800,
-      ), // Snowman için daha yavaş animasyon
-    );
-    _indicatorAnimation = CurvedAnimation(
-      parent: _indicatorController,
-      curve: Curves.easeInOutCubic, // Daha smooth geçiş için
-    );
-    // Animasyon listener ekle (smooth geçiş için - sadece rebuild için)
-    _indicatorAnimation.addListener(() {
-      if (mounted) {
-        setState(() {
-          // Sadece rebuild yap, pozisyon hesaplaması build'de yapılacak
-        });
-      }
-    });
-    // Animasyon tamamlandığında pozisyonu güncelle
-    _indicatorController.addStatusListener((status) {
-      if (status == AnimationStatus.completed && mounted) {
-        setState(() {
-          _snowmanPosition = _currentTabIndex.toDouble();
-        });
-      }
-    });
-    // İlk yüklemede animasyonu tamamlanmış duruma getir (takılma olmasın)
-    _indicatorController.value = 1.0;
-
     widget.tabController.addListener(_onTabChanged);
   }
 
   @override
   void dispose() {
     widget.tabController.removeListener(_onTabChanged);
-    _indicatorController.dispose();
     super.dispose();
   }
 
   void _onTabChanged() {
-    if (mounted) {
-      final newIndex = widget.tabController.index;
-      // Eğer animasyon devam ediyorsa, mevcut animasyonun pozisyonunu hesapla
-      if (_indicatorController.isAnimating) {
-        // Mevcut animasyonun progress değerini kullanarak gerçek pozisyonu hesapla
-        final currentProgress = _indicatorAnimation.value;
-        final previousTarget = _currentTabIndex.toDouble();
-        // Mevcut animasyonlu pozisyonu hesapla (double olarak, smooth geçiş için)
-        _snowmanPosition =
-            _snowmanPosition +
-            (previousTarget - _snowmanPosition) * currentProgress;
-        // Animasyonu durdur ve yeni animasyona başla
-        _indicatorController.stop();
-      }
-      _currentTabIndex = newIndex;
-      // Animasyonu başlat (smooth geçiş için)
-      _updateIndicatorPosition();
-      widget.onTabChanged(newIndex);
-    }
-  }
-
-  void _updateIndicatorPosition() {
-    _indicatorController.forward(from: 0.0);
+    if (!mounted) return;
+    
+    final newIndex = widget.tabController.index;
+    widget.onTabChanged(newIndex);
+    
+    // Rebuild için setState - TabController'ın animasyonu otomatik takip edilecek
+    setState(() {});
   }
 
   @override
@@ -3873,60 +3830,22 @@ class _LiquidGlassBottomNavBarState extends State<_LiquidGlassBottomNavBar>
                       ),
                     ),
                   ),
-                  // Sliding indicator
+                  // Sliding indicator - TabController'ın animasyonunu direkt kullan
                   AnimatedBuilder(
-                    animation: _indicatorAnimation,
+                    animation: widget.tabController.animation ?? 
+                        AlwaysStoppedAnimation(widget.tabController.index.toDouble()),
                     builder: (context, child) {
-                      final selectedIndex = widget.tabController.index.clamp(
-                        0,
-                        3,
-                      );
-
-                      // Her item'ın merkez pozisyonu
-                      final indicatorCenter =
-                          (selectedIndex * itemWidth) + (itemWidth / 2);
-                      // Indicator genişliği (item genişliğinden biraz küçük)
+                      // Indicator için seçili index
+                      final selectedIndex = widget.tabController.index.clamp(0, 3);
+                      final indicatorCenter = (selectedIndex * itemWidth) + (itemWidth / 2);
                       final indicatorWidth = itemWidth - 12;
-                      final indicatorLeft =
-                          indicatorCenter - (indicatorWidth / 2);
-
-                      // Premium durumunu kontrol et ve "remaining deletion" text rengiyle eşit renk kullan
-                      final isPremiumAsync = context
-                          .watch<PremiumCubit>()
-                          .state;
-                      final isPremium = isPremiumAsync.maybeWhen(
-                        data: (premium) => premium,
-                        orElse: () => false,
-                      );
+                      final indicatorLeft = indicatorCenter - (indicatorWidth / 2);
 
                       // "remaining deletion" text rengiyle aynı renk
                       final containerColor = theme
                           .colorScheme
                           .onPrimaryContainer
                           .withOpacity(0.8);
-
-                      // Snowman için animasyonlu pozisyon hesaplama (smooth geçiş)
-                      // Mevcut pozisyondan hedef pozisyona yumuşak geçiş
-                      final targetPosition = _currentTabIndex.toDouble();
-                      // Animasyon değerini kullanarak yumuşak geçiş (lerp ile)
-                      // Eğer animasyon tamamlanmışsa veya başlamamışsa direkt hedef pozisyonda olsun
-                      final animatedPosition = _indicatorController.isAnimating
-                          ? _snowmanPosition +
-                                (targetPosition - _snowmanPosition) *
-                                    _indicatorAnimation.value
-                          : targetPosition;
-                      // Snowman'ın ekran pozisyonunu hesapla (lerp ile item merkezleri arasında)
-                      final currentIndex = animatedPosition.floor().clamp(0, 3);
-                      final nextIndex = (animatedPosition.ceil()).clamp(0, 3);
-                      final progress = animatedPosition - currentIndex;
-                      final currentCenter =
-                          (currentIndex * itemWidth) + (itemWidth / 2);
-                      final nextCenter =
-                          (nextIndex * itemWidth) + (itemWidth / 2);
-                      final animatedSnowmanCenter =
-                          currentCenter +
-                          (nextCenter - currentCenter) * progress;
-                      final animatedSnowmanLeft = animatedSnowmanCenter - 20;
 
                       return Stack(
                         clipBehavior: Clip.none,
@@ -3959,22 +3878,57 @@ class _LiquidGlassBottomNavBarState extends State<_LiquidGlassBottomNavBar>
                               ),
                             ),
                           ),
-                          // Snowman - Seçili tab'ın üstünde (animasyonlu, smooth)
-                          Positioned(
-                            left: animatedSnowmanLeft,
-                            top: -30,
-                            child: RepaintBoundary(
-                              child: Image.asset(
-                                'assets/new_year/snowman.png',
-                                width: 40,
-                                height: 40,
-                                fit: BoxFit.contain,
-                                filterQuality:
-                                    FilterQuality.low, // Performans için
-                              ),
-                            ),
-                          ),
                         ],
+                      );
+                    },
+                  ),
+                  // Snowman - TabController animasyonu ile tam senkronize
+                  AnimatedBuilder(
+                    animation: widget.tabController.animation ?? 
+                        AlwaysStoppedAnimation(widget.tabController.index.toDouble()),
+                    builder: (context, child) {
+                      // TabController'ın animasyon değerini direkt kullan (0.0 - 3.0 arası)
+                      final tabAnimation = widget.tabController.animation;
+                      final animatedTabPosition = tabAnimation != null 
+                          ? tabAnimation.value 
+                          : widget.tabController.index.toDouble();
+                      
+                      // Clamp değeri 0-3 arasında tut
+                      final clampedPosition = animatedTabPosition.clamp(0.0, 3.0);
+                      
+                      // Her item'ın merkez pozisyonunu hesapla
+                      final currentIndex = clampedPosition.floor().clamp(0, 3);
+                      final nextIndex = clampedPosition.ceil().clamp(0, 3);
+                      
+                      // Eğer aynı index'teyse direkt merkez pozisyonu kullan
+                      double animatedSnowmanCenter;
+                      if (currentIndex == nextIndex) {
+                        animatedSnowmanCenter = (currentIndex * itemWidth) + (itemWidth / 2);
+                      } else {
+                        // İki index arasında smooth interpolasyon
+                        final progress = clampedPosition - currentIndex;
+                        final currentCenter = (currentIndex * itemWidth) + (itemWidth / 2);
+                        final nextCenter = (nextIndex * itemWidth) + (itemWidth / 2);
+                        animatedSnowmanCenter = currentCenter + (nextCenter - currentCenter) * progress;
+                      }
+                      
+                      final animatedSnowmanLeft = animatedSnowmanCenter - 20;
+                      
+                      // Snowman - TabController ile tam senkronize, kesintisiz animasyon
+                      return Positioned(
+                        left: animatedSnowmanLeft,
+                        top: -30,
+                        child: RepaintBoundary(
+                          child: Image.asset(
+                            'assets/new_year/snowman.png',
+                            width: 40,
+                            height: 40,
+                            fit: BoxFit.contain,
+                            filterQuality: FilterQuality.medium,
+                            cacheWidth: 40,
+                            cacheHeight: 40,
+                          ),
+                        ),
                       );
                     },
                   ),
