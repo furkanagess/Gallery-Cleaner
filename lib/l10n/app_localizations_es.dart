@@ -1286,4 +1286,11 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get afterUsingThisApp => 'Después de usar esta app';
+
+  @override
+  String get noPhotosFound => 'No se encontraron fotos';
+
+  @override
+  String get noPhotosInSelectedAlbums =>
+      'Los álbumes seleccionados no contienen fotos. Por favor, selecciona álbumes con fotos.';
 }

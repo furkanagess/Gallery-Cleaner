@@ -1275,4 +1275,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get afterUsingThisApp => 'After using this app';
+
+  @override
+  String get noPhotosFound => 'No Photos Found';
+
+  @override
+  String get noPhotosInSelectedAlbums =>
+      'The selected albums do not contain any photos. Please select albums with photos.';
 }

@@ -1434,6 +1434,14 @@
   "afterUsingThisApp": "Bu uygulamayı kullandıktan sonra",
   "@afterUsingThisApp": {
     "description": "After durum başlığı"
+  },
+  "noPhotosFound": "Fotoğraf Bulunamadı",
+  "@noPhotosFound": {
+    "description": "Seçilen albümlerde fotoğraf bulunamadığında başlık"
+  },
+  "noPhotosInSelectedAlbums": "Seçilen albümlerde hiç fotoğraf bulunmuyor. Lütfen fotoğraf içeren albümleri seçin.",
+  "@noPhotosInSelectedAlbums": {
+    "description": "Seçilen albümlerde fotoğraf olmadığında mesaj"
   }
 }
 

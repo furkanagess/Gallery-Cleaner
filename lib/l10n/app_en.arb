@@ -1726,6 +1726,14 @@
   "afterUsingThisApp": "After using this app",
   "@afterUsingThisApp": {
     "description": "Label shown above the after state / stats"
+  },
+  "noPhotosFound": "No Photos Found",
+  "@noPhotosFound": {
+    "description": "Title when no photos are found in selected albums"
+  },
+  "noPhotosInSelectedAlbums": "The selected albums do not contain any photos. Please select albums with photos.",
+  "@noPhotosInSelectedAlbums": {
+    "description": "Message when selected albums have no photos"
   }
 }
 

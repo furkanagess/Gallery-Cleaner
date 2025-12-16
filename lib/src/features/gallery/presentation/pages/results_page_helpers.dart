@@ -16,6 +16,8 @@ import '../../application/duplicate_detection_provider.dart';
 import '../../application/gallery_providers.dart';
 import '../../../../core/services/interstitial_ads_service.dart';
 import '../../../../core/services/preferences_service.dart';
+import '../../application/asset_size_helper.dart';
+import '../../../../core/utils/async_value.dart';
 
 // Helper methods for results page
 Widget buildModernStatCard(
@@ -1718,6 +1720,7 @@ class _DuplicateGroupDetailSheetState
           // Modern Photos grid
           Expanded(
             child: GridView.builder(
+              key: const PageStorageKey('duplicate_group_grid'),
               padding: const EdgeInsets.all(16),
               physics: const BouncingScrollPhysics(),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -1731,232 +1734,14 @@ class _DuplicateGroupDetailSheetState
                 final asset = _sortedAssets[index];
                 final isToDelete = _selectedIds.contains(asset.id);
 
-                return TweenAnimationBuilder<double>(
-                  tween: Tween(begin: 0.0, end: 1.0),
-                  duration: Duration(milliseconds: 300 + (index * 50)),
-                  curve: Curves.easeOut,
-                  builder: (context, scale, child) {
-                    return Transform.scale(
-                      scale: 0.95 + (scale * 0.05),
-                      child: Opacity(opacity: scale, child: child),
-                    );
-                  },
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.secondary.withOpacity(
-                            isDark ? 0.3 : 0.2,
-                          ),
-                          blurRadius: 20,
-                          offset: const Offset(0, 8),
-                          spreadRadius: 2,
-                        ),
-                        BoxShadow(
-                          color: AppColors.black.withValues(
-                            alpha: isDark ? 0.3 : 0.15,
-                          ),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                          spreadRadius: 0,
-                        ),
-                      ],
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(20),
-                      child: Material(
-                        color: AppColors.transparent,
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(20),
-                          onTap: () => _toggleSelection(asset.id),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [
-                                  theme.colorScheme.surface.withOpacity(
-                                    isDark ? 0.95 : 0.98,
-                                  ),
-                                  theme.colorScheme.surfaceContainerHighest
-                                      .withOpacity(isDark ? 0.8 : 0.9),
-                                ],
-                              ),
-                              border: Border.all(
-                                color: theme.colorScheme.outline.withOpacity(
-                                  isDark ? 0.2 : 0.15,
-                                ),
-                                width: 1.5,
-                              ),
-                            ),
-                            child: Stack(
-                              fit: StackFit.expand,
-                              children: [
-                                // Image with overlay gradient
-                                FutureBuilder<Uint8List?>(
-                                  future: asset.thumbnailDataWithSize(
-                                    const pm.ThumbnailSize(600, 600),
-                                    quality: 90,
-                                  ),
-                                  builder: (context, snapshot) {
-                                    if (snapshot.connectionState ==
-                                        ConnectionState.waiting) {
-                                      return Container(
-                                        decoration: BoxDecoration(
-                                          gradient: LinearGradient(
-                                            begin: Alignment.topLeft,
-                                            end: Alignment.bottomRight,
-                                            colors: [
-                                              theme
-                                                  .colorScheme
-                                                  .surfaceContainerHighest,
-                                              theme
-                                                  .colorScheme
-                                                  .surfaceContainerHighest
-                                                  .withOpacity(0.7),
-                                            ],
-                                          ),
-                                        ),
-                                        child: Center(
-                                          child: SizedBox(
-                                            width: 40,
-                                            height: 40,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 3,
-                                              valueColor:
-                                                  AlwaysStoppedAnimation<Color>(
-                                                    AppColors.primary,
-                                                  ),
-                                            ),
-                                          ),
-                                        ),
-                                      );
-                                    }
-                                    if (snapshot.hasData) {
-                                      return Stack(
-                                        fit: StackFit.expand,
-                                        children: [
-                                          Image.memory(
-                                            snapshot.data!,
-                                            fit: BoxFit.cover,
-                                          ),
-                                          // Gradient overlay for better badge readability
-                                          Positioned.fill(
-                                            child: Container(
-                                              decoration: BoxDecoration(
-                                                gradient: LinearGradient(
-                                                  begin: Alignment.topCenter,
-                                                  end: Alignment.bottomCenter,
-                                                  colors: [
-                                                    AppColors.transparent,
-                                                    AppColors.black.withValues(
-                                                      alpha: 0.3,
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      );
-                                    }
-                                    return Container(
-                                      decoration: BoxDecoration(
-                                        color: theme.colorScheme.errorContainer,
-                                        gradient: LinearGradient(
-                                          begin: Alignment.topLeft,
-                                          end: Alignment.bottomRight,
-                                          colors: [
-                                            theme.colorScheme.errorContainer,
-                                            theme.colorScheme.errorContainer
-                                                .withOpacity(0.7),
-                                          ],
-                                        ),
-                                      ),
-                                      child: Icon(
-                                        Icons.error_outline,
-                                        color:
-                                            theme.colorScheme.onErrorContainer,
-                                        size: 32,
-                                      ),
-                                    );
-                                  },
-                                ),
-                                // Selection badge (keep/delete toggle)
-                                  Positioned(
-                                    top: 10,
-                                    left: 10,
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 10,
-                                        vertical: 6,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        gradient: LinearGradient(
-                                          begin: Alignment.topLeft,
-                                          end: Alignment.bottomRight,
-                                        colors: isToDelete
-                                            ? [
-                                                AppColors.error.withOpacity(0.95),
-                                                AppColors.error.withOpacity(0.85),
-                                              ]
-                                            : [
-                                                AppColors.success
-                                                    .withOpacity(0.95),
-                                                AppColors.success
-                                                    .withOpacity(0.85),
-                                          ],
-                                        ),
-                                        borderRadius: BorderRadius.circular(16),
-                                        border: Border.all(
-                                        color: AppColors.white.withOpacity(0.2),
-                                          width: 1,
-                                        ),
-                                        boxShadow: [
-                                          BoxShadow(
-                                          color: (isToDelete
-                                                  ? AppColors.error
-                                                  : AppColors.success)
-                                                .withOpacity(0.4),
-                                            blurRadius: 12,
-                                            offset: const Offset(0, 4),
-                                            spreadRadius: 0,
-                                          ),
-                                        ],
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(
-                                          isToDelete
-                                              ? Icons.delete_forever_rounded
-                                              : Icons.check_circle_outline,
-                                            size: 14,
-                                            color: AppColors.white,
-                                          ),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                          isToDelete ? l10n.delete : l10n.keep,
-                                            style: theme.textTheme.labelSmall
-                                                ?.copyWith(
-                                                  color: AppColors.white,
-                                                  fontWeight: FontWeight.w800,
-                                                  fontSize: 11,
-                                                  letterSpacing: 0.5,
-                                                ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
+                return _PhotoGridItem(
+                  key: ValueKey('photo_${asset.id}_$isToDelete'),
+                  asset: asset,
+                  isToDelete: isToDelete,
+                  theme: theme,
+                  l10n: l10n,
+                  isDark: isDark,
+                  onTap: () => _toggleSelection(asset.id),
                 );
               },
             ),
@@ -2020,78 +1805,102 @@ class _DuplicateGroupDetailSheetState
               ],
             ),
                   const SizedBox(height: 12),
-                  AppThreeDButton(
-                    label: l10n.deleteDuplicates,
-                    icon: Icons.delete_outline,
-                    baseColor: AppColors.error,
-                    textColor: AppColors.white,
-                    fullWidth: true,
-                    height: 56,
-                    onPressed: () async {
-                      if (_selectedIds.isEmpty) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(l10n.noPhotosToDelete),
-                            duration: const Duration(seconds: 2),
-                          ),
-                        );
-                        return;
-                      }
+                  BlocBuilder<DeleteLimitCubit, AsyncValue<int>>(
+                    builder: (context, deleteLimitAsync) {
+                      final deleteLimit = deleteLimitAsync.maybeWhen(
+                        data: (limit) => limit,
+                        orElse: () => 0,
+                      );
+                      final hasRights = deleteLimit > 0;
 
-                      final confirmed = await showDialog<bool>(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          title: Text(l10n.deleteDuplicates),
-                          content: Text(
-                            l10n.deleteDuplicatesMessage(_selectedIds.length),
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.of(context).pop(false),
-                              child: Text(l10n.cancel),
+                      return AppThreeDButton(
+                        label: hasRights
+                            ? l10n.deleteDuplicates
+                            : l10n.getUnlimitedDeletions,
+                        icon: hasRights
+                            ? Icons.delete_outline
+                            : Icons.workspace_premium_rounded,
+                        baseColor: AppColors.error,
+                        textColor: AppColors.white,
+                        fullWidth: true,
+                        height: 56,
+                        onPressed: () async {
+                          // Silme hakkı yoksa paywall'a yönlendir
+                          if (!hasRights) {
+                            context.push('/paywall');
+                            return;
+                          }
+
+                          if (_selectedIds.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(l10n.noPhotosToDelete),
+                                duration: const Duration(seconds: 2),
+                              ),
+                            );
+                            return;
+                          }
+
+                          final confirmed = await showDialog<bool>(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: Text(l10n.deleteDuplicates),
+                              content: Text(
+                                l10n.deleteDuplicatesMessage(_selectedIds.length),
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () =>
+                                      Navigator.of(context).pop(false),
+                                  child: Text(l10n.cancel),
+                                ),
+                                FilledButton(
+                                  onPressed: () =>
+                                      Navigator.of(context).pop(true),
+                                  style: FilledButton.styleFrom(
+                                    backgroundColor: theme.colorScheme.error,
+                                    side: BorderSide(
+                                      color: AppColors.error.withOpacity(0.9),
+                                      width: 1.5,
+                                    ),
+                                  ),
+                                  child: Text(l10n.delete),
+                                ),
+                              ],
                             ),
-                            FilledButton(
-                              onPressed: () => Navigator.of(context).pop(true),
-                  style: FilledButton.styleFrom(
-                                backgroundColor: theme.colorScheme.error,
-                    side: BorderSide(
-                      color: AppColors.error.withOpacity(0.9),
-                      width: 1.5,
-                    ),
-                  ),
-                              child: Text(l10n.delete),
-                            ),
-                          ],
-                        ),
+                          );
+
+                          if (confirmed != true || !mounted) return;
+
+                          final duplicateCubit =
+                              context.read<DuplicateDetectionCubit>();
+                          final deleteResult =
+                              await duplicateCubit.deleteSelectedDuplicateAssets(
+                            _selectedIds.toList(),
+                            groupHash: widget.group.hash,
+                          );
+
+                          if (!mounted) return;
+
+                          final deleteLimitCubit =
+                              context.read<DeleteLimitCubit>();
+                          await deleteLimitCubit.decrease(
+                            deleteResult.deletedCount,
+                          );
+
+                          if (!mounted || deleteResult.deletedCount <= 0) return;
+
+                          await showDeleteSuccessDialog(
+                            context,
+                            deleteResult.deletedCount,
+                            deletedSizeMB: deleteResult.deletedSizeMB,
+                          );
+
+                          if (mounted) {
+                            Navigator.of(context).pop(); // sheet kapat
+                          }
+                        },
                       );
-
-                      if (confirmed != true || !mounted) return;
-
-                      final duplicateCubit =
-                          context.read<DuplicateDetectionCubit>();
-                      final deleteResult =
-                          await duplicateCubit.deleteSelectedDuplicateAssets(
-                        _selectedIds.toList(),
-                        groupHash: widget.group.hash,
-                      );
-
-                      if (!mounted) return;
-
-                      final deleteLimitCubit =
-                          context.read<DeleteLimitCubit>();
-                      await deleteLimitCubit.decrease(deleteResult.deletedCount);
-
-                      if (!mounted || deleteResult.deletedCount <= 0) return;
-
-                      await showDeleteSuccessDialog(
-                        context,
-                        deleteResult.deletedCount,
-                        deletedSizeMB: deleteResult.deletedSizeMB,
-                      );
-
-                      if (mounted) {
-                        Navigator.of(context).pop(); // sheet kapat
-                      }
                     },
                   ),
                 ],
@@ -2099,6 +1908,287 @@ class _DuplicateGroupDetailSheetState
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Optimized photo grid item widget to prevent flicker
+class _PhotoGridItem extends StatelessWidget {
+  const _PhotoGridItem({
+    super.key,
+    required this.asset,
+    required this.isToDelete,
+    required this.theme,
+    required this.l10n,
+    required this.isDark,
+    required this.onTap,
+  });
+
+  final pm.AssetEntity asset;
+  final bool isToDelete;
+  final ThemeData theme;
+  final AppLocalizations l10n;
+  final bool isDark;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.secondary.withOpacity(
+                            isDark ? 0.3 : 0.2,
+                          ),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
+                          spreadRadius: 2,
+                        ),
+                        BoxShadow(
+                          color: AppColors.black.withValues(
+                            alpha: isDark ? 0.3 : 0.15,
+                          ),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                          spreadRadius: 0,
+                        ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: Material(
+                        color: AppColors.transparent,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(20),
+            onTap: onTap,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  theme.colorScheme.surface.withOpacity(
+                                    isDark ? 0.95 : 0.98,
+                                  ),
+                                  theme.colorScheme.surfaceContainerHighest
+                                      .withOpacity(isDark ? 0.8 : 0.9),
+                                ],
+                              ),
+                              border: Border.all(
+                                color: theme.colorScheme.outline.withOpacity(
+                                  isDark ? 0.2 : 0.15,
+                                ),
+                                width: 1.5,
+                              ),
+                            ),
+                            child: Stack(
+                              fit: StackFit.expand,
+                              children: [
+                                // Image with overlay gradient
+                                FutureBuilder<Uint8List?>(
+                    key: ValueKey('thumb_${asset.id}'),
+                                  future: asset.thumbnailDataWithSize(
+                                    const pm.ThumbnailSize(600, 600),
+                                    quality: 90,
+                                  ),
+                                  builder: (context, snapshot) {
+                                    if (snapshot.connectionState ==
+                                        ConnectionState.waiting) {
+                                      return Container(
+                                        decoration: BoxDecoration(
+                                          gradient: LinearGradient(
+                                            begin: Alignment.topLeft,
+                                            end: Alignment.bottomRight,
+                                            colors: [
+                                theme.colorScheme.surfaceContainerHighest,
+                                theme.colorScheme.surfaceContainerHighest
+                                                  .withOpacity(0.7),
+                                            ],
+                                          ),
+                                        ),
+                                        child: Center(
+                                          child: SizedBox(
+                                            width: 40,
+                                            height: 40,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 3,
+                                              valueColor:
+                                                  AlwaysStoppedAnimation<Color>(
+                                                    AppColors.primary,
+                                                  ),
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                    if (snapshot.hasData) {
+                                      return Stack(
+                                        fit: StackFit.expand,
+                                        children: [
+                                          Image.memory(
+                                            snapshot.data!,
+                                            fit: BoxFit.cover,
+                              key: ValueKey('img_${asset.id}'),
+                                          ),
+                                          // Gradient overlay for better badge readability
+                                          Positioned.fill(
+                                            child: Container(
+                                              decoration: BoxDecoration(
+                                                gradient: LinearGradient(
+                                                  begin: Alignment.topCenter,
+                                                  end: Alignment.bottomCenter,
+                                                  colors: [
+                                                    AppColors.transparent,
+                                                    AppColors.black.withValues(
+                                                      alpha: 0.3,
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      );
+                                    }
+                                    return Container(
+                                      decoration: BoxDecoration(
+                                        color: theme.colorScheme.errorContainer,
+                                        gradient: LinearGradient(
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                          colors: [
+                                            theme.colorScheme.errorContainer,
+                                            theme.colorScheme.errorContainer
+                                                .withOpacity(0.7),
+                                          ],
+                                        ),
+                                      ),
+                                      child: Icon(
+                                        Icons.error_outline,
+                          color: theme.colorScheme.onErrorContainer,
+                                        size: 32,
+                                      ),
+                                    );
+                                  },
+                                ),
+                  // Selection badge (keep/delete toggle)
+                                  Positioned(
+                                    top: 10,
+                                    left: 10,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      curve: Curves.easeInOut,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 6,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                          colors: isToDelete
+                              ? [
+                                  AppColors.error.withOpacity(0.95),
+                                  AppColors.error.withOpacity(0.85),
+                                ]
+                              : [
+                                            AppColors.success.withOpacity(0.95),
+                                            AppColors.success.withOpacity(0.85),
+                                          ],
+                                        ),
+                                        borderRadius: BorderRadius.circular(16),
+                                        border: Border.all(
+                          color: AppColors.white.withOpacity(0.2),
+                                          width: 1,
+                                        ),
+                                        boxShadow: [
+                                          BoxShadow(
+                            color: (isToDelete
+                                    ? AppColors.error
+                                    : AppColors.success)
+                                                .withOpacity(0.4),
+                                            blurRadius: 12,
+                                            offset: const Offset(0, 4),
+                                            spreadRadius: 0,
+                                          ),
+                                        ],
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                            isToDelete
+                                ? Icons.delete_forever_rounded
+                                : Icons.check_circle_outline,
+                                            size: 14,
+                                            color: AppColors.white,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                            isToDelete ? l10n.delete : l10n.keep,
+                            style: theme.textTheme.labelSmall?.copyWith(
+                                                  color: AppColors.white,
+                                                  fontWeight: FontWeight.w800,
+                                                  fontSize: 11,
+                                                  letterSpacing: 0.5,
+                                                ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                  // Photo size badge (bottom right)
+                                  Positioned(
+                    bottom: 10,
+                                    right: 10,
+                    child: FutureBuilder<int>(
+                      key: ValueKey('size_${asset.id}'),
+                      future: estimateAssetSize(asset),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const SizedBox.shrink();
+                        }
+                        if (snapshot.hasData && snapshot.data! > 0) {
+                          final sizeMB = snapshot.data! / (1024 * 1024);
+                          final sizeText = sizeMB >= 1
+                              ? '${sizeMB.toStringAsFixed(1)} MB'
+                              : '${(sizeMB * 1024).toStringAsFixed(0)} KB';
+                          return Container(
+                                      padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                              color: AppColors.black.withOpacity(0.7),
+                              borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                color: AppColors.white.withOpacity(0.2),
+                                          width: 1,
+                                        ),
+                            ),
+                            child: Text(
+                              sizeText,
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                            color: AppColors.white,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 10,
+                                letterSpacing: 0.3,
+                    ),
+                  ),
+                );
+                        }
+                        return const SizedBox.shrink();
+                      },
+                    ),
+                ),
+              ],
+            ),
+                    ),
+                  ),
+                ),
       ),
     );
   }

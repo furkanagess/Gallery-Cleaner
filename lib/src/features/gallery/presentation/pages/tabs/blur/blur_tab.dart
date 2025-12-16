@@ -499,32 +499,97 @@ class BlurTabState extends State<BlurTab> with CubitStateMixin<BlurTab> {
         }
 
         // Normal durumda Start Scan (ModernScanButton)
-        return FutureBuilder<
-          ({
-            int estimatedSeconds,
-            int totalPhotoCount,
-            bool hasLimitWarning,
-          })
-        >(
-          future: estimateBlurScanDuration(selectedAlbums),
-          builder: (context, snapshot) {
-            final estimatedTimeText = snapshot.hasData
-                ? formatEstimatedTime(snapshot.data!.estimatedSeconds, l10n)
-                : null;
+        return FutureBuilder<bool>(
+          future: _checkAlbumsHavePhotos(selectedAlbums),
+          builder: (context, albumsSnapshot) {
+            final hasPhotosInAlbums = albumsSnapshot.data ?? false;
+            final isLoadingAlbums = albumsSnapshot.connectionState ==
+                ConnectionState.waiting;
 
-            final hasLimitWarning =
-                snapshot.hasData && snapshot.data!.hasLimitWarning;
-            final totalPhotoCount = snapshot.hasData
-                ? snapshot.data!.totalPhotoCount
-                : 0;
+            return FutureBuilder<
+              ({
+                int estimatedSeconds,
+                int totalPhotoCount,
+                bool hasLimitWarning,
+              })
+            >(
+              future: estimateBlurScanDuration(selectedAlbums),
+              builder: (context, snapshot) {
+                final estimatedTimeText = snapshot.hasData
+                    ? formatEstimatedTime(snapshot.data!.estimatedSeconds, l10n)
+                    : null;
 
-            return ModernScanButton(
-              context: context,
-              theme: theme,
-              l10n: l10n,
-              onPressed: isScanning || hasNoScanRights
-                  ? null
-                  : () async {
+                final hasLimitWarning =
+                    snapshot.hasData && snapshot.data!.hasLimitWarning;
+                final totalPhotoCount = snapshot.hasData
+                    ? snapshot.data!.totalPhotoCount
+                    : 0;
+
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (!hasPhotosInAlbums && !isLoadingAlbums) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              AppColors.warning.withOpacity(0.2),
+                              AppColors.warning.withOpacity(0.1),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: AppColors.warning.withOpacity(0.3),
+                            width: 1.5,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.warning.withOpacity(0.15),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                              spreadRadius: 0,
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.info_outline_rounded,
+                              size: 20,
+                              color: AppColors.warning,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                l10n.noPhotosInSelectedAlbums,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: AppColors.warning,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                    ModernScanButton(
+                      context: context,
+                      theme: theme,
+                      l10n: l10n,
+                      onPressed: isScanning ||
+                              hasNoScanRights ||
+                              !hasPhotosInAlbums ||
+                              isLoadingAlbums
+                          ? null
+                          : () async {
                       final albumNames = selectedAlbums
                           .map((a) => a.name)
                           .join(', ');
@@ -601,28 +666,97 @@ class BlurTabState extends State<BlurTab> with CubitStateMixin<BlurTab> {
 
                       if (confirmed != true || !mounted) return;
 
+                      // Boş albümleri filtrele
+                      final albumsWithPhotos = <pm.AssetPathEntity>[];
+                      for (final album in selectedAlbums) {
+                        try {
+                          final assetCount = await album.assetCountAsync;
+                          if (assetCount > 0) {
+                            albumsWithPhotos.add(album);
+                          }
+                        } catch (e) {
+                          debugPrint(
+                            '⚠️ [BlurTab] Albüm ${album.name} için asset sayısı alınamadı: $e',
+                          );
+                        }
+                      }
+
+                      if (!mounted) return;
+
+                      // Eğer hiç dolu albüm yoksa uyarı göster
+                      if (albumsWithPhotos.isEmpty) {
+                        if (!mounted) return;
+                        await showDialog(
+                          context: context,
+                          builder: (dialogContext) => AlertDialog(
+                            title: Text(l10n.noPhotosFound),
+                            content: Text(
+                              l10n.noPhotosInSelectedAlbums,
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () =>
+                                    Navigator.of(dialogContext).pop(),
+                                child: Text(l10n.ok),
+                              ),
+                            ],
+                          ),
+                        );
+                        return;
+                      }
+
+                      // Sadece dolu albümleri scan et
                       await context.read<BlurDetectionCubit>().scanAlbums(
-                        selectedAlbums,
+                        albumsWithPhotos,
                         blurThreshold: _blurThreshold,
                       );
 
                       if (!mounted) return;
                     },
-              icon: hasNoScanRights ? Icons.block : Icons.search_rounded,
-              label: hasNoScanRights
-                  ? l10n.noScanRightsLeft
-                  : l10n.scanSelectedAlbums,
-              isEnabled: !isScanning && !hasNoScanRights,
-              isError: hasNoScanRights,
-              onErrorPressed: () => context.push('/paywall'),
-              estimatedTimeText: estimatedTimeText,
-              hasLimitWarning: hasLimitWarning,
-              totalPhotoCount: totalPhotoCount,
+                      icon: hasNoScanRights ? Icons.block : Icons.search_rounded,
+                      label: hasNoScanRights
+                          ? l10n.noScanRightsLeft
+                          : l10n.scanSelectedAlbums,
+                      isEnabled: !isScanning &&
+                          !hasNoScanRights &&
+                          hasPhotosInAlbums &&
+                          !isLoadingAlbums,
+                      isError: hasNoScanRights,
+                      onErrorPressed: () => context.push('/paywall'),
+                      estimatedTimeText: estimatedTimeText,
+                      hasLimitWarning: hasLimitWarning,
+                      totalPhotoCount: totalPhotoCount,
+                    ),
+                  ],
+                );
+              },
             );
           },
         );
       },
     );
+  }
+
+  /// Seçili albümlerde fotoğraf olup olmadığını kontrol eder
+  Future<bool> _checkAlbumsHavePhotos(
+    List<pm.AssetPathEntity> albums,
+  ) async {
+    if (albums.isEmpty) return false;
+
+    for (final album in albums) {
+      try {
+        final assetCount = await album.assetCountAsync;
+        if (assetCount > 0) {
+          return true; // En az bir albümde fotoğraf varsa true döndür
+        }
+      } catch (e) {
+        debugPrint(
+          '⚠️ [BlurTab] Albüm ${album.name} için asset sayısı alınamadı: $e',
+        );
+      }
+    }
+
+    return false; // Hiçbir albümde fotoğraf yoksa false döndür
   }
 
   Widget _buildScanForm(

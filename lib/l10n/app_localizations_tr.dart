@@ -1283,4 +1283,11 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get afterUsingThisApp => 'Bu uygulamayı kullandıktan sonra';
+
+  @override
+  String get noPhotosFound => 'Fotoğraf Bulunamadı';
+
+  @override
+  String get noPhotosInSelectedAlbums =>
+      'Seçilen albümlerde hiç fotoğraf bulunmuyor. Lütfen fotoğraf içeren albümleri seçin.';
 }

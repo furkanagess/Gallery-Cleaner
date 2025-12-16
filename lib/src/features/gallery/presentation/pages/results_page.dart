@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -9,6 +10,7 @@ import '../../../../core/services/preferences_service.dart';
 import '../../application/blur_detection_provider.dart';
 import '../../application/duplicate_detection_provider.dart';
 import '../../../../core/models/blur_photo.dart';
+import '../../../../core/utils/async_value.dart';
 import 'results_page_helpers.dart';
 
 class ResultsPage extends StatelessWidget {
@@ -250,14 +252,30 @@ class _BlurResultsTab extends StatelessWidget {
     AppLocalizations l10n,
     List<BlurPhoto> allPhotos,
   ) {
-    return AppThreeDButton(
-      label: l10n.deleteAllBlurryPhotos,
-      icon: Icons.delete_outline,
-      baseColor: AppColors.error,
-      textColor: AppColors.white,
-      fullWidth: true,
-      height: 56,
+    return BlocBuilder<DeleteLimitCubit, AsyncValue<int>>(
+      builder: (context, deleteLimitAsync) {
+        final deleteLimit = deleteLimitAsync.maybeWhen(
+          data: (limit) => limit,
+          orElse: () => 0,
+        );
+        final hasRights = deleteLimit > 0;
+
+        return AppThreeDButton(
+          label: hasRights
+              ? l10n.deleteAllBlurryPhotos
+              : l10n.getUnlimitedDeletions,
+          icon: hasRights ? Icons.delete_outline : Icons.workspace_premium_rounded,
+          baseColor: AppColors.error,
+          textColor: AppColors.white,
+          fullWidth: true,
+          height: 56,
           onPressed: () async {
+            // Silme hakkı yoksa paywall'a yönlendir
+            if (!hasRights) {
+              context.push('/paywall');
+              return;
+            }
+
             final confirmed = await showDialog<bool>(
               context: context,
               builder: (context) => AlertDialog(
@@ -343,6 +361,8 @@ class _BlurResultsTab extends StatelessWidget {
               );
             }
           },
+        );
+      },
     );
   }
 
@@ -567,6 +587,12 @@ class _DuplicateResultsTab extends StatelessWidget {
 
     return Stack(
       children: [
+        // New Year themed background decorations
+        Positioned.fill(
+          child: IgnorePointer(
+            child: _buildNewYearBackground(theme),
+          ),
+        ),
         // Main content with padding for floating button - scrollable
         CustomScrollView(
           slivers: [
@@ -643,6 +669,85 @@ class _DuplicateResultsTab extends StatelessWidget {
                   child: _buildDeleteButton(context, theme, l10n, state),
                 );
               },
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNewYearBackground(ThemeData theme) {
+    final isDark = theme.brightness == Brightness.dark;
+    final random = math.Random();
+
+    // Tema uyumlu renk paleti
+    final List<Color> palette = isDark
+        ? [
+            Colors.white.withOpacity(0.75),
+            theme.colorScheme.primary.withOpacity(0.82),
+            theme.colorScheme.secondary.withOpacity(0.68),
+          ]
+        : [
+            theme.colorScheme.primary.withOpacity(0.72),
+            theme.colorScheme.secondary.withOpacity(0.65),
+            Colors.white.withOpacity(0.6),
+          ];
+
+    return Stack(
+      children: [
+        // Snowflakes
+        ...List.generate(20, (index) {
+          final top = random.nextDouble() * 800; // Random top position
+          final left = random.nextDouble() * 400; // Random left position
+          final opacity = 0.15 + random.nextDouble() * 0.45; // Random opacity
+          final size = 18.0 + random.nextDouble() * 12.0; // Random size
+          final rotationDeg = random.nextDouble() * 360; // Random rotation
+          final color = palette[random.nextInt(palette.length)]; // Random color from palette
+
+          return Positioned(
+            top: top,
+            left: left,
+            child: Opacity(
+              opacity: opacity.clamp(0.15, 0.8),
+              child: Transform.rotate(
+                angle: rotationDeg * math.pi / 180,
+                child: Image.asset(
+                  'assets/new_year/snowflake.png',
+                  width: size,
+                  height: size,
+                  fit: BoxFit.contain,
+                  color: color,
+                  colorBlendMode: BlendMode.srcIn,
+                ),
+              ),
+            ),
+          );
+        }),
+        // Christmas tree decoration (top right)
+        Positioned(
+          top: -30,
+          right: -30,
+          child: Opacity(
+            opacity: 0.25,
+            child: Image.asset(
+              'assets/new_year/christmas-tree.png',
+              width: 120,
+              height: 120,
+              fit: BoxFit.contain,
+            ),
+          ),
+        ),
+        // Gift box decoration (bottom left)
+        Positioned(
+          bottom: -20,
+          left: -20,
+          child: Opacity(
+            opacity: 0.2,
+            child: Image.asset(
+              'assets/new_year/gift-box.png',
+              width: 100,
+              height: 100,
+              fit: BoxFit.contain,
             ),
           ),
         ),
@@ -743,14 +848,30 @@ class _DuplicateResultsTab extends StatelessWidget {
     AppLocalizations l10n,
     DuplicateDetectionState state,
   ) {
-    return AppThreeDButton(
-      label: l10n.deleteAllDuplicates,
-      icon: Icons.delete_outline,
-      baseColor: AppColors.error,
-      textColor: AppColors.white,
-      fullWidth: true,
-      height: 56,
+    return BlocBuilder<DeleteLimitCubit, AsyncValue<int>>(
+      builder: (context, deleteLimitAsync) {
+        final deleteLimit = deleteLimitAsync.maybeWhen(
+          data: (limit) => limit,
+          orElse: () => 0,
+        );
+        final hasRights = deleteLimit > 0;
+
+        return AppThreeDButton(
+          label: hasRights
+              ? l10n.deleteAllDuplicates
+              : l10n.getUnlimitedDeletions,
+          icon: hasRights ? Icons.delete_outline : Icons.workspace_premium_rounded,
+          baseColor: AppColors.error,
+          textColor: AppColors.white,
+          fullWidth: true,
+          height: 56,
           onPressed: () async {
+            // Silme hakkı yoksa paywall'a yönlendir
+            if (!hasRights) {
+              context.push('/paywall');
+              return;
+            }
+
             final confirmed = await showDialog<bool>(
               context: context,
               builder: (context) => AlertDialog(
@@ -844,6 +965,8 @@ class _DuplicateResultsTab extends StatelessWidget {
               );
             }
           },
+        );
+      },
     );
   }
 

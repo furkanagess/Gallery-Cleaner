@@ -1367,6 +1367,14 @@
   "afterUsingThisApp": "Después de usar esta app",
   "@afterUsingThisApp": {
     "description": "Título mostrado sobre el estado/después"
+  },
+  "noPhotosFound": "No se encontraron fotos",
+  "@noPhotosFound": {
+    "description": "Título cuando no se encuentran fotos en los álbumes seleccionados"
+  },
+  "noPhotosInSelectedAlbums": "Los álbumes seleccionados no contienen fotos. Por favor, selecciona álbumes con fotos.",
+  "@noPhotosInSelectedAlbums": {
+    "description": "Mensaje cuando los álbumes seleccionados no tienen fotos"
   }
 }
 

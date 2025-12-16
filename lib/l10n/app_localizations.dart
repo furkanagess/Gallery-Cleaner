@@ -2343,6 +2343,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'After using this app'**
   String get afterUsingThisApp;
+
+  /// Title when no photos are found in selected albums
+  ///
+  /// In en, this message translates to:
+  /// **'No Photos Found'**
+  String get noPhotosFound;
+
+  /// Message when selected albums have no photos
+  ///
+  /// In en, this message translates to:
+  /// **'The selected albums do not contain any photos. Please select albums with photos.'**
+  String get noPhotosInSelectedAlbums;
 }
 
 class _AppLocalizationsDelegate
