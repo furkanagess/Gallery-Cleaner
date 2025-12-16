@@ -2,7 +2,7 @@ name: gallery_cleaner
 description: "Gallery Cleaner - Clean your gallery with ease"
 publish_to: "none"
 
-version: 1.0.3+26
+version: 1.0.4+27
 
 environment:
   sdk: ^3.11.0-57.0.dev
@@ -33,6 +33,7 @@ dependencies:
   crypto: ^3.0.5
   image: ^4.3.0
   url_launcher: ^6.3.1
+  package_info_plus: ^8.0.2
   flutter_dotenv: ^5.1.0
   hive: ^2.2.3
   hive_flutter: ^1.1.0
@@ -61,47 +62,15 @@ flutter:
           weight: 700
   assets:
     - .env
-    - assets/lottie/loading.json
-    - assets/lottie/gallery_loading.json
-    - assets/lottie/duplicate.json
-    - assets/lottie/blıur.json
-    - assets/lottie/left.json
-    - assets/lottie/right.json
-    - assets/lottie/trash.json
-    - assets/lottie/keep_photo.json
-    - assets/lottie/wipe.json
-    - assets/new_year/Reindeer.json
-    - assets/new_year/Santa surprise gift.json
-    - assets/new_year/Santa's Sleigh.json
-    - assets/new_year/Snowing.json
-    - assets/new_year/snowman.json
-    - assets/lottie/Confeti.json
-    - assets/new_year/candy-cane.png
-    - assets/new_year/christmas-tree.png
-    - assets/new_year/christmas-wreath.png
-    - assets/new_year/gift-box.png
-    - assets/new_year/hat.png
-    - assets/new_year/new-year.png
-    - assets/new_year/santa-claus.png
-    - assets/new_year/snowman.png
-    - assets/icon/document.png
-    - assets/image/example1.jpeg
-    - assets/image/example2.jpeg
-    - assets/image/example3.jpeg
-    - assets/image/blur1.jpeg
-    - assets/image/blur2.jpeg
-    - assets/image/blur3.jpeg
-    - assets/image/blur4.jpeg
-    - assets/image/blur6.jpeg
-    - assets/image/duplicate1.jpeg
-    - assets/image/duplicate2.jpeg
-    - assets/sound/delete.mp3
-    - assets/sound/keep.mp3
-    - assets/sound/scanner.mp3
+    - assets/lottie/
+    - assets/new_year/
+    - assets/icon/
+    - assets/image/
+    - assets/sound/
 
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: assets/icon/icon-blue.png
+  image_path: assets/icon/new_year_icon.png
   min_sdk_android: 21
   remove_alpha_ios: true

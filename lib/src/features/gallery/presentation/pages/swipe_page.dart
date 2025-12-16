@@ -2269,75 +2269,85 @@ class _SwipePageState extends State<SwipePage>
       extendBody: true, // Bottom bar'ın arkasından içerik geçebilsin
       extendBodyBehindAppBar: false,
       resizeToAvoidBottomInset: false,
-      body: SafeArea(
-        top: false,
-        bottom: false,
-        child: Column(
-          children: [
-            // Top spacing
-            const SizedBox(height: 50),
-            // Modern Top Info Bar
-            _ModernTopInfoBar(
-              tabController: _tabController,
-              isScanning: isScanning,
-            ),
-            // Tab Content
-            Expanded(
-              child: Padding(
-                padding: EdgeInsets.only(
-                  bottom:
-                      MediaQuery.of(context).padding.bottom +
-                      64, // Bottom nav bar yüksekliği + safe area
+      body: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          // Ana içerik
+          SafeArea(
+            top: false,
+            bottom: false,
+            child: Column(
+              children: [
+                // Top spacing
+                const SizedBox(height: 50),
+                // Modern Top Info Bar
+                _ModernTopInfoBar(
+                  tabController: _tabController,
+                  isScanning: isScanning,
                 ),
-                child: TabBarView(
-                  controller: _tabController,
-                  physics: const NeverScrollableScrollPhysics(),
-                  children: const [
-                    SwipeTab(),
-                    BlurTab(),
-                    DuplicateTab(),
-                    SettingsPage(),
-                  ],
+                // Tab Content - Bottom padding yok, navbar'ın arkasından geçebilsin
+                Expanded(
+                  child: TabBarView(
+                    controller: _tabController,
+                    physics: const NeverScrollableScrollPhysics(),
+                    children: const [
+                      SwipeTab(),
+                      BlurTab(),
+                      DuplicateTab(),
+                      SettingsPage(),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Floating Bottom Navigation Bar
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: MediaQuery.of(context).padding.bottom + 16,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Material(
+                color: Colors.transparent,
+                child: _LiquidGlassBottomNavBar(
+                  tabController: _tabController,
+                  isScanning: isScanning,
+                  blurTabPulseController: _blurTabPulseController,
+                  duplicateTabPulseController: _duplicateTabPulseController,
+                  onTabChanged: (index) {
+                    _previousTabIndex = index;
+                    context.read<TabSelectionCubit>().selectTab(index);
+                  },
+                  onTabTap: (index) {
+                    if (isScanning) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(l10n.doNotLeaveScreenDuringScan),
+                          duration: const Duration(seconds: 2),
+                          backgroundColor: theme.colorScheme.errorContainer,
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                      return;
+                    }
+                    HapticFeedback.lightImpact();
+                    _previousTabIndex = index;
+                    context.read<TabSelectionCubit>().selectTab(index);
+                    if (_blurTabPulseController.isAnimating) {
+                      _blurTabPulseController.stop();
+                      _blurTabPulseController.reset();
+                    }
+                    if (_duplicateTabPulseController.isAnimating) {
+                      _duplicateTabPulseController.stop();
+                      _duplicateTabPulseController.reset();
+                    }
+                  },
                 ),
               ),
             ),
-          ],
-        ),
-      ),
-      // Bottom Navigation Bar (Scaffold'un bottomNavigationBar özelliği ile sabit)
-      bottomNavigationBar: _LiquidGlassBottomNavBar(
-        tabController: _tabController,
-        isScanning: isScanning,
-        blurTabPulseController: _blurTabPulseController,
-        duplicateTabPulseController: _duplicateTabPulseController,
-        onTabChanged: (index) {
-          _previousTabIndex = index;
-          context.read<TabSelectionCubit>().selectTab(index);
-        },
-        onTabTap: (index) {
-          if (isScanning) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(l10n.doNotLeaveScreenDuringScan),
-                duration: const Duration(seconds: 2),
-                backgroundColor: theme.colorScheme.errorContainer,
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
-            return;
-          }
-          HapticFeedback.lightImpact();
-          _previousTabIndex = index;
-          context.read<TabSelectionCubit>().selectTab(index);
-          if (_blurTabPulseController.isAnimating) {
-            _blurTabPulseController.stop();
-            _blurTabPulseController.reset();
-          }
-          if (_duplicateTabPulseController.isAnimating) {
-            _duplicateTabPulseController.stop();
-            _duplicateTabPulseController.reset();
-          }
-        },
+          ),
+        ],
       ),
     );
   }
@@ -3822,210 +3832,216 @@ class _LiquidGlassBottomNavBarState extends State<_LiquidGlassBottomNavBar>
         opacity: widget.isScanning ? 0.5 : 1.0,
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final navWidth = math.min(constraints.maxWidth - 32, 360.0);
-            final tabWidth = navWidth / 4;
+            // Padding'den sonra kalan genişliği kullan (16*2 = 32)
+            final availableWidth = constraints.maxWidth;
+            final navWidth = math.min(availableWidth, 360.0);
+            final itemWidth =
+                constraints.maxWidth / 4; // Stack'in gerçek genişliğini kullan
 
-            return SafeArea(
-              top: false,
-              minimum: EdgeInsets.zero, // Minimum padding yok, tam en altta
-              child: Align(
-                alignment: Alignment.bottomCenter,
-                child: Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: SizedBox(
-                    width: navWidth,
-                    height: 56,
-                    child: Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        // Floating background
-                        Positioned.fill(
-                          child: ClipRRect(
+            return SizedBox(
+              width: navWidth,
+              height: 56,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  // Floating background
+                  Positioned.fill(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(28),
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+                        child: Container(
+                          decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(28),
-                            child: BackdropFilter(
-                              filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(28),
-                                  color: theme.colorScheme.surface.withOpacity(
-                                    0.85,
-                                  ),
-                                  border: Border.all(
-                                    color: theme.colorScheme.outline
-                                        .withOpacity(0.08),
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: theme.colorScheme.shadow
-                                          .withOpacity(0.15),
-                                      blurRadius: 18,
-                                      offset: const Offset(0, 10),
-                                    ),
+                            color: theme.colorScheme.surface.withOpacity(0.85),
+                            border: Border.all(
+                              color: theme.colorScheme.outline.withOpacity(
+                                0.08,
+                              ),
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: theme.colorScheme.shadow.withOpacity(
+                                  0.15,
+                                ),
+                                blurRadius: 18,
+                                offset: const Offset(0, 10),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Sliding indicator
+                  AnimatedBuilder(
+                    animation: _indicatorAnimation,
+                    builder: (context, child) {
+                      final selectedIndex = widget.tabController.index.clamp(
+                        0,
+                        3,
+                      );
+
+                      // Her item'ın merkez pozisyonu
+                      final indicatorCenter =
+                          (selectedIndex * itemWidth) + (itemWidth / 2);
+                      // Indicator genişliği (item genişliğinden biraz küçük)
+                      final indicatorWidth = itemWidth - 12;
+                      final indicatorLeft =
+                          indicatorCenter - (indicatorWidth / 2);
+
+                      // Premium durumunu kontrol et ve "remaining deletion" text rengiyle eşit renk kullan
+                      final isPremiumAsync = context
+                          .watch<PremiumCubit>()
+                          .state;
+                      final isPremium = isPremiumAsync.maybeWhen(
+                        data: (premium) => premium,
+                        orElse: () => false,
+                      );
+
+                      // "remaining deletion" text rengiyle aynı renk
+                      final containerColor = theme
+                          .colorScheme
+                          .onPrimaryContainer
+                          .withOpacity(0.8);
+
+                      // Snowman için animasyonlu pozisyon hesaplama (smooth geçiş)
+                      // Mevcut pozisyondan hedef pozisyona yumuşak geçiş
+                      final targetPosition = _currentTabIndex.toDouble();
+                      // Animasyon değerini kullanarak yumuşak geçiş (lerp ile)
+                      // Eğer animasyon tamamlanmışsa veya başlamamışsa direkt hedef pozisyonda olsun
+                      final animatedPosition = _indicatorController.isAnimating
+                          ? _snowmanPosition +
+                                (targetPosition - _snowmanPosition) *
+                                    _indicatorAnimation.value
+                          : targetPosition;
+                      // Snowman'ın ekran pozisyonunu hesapla (lerp ile item merkezleri arasında)
+                      final currentIndex = animatedPosition.floor().clamp(0, 3);
+                      final nextIndex = (animatedPosition.ceil()).clamp(0, 3);
+                      final progress = animatedPosition - currentIndex;
+                      final currentCenter =
+                          (currentIndex * itemWidth) + (itemWidth / 2);
+                      final nextCenter =
+                          (nextIndex * itemWidth) + (itemWidth / 2);
+                      final animatedSnowmanCenter =
+                          currentCenter +
+                          (nextCenter - currentCenter) * progress;
+                      final animatedSnowmanLeft = animatedSnowmanCenter - 20;
+
+                      return Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          // Indicator background
+                          Positioned(
+                            left: indicatorLeft,
+                            top: 4,
+                            bottom: 4,
+                            width: indicatorWidth,
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(24),
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    containerColor,
+                                    containerColor.withOpacity(0.85),
                                   ],
                                 ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: containerColor.withOpacity(0.35),
+                                    blurRadius: 16,
+                                    offset: const Offset(0, 4),
+                                    spreadRadius: -2,
+                                  ),
+                                ],
                               ),
                             ),
                           ),
+                          // Snowman - Seçili tab'ın üstünde (animasyonlu, smooth)
+                          Positioned(
+                            left: animatedSnowmanLeft,
+                            top: -30,
+                            child: RepaintBoundary(
+                              child: Image.asset(
+                                'assets/new_year/snowman.png',
+                                width: 40,
+                                height: 40,
+                                fit: BoxFit.contain,
+                                filterQuality:
+                                    FilterQuality.low, // Performans için
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                  // Tab buttons - Eşit genişlikte itemlar, seçili item'ın ikonu tam ortada
+                  Positioned.fill(
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _buildTabButton(
+                            context: context,
+                            theme: theme,
+                            l10n: l10n,
+                            index: 0,
+                            icon: Icons.swipe_rounded,
+                            label: l10n.swipeTab,
+                          ),
                         ),
-                        // Sliding indicator
-                        AnimatedBuilder(
-                          animation: _indicatorAnimation,
-                          builder: (context, child) {
-                            final selectedIndex = widget.tabController.index
-                                .clamp(0, 3);
-                            final indicatorLeft = selectedIndex * tabWidth;
-
-                            // Premium durumunu kontrol et ve "remaining deletion" text rengiyle eşit renk kullan
-                            final isPremiumAsync = context
-                                .watch<PremiumCubit>()
-                                .state;
-                            final isPremium = isPremiumAsync.maybeWhen(
-                              data: (premium) => premium,
-                              orElse: () => false,
-                            );
-
-                            // "remaining deletion" text rengiyle aynı renk
-                            final containerColor = theme
-                                .colorScheme
-                                .onPrimaryContainer
-                                .withOpacity(0.8);
-
-                            // Snowman için animasyonlu pozisyon hesaplama (smooth geçiş)
-                            // Mevcut pozisyondan hedef pozisyona yumuşak geçiş
-                            final targetPosition = _currentTabIndex.toDouble();
-                            // Animasyon değerini kullanarak yumuşak geçiş (lerp ile)
-                            // Eğer animasyon tamamlanmışsa veya başlamamışsa direkt hedef pozisyonda olsun
-                            final animatedPosition =
-                                _indicatorController.isAnimating
-                                ? _snowmanPosition +
-                                      (targetPosition - _snowmanPosition) *
-                                          _indicatorAnimation.value
-                                : targetPosition;
-                            // Snowman'ın ekran pozisyonunu hesapla
-                            final animatedSnowmanLeft =
-                                animatedPosition * tabWidth +
-                                (tabWidth / 2) -
-                                20;
-
-                            return Stack(
-                              clipBehavior: Clip.none,
-                              children: [
-                                // Indicator background
-                                Positioned(
-                                  left: indicatorLeft + 6,
-                                  top: 4,
-                                  bottom: 4,
-                                  width: tabWidth - 12,
-                                  child: DecoratedBox(
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(24),
-                                      gradient: LinearGradient(
-                                        begin: Alignment.topLeft,
-                                        end: Alignment.bottomRight,
-                                        colors: [
-                                          containerColor,
-                                          containerColor.withOpacity(0.85),
-                                        ],
-                                      ),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: containerColor.withOpacity(
-                                            0.35,
-                                          ),
-                                          blurRadius: 16,
-                                          offset: const Offset(0, 4),
-                                          spreadRadius: -2,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
+                        Expanded(
+                          child: Builder(
+                            builder: (context) {
+                              final selectedTabIndex = context
+                                  .watch<TabSelectionCubit>()
+                                  .state;
+                              return _buildTabButton(
+                                context: context,
+                                theme: theme,
+                                l10n: l10n,
+                                index: 1,
+                                customWidget: BlurTabIndicator(
+                                  isSelected: selectedTabIndex == 1,
                                 ),
-                                // Snowman - Seçili tab'ın üstünde (animasyonlu, smooth)
-                                Positioned(
-                                  left: animatedSnowmanLeft,
-                                  top: -30,
-                                  child: RepaintBoundary(
-                                    child: Image.asset(
-                                      'assets/new_year/snowman.png',
-                                      width: 40,
-                                      height: 40,
-                                      fit: BoxFit.contain,
-                                      filterQuality:
-                                          FilterQuality.low, // Performans için
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            );
-                          },
+                              );
+                            },
+                          ),
                         ),
-                        // Tab buttons
-                        Positioned.fill(
-                          child: Row(
-                            children: [
-                              Builder(
-                                builder: (context) {
-                                  return _buildTabButton(
-                                    context: context,
-                                    theme: theme,
-                                    l10n: l10n,
-                                    index: 0,
-                                    icon: Icons.swipe_rounded,
-                                    label: l10n.swipeTab,
-                                  );
-                                },
-                              ),
-                              Builder(
-                                builder: (context) {
-                                  final selectedTabIndex = context
-                                      .watch<TabSelectionCubit>()
-                                      .state;
-                                  return _buildTabButton(
-                                    context: context,
-                                    theme: theme,
-                                    l10n: l10n,
-                                    index: 1,
-                                    customWidget: BlurTabIndicator(
-                                      isSelected: selectedTabIndex == 1,
-                                    ),
-                                  );
-                                },
-                              ),
-                              Builder(
-                                builder: (context) {
-                                  final selectedTabIndex = context
-                                      .watch<TabSelectionCubit>()
-                                      .state;
-                                  return _buildTabButton(
-                                    context: context,
-                                    theme: theme,
-                                    l10n: l10n,
-                                    index: 2,
-                                    customWidget: DuplicateTabIndicator(
-                                      isSelected: selectedTabIndex == 2,
-                                    ),
-                                  );
-                                },
-                              ),
-                              Builder(
-                                builder: (context) {
-                                  return _buildTabButton(
-                                    context: context,
-                                    theme: theme,
-                                    l10n: l10n,
-                                    index: 3,
-                                    icon: Icons.settings_rounded,
-                                    label: l10n.settings,
-                                  );
-                                },
-                              ),
-                            ],
+                        Expanded(
+                          child: Builder(
+                            builder: (context) {
+                              final selectedTabIndex = context
+                                  .watch<TabSelectionCubit>()
+                                  .state;
+                              return _buildTabButton(
+                                context: context,
+                                theme: theme,
+                                l10n: l10n,
+                                index: 2,
+                                customWidget: DuplicateTabIndicator(
+                                  isSelected: selectedTabIndex == 2,
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        Expanded(
+                          child: _buildTabButton(
+                            context: context,
+                            theme: theme,
+                            l10n: l10n,
+                            index: 3,
+                            icon: Icons.settings_rounded,
+                            label: l10n.settings,
                           ),
                         ),
                       ],
                     ),
                   ),
-                ),
+                ],
               ),
             );
           },
@@ -4049,37 +4065,41 @@ class _LiquidGlassBottomNavBarState extends State<_LiquidGlassBottomNavBar>
     // Seçili item ikon rengi: ekranın arka plan rengiyle aynı
     final selectedIconColor = theme.colorScheme.background;
 
-    return Expanded(
-      child: Material(
-        color: AppColors.transparent,
-        child: InkWell(
-          onTap: () {
-            widget.tabController.animateTo(index);
-            context.read<TabSelectionCubit>().selectTab(index);
-            widget.onTabTap(index);
-          },
-          borderRadius: BorderRadius.circular(28),
-          child: Container(
-            height: 48,
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            alignment: Alignment.center,
-            child: customWidget != null
-                ? customWidget
-                : isSelected
-                ? Icon(icon, size: 20, color: selectedIconColor)
-                : Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Icon(
-                        icon,
-                        size: 18,
-                        color: theme.colorScheme.onSurface.withOpacity(0.7),
-                      ),
-                      const SizedBox(height: 2),
-                      Flexible(
+    return Material(
+      color: AppColors.transparent,
+      child: InkWell(
+        onTap: () {
+          widget.tabController.animateTo(index);
+          context.read<TabSelectionCubit>().selectTab(index);
+          widget.onTabTap(index);
+        },
+        borderRadius: BorderRadius.circular(28),
+        child: Container(
+          height: 48,
+          width: double.infinity,
+          alignment: Alignment.center, // İçeriği tam ortala
+          child: customWidget != null
+              ? customWidget
+              : Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // Seçili item'ın ikonu için üstte padding ekle
+                    SizedBox(height: isSelected ? 4 : 0),
+                    Icon(
+                      icon,
+                      size: isSelected ? 20 : 18,
+                      color: isSelected
+                          ? selectedIconColor
+                          : theme.colorScheme.onSurface.withOpacity(0.7),
+                    ),
+                    // Seçili olmayanlarda text göster, seçili olanlarda görünmez ama yer kaplıyor
+                    SizedBox(height: 2),
+                    SizedBox(
+                      height: 13, // Text yüksekliğini sabit tut
+                      child: Opacity(
+                        opacity: isSelected ? 0.0 : 1.0,
                         child: Text(
                           label!,
                           textAlign: TextAlign.center,
@@ -4088,9 +4108,9 @@ class _LiquidGlassBottomNavBarState extends State<_LiquidGlassBottomNavBar>
                           style: const TextStyle(height: 1.1, fontSize: 11),
                         ),
                       ),
-                    ],
-                  ),
-          ),
+                    ),
+                  ],
+                ),
         ),
       ),
     );

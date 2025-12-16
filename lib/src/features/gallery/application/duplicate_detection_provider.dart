@@ -520,6 +520,102 @@ class DuplicateDetectionCubit extends Cubit<DuplicateDetectionState> {
     return await deleteDuplicates(allGroups, maxDeleteCount: maxDeleteCount);
   }
 
+  /// Kullanıcının seçtiği duplicate fotoğrafları sil (asset ID listesiyle)
+  Future<DeleteResult> deleteSelectedDuplicateAssets(
+    List<String> idsToDelete, {
+    String? groupHash,
+  }) async {
+    if (idsToDelete.isEmpty) {
+      return DeleteResult(deletedCount: 0, deletedSizeMB: 0.0);
+    }
+
+    // ID'den asset bul
+    final assetsToDelete = <String, pm.AssetEntity>{};
+    for (final entry in state.duplicatesByAlbum.entries) {
+      for (final group in entry.value) {
+        for (final asset in group.assets) {
+          if (idsToDelete.contains(asset.id)) {
+            assetsToDelete[asset.id] = asset;
+          }
+        }
+      }
+    }
+
+    // Boyut hesapla
+    final assetSizes = <String, int>{};
+    for (final id in idsToDelete) {
+      final asset = assetsToDelete[id];
+      if (asset != null) {
+        try {
+          final sizeBytes = await estimateAssetSize(asset);
+          if (sizeBytes > 0) {
+            assetSizes[id] = sizeBytes;
+          }
+        } catch (e) {
+          debugPrint(
+            '⚠️ [DuplicateDetection] Asset boyutu hesaplanamadı (seçili silme): $id, $e',
+          );
+        }
+      }
+    }
+
+    // Sil
+    final deletedIds = await _mediaLibraryService.deleteBatch(idsToDelete);
+    final deletedCount = deletedIds.length;
+
+    // MB hesapla
+    double totalSizeMB = 0.0;
+    for (final id in deletedIds) {
+      final sizeBytes = assetSizes[id];
+      if (sizeBytes != null && sizeBytes > 0) {
+        totalSizeMB += sizeBytes / (1024 * 1024);
+      }
+    }
+
+    // State güncelle: ilgili gruplardan silinen assetleri çıkar, grup <=1 ise kaldır
+    final updatedMap = <String, List<DuplicatePhotoGroup>>{};
+    for (final entry in state.duplicatesByAlbum.entries) {
+      final updatedGroups = <DuplicatePhotoGroup>[];
+      for (final group in entry.value) {
+        // Grup hash filtrelemesi (isteğe bağlı)
+        if (groupHash != null && group.hash != groupHash) {
+          updatedGroups.add(group);
+          continue;
+        }
+
+        // Assetleri filtrele
+        final remainingAssets =
+            group.assets.where((a) => !deletedIds.contains(a.id)).toList();
+
+        if (remainingAssets.length <= 1) {
+          // Grup artık anlamlı değil, atla
+          continue;
+        }
+
+        updatedGroups.add(
+          DuplicatePhotoGroup(
+            hash: group.hash,
+            assets: remainingAssets,
+            totalSizeMB: group.totalSizeMB, // yaklaşık değer, koruyoruz
+            albumName: group.albumName,
+          ),
+        );
+      }
+      if (updatedGroups.isNotEmpty) {
+        updatedMap[entry.key] = updatedGroups;
+      }
+    }
+
+    emit(state.copyWith(duplicatesByAlbum: updatedMap));
+
+    // Silinen fotoğraf ID'lerini kaydet
+    if (deletedIds.isNotEmpty) {
+      await _preferencesService.addDeletedPhotoIds(deletedIds);
+    }
+
+    return DeleteResult(deletedCount: deletedCount, deletedSizeMB: totalSizeMB);
+  }
+
   /// Taramayı iptal et
   void cancel() {
     debugPrint('🛑 [DuplicateDetection] Tarama iptal ediliyor...');

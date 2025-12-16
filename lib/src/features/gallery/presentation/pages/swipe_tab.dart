@@ -1,14 +1,10 @@
 import 'dart:async';
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
 import 'package:photo_manager/photo_manager.dart' as pm;
 import '../../../../core/services/preferences_service.dart';
 import '../../../../../l10n/app_localizations.dart';
 import '../../../../app/theme/app_colors.dart';
-import '../../../../app/theme/app_theme.dart';
-import '../../../../app/theme/app_three_d_button.dart';
 import '../../application/gallery_providers.dart';
 import '../../application/review_actions_controller.dart';
 import '../../../../core/utils/view_refresh_cubit.dart';
@@ -707,87 +703,6 @@ class _SwipeTabState extends State<SwipeTab>
                 changeAlbumZoneKey,
                 selectedAlbum?.id,
               ),
-            ),
-            Builder(
-              builder: (context) {
-                final pending = context.watch<ReviewActionsCubit>().state;
-                final pendingCount = pending.length;
-
-                // Container'ı her zaman göster - layout shift'i önlemek için
-                return Container(
-                  width: double.infinity,
-                  margin: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 220),
-                    switchInCurve: Curves.easeOut,
-                    switchOutCurve: Curves.easeIn,
-                    transitionBuilder: (child, animation) {
-                      // Renk kararmasını engellemek için fade yerine doğrudan göster
-                      return child;
-                    },
-                    child: pendingCount > 0
-                        ? TweenAnimationBuilder<double>(
-                            key: ValueKey('delete_active_$pendingCount'),
-                            duration: const Duration(milliseconds: 420),
-                            tween: Tween(begin: 0.0, end: 1.0),
-                            curve: Curves.easeOut,
-                            builder: (context, value, child) {
-                              // Shake + hafif scale
-                              final shake =
-                                  math.sin(value * math.pi * 6) *
-                                  (1 - value) *
-                                  4;
-                              final scale = 1 + (1 - value) * 0.02;
-                              return Transform.translate(
-                                offset: Offset(shake, 0),
-                                child: Transform.scale(
-                                  scale: scale,
-                                  child: child,
-                                ),
-                              );
-                            },
-                            child: AppThreeDButton(
-                              label: l10n.deletePhotos(pendingCount),
-                              icon: Icons.delete_outline_rounded,
-                              onPressed: () {
-                                // Yeni sayfaya yönlendir - push kullanarak daha hızlı route
-                                context.push('/review-delete-photos');
-                              },
-                              baseColor:
-                                  Theme.of(
-                                    context,
-                                  ).extension<AppSemanticColors>()?.delete ??
-                                  Theme.of(context).colorScheme.error,
-                              textColor: AppColors.white,
-                              fullWidth: true,
-                              height: 56,
-                              fontSize: 14,
-                            ),
-                          )
-                        : IgnorePointer(
-                            key: const ValueKey('delete_inactive'),
-                            ignoring: true,
-                            child: Opacity(
-                              opacity: 0.45,
-                              child: AppThreeDButton(
-                                label: l10n.deletePhotos(0),
-                                icon: Icons.delete_outline_rounded,
-                                onPressed: () {},
-                                baseColor: Theme.of(
-                                  context,
-                                ).colorScheme.onSurface.withOpacity(0.15),
-                                textColor: Theme.of(
-                                  context,
-                                ).colorScheme.onSurface.withOpacity(0.6),
-                                fullWidth: true,
-                                height: 56,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ),
-                  ),
-                );
-              },
             ),
           ],
         ),

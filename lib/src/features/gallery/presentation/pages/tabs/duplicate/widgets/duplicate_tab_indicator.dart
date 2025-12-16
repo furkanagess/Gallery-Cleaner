@@ -21,67 +21,66 @@ class _DuplicateTabIndicatorState extends State<DuplicateTabIndicator> {
     final isScanning = duplicateState.isScanning;
     final hasCompleted = duplicateState.hasCompletedScan && !isScanning;
 
-    if (widget.isSelected) {
-      // Seçili item ikon rengi: ekranın arka plan rengiyle aynı
-      final selectedIconColor = theme.colorScheme.background;
-      
-      return ColorFiltered(
-        colorFilter: ColorFilter.mode(selectedIconColor, BlendMode.srcIn),
-        child: Image.asset(
-          'assets/icon/document.png',
-          width: 20,
-          height: 20,
-          fit: BoxFit.contain,
-        ),
-      );
-    }
-
+    // Seçili item ikon rengi: ekranın arka plan rengiyle aynı
+    final selectedIconColor = theme.colorScheme.background;
+    
+    // Her zaman aynı yapıyı kullan, seçili olanlarda text'i görünmez yap
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
+        // Seçili item'ın ikonu için üstte padding ekle
+        SizedBox(height: widget.isSelected ? 4 : 0),
         ColorFiltered(
           colorFilter: ColorFilter.mode(
-            hasCompleted
-                ? theme.colorScheme.primary
-                : theme.colorScheme.onSurface.withOpacity(0.7),
+            widget.isSelected
+                ? selectedIconColor
+                : hasCompleted
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.onSurface.withOpacity(0.7),
             BlendMode.srcIn,
           ),
           child: Image.asset(
             'assets/icon/document.png',
-            width: 18,
-            height: 18,
+            width: widget.isSelected ? 20 : 18,
+            height: widget.isSelected ? 20 : 18,
             fit: BoxFit.contain,
           ),
         ),
         const SizedBox(height: 2),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Flexible(
-              child: Text(
-                l10n.duplicateTab,
-                textAlign: TextAlign.center,
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1,
-                style: const TextStyle(
-                  height: 1.1,
-                  fontSize: 11,
+        SizedBox(
+          height: 13, // Text yüksekliğini sabit tut (check icon da dahil)
+          child: Opacity(
+            opacity: widget.isSelected ? 0.0 : 1.0,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Flexible(
+                  child: Text(
+                    l10n.duplicateTab,
+                    textAlign: TextAlign.center,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                    style: const TextStyle(
+                      height: 1.1,
+                      fontSize: 11,
+                    ),
+                  ),
                 ),
-              ),
+                if (hasCompleted) ...[
+                  const SizedBox(width: 4),
+                  Icon(
+                    Icons.check_circle,
+                    size: 14,
+                    color: theme.colorScheme.primary,
+                  ),
+                ],
+              ],
             ),
-            if (hasCompleted) ...[
-              const SizedBox(width: 4),
-              Icon(
-                Icons.check_circle,
-                size: 14,
-                color: theme.colorScheme.primary,
-              ),
-            ],
-          ],
+          ),
         ),
       ],
     );

@@ -302,16 +302,23 @@ class _SplashPageState extends State<SplashPage>
                     ),
                   ),
                 ),
-                // Santa's Sleigh Lottie - Soldan sağa animasyonlu
+                // Santa's Sleigh Lottie - Soldan sağa animasyonlu (kar yağışı ile)
                 AnimatedBuilder(
                   animation: _sleighAnimation,
                   builder: (context, child) {
+                    final isLight = brightness == Brightness.light;
+                    // Aydınlık temada daha yumuşak, pastel bir renk;
+                    // koyu temada ise parlak beyaz kullan
+                    final sleighTintColor = isLight
+                        ? theme.colorScheme.primary.withOpacity(0.9)
+                        : Colors.white;
+
                     return Positioned(
                       top: 80,
                       left: _sleighAnimation.value,
                       child: ColorFiltered(
-                        colorFilter: const ColorFilter.mode(
-                          Colors.white,
+                        colorFilter: ColorFilter.mode(
+                          sleighTintColor,
                           BlendMode.srcATop,
                         ),
                         child: SizedBox(

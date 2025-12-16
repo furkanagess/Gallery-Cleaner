@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../app/theme/app_colors.dart';
+import '../../../../app/theme/app_three_d_button.dart';
 import '../../../../../l10n/app_localizations.dart';
 import '../../application/gallery_providers.dart';
+import '../../../../core/services/preferences_service.dart';
 import '../../application/blur_detection_provider.dart';
 import '../../application/duplicate_detection_provider.dart';
 import '../../../../core/models/blur_photo.dart';
@@ -248,27 +250,13 @@ class _BlurResultsTab extends StatelessWidget {
     AppLocalizations l10n,
     List<BlurPhoto> allPhotos,
   ) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.error.withOpacity(0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-            spreadRadius: 0,
-          ),
-          BoxShadow(
-            color: AppColors.black.withOpacity(0.15),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-            spreadRadius: 0,
-          ),
-        ],
-      ),
-      child: SizedBox(
-        width: double.infinity,
-        child: FilledButton.icon(
+    return AppThreeDButton(
+      label: l10n.deleteAllBlurryPhotos,
+      icon: Icons.delete_outline,
+      baseColor: AppColors.error,
+      textColor: AppColors.white,
+      fullWidth: true,
+      height: 56,
           onPressed: () async {
             final confirmed = await showDialog<bool>(
               context: context,
@@ -296,30 +284,24 @@ class _BlurResultsTab extends StatelessWidget {
 
             if (confirmed != true || !context.mounted) return;
 
-            // BLoC kullanarak blur fotoğraflarını sil
             final blurCubit = context.read<BlurDetectionCubit>();
             final deleteResult = await blurCubit.deleteAllBlurryPhotos();
 
             if (!context.mounted) return;
 
-            // Root navigator context'ini kaydet - widget rebuild edilirse context kaybolabilir
             final rootNavigatorContext = Navigator.of(
               context,
               rootNavigator: true,
             ).context;
 
-            // Delete limit'i azalt
             final deleteLimitCubit = context.read<DeleteLimitCubit>();
             await deleteLimitCubit.decrease(deleteResult.deletedCount);
 
-            // Cleanup complete dialogunu göster
             debugPrint(
               '🎯 [ResultsPage] Blur - About to show delete success dialog - deletedCount: ${deleteResult.deletedCount}, deletedSizeMB: ${deleteResult.deletedSizeMB}, context.mounted: ${context.mounted}',
             );
 
-            // Context mounted kontrolünü decrease'dan sonra tekrar yap
             if (deleteResult.deletedCount > 0) {
-              // Önce normal context'i kontrol et
               if (context.mounted) {
                 debugPrint(
                   '✅ [ResultsPage] Blur - Context is mounted and deletedCount > 0, calling showDeleteSuccessDialog...',
@@ -329,15 +311,18 @@ class _BlurResultsTab extends StatelessWidget {
                   deleteResult.deletedCount,
                   deletedSizeMB: deleteResult.deletedSizeMB,
                 );
+                // Swipe deck'i başa sar
+                final prefs = PreferencesService();
+                final selectedAlbum =
+                    context.read<SelectedAlbumCubit?>()?.state;
+                await prefs.saveSwipeIndex(0, selectedAlbum?.id);
                 debugPrint(
                   '✅ [ResultsPage] Blur - showDeleteSuccessDialog completed',
                 );
               } else {
-                // Context unmount olmuşsa, root navigator context'ini kullan
                 debugPrint(
                   '⚠️ [ResultsPage] Blur - Context not mounted after decrease, using rootNavigator context...',
                 );
-                // Bir sonraki frame'de root context ile dene
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   try {
                     showDeleteSuccessDialog(
@@ -358,20 +343,6 @@ class _BlurResultsTab extends StatelessWidget {
               );
             }
           },
-          icon: const Icon(Icons.delete_outline),
-          label: Text(l10n.deleteAllBlurryPhotos),
-          style: FilledButton.styleFrom(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            minimumSize: const Size(double.infinity, 56),
-            backgroundColor: AppColors.error,
-            foregroundColor: theme.colorScheme.onError,
-            side: BorderSide(color: AppColors.error, width: 1.5),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        ),
-      ),
     );
   }
 
@@ -772,27 +743,13 @@ class _DuplicateResultsTab extends StatelessWidget {
     AppLocalizations l10n,
     DuplicateDetectionState state,
   ) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.error.withOpacity(0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-            spreadRadius: 0,
-          ),
-          BoxShadow(
-            color: AppColors.black.withOpacity(0.15),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-            spreadRadius: 0,
-          ),
-        ],
-      ),
-      child: SizedBox(
-        width: double.infinity,
-        child: FilledButton.icon(
+    return AppThreeDButton(
+      label: l10n.deleteAllDuplicates,
+      icon: Icons.delete_outline,
+      baseColor: AppColors.error,
+      textColor: AppColors.white,
+      fullWidth: true,
+      height: 56,
           onPressed: () async {
             final confirmed = await showDialog<bool>(
               context: context,
@@ -853,6 +810,11 @@ class _DuplicateResultsTab extends StatelessWidget {
                   deleteResult.deletedCount,
                   deletedSizeMB: deleteResult.deletedSizeMB,
                 );
+                // Swipe deck'i başa sar
+                final prefs = PreferencesService();
+                final selectedAlbum =
+                    context.read<SelectedAlbumCubit?>()?.state;
+                await prefs.saveSwipeIndex(0, selectedAlbum?.id);
                 debugPrint(
                   '✅ [ResultsPage] Duplicate - showDeleteSuccessDialog completed',
                 );
@@ -882,20 +844,6 @@ class _DuplicateResultsTab extends StatelessWidget {
               );
             }
           },
-          icon: const Icon(Icons.delete_outline),
-          label: Text(l10n.deleteAllDuplicates),
-          style: FilledButton.styleFrom(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            minimumSize: const Size(double.infinity, 56),
-            backgroundColor: AppColors.error,
-            foregroundColor: theme.colorScheme.onError,
-            side: BorderSide(color: AppColors.error, width: 1.5),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        ),
-      ),
     );
   }
 

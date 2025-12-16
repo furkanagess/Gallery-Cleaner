@@ -90,7 +90,7 @@ class ModernScanButton extends StatelessWidget {
                 const SizedBox(width: 8),
                 Flexible(
                   child: Text(
-                    l10n.noRightsLeft,
+                    l10n.getUnlimitedDeletions,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: AppColors.error,
                       fontWeight: FontWeight.w700,

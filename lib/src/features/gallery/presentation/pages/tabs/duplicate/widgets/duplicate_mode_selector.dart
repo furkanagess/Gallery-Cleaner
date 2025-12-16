@@ -1,9 +1,8 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../../../../app/theme/app_colors.dart';
 import '../../../../../application/duplicate_detection_provider.dart';
 import '../../../../../../../../l10n/app_localizations.dart';
-import '../../../../../application/gallery_providers.dart' show PremiumCubit;
 
 class DuplicateModeSelector extends StatefulWidget {
   final DuplicateDetectionMode currentMode;
@@ -72,13 +71,6 @@ class _DuplicateModeSelectorState extends State<DuplicateModeSelector>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
-
-    // Premium durumunu kontrol et
-    final isPremiumAsync = context.watch<PremiumCubit>().state;
-    final isPremium = isPremiumAsync.maybeWhen(
-      data: (premium) => premium,
-      orElse: () => false,
-    );
 
     // Bottom navigation bar'daki container rengiyle aynı
     final containerColor = theme.colorScheme.onPrimaryContainer.withOpacity(
@@ -189,12 +181,39 @@ class _DuplicateModeSelectorState extends State<DuplicateModeSelector>
                 const SizedBox(height: 12),
                 // Mode descriptions with bullet points
                 Container(
-                  padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceContainerHighest
-                        .withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        theme.colorScheme.primary.withOpacity(0.12),
+                        theme.colorScheme.secondary.withOpacity(0.10),
+                        theme.colorScheme.surface.withOpacity(0.08),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: theme.colorScheme.primary.withOpacity(0.18),
+                      width: 1.2,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: theme.colorScheme.shadow.withOpacity(0.12),
+                        blurRadius: 12,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
                   ),
+                  child: Stack(
+                    children: [
+                      Positioned.fill(
+                        child: _SnowyBackground(
+                          tint: containerColor,
+                          accent: theme.colorScheme.secondary,
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -202,12 +221,13 @@ class _DuplicateModeSelectorState extends State<DuplicateModeSelector>
                         l10n.duplicateModeLevelsDescription,
                       ).map(
                         (line) => Padding(
-                          padding: const EdgeInsets.only(bottom: 5),
+                                padding: const EdgeInsets.only(bottom: 6),
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Container(
-                                margin: const EdgeInsets.only(top: 6, right: 8),
+                                      margin:
+                                          const EdgeInsets.only(top: 6, right: 8),
                                 width: 4,
                                 height: 4,
                                 decoration: BoxDecoration(
@@ -218,9 +238,10 @@ class _DuplicateModeSelectorState extends State<DuplicateModeSelector>
                               Expanded(
                                 child: Text(
                                   line,
-                                  style: theme.textTheme.bodySmall?.copyWith(
+                                        style:
+                                            theme.textTheme.bodySmall?.copyWith(
                                     color: theme.colorScheme.onSurface
-                                        .withOpacity(0.75),
+                                              .withOpacity(0.78),
                                     height: 1.5,
                                     fontSize: 11.5,
                                   ),
@@ -228,6 +249,9 @@ class _DuplicateModeSelectorState extends State<DuplicateModeSelector>
                               ),
                             ],
                           ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
@@ -269,13 +293,6 @@ class _DuplicateModeSelectorState extends State<DuplicateModeSelector>
     bool isSelected,
     VoidCallback onTap,
   ) {
-    // Premium durumunu kontrol et
-    final isPremiumAsync = context.watch<PremiumCubit>().state;
-    final isPremium = isPremiumAsync.maybeWhen(
-      data: (premium) => premium,
-      orElse: () => false,
-    );
-
     // Bottom navigation bar'daki container rengiyle aynı
     final containerColor = theme.colorScheme.onPrimaryContainer.withOpacity(
       0.8,
@@ -363,6 +380,93 @@ class _DuplicateModeSelectorState extends State<DuplicateModeSelector>
           ),
         ),
       ),
+    );
+  }
+
+}
+
+class _SnowyBackground extends StatelessWidget {
+  const _SnowyBackground({
+    required this.tint,
+    required this.accent,
+  });
+
+  final Color tint;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final palette = isDark
+        ? [
+            Colors.white.withOpacity(0.75),
+            tint.withOpacity(0.82),
+            accent.withOpacity(0.68),
+          ]
+        : [
+            tint.withOpacity(0.72),
+            accent.withOpacity(0.65),
+            Colors.white.withOpacity(0.6),
+          ];
+
+    final flakes = List.generate(16, (index) {
+      final top = (index * 41 + 15 * (index % 3)) % 200;
+      final left = (index * 53 + 19 * (index % 5)) % 240;
+      final opacity = (isDark ? 0.16 : 0.12) + (index % 5) * 0.05;
+      final size = 12.0 + (index % 5) * 5.0;
+      final rotationDeg = (index * 19 + 7 * (index % 4)) % 360;
+      final color = palette[index % palette.length];
+
+      return Positioned(
+        top: top.toDouble(),
+        left: left.toDouble(),
+        child: Opacity(
+          opacity: opacity.clamp(0.12, 0.8),
+          child: Transform.rotate(
+            angle: rotationDeg * math.pi / 180,
+            child: Image.asset(
+              'assets/new_year/snowflake.png',
+              width: size,
+              height: size,
+              fit: BoxFit.contain,
+              color: color,
+              colorBlendMode: BlendMode.srcIn,
+            ),
+          ),
+        ),
+      );
+    });
+
+    final sparkles = List.generate(6, (i) {
+      final size = 3.5 + (i % 3) * 1.4;
+      final dx = (i * 52 + 11 * (i % 4)) % 200;
+      final dy = (i * 67 + 17 * (i % 5)) % 150;
+      return Positioned(
+        left: dx.toDouble(),
+        top: dy.toDouble(),
+        child: Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            color: accent.withOpacity(0.52),
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: accent.withOpacity(0.42),
+                blurRadius: 4,
+                spreadRadius: 1,
+              ),
+            ],
+          ),
+        ),
+      );
+    });
+
+    return Stack(
+      children: [
+        ...flakes,
+        ...sparkles,
+      ],
     );
   }
 }

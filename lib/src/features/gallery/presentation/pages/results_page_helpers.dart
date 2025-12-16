@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:lottie/lottie.dart';
+import 'package:go_router/go_router.dart';
 import 'package:photo_manager/photo_manager.dart' as pm;
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_three_d_button.dart';
@@ -1100,10 +1101,6 @@ Future<void> showDuplicateGroupDetail(
     backgroundColor: AppColors.transparent,
     builder: (context) => DuplicateGroupDetailSheet(
       group: group,
-      onDelete: () {
-        Navigator.of(context).pop();
-        deleteDuplicateGroup(context, group, theme, l10n);
-      },
     ),
   );
 }
@@ -1268,11 +1265,6 @@ Future<void> showDeleteSuccessDialog(
       barrierDismissible: true,
       barrierColor: AppColors.black.withOpacity(0.5),
       builder: (dialogContext) {
-        // Bottom navigation bar'daki container rengiyle aynı
-        final containerColor = theme.colorScheme.onPrimaryContainer.withOpacity(
-          0.8,
-        );
-
         return Dialog(
           backgroundColor: AppColors.transparent,
           elevation: 0,
@@ -1328,68 +1320,179 @@ Future<void> showDeleteSuccessDialog(
                   ),
                     ),
                   ),
-                  const SizedBox(height: 28),
+                  const SizedBox(height: 22),
                   Text(
                     l10n.cleanupComplete,
                     style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 26,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 24,
                       color: theme.colorScheme.onSurface,
-                      letterSpacing: -0.5,
+                      letterSpacing: -0.4,
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 20),
-                  // Stats container
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.check_circle_outline,
-                              size: 20,
+                  const SizedBox(height: 14),
+                  // Big animated MB headline
+                  TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 0, end: deletedSizeMB),
+                    duration: const Duration(milliseconds: 1100),
+                    curve: Curves.easeOutCubic,
+                    builder: (context, animMb, _) {
+                      final shownMb =
+                          animMb.clamp(0, deletedSizeMB).toStringAsFixed(
+                                animMb >= 100 ? 0 : 1,
+                              );
+                      return Column(
+                        children: [
+                          Text(
+                            '$shownMb MB',
+                            style: theme.textTheme.displaySmall?.copyWith(
+                              fontWeight: FontWeight.w900,
+                              fontSize: 40,
                               color: theme.colorScheme.primary,
+                              letterSpacing: -1.0,
                             ),
-                            const SizedBox(width: 8),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 6),
+                          TweenAnimationBuilder<double>(
+                            tween:
+                                Tween(begin: 0, end: deletedCount.toDouble()),
+                            duration: const Duration(milliseconds: 900),
+                            curve: Curves.easeOutCubic,
+                            builder: (context, animCount, __) {
+                              final shownCount = animCount
+                                  .clamp(0, deletedCount.toDouble())
+                                  .round();
+                              return Text(
+                                '${shownCount.toString()} ${shownCount == 1 ? l10n.photo : l10n.photos}',
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color: theme.colorScheme.onSurface
+                                      .withOpacity(0.7),
+                                ),
+                                textAlign: TextAlign.center,
+                              );
+                            },
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 18),
+                  // Animated stats (compact card)
+                  TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 0, end: deletedCount.toDouble()),
+                    duration: const Duration(milliseconds: 900),
+                    curve: Curves.easeOutCubic,
+                    builder: (context, animCount, _) {
+                      final shownCount =
+                          animCount.clamp(0, deletedCount.toDouble()).round();
+
+                      return TweenAnimationBuilder<double>(
+                        tween: Tween(begin: 0, end: deletedSizeMB),
+                        duration: const Duration(milliseconds: 1100),
+                        curve: Curves.easeOutCubic,
+                        builder: (context, animMb, __) {
+                          final shownMb =
+                              animMb.clamp(0, deletedSizeMB).toStringAsFixed(
+                                    animMb >= 100 ? 0 : 1,
+                                  );
+
+                          return Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 18,
+                              vertical: 14,
+                            ),
+                    decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  theme.colorScheme.primary.withOpacity(0.12),
+                                  theme.colorScheme.secondary.withOpacity(0.12),
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(18),
+                              border: Border.all(
+                                color:
+                                    theme.colorScheme.primary.withOpacity(0.2),
+                                width: 1.2,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color:
+                                      theme.colorScheme.shadow.withOpacity(0.12),
+                                  blurRadius: 18,
+                                  offset: const Offset(0, 8),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                    child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                      children: [
+                                      Text(
+                                        l10n.photoUnit,
+                                        style: theme.textTheme.labelMedium
+                                            ?.copyWith(
+                                          color: theme.colorScheme.onSurface
+                                              .withOpacity(0.7),
+                                        ),
+                            ),
+                                      const SizedBox(height: 4),
                   Text(
-                              '$deletedCount ${deletedCount == 1 ? l10n.photo : l10n.photos}',
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 16,
-                                color: theme.colorScheme.onSurface,
+                                        shownCount.toString(),
+                                        style: theme.textTheme.headlineSmall
+                                            ?.copyWith(
+                                          fontWeight: FontWeight.w900,
+                                          color: theme.colorScheme.primary,
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 12),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                                ),
+                                Container(
+                                  width: 1,
+                                  height: 42,
+                                  color: theme.colorScheme.outline
+                                      .withOpacity(0.1),
+                                ),
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                           children: [
-                            Icon(
-                              Icons.storage_outlined,
-                              size: 20,
-                              color: theme.colorScheme.primary,
+                                      Text(
+                                        'MB',
+                                        style: theme.textTheme.labelMedium
+                                            ?.copyWith(
+                                          color: theme.colorScheme.onSurface
+                                              .withOpacity(0.7),
+                                        ),
                             ),
-                            const SizedBox(width: 8),
+                                      const SizedBox(height: 4),
                             Text(
-                              l10n.mbFreed(deletedSizeMB.toStringAsFixed(1)),
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 16,
-                                color: theme.colorScheme.onSurface,
+                                        shownMb,
+                                        style: theme.textTheme.headlineSmall
+                                            ?.copyWith(
+                                          fontWeight: FontWeight.w900,
+                                          color: theme.colorScheme.error,
                               ),
                             ),
                           ],
+                                  ),
                         ),
                       ],
                     ),
+                          );
+                        },
+                      );
+                    },
                   ),
                   const SizedBox(height: 20),
                   Text(
@@ -1404,15 +1507,42 @@ Future<void> showDeleteSuccessDialog(
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 28),
+                  // Upsell CTA
                       AppThreeDButton(
-                        label: l10n.done,
-                        onPressed: () => Navigator.of(dialogContext).pop(),
-                        baseColor: containerColor,
+                    label: 'Get unlimited deletions',
+                    icon: Icons.workspace_premium_rounded,
+                    baseColor: theme.colorScheme.primary,
                         textColor: AppColors.white,
                         fullWidth: true,
                         height: 56,
-                          ),
+                    onPressed: () {
+                      Navigator.of(dialogContext).pop();
+                      context.go('/paywall');
+                    },
+                  ),
+                  const SizedBox(height: 14),
+                  // Compact done button
+                  Align(
+                    alignment: Alignment.center,
+                    child: TextButton(
+                      onPressed: () => Navigator.of(dialogContext).pop(),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        foregroundColor: theme.colorScheme.onSurface,
+                      ),
+                      child: Text(
+                        l10n.done,
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
                         ],
                       ),
                 ),
@@ -1454,24 +1584,58 @@ Future<void> showDeleteSuccessDialog(
   }
 }
 
-class DuplicateGroupDetailSheet extends StatelessWidget {
+class DuplicateGroupDetailSheet extends StatefulWidget {
   const DuplicateGroupDetailSheet({
     super.key,
     required this.group,
-    required this.onDelete,
   });
 
   final DuplicatePhotoGroup group;
-  final VoidCallback onDelete;
+
+  @override
+  State<DuplicateGroupDetailSheet> createState() =>
+      _DuplicateGroupDetailSheetState();
+}
+
+class _DuplicateGroupDetailSheetState
+    extends State<DuplicateGroupDetailSheet> {
+  late final List<pm.AssetEntity> _sortedAssets;
+  late final Set<String> _selectedIds; // Silinecekler
+
+  @override
+  void initState() {
+    super.initState();
+    _sortedAssets = List<pm.AssetEntity>.from(widget.group.assets)
+      ..sort((a, b) => a.createDateTime.compareTo(b.createDateTime));
+    _selectedIds =
+        widget.group.duplicatesToDelete.map((a) => a.id).toSet(); // varsayılan
+  }
+
+  void _toggleSelection(String assetId) {
+    setState(() {
+      if (_selectedIds.contains(assetId)) {
+        // En az bir fotoğraf silinmeden kalmalı, tümünü seçili yapma
+        if (_selectedIds.length == 1) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Keep at least one photo'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+          return;
+        }
+        _selectedIds.remove(assetId);
+      } else {
+        _selectedIds.add(assetId);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
-    final sortedAssets = List<pm.AssetEntity>.from(group.assets)
-      ..sort((a, b) => a.createDateTime.compareTo(b.createDateTime));
-    final keepAsset = group.keepAsset;
-    final toDelete = group.duplicatesToDelete;
+    final isDark = theme.brightness == Brightness.dark;
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.9,
@@ -1522,7 +1686,7 @@ class DuplicateGroupDetailSheet extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '${sortedAssets.length} ${l10n.photo}',
+                        '${_sortedAssets.length} ${l10n.photo}',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurface.withValues(
                             alpha: 0.7,
@@ -1562,12 +1726,10 @@ class DuplicateGroupDetailSheet extends StatelessWidget {
                 mainAxisSpacing: 12,
                 childAspectRatio: 0.85,
               ),
-              itemCount: sortedAssets.length,
+              itemCount: _sortedAssets.length,
               itemBuilder: (context, index) {
-                final asset = sortedAssets[index];
-                final isKeep = asset.id == keepAsset.id;
-                final isToDelete = toDelete.any((a) => a.id == asset.id);
-                final isDark = theme.brightness == Brightness.dark;
+                final asset = _sortedAssets[index];
+                final isToDelete = _selectedIds.contains(asset.id);
 
                 return TweenAnimationBuilder<double>(
                   tween: Tween(begin: 0.0, end: 1.0),
@@ -1607,9 +1769,7 @@ class DuplicateGroupDetailSheet extends StatelessWidget {
                         color: AppColors.transparent,
                         child: InkWell(
                           borderRadius: BorderRadius.circular(20),
-                          onTap: () {
-                            // Photo detail açılabilir
-                          },
+                          onTap: () => _toggleSelection(asset.id),
                           child: Container(
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
@@ -1723,8 +1883,7 @@ class DuplicateGroupDetailSheet extends StatelessWidget {
                                     );
                                   },
                                 ),
-                                // Modern Keep badge
-                                if (isKeep)
+                                // Selection badge (keep/delete toggle)
                                   Positioned(
                                     top: 10,
                                     left: 10,
@@ -1737,21 +1896,28 @@ class DuplicateGroupDetailSheet extends StatelessWidget {
                                         gradient: LinearGradient(
                                           begin: Alignment.topLeft,
                                           end: Alignment.bottomRight,
-                                          colors: [
-                                            AppColors.success.withOpacity(0.95),
-                                            AppColors.success.withOpacity(0.85),
+                                        colors: isToDelete
+                                            ? [
+                                                AppColors.error.withOpacity(0.95),
+                                                AppColors.error.withOpacity(0.85),
+                                              ]
+                                            : [
+                                                AppColors.success
+                                                    .withOpacity(0.95),
+                                                AppColors.success
+                                                    .withOpacity(0.85),
                                           ],
                                         ),
                                         borderRadius: BorderRadius.circular(16),
                                         border: Border.all(
-                                          color: AppColors.white.withOpacity(
-                                            0.3,
-                                          ),
+                                        color: AppColors.white.withOpacity(0.2),
                                           width: 1,
                                         ),
                                         boxShadow: [
                                           BoxShadow(
-                                            color: AppColors.success
+                                          color: (isToDelete
+                                                  ? AppColors.error
+                                                  : AppColors.success)
                                                 .withOpacity(0.4),
                                             blurRadius: 12,
                                             offset: const Offset(0, 4),
@@ -1763,73 +1929,15 @@ class DuplicateGroupDetailSheet extends StatelessWidget {
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
                                           Icon(
-                                            Icons.check_circle_outline,
+                                          isToDelete
+                                              ? Icons.delete_forever_rounded
+                                              : Icons.check_circle_outline,
                                             size: 14,
                                             color: AppColors.white,
                                           ),
                                           const SizedBox(width: 4),
                                           Text(
-                                            l10n.keep,
-                                            style: theme.textTheme.labelSmall
-                                                ?.copyWith(
-                                                  color: AppColors.white,
-                                                  fontWeight: FontWeight.w800,
-                                                  fontSize: 11,
-                                                  letterSpacing: 0.5,
-                                                ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                // Modern Delete badge
-                                if (isToDelete)
-                                  Positioned(
-                                    top: 10,
-                                    right: 10,
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 10,
-                                        vertical: 6,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        gradient: LinearGradient(
-                                          begin: Alignment.topLeft,
-                                          end: Alignment.bottomRight,
-                                          colors: [
-                                            AppColors.error.withOpacity(0.95),
-                                            AppColors.error.withOpacity(0.85),
-                                          ],
-                                        ),
-                                        borderRadius: BorderRadius.circular(16),
-                                        border: Border.all(
-                                          color: AppColors.white.withOpacity(
-                                            0.3,
-                                          ),
-                                          width: 1,
-                                        ),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: AppColors.error.withOpacity(
-                                              0.4,
-                                            ),
-                                            blurRadius: 12,
-                                            offset: const Offset(0, 4),
-                                            spreadRadius: 0,
-                                          ),
-                                        ],
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(
-                                            Icons.delete_outline,
-                                            size: 14,
-                                            color: AppColors.white,
-                                          ),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            l10n.delete,
+                                          isToDelete ? l10n.delete : l10n.keep,
                                             style: theme.textTheme.labelSmall
                                                 ?.copyWith(
                                                   color: AppColors.white,
@@ -1853,37 +1961,140 @@ class DuplicateGroupDetailSheet extends StatelessWidget {
               },
             ),
           ),
-          // Modern Delete button
+          // Selection summary + action
           Container(
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
+                                      decoration: BoxDecoration(
               color: theme.colorScheme.background,
-              boxShadow: [
-                BoxShadow(
+                                        boxShadow: [
+                                          BoxShadow(
                   color: AppColors.black.withOpacity(0.1),
                   blurRadius: 10,
                   offset: const Offset(0, -2),
+                                          ),
+                                        ],
+                                      ),
+            child: SafeArea(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                        children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                                          Text(
+                        l10n.keep,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.8,
+                          ),
+                                                ),
+                                          ),
+                      Text(
+                        '${_sortedAssets.length - _selectedIds.length}',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: theme.colorScheme.onSurface,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                  const SizedBox(height: 6),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        l10n.delete,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.error,
+                        ),
+                      ),
+                      Text(
+                        '${_selectedIds.length}',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.error,
+                        ),
                 ),
               ],
             ),
-            child: SafeArea(
-              child: SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: onDelete,
-                  icon: const Icon(Icons.delete_outline),
-                  label: Text(l10n.deleteDuplicates),
+                  const SizedBox(height: 12),
+                  AppThreeDButton(
+                    label: l10n.deleteDuplicates,
+                    icon: Icons.delete_outline,
+                    baseColor: AppColors.error,
+                    textColor: AppColors.white,
+                    fullWidth: true,
+                    height: 56,
+                    onPressed: () async {
+                      if (_selectedIds.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(l10n.noPhotosToDelete),
+                            duration: const Duration(seconds: 2),
+                          ),
+                        );
+                        return;
+                      }
+
+                      final confirmed = await showDialog<bool>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: Text(l10n.deleteDuplicates),
+                          content: Text(
+                            l10n.deleteDuplicatesMessage(_selectedIds.length),
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.of(context).pop(false),
+                              child: Text(l10n.cancel),
+                            ),
+                            FilledButton(
+                              onPressed: () => Navigator.of(context).pop(true),
                   style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    minimumSize: const Size(double.infinity, 56),
-                    backgroundColor: AppColors.error.withOpacity(0.85),
-                    foregroundColor: theme.colorScheme.onError,
+                                backgroundColor: theme.colorScheme.error,
                     side: BorderSide(
                       color: AppColors.error.withOpacity(0.9),
                       width: 1.5,
                     ),
                   ),
-                ),
+                              child: Text(l10n.delete),
+                            ),
+                          ],
+                        ),
+                      );
+
+                      if (confirmed != true || !mounted) return;
+
+                      final duplicateCubit =
+                          context.read<DuplicateDetectionCubit>();
+                      final deleteResult =
+                          await duplicateCubit.deleteSelectedDuplicateAssets(
+                        _selectedIds.toList(),
+                        groupHash: widget.group.hash,
+                      );
+
+                      if (!mounted) return;
+
+                      final deleteLimitCubit =
+                          context.read<DeleteLimitCubit>();
+                      await deleteLimitCubit.decrease(deleteResult.deletedCount);
+
+                      if (!mounted || deleteResult.deletedCount <= 0) return;
+
+                      await showDeleteSuccessDialog(
+                        context,
+                        deleteResult.deletedCount,
+                        deletedSizeMB: deleteResult.deletedSizeMB,
+                      );
+
+                      if (mounted) {
+                        Navigator.of(context).pop(); // sheet kapat
+                      }
+                    },
+                  ),
+                ],
               ),
             ),
           ),

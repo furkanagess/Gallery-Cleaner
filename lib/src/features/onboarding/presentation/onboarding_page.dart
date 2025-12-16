@@ -50,21 +50,26 @@ class _OnboardingPageState extends State<OnboardingPage>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isLight = theme.brightness == Brightness.light;
+    // Splash ekranındaki ren geyiği Lottie tint'i ile aynı mantığı kullan
+    final snowTintColor = isLight
+        ? theme.colorScheme.primary.withOpacity(0.9)
+        : Colors.white;
 
     return buildWithCubit(
       () => Scaffold(
         backgroundColor: theme.colorScheme.background,
         body: Stack(
           children: [
-            // Snowing animation background - white snow
+            // Snowing animation background - tint splash ekranındaki ren geyiği ile aynı
             Positioned.fill(
               child: IgnorePointer(
                 child: Opacity(
                   opacity: 0.4,
                   child: ColorFiltered(
-                    colorFilter: const ColorFilter.mode(
-                      Colors.white,
-                      BlendMode.srcIn,
+                    colorFilter: ColorFilter.mode(
+                      snowTintColor,
+                      BlendMode.srcATop,
                     ),
                     child: Lottie.asset(
                       'assets/new_year/Snowing.json',

@@ -11,6 +11,10 @@ import '../../../../../../../core/utils/view_refresh_cubit.dart';
 import '../../../../../application/gallery_providers.dart';
 import '../../../../../application/review_actions_controller.dart';
 import '../../../../../../../../src/app/theme/app_colors.dart' show AppColors;
+import '../../../../../../../../src/app/theme/app_three_d_button.dart'
+    show AppThreeDButton;
+import '../../../../../../../../src/app/theme/app_theme.dart'
+    show AppSemanticColors;
 import '../../../../../../../../l10n/app_localizations.dart'
     show AppLocalizations;
 import '../../../../widgets/photo_swipe_deck.dart'
@@ -170,16 +174,10 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
     );
     // Titreme animasyonları - rastgele yönlerde titreme
     _deleteShakeAnimation = Tween<double>(begin: -3.0, end: 3.0).animate(
-      CurvedAnimation(
-        parent: _deleteShakeController,
-        curve: Curves.easeInOut,
-      ),
+      CurvedAnimation(parent: _deleteShakeController, curve: Curves.easeInOut),
     );
     _keepShakeAnimation = Tween<double>(begin: -3.0, end: 3.0).animate(
-      CurvedAnimation(
-        parent: _keepShakeController,
-        curve: Curves.easeInOut,
-      ),
+      CurvedAnimation(parent: _keepShakeController, curve: Curves.easeInOut),
     );
   }
 
@@ -274,56 +272,50 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
 
   @override
   Widget build(BuildContext context) {
-    // Silme hakkı kontrolü - BLoC kullanarak
-    final deleteLimitCubit = context.watch<DeleteLimitCubit>();
-    final canDelete = deleteLimitCubit.state.maybeWhen(
-      data: (limit) => limit > 0,
-      orElse: () => true, // Loading veya error durumunda varsayılan olarak true
-    );
+    // Kullanıcı her zaman swipe edebilsin; gerçek silme hakkı,
+    // review/delete aşamasında DeleteLimitCubit ile kontrol ediliyor.
+    const canDelete = true;
 
     // iOS için buildWithCubit kullanma - normal build kullan
     // Android için buildWithCubit kullan
     Widget widgetTree = RepaintBoundary(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+      child: Stack(
+        clipBehavior: Clip.none,
         children: [
-          // New Year Event Card - Altta, Swipe Deck'in üstünde
-          if (_showNewYearEventCard)
-            NewYearEventCard(
-              onDismiss: () {
-                if (Platform.isIOS) {
-                  setState(() {
-                    _showNewYearEventCard = false;
-                  });
-                } else {
-                  cubitSetState(() {
-                    _showNewYearEventCard = false;
-                  });
-                }
-              },
-              onTap: () {
-                // Event card'a tıklandığında yapılacak işlem
-                // Örneğin: Event detay sayfasına git veya paywall göster
-              },
-            ),
-          // Ana içerik - Swipe Deck
-          Expanded(
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.only(
-                    left: 16,
-                    right: 16,
-                    top: 8,
-                    bottom: 16,
-                  ),
-                  child: Align(
-                    alignment: Alignment.topCenter,
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 420),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // New Year Event Card - Altta, Swipe Deck'in üstünde
+              if (_showNewYearEventCard)
+                NewYearEventCard(
+                  onDismiss: () {
+                    if (Platform.isIOS) {
+                      setState(() {
+                        _showNewYearEventCard = false;
+                      });
+                    } else {
+                      cubitSetState(() {
+                        _showNewYearEventCard = false;
+                      });
+                    }
+                  },
+                  onTap: () {
+                    // Event card'a tıklandığında yapılacak işlem
+                    // Örneğin: Event detay sayfasına git veya paywall göster
+                  },
+                ),
+              // Ana içerik - Swipe Deck (daha küçük)
+              Flexible(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
                       child: AspectRatio(
-                        aspectRatio: 3 / 4,
+                        aspectRatio: 5 / 6,
                         child: AnimatedScale(
                           scale: _dragScale,
                           duration: const Duration(milliseconds: 150),
@@ -482,19 +474,21 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
                                             _animatedKeepOpacity =
                                                 targetKeepOpacity;
                                           });
-                                          
+
                                           // Titreme animasyonlarını başlat/durdur
                                           if (targetDeleteOpacity > 0.0) {
-                                            if (!_deleteShakeController.isAnimating) {
+                                            if (!_deleteShakeController
+                                                .isAnimating) {
                                               _deleteShakeController.repeat();
                                             }
                                           } else {
                                             _deleteShakeController.stop();
                                             _deleteShakeController.reset();
                                           }
-                                          
+
                                           if (targetKeepOpacity > 0.0) {
-                                            if (!_keepShakeController.isAnimating) {
+                                            if (!_keepShakeController
+                                                .isAnimating) {
                                               _keepShakeController.repeat();
                                             }
                                           } else {
@@ -525,14 +519,100 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
                         ),
                       ),
                     ),
-                  ),
+                    // Delete Photos Butonu - Swipe Deck'in hemen altında
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child:
+                          BlocBuilder<
+                            ReviewActionsCubit,
+                            List<PendingDeleteAction>
+                          >(
+                            builder: (context, pendingActions) {
+                              final pendingCount = pendingActions.length;
+                              final l10n = AppLocalizations.of(context)!;
+                              final theme = Theme.of(context);
+
+                              final hasPending = pendingCount > 0;
+
+                              final baseColor = hasPending
+                                  ? (theme
+                                            .extension<AppSemanticColors>()
+                                            ?.delete ??
+                                        theme.colorScheme.error)
+                                  : theme.colorScheme.onSurface.withOpacity(
+                                      0.15,
+                                    );
+
+                              final textColor = hasPending
+                                  ? AppColors.white
+                                  : theme.colorScheme.onSurface.withOpacity(
+                                      0.6,
+                                    );
+
+                              return IgnorePointer(
+                                ignoring: !hasPending,
+                                child: Opacity(
+                                  opacity: hasPending ? 1.0 : 0.6,
+                                  child: TweenAnimationBuilder<double>(
+                                    key: ValueKey(
+                                      'delete_button_$pendingCount',
+                                    ),
+                                    duration: const Duration(milliseconds: 420),
+                                    tween: Tween(begin: 0.0, end: 1.0),
+                                    curve: Curves.easeOut,
+                                    builder: (context, value, child) {
+                                      // Shake + hafif scale animasyonu
+                                      final shake =
+                                          math.sin(value * math.pi * 6) *
+                                          (1 - value) *
+                                          4;
+                                      final scale = 1 + (1 - value) * 0.02;
+                                      return Transform.translate(
+                                        offset: Offset(shake, 0),
+                                        child: Transform.scale(
+                                          scale: scale,
+                                          child: child,
+                                        ),
+                                      );
+                                    },
+                                    child: AppThreeDButton(
+                                      label: l10n.deletePhotos(pendingCount),
+                                      icon: Icons.delete_outline_rounded,
+                                      onPressed: hasPending
+                                          ? () {
+                                              context.push(
+                                                '/review-delete-photos',
+                                              );
+                                            }
+                                          : () {},
+                                      baseColor: baseColor,
+                                      textColor: textColor,
+                                      fullWidth: true,
+                                      height: 56,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                    ),
+                  ],
                 ),
-                // Overlay'ler - Ekranın tam kenarından başlayacak
-                if (widget.assets.isNotEmpty && canDelete)
-                  ..._buildSwipeActionButtons(context),
-              ],
-            ),
+              ),
+            ],
           ),
+          // Overlay'ler - Ekranın tam kenarından başlayacak (swipe deck üzerinde)
+          if (widget.assets.isNotEmpty && canDelete)
+            Positioned.fill(
+              child: IgnorePointer(
+                ignoring: false,
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: _buildSwipeActionButtons(context),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -680,7 +760,6 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
       });
     }
   }
-
 
   // Kar birikimi efekti builder
   Widget _buildSnowAccumulation({
@@ -902,8 +981,10 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
                 builder: (context, child) {
                   return Transform.translate(
                     offset: Offset(
-                      _deleteShakeAnimation.value * math.sin(_deleteShakeController.value * math.pi * 4),
-                      _deleteShakeAnimation.value * math.cos(_deleteShakeController.value * math.pi * 4),
+                      _deleteShakeAnimation.value *
+                          math.sin(_deleteShakeController.value * math.pi * 4),
+                      _deleteShakeAnimation.value *
+                          math.cos(_deleteShakeController.value * math.pi * 4),
                     ),
                     child: Container(
                       width: buttonSize,
@@ -942,8 +1023,10 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
                 builder: (context, child) {
                   return Transform.translate(
                     offset: Offset(
-                      _keepShakeAnimation.value * math.sin(_keepShakeController.value * math.pi * 4),
-                      _keepShakeAnimation.value * math.cos(_keepShakeController.value * math.pi * 4),
+                      _keepShakeAnimation.value *
+                          math.sin(_keepShakeController.value * math.pi * 4),
+                      _keepShakeAnimation.value *
+                          math.cos(_keepShakeController.value * math.pi * 4),
                     ),
                     child: Container(
                       width: buttonSize,
@@ -1142,335 +1225,5 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
       // Dialog kapandığında flag'i sıfırla
       _isDialogShowing = false;
     });
-  }
-}
-
-// Modern Delete Limit Badge (swipe tab ile blur/duplicate ile aynı yapı)
-class _ModernDeleteLimitBadge extends StatelessWidget {
-  const _ModernDeleteLimitBadge();
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final l10n = AppLocalizations.of(context)!;
-    final deleteLimitAsync = context.watch<DeleteLimitCubit>().state;
-    final isPremiumAsync = context.watch<PremiumCubit>().state;
-
-    return deleteLimitAsync.when(
-      loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
-      data: (deleteLimit) {
-        return isPremiumAsync.when(
-          loading: () => const SizedBox.shrink(),
-          error: (_, __) => const SizedBox.shrink(),
-          data: (isPremium) {
-            final displayValue = isPremium ? '∞' : '$deleteLimit';
-            final bgColors = [
-              theme.colorScheme.surfaceContainerHighest.withOpacity(0.92),
-              theme.colorScheme.surfaceContainerHighest.withOpacity(0.86),
-            ];
-            final borderColor = theme.colorScheme.outlineVariant.withOpacity(
-              0.35,
-            );
-
-            return Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              constraints: const BoxConstraints(minHeight: 44),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: bgColors,
-                ),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: borderColor, width: 1.2),
-                boxShadow: [
-                  BoxShadow(
-                    color: theme.colorScheme.shadow.withOpacity(0.12),
-                    blurRadius: 12,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    l10n.remainingDeletionRights,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 10,
-                      color: theme.colorScheme.onPrimaryContainer.withOpacity(
-                        0.8,
-                      ),
-                      letterSpacing: 0.3,
-                      shadows: null,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    displayValue,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w900,
-                      fontSize: 20,
-                      color: theme.colorScheme.onPrimaryContainer,
-                      letterSpacing: -0.5,
-                      height: 1,
-                      shadows: isPremium
-                          ? [
-                              Shadow(
-                                color: theme.colorScheme.primary.withOpacity(
-                                  0.45,
-                                ),
-                                blurRadius: 10,
-                              ),
-                            ]
-                          : null,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-}
-
-// Modern Album Selection Button (swipe tab ile blur/duplicate ile aynı yapı)
-class _ModernAlbumSelectionButton extends StatelessWidget {
-  const _ModernAlbumSelectionButton();
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final l10n = AppLocalizations.of(context)!;
-    final albumsAsync = context.watch<AlbumsCubit>().state;
-    final selectedAlbum = context.watch<SelectedAlbumCubit>().state;
-    final dateFilter = context.watch<AlbumFilterCubit>().state;
-    final sortOrder = context.watch<AlbumSortOrderCubit>().state;
-    final albumsData = albumsAsync.valueOrNull;
-    final canOpenAlbumPicker = albumsData != null && albumsData.isNotEmpty;
-    final displayAlbumName = selectedAlbum?.name ?? l10n.allPhotos;
-
-    final hasDateFilter = dateFilter.hasFilter;
-    final sortText = sortOrder == SortOrder.newest ? l10n.newest : l10n.oldest;
-
-    Future<void> openAlbumPicker() async {
-      final availableAlbums = albumsData;
-      if (availableAlbums == null || availableAlbums.isEmpty) return;
-
-      final filteredAlbums = availableAlbums
-          .where((album) => !album.isAll)
-          .toList();
-      if (filteredAlbums.isEmpty) return;
-
-      final selectedAlbum = await showModalBottomSheet<pm.AssetPathEntity>(
-        context: context,
-        showDragHandle: true,
-        isScrollControlled: true,
-        backgroundColor: AppColors.transparent,
-        builder: (context) => AlbumSelectionSheet(albums: filteredAlbums),
-      );
-
-      // Bottom sheet kapandıktan sonra albüm seçimini async olarak yap
-      // Bu şekilde UI thread bloke olmaz
-      if (selectedAlbum != null && context.mounted) {
-        // Microtask ile bir sonraki frame'de çalıştır
-        Future.microtask(() {
-          if (context.mounted) {
-            context.read<SelectedAlbumCubit>().select(selectedAlbum);
-          }
-        });
-      }
-    }
-
-    return Material(
-      color: AppColors.transparent,
-      child: InkWell(
-        onTap: canOpenAlbumPicker ? openAlbumPicker : null,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          constraints: const BoxConstraints(minHeight: 44),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                theme.colorScheme.surfaceContainerHighest.withOpacity(0.8),
-                theme.colorScheme.surfaceContainerHighest.withOpacity(0.7),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: theme.colorScheme.outline.withOpacity(0.2),
-              width: 1.5,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: theme.colorScheme.shadow.withOpacity(0.1),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-                spreadRadius: 0,
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (!hasDateFilter && sortOrder == SortOrder.newest) ...[
-                      Text(
-                        l10n.albumSettings,
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 10,
-                          color: canOpenAlbumPicker
-                              ? theme.colorScheme.onSurface.withOpacity(0.8)
-                              : theme.colorScheme.onSurface.withOpacity(0.3),
-                          letterSpacing: 0.3,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 2),
-                    ],
-                    Text(
-                      displayAlbumName,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        fontSize: hasDateFilter || sortOrder != SortOrder.newest
-                            ? 11
-                            : 12,
-                        color: canOpenAlbumPicker
-                            ? theme.colorScheme.onSurface
-                            : theme.colorScheme.onSurface.withOpacity(0.3),
-                        letterSpacing: 0.2,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 1,
-                    ),
-                    if (hasDateFilter || sortOrder != SortOrder.newest) ...[
-                      const SizedBox(height: 4),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 4,
-                        children: [
-                          if (hasDateFilter)
-                            Builder(
-                              builder: (badgeContext) {
-                                final isPremiumAsync = badgeContext
-                                    .watch<PremiumCubit>()
-                                    .state;
-                                final isPremium = isPremiumAsync.maybeWhen(
-                                  data: (premium) => premium,
-                                  orElse: () => false,
-                                );
-                                final containerColor = theme
-                                    .colorScheme
-                                    .onPrimaryContainer
-                                    .withOpacity(0.8);
-
-                                return Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 6,
-                                    vertical: 2,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: containerColor.withOpacity(0.3),
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.calendar_today_rounded,
-                                        size: 10,
-                                        color: containerColor,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Flexible(
-                                        child: Text(
-                                          '${dateFilter.startDate != null ? DateFormat('dd.MM').format(dateFilter.startDate!) : ''}${dateFilter.startDate != null && dateFilter.endDate != null ? ' - ' : ''}${dateFilter.endDate != null ? DateFormat('dd.MM').format(dateFilter.endDate!) : ''}',
-                                          style: theme.textTheme.labelSmall
-                                              ?.copyWith(
-                                                fontSize: 9,
-                                                fontWeight: FontWeight.w600,
-                                                color: containerColor,
-                                              ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              },
-                            ),
-                          if (sortOrder != SortOrder.newest)
-                            Builder(
-                              builder: (badgeContext) {
-                                final containerColor = theme
-                                    .colorScheme
-                                    .onPrimaryContainer
-                                    .withOpacity(0.8);
-                                return Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 6,
-                                    vertical: 2,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: containerColor.withOpacity(0.2),
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        sortOrder == SortOrder.newest
-                                            ? Icons.south_rounded
-                                            : Icons.north_rounded,
-                                        size: 10,
-                                        color: containerColor,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        sortText,
-                                        style: theme.textTheme.labelSmall
-                                            ?.copyWith(
-                                              fontSize: 9,
-                                              fontWeight: FontWeight.w600,
-                                              color: containerColor,
-                                            ),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              },
-                            ),
-                        ],
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              Icon(
-                Icons.arrow_drop_down_rounded,
-                color: canOpenAlbumPicker
-                    ? theme.colorScheme.onSurface.withOpacity(0.6)
-                    : theme.colorScheme.onSurface.withOpacity(0.3),
-                size: 20,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 }

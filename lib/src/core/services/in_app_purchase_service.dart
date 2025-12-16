@@ -4,8 +4,13 @@ import 'package:flutter/foundation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'preferences_service.dart';
 
-/// Premium product ID for Android/iOS
-const String _premiumProductId = 'lifetime_gallery_cleaner_premium';
+/// Premium product IDs for Android/iOS
+const String _androidPremiumProductId = 'gallery_cleaner_ab_test_4.99';
+const String _iosPremiumProductId = 'gallery_cleaner_499';
+
+/// Helper to get current platform premium product id
+String get _premiumProductId =>
+    Platform.isAndroid ? _androidPremiumProductId : _iosPremiumProductId;
 
 /// Callback type for purchase completion
 typedef PurchaseCompletionCallback = void Function(bool success);

@@ -11,7 +11,11 @@ import 'package:lottie/lottie.dart';
 import '../../../../../l10n/app_localizations.dart';
 import '../../application/review_actions_controller.dart';
 import '../../application/gallery_providers.dart'
-    show ReviewDeleteSelectionCubit, DeleteLimitCubit, SelectedAlbumCubit;
+    show
+        ReviewDeleteSelectionCubit,
+        DeleteLimitCubit,
+        SelectedAlbumCubit,
+        GalleryPagingCubit;
 import '../../../../core/services/preferences_service.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_three_d_button.dart';
@@ -377,6 +381,13 @@ class _ReviewDeletePhotosPageState extends State<ReviewDeletePhotosPage> {
                 wasKeep: false,
               );
             }
+          }
+
+          // Silinen fotoğrafları deckte tekrar görünmemesi için galeriyi yenile
+          try {
+            context.read<GalleryPagingCubit>().reload();
+          } catch (e) {
+            debugPrint('⚠️ [ReviewDeletePhotosPage] Gallery reload failed: $e');
           }
 
           // Başarılı silme sonrası animasyonlu özet dialog'u göster
@@ -796,7 +807,18 @@ class _ReviewDeletePhotosPageState extends State<ReviewDeletePhotosPage> {
                                     ).extension<AppSemanticColors>()?.delete ??
                                     Theme.of(context).colorScheme.error;
 
-                                final label = _isDeleting
+                                final deleteLimitCubit =
+                                    context.watch<DeleteLimitCubit>();
+                                final currentLimit =
+                                    deleteLimitCubit.state.maybeWhen(
+                                  data: (limit) => limit,
+                                  orElse: () => 0,
+                                );
+
+                                final bool hasRights = currentLimit > 0;
+                                final label = !hasRights
+                                    ? l10n.noRightsLeft
+                                    : _isDeleting
                                     ? l10n.deleting
                                     : l10n.delete;
 
@@ -807,7 +829,13 @@ class _ReviewDeletePhotosPageState extends State<ReviewDeletePhotosPage> {
                                       : Icons.delete_outline_rounded,
                                   onPressed: _isDeleting
                                       ? () {}
-                                      : _deleteSelectedPhotos,
+                                      : () {
+                                          if (!hasRights) {
+                                            context.push('/paywall');
+                                            return;
+                                          }
+                                          _deleteSelectedPhotos();
+                                        },
                                   baseColor: errorColor,
                                   textColor: AppColors.white,
                                   fullWidth: true,

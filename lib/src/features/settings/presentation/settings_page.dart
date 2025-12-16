@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -34,480 +35,247 @@ class SettingsPage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // Yeni Yıl Başlık Kartı - Özgün tasarım
-                Stack(
-                  clipBehavior: Clip.hardEdge,
-                  children: [
-                    Container(
-                      margin: const EdgeInsets.only(bottom: 20),
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            theme.colorScheme.surfaceContainerHighest
-                                .withOpacity(0.5),
-                            theme.colorScheme.surfaceContainerHighest
-                                .withOpacity(0.25),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: Stack(
+                    clipBehavior: Clip.hardEdge,
+                    children: [
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 20),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: SettingsPage._getCardGradientColors(theme),
+                          ),
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: SettingsPage._getCardBoxShadow(theme),
+                        ),
+                        child: Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            // Background decorations
+                            Positioned.fill(
+                              child: _CardBackgroundDecorations(
+                                imageAsset:
+                                    'assets/new_year/christmas-tree.png',
+                                imageSize: 120,
+                              ),
+                            ),
+                            // Main content
+                            Padding(
+                              padding: const EdgeInsets.all(20),
+                              child: Row(
+                                children: [
+                                  // Santa Claus ikonu
+                                  Container(
+                                    width: 60,
+                                    height: 60,
+                                    decoration: BoxDecoration(
+                                      color: theme.colorScheme.primary
+                                          .withOpacity(0.18),
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border.all(
+                                        color: theme.colorScheme.primary
+                                            .withOpacity(0.4),
+                                        width: 2,
+                                      ),
+                                    ),
+                                    child: Center(
+                                      child: Image.asset(
+                                        'assets/new_year/santa-claus.png',
+                                        width: 40,
+                                        height: 40,
+                                        fit: BoxFit.contain,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Happy New Year 2026',
+                                          style: theme.textTheme.titleLarge
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.w900,
+                                                fontSize: 20,
+                                                color:
+                                                    theme.colorScheme.onSurface,
+                                                letterSpacing: -0.5,
+                                              ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            // Dekoratif görseller
+                            Positioned(
+                              top: -10,
+                              right: -10,
+                              child: Opacity(
+                                opacity: 0.35,
+                                child: Image.asset(
+                                  'assets/new_year/christmas-wreath.png',
+                                  width: 80,
+                                  height: 80,
+                                  fit: BoxFit.contain,
+                                ),
+                              ),
+                            ),
                           ],
                         ),
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(
-                          color: theme.colorScheme.primary.withOpacity(0.35),
-                          width: 2,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: theme.colorScheme.primary.withOpacity(0.25),
-                            blurRadius: 24,
-                            offset: const Offset(0, 8),
-                            spreadRadius: 2,
-                          ),
-                        ],
                       ),
-                      child: Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          Row(
-                            children: [
-                              // Santa Claus ikonu
-                              Container(
-                                width: 60,
-                                height: 60,
-                                decoration: BoxDecoration(
-                                  color: theme.colorScheme.primary.withOpacity(
-                                    0.18,
-                                  ),
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(
-                                    color: theme.colorScheme.primary
-                                        .withOpacity(0.4),
-                                    width: 2,
-                                  ),
-                                ),
-                                child: Center(
-                                  child: Image.asset(
-                                    'assets/new_year/santa-claus.png',
-                                    width: 40,
-                                    height: 40,
-                                    fit: BoxFit.contain,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Happy New Year 2026',
-                                      style: theme.textTheme.titleLarge
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.w900,
-                                            fontSize: 20,
-                                            color: theme.colorScheme.onSurface,
-                                            letterSpacing: -0.5,
-                                          ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'Settings',
-                                      style: theme.textTheme.bodyMedium
-                                          ?.copyWith(
-                                            fontSize: 13,
-                                            color: theme.colorScheme.onSurface
-                                                .withOpacity(0.7),
-                                          ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                          // Dekoratif görseller
-                          Positioned(
-                            top: -10,
-                            right: -10,
-                            child: Opacity(
-                              opacity: 0.35,
-                              child: Image.asset(
-                                'assets/new_year/christmas-wreath.png',
-                                width: 80,
-                                height: 80,
-                                fit: BoxFit.contain,
-                              ),
-                            ),
-                          ),
-                          Positioned(
-                            bottom: -15,
-                            right: 20,
-                            child: Opacity(
-                              opacity: 0.28,
-                              child: Image.asset(
-                                'assets/new_year/christmas-tree.png',
-                                width: 60,
-                                height: 60,
-                                fit: BoxFit.contain,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    // Kar efekti kart içinde
-                    Positioned.fill(
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(24),
-                        child: Opacity(
-                          opacity: 0.2,
-                          child: ColorFiltered(
-                            colorFilter: const ColorFilter.mode(
-                              AppColors.white,
-                              BlendMode.srcATop,
-                            ),
-                            child: Lottie.asset(
-                              'assets/new_year/Snowing.json',
-                              fit: BoxFit.cover,
-                              repeat: true,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
                 // Premium Section - En üstte, dikkat çekici
                 _PremiumSection(),
                 const SizedBox(height: 12),
-                // Quick Actions Container - History ve Gallery Report
-                Stack(
-                  clipBehavior: Clip.hardEdge,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            theme.colorScheme.surfaceContainerHighest
-                                .withOpacity(0.5),
-                            theme.colorScheme.surfaceContainerHighest
-                                .withOpacity(0.25),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: theme.colorScheme.primary.withOpacity(0.35),
-                          width: 1.5,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: theme.colorScheme.primary.withOpacity(0.2),
-                            blurRadius: 16,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Text(
-                                'Quick Actions',
-                                style: theme.textTheme.titleSmall?.copyWith(
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 15,
-                                  color: theme.colorScheme.onSurface,
-                                  letterSpacing: 0.2,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _buildActionButton(
-                                  context: builderContext,
-                                  theme: theme,
-                                  icon: Icons.history,
-                                  label: l10n.history,
-                                  onTap: () {
-                                    builderContext.push('/gallery/stats');
-                                  },
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: _buildActionButton(
-                                  context: builderContext,
-                                  theme: theme,
-                                  icon: Icons.assessment_outlined,
-                                  label: l10n.galleryReportTitle,
-                                  onTap: () {
-                                    builderContext.push('/gallery-report');
-                                  },
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    // Kar efekti
-                    Positioned.fill(
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(20),
-                        child: Opacity(
-                          opacity: 0.18,
-                          child: ColorFiltered(
-                            colorFilter: const ColorFilter.mode(
-                              AppColors.white,
-                              BlendMode.srcATop,
-                            ),
-                            child: Lottie.asset(
-                              'assets/new_year/Snowing.json',
-                              fit: BoxFit.cover,
-                              repeat: true,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    // Decorative image
-                    Positioned(
-                      right: 10,
-                      bottom: 10,
-                      child: Opacity(
-                        opacity: 0.25,
-                        child: Image.asset(
-                          'assets/new_year/gift-box.png',
-                          width: 55,
-                          height: 55,
-                          fit: BoxFit.contain,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                // Rate App Section
+                _RateAppSection(),
                 const SizedBox(height: 12),
                 // Theme Selection Container - Ayrı (tek tip renk ve kar efekti)
-                Stack(
-                  clipBehavior: Clip.hardEdge,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            theme.colorScheme.surfaceContainerHighest
-                                .withOpacity(0.5),
-                            theme.colorScheme.surfaceContainerHighest
-                                .withOpacity(0.25),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: Stack(
+                    clipBehavior: Clip.hardEdge,
+                    children: [
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: SettingsPage._getCardGradientColors(theme),
+                          ),
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: SettingsPage._getCardBoxShadow(theme),
+                        ),
+                        child: Stack(
+                          children: [
+                            // Background decorations
+                            Positioned.fill(
+                              child: _CardBackgroundDecorations(
+                                imageAsset: 'assets/new_year/gift-box.png',
+                                imageSize: 120,
+                              ),
+                            ),
+                            // Main content
+                            Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Theme Selection - Modern
+                                  Row(
+                                    children: [
+                                      Text(
+                                        l10n.theme,
+                                        style: theme.textTheme.titleSmall
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.w800,
+                                              fontSize: 15,
+                                              color:
+                                                  theme.colorScheme.onSurface,
+                                              letterSpacing: 0.2,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 10),
+                                  _CompactThemeSelector(
+                                    themeMode: themeMode,
+                                    onThemeChanged: (mode) {
+                                      context.read<ThemeCubit>().setThemeMode(
+                                        mode,
+                                      );
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ),
                           ],
                         ),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: theme.colorScheme.primary.withOpacity(0.35),
-                          width: 1.5,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: theme.colorScheme.primary.withOpacity(0.2),
-                            blurRadius: 16,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Theme Selection - Modern
-                          Row(
-                            children: [
-                              Text(
-                                l10n.theme,
-                                style: theme.textTheme.titleSmall?.copyWith(
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 15,
-                                  color: theme.colorScheme.onSurface,
-                                  letterSpacing: 0.2,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-                          _CompactThemeSelector(
-                            themeMode: themeMode,
-                            onThemeChanged: (mode) {
-                              context.read<ThemeCubit>().setThemeMode(mode);
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                    Positioned.fill(
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(20),
-                        child: Opacity(
-                          opacity: 0.18,
-                          child: ColorFiltered(
-                            colorFilter: const ColorFilter.mode(
-                              AppColors.white,
-                              BlendMode.srcATop,
-                            ),
-                            child: Lottie.asset(
-                              'assets/new_year/Snowing.json',
-                              fit: BoxFit.cover,
-                              repeat: true,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    // Decorative image
-                    Positioned(
-                      right: 10,
-                      bottom: 10,
-                      child: Opacity(
-                        opacity: 0.25,
-                        child: Image.asset(
-                          'assets/new_year/gift-box.png',
-                          width: 55,
-                          height: 55,
-                          fit: BoxFit.contain,
-                        ),
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 12),
                 // Language Selection Container - Ayrı (tek tip renk ve kar efekti)
-                Stack(
-                  clipBehavior: Clip.hardEdge,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            theme.colorScheme.surfaceContainerHighest
-                                .withOpacity(0.5),
-                            theme.colorScheme.surfaceContainerHighest
-                                .withOpacity(0.25),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: Stack(
+                    clipBehavior: Clip.hardEdge,
+                    children: [
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: SettingsPage._getCardGradientColors(theme),
+                          ),
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: SettingsPage._getCardBoxShadow(theme),
+                        ),
+                        child: Stack(
+                          children: [
+                            // Background decorations
+                            Positioned.fill(
+                              child: _CardBackgroundDecorations(
+                                imageAsset: 'assets/new_year/santa-claus.png',
+                                imageSize: 120,
+                              ),
+                            ),
+                            // Main content
+                            Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Language Selection - Modern
+                                  Row(
+                                    children: [
+                                      Text(
+                                        l10n.language,
+                                        style: theme.textTheme.titleSmall
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.w800,
+                                              fontSize: 15,
+                                              color:
+                                                  theme.colorScheme.onSurface,
+                                              letterSpacing: 0.2,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 10),
+                                  _CompactLanguageSelector(
+                                    locale: locale,
+                                    onLocaleChanged: (loc) {
+                                      context.read<LocaleCubit>().setAppLocale(
+                                        loc,
+                                      );
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ),
                           ],
                         ),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: theme.colorScheme.primary.withOpacity(0.35),
-                          width: 1.5,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: theme.colorScheme.primary.withOpacity(0.2),
-                            blurRadius: 16,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Language Selection - Modern
-                          Row(
-                            children: [
-                              Text(
-                                l10n.language,
-                                style: theme.textTheme.titleSmall?.copyWith(
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 15,
-                                  color: theme.colorScheme.onSurface,
-                                  letterSpacing: 0.2,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-                          _CompactLanguageSelector(
-                            locale: locale,
-                            onLocaleChanged: (loc) {
-                              context.read<LocaleCubit>().setAppLocale(loc);
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                    Positioned.fill(
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(20),
-                        child: Opacity(
-                          opacity: 0.18,
-                          child: ColorFiltered(
-                            colorFilter: const ColorFilter.mode(
-                              AppColors.white,
-                              BlendMode.srcATop,
-                            ),
-                            child: Lottie.asset(
-                              'assets/new_year/Snowing.json',
-                              fit: BoxFit.cover,
-                              repeat: true,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    // Decorative image
-                    Positioned(
-                      right: 10,
-                      bottom: 10,
-                      child: Opacity(
-                        opacity: 0.25,
-                        child: Image.asset(
-                          'assets/new_year/santa-claus.png',
-                          width: 55,
-                          height: 55,
-                          fit: BoxFit.contain,
-                        ),
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 12),
                 // Sound Volume Control Container (tek tip renk ve kar efekti)
                 Stack(
                   clipBehavior: Clip.hardEdge,
-                  children: [
-                    _SoundVolumeControl(),
-                    Positioned.fill(
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(20),
-                        child: Opacity(
-                          opacity: 0.18,
-                          child: ColorFiltered(
-                            colorFilter: const ColorFilter.mode(
-                              AppColors.white,
-                              BlendMode.srcATop,
-                            ),
-                            child: Lottie.asset(
-                              'assets/new_year/Snowing.json',
-                              fit: BoxFit.cover,
-                              repeat: true,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+                  children: [_SoundVolumeControl()],
                 ),
-                const SizedBox(height: 12),
-                // Rate App Section
-                _RateAppSection(),
                 const SizedBox(height: 12),
                 // Version info - Modern
                 Center(
@@ -536,7 +304,7 @@ class SettingsPage extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 120),
               ],
             ),
           );
@@ -549,53 +317,145 @@ class SettingsPage extends StatelessWidget {
     context.push('/paywall');
   }
 
-  Widget _buildActionButton({
-    required BuildContext context,
-    required ThemeData theme,
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    final containerColor = theme.colorScheme.onPrimaryContainer.withOpacity(
-      0.8,
-    );
+  // Helper method to get card gradient colors based on theme
+  static List<Color> _getCardGradientColors(ThemeData theme) {
+    final isLight = theme.brightness == Brightness.light;
+    if (isLight) {
+      return [
+        AppColors.primary.withOpacity(0.8), // Light blue
+        AppColors.cardLight,
+        AppColors.primary.withOpacity(0.2),
+      ];
+    } else {
+      return [
+        const Color(0xFF1E3A5F), // Midnight blue
+        AppColors.backgroundDark,
+        const Color(0xFF5D9CEC).withOpacity(0.3),
+      ];
+    }
+  }
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-          decoration: BoxDecoration(
-            color: containerColor.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: containerColor.withOpacity(0.2),
-              width: 1,
+  // Helper method to get card box shadow based on theme
+  static List<BoxShadow> _getCardBoxShadow(ThemeData theme) {
+    final isLight = theme.brightness == Brightness.light;
+    return [
+      BoxShadow(
+        color: isLight
+            ? AppColors.black.withOpacity(0.1)
+            : AppColors.black.withOpacity(0.3),
+        blurRadius: 16,
+        spreadRadius: 0,
+        offset: const Offset(0, 8),
+      ),
+    ];
+  }
+}
+
+// Helper widget for background decorations with stars and new year images
+class _CardBackgroundDecorations extends StatelessWidget {
+  const _CardBackgroundDecorations({this.imageAsset, this.imageSize = 120});
+
+  final String? imageAsset;
+  final double imageSize;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        // Kar taneleri - statik/dağınık
+        Positioned.fill(child: _buildSnowflakes(context)),
+        // New year image - sağ tarafta
+        if (imageAsset != null)
+          Positioned(
+            right: -20,
+            bottom: -10,
+            child: Opacity(
+              opacity: 0.4,
+              child: Image.asset(
+                imageAsset!,
+                width: imageSize,
+                height: imageSize,
+                fit: BoxFit.contain,
+              ),
             ),
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 24, color: containerColor),
-              const SizedBox(height: 6),
-              Text(
-                label,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: theme.colorScheme.onSurface,
+        // Sarı parlak noktalar/yıldızlar
+        ...List.generate(8, (index) {
+          return Positioned(
+            top: (index * 15.0) % 100,
+            left: (index * 20.0) % 200,
+            child: Opacity(
+              opacity: 0.3,
+              child: Container(
+                width: 4,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFBBF24), // Gold
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFFBBF24).withOpacity(0.8),
+                      blurRadius: 4,
+                      spreadRadius: 1,
+                    ),
+                  ],
                 ),
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
               ),
-            ],
+            ),
+          );
+        }),
+      ],
+    );
+  }
+
+  Widget _buildSnowflakes(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    // Tema uyumlu renk paleti
+    final palette = isDark
+        ? [
+            AppColors.white.withOpacity(0.82),
+            theme.colorScheme.secondary.withOpacity(0.78),
+            theme.colorScheme.primary.withOpacity(0.72),
+          ]
+        : [
+            theme.colorScheme.primary.withOpacity(0.72),
+            theme.colorScheme.secondary.withOpacity(0.68),
+            theme.colorScheme.onSurface.withOpacity(0.45),
+          ];
+
+    // Pseudo-random, daha dağınık yerleşim: 20 parçaya çıkarıldı
+    final flakes = List.generate(20, (index) {
+      final top = (index * 47 + 18 * (index % 3)) % 360;
+      final left = (index * 61 + 23 * (index % 4)) % 300;
+      final opacity =
+          (isDark ? 0.18 : 0.14) + (index % 6) * (isDark ? 0.05 : 0.04);
+      final size = 14.0 + (index % 6) * 5.0 + ((index % 3 == 0) ? 3.0 : 0.0);
+      final rotationDeg = (index * 17 + 11 * (index % 5)) % 360;
+      final color = palette[index % palette.length];
+
+      return Positioned(
+        top: top.toDouble(),
+        left: left.toDouble(),
+        child: Opacity(
+          opacity: opacity.clamp(0.12, 0.9),
+          child: Transform.rotate(
+            angle: rotationDeg * math.pi / 180,
+            child: Image.asset(
+              'assets/new_year/snowflake.png',
+              width: size,
+              height: size,
+              fit: BoxFit.contain,
+              color: color,
+              colorBlendMode: BlendMode.srcIn,
+            ),
           ),
         ),
-      ),
-    );
+      );
+    });
+
+    return Stack(children: flakes);
   }
 }
 
@@ -623,179 +483,212 @@ class _PremiumSection extends StatelessWidget {
         );
 
         // Premium olmayan kullanıcı için dikkat çekici "Go Premium" bölümü - Rate App gibi
-        return Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                containerColor.withOpacity(0.15),
-                containerColor.withOpacity(0.1),
-                containerColor.withOpacity(0.08),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: containerColor.withOpacity(0.25),
-              width: 2,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: containerColor.withOpacity(0.2),
-                blurRadius: 20,
-                offset: const Offset(0, 6),
-                spreadRadius: 0,
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: SettingsPage._getCardGradientColors(theme),
               ),
-              BoxShadow(
-                color: AppColors.black.withOpacity(0.06),
-                blurRadius: 12,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          child: Material(
-            color: AppColors.transparent,
-            child: InkWell(
-              onTap: () => SettingsPage.showPurchaseDialog(context),
               borderRadius: BorderRadius.circular(20),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              boxShadow: SettingsPage._getCardBoxShadow(theme),
+            ),
+            child: Material(
+              color: AppColors.transparent,
+              child: InkWell(
+                onTap: () => SettingsPage.showPurchaseDialog(context),
+                borderRadius: BorderRadius.circular(20),
+                child: Stack(
                   children: [
-                    Row(
-                      children: [
-                        // Premium Icon Container - Daha büyük ve vurgulu
-                        Container(
-                          width: 52,
-                          height: 52,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                containerColor,
-                                containerColor.withOpacity(0.8),
+                    // Background decorations - Lottie kar animasyonu
+                    Positioned.fill(
+                      child: IgnorePointer(
+                        child: Opacity(
+                          opacity: 0.4,
+                          child: Builder(
+                            builder: (builderContext) {
+                              final builderTheme = Theme.of(builderContext);
+                              final isLight = builderTheme.brightness == Brightness.light;
+                              final sleighTintColor = isLight
+                                  ? builderTheme.colorScheme.primary.withOpacity(0.9)
+                                  : Colors.white;
+                              return ColorFiltered(
+                                colorFilter: ColorFilter.mode(
+                                  sleighTintColor,
+                                  BlendMode.srcATop,
+                                ),
+                                child: Lottie.asset(
+                                  'assets/new_year/Snowing.json',
+                                  fit: BoxFit.cover,
+                                  repeat: true,
+                                  animate: true,
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Christmas tree decoration
+                    Positioned(
+                      right: -20,
+                      bottom: -10,
+                      child: Opacity(
+                        opacity: 0.4,
+                        child: Image.asset(
+                          'assets/new_year/christmas-tree.png',
+                          width: 120,
+                          height: 120,
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                    ),
+                    // Main content
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              // Premium Icon Container - Daha büyük ve vurgulu
+                              Container(
+                                width: 52,
+                                height: 52,
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [
+                                      containerColor,
+                                      containerColor.withOpacity(0.8),
+                                    ],
+                                  ),
+                                  borderRadius: BorderRadius.circular(14),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: containerColor.withOpacity(0.5),
+                                      blurRadius: 16,
+                                      offset: const Offset(0, 6),
+                                      spreadRadius: 2,
+                                    ),
+                                  ],
+                                ),
+                                child: Icon(
+                                  Icons.workspace_premium_rounded,
+                                  color: AppColors.white,
+                                  size: 26,
+                                ),
+                              ),
+                              const SizedBox(width: 14),
+                              // Title and Description
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      l10n.goPremium,
+                                      style: theme.textTheme.titleLarge
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.w900,
+                                            fontSize: 17,
+                                            color: theme.colorScheme.onSurface,
+                                            letterSpacing: -0.4,
+                                            height: 1.2,
+                                          ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      l10n.premiumDescription,
+                                      style: theme.textTheme.bodyMedium
+                                          ?.copyWith(
+                                            fontSize: 13,
+                                            color: theme.colorScheme.onSurface
+                                                .withOpacity(0.75),
+                                            height: 1.4,
+                                          ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          // Feature Pills - kompakt
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              _FeaturePill(
+                                icon: Icons.all_inclusive_rounded,
+                                label: l10n.unlimited,
+                                theme: theme,
+                                containerColor: containerColor,
+                              ),
+                              _FeaturePill(
+                                icon: Icons.block_rounded,
+                                label: l10n.adFree,
+                                theme: theme,
+                                containerColor: containerColor,
+                              ),
+                              _FeaturePill(
+                                icon: Icons.verified_rounded,
+                                label: l10n.priority,
+                                theme: theme,
+                                containerColor: containerColor,
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          // Call to Action Button - Modern ve dikkat çekici
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 12,
+                              horizontal: 16,
+                            ),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.centerLeft,
+                                end: Alignment.centerRight,
+                                colors: [
+                                  containerColor.withOpacity(0.9),
+                                  containerColor.withOpacity(0.85),
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(14),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: containerColor.withOpacity(0.4),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 4),
+                                ),
                               ],
                             ),
-                            borderRadius: BorderRadius.circular(14),
-                            boxShadow: [
-                              BoxShadow(
-                                color: containerColor.withOpacity(0.5),
-                                blurRadius: 16,
-                                offset: const Offset(0, 6),
-                                spreadRadius: 2,
-                              ),
-                            ],
-                          ),
-                          child: Icon(
-                            Icons.workspace_premium_rounded,
-                            color: AppColors.white,
-                            size: 26,
-                          ),
-                        ),
-                        const SizedBox(width: 14),
-                        // Title and Description
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                l10n.goPremium,
-                                style: theme.textTheme.titleLarge?.copyWith(
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 17,
-                                  color: theme.colorScheme.onSurface,
-                                  letterSpacing: -0.4,
-                                  height: 1.2,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.workspace_premium_rounded,
+                                  color: AppColors.white,
+                                  size: 18,
                                 ),
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                l10n.premiumDescription,
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  fontSize: 13,
-                                  color: theme.colorScheme.onSurface
-                                      .withOpacity(0.75),
-                                  height: 1.4,
+                                const SizedBox(width: 8),
+                                Text(
+                                  l10n.upgradeToPremium,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 14,
+                                    color: AppColors.white,
+                                    letterSpacing: 0.3,
+                                  ),
                                 ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    // Feature Pills - kompakt
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        _FeaturePill(
-                          icon: Icons.all_inclusive_rounded,
-                          label: l10n.unlimited,
-                          theme: theme,
-                          containerColor: containerColor,
-                        ),
-                        _FeaturePill(
-                          icon: Icons.block_rounded,
-                          label: l10n.adFree,
-                          theme: theme,
-                          containerColor: containerColor,
-                        ),
-                        _FeaturePill(
-                          icon: Icons.verified_rounded,
-                          label: l10n.priority,
-                          theme: theme,
-                          containerColor: containerColor,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    // Call to Action Button - Modern ve dikkat çekici
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 12,
-                        horizontal: 16,
-                      ),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.centerLeft,
-                          end: Alignment.centerRight,
-                          colors: [
-                            containerColor.withOpacity(0.9),
-                            containerColor.withOpacity(0.85),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(14),
-                        boxShadow: [
-                          BoxShadow(
-                            color: containerColor.withOpacity(0.4),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.workspace_premium_rounded,
-                            color: AppColors.white,
-                            size: 18,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            l10n.upgradeToPremium,
-                            style: TextStyle(
-                              fontWeight: FontWeight.w800,
-                              fontSize: 14,
-                              color: AppColors.white,
-                              letterSpacing: 0.3,
+                              ],
                             ),
                           ),
                         ],
@@ -1187,155 +1080,154 @@ class _RateAppSection extends StatelessWidget {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
 
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppColors.warning.withOpacity(0.15),
-            AppColors.warningLight.withOpacity(0.1),
-            AppColors.primary.withOpacity(0.08),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: AppColors.warning.withOpacity(0.25),
-          width: 2,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.warning.withOpacity(0.2),
-            blurRadius: 20,
-            offset: const Offset(0, 6),
-            spreadRadius: 0,
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: SettingsPage._getCardGradientColors(theme),
           ),
-          BoxShadow(
-            color: AppColors.black.withOpacity(0.06),
-            blurRadius: 12,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Material(
-        color: AppColors.transparent,
-        child: InkWell(
-          onTap: () => _openStore(context),
           borderRadius: BorderRadius.circular(20),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          boxShadow: SettingsPage._getCardBoxShadow(theme),
+        ),
+        child: Material(
+          color: AppColors.transparent,
+          child: InkWell(
+            onTap: () => _openStore(context),
+            borderRadius: BorderRadius.circular(20),
+            child: Stack(
               children: [
-                Row(
-                  children: [
-                    // Star Icon Container - Daha büyük ve vurgulu
-                    Container(
-                      width: 52,
-                      height: 52,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [AppColors.warning, AppColors.warningLight],
-                        ),
-                        borderRadius: BorderRadius.circular(14),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.warning.withOpacity(0.5),
-                            blurRadius: 16,
-                            offset: const Offset(0, 6),
-                            spreadRadius: 2,
-                          ),
-                        ],
-                      ),
-                      child: Icon(
-                        Platform.isAndroid
-                            ? Icons.star_rounded
-                            : CupertinoIcons.star_fill,
-                        color: AppColors.white,
-                        size: 26,
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    // Title and Description
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            l10n.rateApp,
-                            style: theme.textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.w900,
-                              fontSize: 17,
-                              color: theme.colorScheme.onSurface,
-                              letterSpacing: -0.4,
-                              height: 1.2,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            l10n.rateAppDescription,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              fontSize: 13,
-                              color: theme.colorScheme.onSurface.withOpacity(
-                                0.75,
-                              ),
-                              height: 1.4,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                // Background decorations
+                Positioned.fill(
+                  child: _CardBackgroundDecorations(
+                    imageAsset: 'assets/new_year/christmas-wreath.png',
+                    imageSize: 120,
+                  ),
                 ),
-                const SizedBox(height: 12),
-                // Call to Action Button - Modern ve dikkat çekici
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 12,
-                    horizontal: 16,
-                  ),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
-                      colors: [
-                        AppColors.warning.withOpacity(0.9),
-                        AppColors.warningLight.withOpacity(0.85),
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(14),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.warning.withOpacity(0.4),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                // Main content
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(
-                        Platform.isAndroid
-                            ? Icons.star_rounded
-                            : CupertinoIcons.star_fill,
-                        color: AppColors.white,
-                        size: 18,
+                      Row(
+                        children: [
+                          // Star Icon Container - Daha büyük ve vurgulu
+                          Container(
+                            width: 52,
+                            height: 52,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  AppColors.warning,
+                                  AppColors.warningLight,
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(14),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.warning.withOpacity(0.5),
+                                  blurRadius: 16,
+                                  offset: const Offset(0, 6),
+                                  spreadRadius: 2,
+                                ),
+                              ],
+                            ),
+                            child: Icon(
+                              Platform.isAndroid
+                                  ? Icons.star_rounded
+                                  : CupertinoIcons.star_fill,
+                              color: AppColors.white,
+                              size: 26,
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          // Title and Description
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  l10n.rateApp,
+                                  style: theme.textTheme.titleLarge?.copyWith(
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 17,
+                                    color: theme.colorScheme.onSurface,
+                                    letterSpacing: -0.4,
+                                    height: 1.2,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  l10n.rateAppDescription,
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    fontSize: 13,
+                                    color: theme.brightness == Brightness.light
+                                        ? AppColors.white.withOpacity(0.9)
+                                        : theme.colorScheme.onSurface
+                                              .withOpacity(0.75),
+                                    height: 1.4,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 8),
-                      Text(
-                        l10n.rateApp,
-                        style: TextStyle(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 14,
-                          color: AppColors.white,
-                          letterSpacing: 0.3,
+                      const SizedBox(height: 12),
+                      // Call to Action Button - Modern ve dikkat çekici
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 12,
+                          horizontal: 16,
+                        ),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                            colors: [
+                              AppColors.warning.withOpacity(0.9),
+                              AppColors.warningLight.withOpacity(0.85),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(14),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.warning.withOpacity(0.4),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Platform.isAndroid
+                                  ? Icons.star_rounded
+                                  : CupertinoIcons.star_fill,
+                              color: AppColors.white,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              l10n.rateApp,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 14,
+                                color: AppColors.white,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
@@ -1399,111 +1291,101 @@ class _SoundVolumeControlState extends State<_SoundVolumeControl> {
       return const SizedBox.shrink();
     }
 
-    return Stack(
-      clipBehavior: Clip.hardEdge,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                theme.colorScheme.primary.withOpacity(0.12),
-                theme.colorScheme.primary.withOpacity(0.06),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: Stack(
+        clipBehavior: Clip.hardEdge,
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: SettingsPage._getCardGradientColors(theme),
+              ),
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: SettingsPage._getCardBoxShadow(theme),
+            ),
+            child: Stack(
+              children: [
+                // Background decorations
+                Positioned.fill(
+                  child: _CardBackgroundDecorations(
+                    imageAsset: 'assets/new_year/snowman.png',
+                    imageSize: 120,
+                  ),
+                ),
+                // Main content
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Sound Volume Header
+                      Row(
+                        children: [
+                          Text(
+                            'Sound Volume',
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 15,
+                              color: theme.colorScheme.primary,
+                              letterSpacing: 0.2,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      // Volume Slider
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.volume_mute_rounded,
+                            size: 20,
+                            color: theme.colorScheme.onSurface.withOpacity(0.6),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Slider(
+                              value: _volume,
+                              min: 0.0,
+                              max: 1.0,
+                              divisions: 10,
+                              activeColor: containerColor,
+                              inactiveColor: containerColor.withOpacity(0.3),
+                              onChanged: _updateVolume,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Icon(
+                            Icons.volume_up_rounded,
+                            size: 20,
+                            color: theme.colorScheme.onSurface.withOpacity(0.6),
+                          ),
+                          const SizedBox(width: 8),
+                          // Volume percentage text
+                          SizedBox(
+                            width: 45,
+                            child: Text(
+                              '${(_volume * 100).toInt()}%',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 12,
+                                color: containerColor,
+                              ),
+                              textAlign: TextAlign.right,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: theme.colorScheme.primary.withOpacity(0.25),
-              width: 1.5,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: theme.colorScheme.primary.withOpacity(0.15),
-                blurRadius: 16,
-                offset: const Offset(0, 4),
-              ),
-            ],
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Sound Volume Header
-              Row(
-                children: [
-                  Text(
-                    'Sound Volume',
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 15,
-                      color: theme.colorScheme.primary,
-                      letterSpacing: 0.2,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              // Volume Slider
-              Row(
-                children: [
-                  Icon(
-                    Icons.volume_mute_rounded,
-                    size: 20,
-                    color: theme.colorScheme.onSurface.withOpacity(0.6),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Slider(
-                      value: _volume,
-                      min: 0.0,
-                      max: 1.0,
-                      divisions: 10,
-                      activeColor: containerColor,
-                      inactiveColor: containerColor.withOpacity(0.3),
-                      onChanged: _updateVolume,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Icon(
-                    Icons.volume_up_rounded,
-                    size: 20,
-                    color: theme.colorScheme.onSurface.withOpacity(0.6),
-                  ),
-                  const SizedBox(width: 8),
-                  // Volume percentage text
-                  SizedBox(
-                    width: 45,
-                    child: Text(
-                      '${(_volume * 100).toInt()}%',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 12,
-                        color: containerColor,
-                      ),
-                      textAlign: TextAlign.right,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-        // Snowman görseli sağ altta
-        Positioned(
-          right: 10,
-          bottom: 10,
-          child: Opacity(
-            opacity: 0.25,
-            child: Image.asset(
-              'assets/new_year/snowman.png',
-              width: 55,
-              height: 55,
-              fit: BoxFit.contain,
-            ),
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

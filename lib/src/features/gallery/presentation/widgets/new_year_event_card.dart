@@ -27,8 +27,10 @@ class _NewYearEventCardState extends State<NewYearEventCard>
   late Animation<double> _scaleAnimation;
   final PreferencesService _preferencesService = PreferencesService();
   int _currentDeleteCount = 0;
-  static const int _initialTarget = 1000;
-  static const int _levelIncrement = 500;
+
+  /// Milestone steps for the New Year delete event
+  /// 100, 250, 500, 1000, 2000, 5000
+  static const List<int> _milestones = [100, 250, 500, 1000, 2000, 5000];
   Timer? _refreshTimer;
   Timer? _countdownTimer;
   Duration _timeRemaining = Duration.zero;
@@ -36,27 +38,35 @@ class _NewYearEventCardState extends State<NewYearEventCard>
   // 1 Ocak 2026 00:00 hedef tarihi
   DateTime get _targetDate => DateTime(2026, 1, 1, 0, 0, 0);
   
+  // Mevcut seviyenin index'ini hesapla
+  int get _currentLevelIndex {
+    for (int i = 0; i < _milestones.length; i++) {
+      if (_currentDeleteCount < _milestones[i]) {
+        return i;
+      }
+    }
+    // 5000 veya üzeri ise son seviye
+    return _milestones.length - 1;
+  }
+
+  bool get _isEventCompleted => _currentDeleteCount >= _milestones.last;
+  
   // Mevcut seviyenin başlangıç değerini hesapla
   int get _currentLevelStart {
-    if (_currentDeleteCount < _initialTarget) {
-      return 0;
-    }
-    // Her 500'de bir yeni seviye
-    int level = ((_currentDeleteCount - _initialTarget) / _levelIncrement).floor();
-    return _initialTarget + level * _levelIncrement;
+    if (_currentLevelIndex == 0) return 0;
+    return _milestones[_currentLevelIndex - 1];
   }
   
   // Mevcut seviyenin hedef değerini hesapla
   int get _currentLevelTarget {
-    if (_currentDeleteCount < _initialTarget) {
-      return _initialTarget;
-    }
-    return _currentLevelStart + _levelIncrement;
+    return _milestones[_currentLevelIndex];
   }
   
   // Mevcut seviyedeki ilerleme
   int get _currentLevelProgress {
-    return _currentDeleteCount - _currentLevelStart;
+    // İlerlemeyi mevcut seviye hedefi ile sınırla (5000 sonrası taşmaması için)
+    final clampedCount = _currentDeleteCount.clamp(0, _currentLevelTarget);
+    return clampedCount - _currentLevelStart;
   }
   
   // Mevcut seviyedeki toplam hedef
@@ -161,10 +171,42 @@ class _NewYearEventCardState extends State<NewYearEventCard>
     super.dispose();
   }
 
+  // Helper method to get card gradient colors based on theme
+  List<Color> _getCardGradientColors(ThemeData theme) {
+    final isLight = theme.brightness == Brightness.light;
+    if (isLight) {
+      return [
+        AppColors.primary.withOpacity(0.8), // Light blue
+        AppColors.cardLight,
+        AppColors.primary.withOpacity(0.2),
+      ];
+    } else {
+      return [
+        const Color(0xFF1E3A5F), // Midnight blue
+        AppColors.backgroundDark,
+        const Color(0xFF5D9CEC).withOpacity(0.3),
+      ];
+    }
+  }
+
+  // Helper method to get card box shadow based on theme
+  List<BoxShadow> _getCardBoxShadow(ThemeData theme) {
+    final isLight = theme.brightness == Brightness.light;
+    return [
+      BoxShadow(
+        color: isLight
+            ? AppColors.black.withOpacity(0.1)
+            : AppColors.black.withOpacity(0.3),
+        blurRadius: 16,
+        spreadRadius: 0,
+        offset: const Offset(0, 8),
+      ),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return FadeTransition(
       opacity: _fadeAnimation,
@@ -176,31 +218,10 @@ class _NewYearEventCardState extends State<NewYearEventCard>
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                const Color(0xFF1E3A5F), // Midnight blue
-                AppColors.backgroundDark,
-                const Color(0xFF5D9CEC).withOpacity(0.3),
-              ],
+              colors: _getCardGradientColors(theme),
             ),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: const Color(0xFFFBBF24).withOpacity(0.6), // Daha belirgin altın border
-              width: 2,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFFFBBF24).withOpacity(0.4), // Daha belirgin altın glow
-                blurRadius: 20,
-                spreadRadius: 2,
-                offset: const Offset(0, 4),
-              ),
-              BoxShadow(
-                color: AppColors.black.withOpacity(0.3),
-                blurRadius: 16,
-                spreadRadius: 0,
-                offset: const Offset(0, 8),
-              ),
-            ],
+            boxShadow: _getCardBoxShadow(theme),
           ),
           child: Material(
             color: Colors.transparent,
@@ -221,14 +242,14 @@ class _NewYearEventCardState extends State<NewYearEventCard>
                         horizontal: 16,
                         vertical: 12,
                       ),
-                      child: _buildEventTextSection(context, theme, isDark),
+                      child: _buildEventTextSection(context, theme),
                     ),
                     // Geri sayım sağ üstte
                     if (_timeRemaining.inSeconds > 0)
                       Positioned(
                         top: 8,
                         right: 8,
-                        child: _buildCountdownWidget(),
+                        child: _buildCountdownWidget(theme),
                       ),
                   ],
                 ),
@@ -313,8 +334,10 @@ class _NewYearEventCardState extends State<NewYearEventCard>
     }
   }
 
-  Widget _buildEventTextSection(BuildContext context, ThemeData theme, bool isDark) {
-    final progress = (_currentLevelProgress / _currentLevelTotal).clamp(0.0, 1.0);
+  Widget _buildEventTextSection(BuildContext context, ThemeData theme) {
+    final progress =
+        (_currentLevelProgress / _currentLevelTotal).clamp(0.0, 1.0);
+    final isCompleted = _isEventCompleted;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -347,13 +370,13 @@ class _NewYearEventCardState extends State<NewYearEventCard>
           ],
         ),
         const SizedBox(height: 6),
-        // "Delete X photos" text - dinamik hedef
+        // Event title / target text
         Text(
-          'Delete $_currentLevelTotal photos',
+          isCompleted
+              ? 'You deleted ${_milestones.last} photos! Event completed 🎉'
+              : 'Delete $_currentLevelTotal photos',
           style: theme.textTheme.bodyMedium?.copyWith(
-            color: isDark
-                ? AppColors.textPrimaryDark
-                : AppColors.textPrimaryLight,
+            color: theme.colorScheme.onSurface,
             fontWeight: FontWeight.bold,
             fontSize: 16,
           ),
@@ -365,7 +388,7 @@ class _NewYearEventCardState extends State<NewYearEventCard>
           child: Container(
             height: 20,
             decoration: BoxDecoration(
-              color: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+              color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: const Color(0xFFFBBF24).withOpacity(0.5),
@@ -407,15 +430,15 @@ class _NewYearEventCardState extends State<NewYearEventCard>
                 // Progress text - bar'ın içinde ortada
                 Center(
                   child: Text(
-                    '$_currentLevelProgress / $_currentLevelTotal',
+                    isCompleted
+                        ? '${_milestones.last} / ${_milestones.last}'
+                        : '$_currentLevelProgress / $_currentLevelTotal',
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
                       color: progress > 0.5
                           ? Colors.white
-                          : (isDark
-                              ? AppColors.textPrimaryDark
-                              : AppColors.textPrimaryLight),
+                          : theme.colorScheme.onSurface,
                       shadows: progress > 0.5
                           ? [
                               const Shadow(
@@ -435,11 +458,13 @@ class _NewYearEventCardState extends State<NewYearEventCard>
     );
   }
 
-  Widget _buildCountdownWidget() {
+  Widget _buildCountdownWidget(ThemeData theme) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E3A5F).withOpacity(0.9),
+        color: theme.brightness == Brightness.light
+            ? AppColors.primary.withOpacity(0.9)
+            : const Color(0xFF1E3A5F).withOpacity(0.9),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: const Color(0xFFFBBF24).withOpacity(0.5),

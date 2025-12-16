@@ -115,7 +115,14 @@ class ReviewHistoryCubit extends Cubit<List<ReviewActionItem>> {
   }
 
   void undoDelete(String assetId) {
-    _updateFirst(assetId, (it) => it.type == ReviewActionType.delete, (it) => it.copyWith(status: ReviewActionStatus.undone));
+    // Sadece henüz uygulanmamış (pending) silme işlemlerini geri al
+    _updateFirst(
+      assetId,
+      (it) =>
+          it.type == ReviewActionType.delete &&
+          it.status != ReviewActionStatus.applied,
+      (it) => it.copyWith(status: ReviewActionStatus.undone),
+    );
   }
 
   void undoKeep(String assetId) {
