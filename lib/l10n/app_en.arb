@@ -424,7 +424,7 @@
   "@photoRestored": {
     "description": "Success message when photo is restored"
   },
-  "remainingDeletionRights": "Daily Remaining Deletion",
+  "remainingDeletionRights": "Deletion Right",
   "@remainingDeletionRights": {
     "description": "Remaining deletion rights label (daily)"
   },
@@ -914,13 +914,17 @@
   "@noDeleteRightsLeft": {
     "description": "Title when deletion rights are exhausted"
   },
-  "noDeleteRightsLeftMessage": "You have no deletion rights left. Get unlimited deletion rights to continue cleaning your gallery.",
+  "noDeleteRightsLeftMessage": "Get unlimited deletion with a one-time payment.",
   "@noDeleteRightsLeftMessage": {
     "description": "Message when deletion rights are exhausted"
   },
   "galleryStatsTitle": "Gallery Statistics",
   "@galleryStatsTitle": {
     "description": "Gallery statistics page title"
+  },
+  "galleryStatsHistoryTitle": "Your actions",
+  "@galleryStatsHistoryTitle": {
+    "description": "Title for user actions summary (keep/delete/size freed)"
   },
   "generalStatistics": "General Statistics",
   "@generalStatistics": {
@@ -1278,6 +1282,68 @@
   "@weNeedYourAccessTitle": {
     "description": "Permission request page title with line break"
   },
+  "warmupTitle": "Let's warm up a bit",
+  "@warmupTitle": {
+    "description": "Warm-up screen title"
+  },
+  "warmupRemaining": "{remaining} left",
+  "@warmupRemaining": {
+    "description": "Warm-up remaining count",
+    "placeholders": {
+      "remaining": {
+        "type": "int"
+      }
+    }
+  },
+  "warmupCountProgress": "{current}/{total} photo",
+  "@warmupCountProgress": {
+    "description": "Warm-up progress e.g. 1/5 photo",
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "warmupLoading": "Loading your oldest photos...",
+  "@warmupLoading": {
+    "description": "Warm-up loading message"
+  },
+  "warmupNoPhotos": "No photos found. You can skip to the app.",
+  "@warmupNoPhotos": {
+    "description": "Warm-up no photos message"
+  },
+  "warmupRetry": "Retry",
+  "@warmupRetry": {
+    "description": "Warm-up retry button"
+  },
+  "warmupSkip": "Skip to app",
+  "@warmupSkip": {
+    "description": "Warm-up skip button"
+  },
+  "warmupContinue": "Continue to app",
+  "@warmupContinue": {
+    "description": "Warm-up continue button when 5 deletes done"
+  },
+  "warmupCompletionTitle": "Nice! You cleaned {count} photos",
+  "@warmupCompletionTitle": {
+    "description": "Warm-up completion title after deleting/swiping photos",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "warmupCompletionDescription": "Why stop there? Keep going and start cleaning your gallery.",
+  "@warmupCompletionDescription": {
+    "description": "Warm-up completion slogan shown at the end of warm-up swipe deck"
+  },
+  "settingsTrySwipeAgain": "Try swipe (5 photos)",
+  "@settingsTrySwipeAgain": {
+    "description": "Settings item to open warmup screen"
+  },
   "resetToStart": "Reset to Start",
   "@resetToStart": {
     "description": "Button text to reset gallery to start"
@@ -1372,15 +1438,15 @@
   "@openAppAndViewResults": {
     "description": "Message telling user to open app and view scan results"
   },
-  "rateApp": "Rate App",
+  "rateApp": "Rate Us",
   "@rateApp": {
     "description": "Title for rate app section"
   },
-  "rateAppDescription": "Enjoying the app? Please rate us on the store!",
+  "rateAppDescription": "Your opinion matters! Would you rate us on the store?",
   "@rateAppDescription": {
     "description": "Description for rate app section"
   },
-  "rateAppSupportMessage": "Support our growth! Could you take 3 seconds to rate the app?",
+  "rateAppSupportMessage": "Rate us! It only takes a few seconds and helps us grow.",
   "@rateAppSupportMessage": {
     "description": "Support message for rate app dialog"
   },
@@ -1467,6 +1533,10 @@
   "duplicateModeLevelsDescription": "Low Speed/High Accuracy: Most accurate results, takes longer\nBalanced: Speed and accuracy balance\nHigh Speed/Low Accuracy: Fast results, less accurate",
   "@duplicateModeLevelsDescription": {
     "description": "Detailed description of duplicate detection mode levels"
+  },
+  "duplicateSensitivityLevelsDescription": "Low: Looser matching, more pairs count as duplicates\nMedium: Balanced sensitivity\nHigh: Stricter matching, only very similar photos count as duplicates",
+  "@duplicateSensitivityLevelsDescription": {
+    "description": "Description of duplicate detection sensitivity levels (Low/Medium/High)"
   },
   "allPhotosReviewedTitle": "All Photos Reviewed!",
   "@allPhotosReviewedTitle": {
@@ -1624,10 +1694,6 @@
   "@scanTip15": {
     "description": "Tip shown during scan"
   },
-  "galleryReportTitle": "Gallery Report",
-  "@galleryReportTitle": {
-    "description": "Title for gallery report page"
-  },
   "photos": "Photos",
   "@photos": {
     "description": "Photos label"
@@ -1643,10 +1709,6 @@
   "media": "Media",
   "@media": {
     "description": "Media label"
-  },
-  "galleryReportDescription": "Our users clean approximately 50% of their gallery on average, significantly freeing up storage space",
-  "@galleryReportDescription": {
-    "description": "Description text on gallery report page"
   },
   "reviewDeletePhotos": "Review Photos to Delete",
   "@reviewDeletePhotos": {

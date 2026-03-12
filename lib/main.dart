@@ -21,7 +21,6 @@ import 'src/core/services/fcm_service.dart';
 import 'src/core/services/delete_limit_tracker_service.dart';
 import 'src/features/onboarding/application/onboarding_controller.dart';
 import 'src/features/onboarding/application/permissions_controller.dart';
-import 'src/features/settings/application/theme_controller.dart';
 import 'src/features/settings/application/locale_controller.dart';
 import 'src/features/gallery/application/gallery_providers.dart';
 import 'src/features/gallery/application/folder_targets_provider.dart';
@@ -85,7 +84,6 @@ void main() async {
     }
 
     // TEST: Silme hakkı takip servisini test et (Firebase'den kontrol için)
-    // TODO: Bu test kodunu Firebase'den kontrol ettikten sonra kaldırın
     try {
       AppLogger.i('🧪 [TEST] Silme hakkı takip servisi test ediliyor...');
       await DeleteLimitTrackerService.instance.trackDeleteLimitReachedZero();
@@ -102,6 +100,7 @@ void main() async {
   await AdsInitializer.instance.initializeOnLaunch();
 
   final preferencesService = PreferencesService();
+  await preferencesService.registerGalleryLaunch(refreshInterval: 3);
   final mediaLibraryService = MediaLibraryService();
   final blurDetectionService = BlurDetectionService();
   final duplicateDetectionService = DuplicateDetectionService();
@@ -136,7 +135,6 @@ void main() async {
       child: MultiBlocProvider(
         providers: [
           BlocProvider(create: (_) => PermissionsCubit()),
-          BlocProvider(create: (_) => ThemeCubit()),
           BlocProvider(create: (_) => LocaleCubit()),
           BlocProvider(
             create: (context) => SelectedAlbumCubit(

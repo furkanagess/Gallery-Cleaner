@@ -31,9 +31,14 @@ class PreferencesService {
   static const String _themeModeKey = 'theme_mode';
   static const String _localeKey = 'locale';
   static const String _galleryStatsCacheKey = 'gallery_stats_cache';
+  static const String _galleryAssetCacheKey = 'gallery_asset_cache_v1';
+  static const String _galleryRefreshCounterKey = 'gallery_refresh_counter';
+  static const String _galleryRefreshPendingKey = 'gallery_refresh_pending';
   static const String _cleaningStartedKey = 'cleaning_started';
   static const String _deleteLimitKey = 'delete_limit';
   static const String _deleteLimitLastResetKey = 'delete_limit_last_reset';
+  static String _deleteLimitKeyForDevice(String deviceId) =>
+      'delete_limit_$deviceId';
   static const String _isPremiumKey = 'is_premium';
   static const String _previousGalleryStatsKey = 'previous_gallery_stats';
   static const String _firstAnalysisCompletedKey = 'first_analysis_completed';
@@ -56,9 +61,8 @@ class PreferencesService {
   static const String _hasShownRateUsDialogKey = 'has_shown_rate_us_dialog';
   static const String _lastSelectedAlbumIdKey = 'last_selected_album_id';
   static const String _uniqueUserIdKey = 'unique_user_id';
-  static const String _newYearEventDeleteCountKey = 'new_year_event_delete_count';
   static const int _rateUsDialogThreshold = 10; // 10 swipe sonrası dialog göster
-  static const int _defaultDeleteLimit = 25; // Günlük silme hakkı: 25 fotoğraf
+  static const int _defaultDeleteLimit = 50; // Tek seferlik silme hakkı (cihaz başına)
   static const int _defaultScanLimit = 1000;
   static const int _premiumDialogThreshold =
       3; // 3 reklam sonrası premium dialog göster
@@ -300,6 +304,76 @@ class PreferencesService {
     }
   }
 
+  /// Galeride gösterilecek asset ID'lerini cache'e kaydet (sıralı)
+  Future<void> saveGalleryAssetCache(List<Map<String, dynamic>> entries) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final jsonString = jsonEncode(entries);
+      await prefs.setString(_galleryAssetCacheKey, jsonString);
+      debugPrint('💾 [PreferencesService] Gallery asset cache kaydedildi (${entries.length} kayıt)');
+    } catch (e) {
+      debugPrint('❌ [PreferencesService] Gallery asset cache kaydedilemedi: $e');
+    }
+  }
+
+  /// Cache'den asset ID listesini oku
+  Future<List<Map<String, dynamic>>?> getGalleryAssetCacheEntries() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final jsonString = prefs.getString(_galleryAssetCacheKey);
+      if (jsonString == null) return null;
+      final decoded = jsonDecode(jsonString) as List<dynamic>;
+      return decoded
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList();
+    } catch (e) {
+      debugPrint('❌ [PreferencesService] Gallery asset cache okunamadı: $e');
+      return null;
+    }
+  }
+
+  Future<void> clearGalleryAssetCache() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_galleryAssetCacheKey);
+      debugPrint('💾 [PreferencesService] Gallery asset cache temizlendi');
+    } catch (e) {
+      debugPrint('❌ [PreferencesService] Gallery asset cache temizlenemedi: $e');
+    }
+  }
+
+  /// Uygulama açılışlarını sayar ve her 3. açılışta refresh bayrağını set eder
+  Future<void> registerGalleryLaunch({int refreshInterval = 3}) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final current = prefs.getInt(_galleryRefreshCounterKey) ?? 0;
+      final next = current + 1;
+      if (next >= refreshInterval) {
+        await prefs.setInt(_galleryRefreshCounterKey, 0);
+        await prefs.setBool(_galleryRefreshPendingKey, true);
+        debugPrint('🔁 [PreferencesService] Gallery refresh bayrağı set edildi (launch count $next)');
+      } else {
+        await prefs.setInt(_galleryRefreshCounterKey, next);
+      }
+    } catch (e) {
+      debugPrint('❌ [PreferencesService] Gallery launch counter güncellenemedi: $e');
+    }
+  }
+
+  Future<bool> isGalleryRefreshPending() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_galleryRefreshPendingKey) ?? false;
+  }
+
+  Future<void> completeGalleryRefreshCycle() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_galleryRefreshPendingKey, false);
+    } catch (e) {
+      debugPrint('❌ [PreferencesService] Gallery refresh bayrağı sıfırlanamadı: $e');
+    }
+  }
+
   /// Önceki galeri istatistiklerini kaydet
   Future<void> savePreviousGalleryStats(GalleryStats stats) async {
     try {
@@ -343,9 +417,8 @@ class PreferencesService {
     return prefs.getBool(_cleaningStartedKey) ?? false;
   }
 
-  /// Silme hakkını al (günlük reset kontrolü ile)
+  /// Silme hakkını al (cihaz başına tek seferlik 50, deviceId ile eşleştirilir)
   Future<int> getDeleteLimit() async {
-    // İlk çalıştırmada migration yap
     await _migrateToSecureStorage();
 
     final premiumStatus = await isPremium();
@@ -353,91 +426,72 @@ class PreferencesService {
       return 999999999; // Premium için sınırsız
     }
 
-    final lastReset = await _getSecureString(_deleteLimitLastResetKey);
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final todayString = today.toIso8601String().split('T')[0];
-
-    // Eğer bugün reset edilmemişse, limiti sıfırla
-    if (lastReset == null || lastReset != todayString) {
-      await _setSecureInt(_deleteLimitKey, _defaultDeleteLimit);
-      await _setSecureString(_deleteLimitLastResetKey, todayString);
+    final deviceId = await getOrCreateUniqueUserId();
+    final key = _deleteLimitKeyForDevice(deviceId);
+    var limit = await _getSecureInt(key);
+    if (limit == null) {
+      // Eski (cihaz-bağımsız) key'den migrate et
+      final legacy = await _getSecureInt(_deleteLimitKey);
+      if (legacy != null) {
+        await _setSecureInt(key, legacy);
+        return legacy;
+      }
       return _defaultDeleteLimit;
     }
-
-    final limit = await _getSecureInt(_deleteLimitKey);
-    return limit ?? _defaultDeleteLimit;
+    return limit;
   }
 
-  /// Silme hakkını kaydet
+  /// Silme hakkını kaydet (cihaz başına)
   Future<void> setDeleteLimit(int limit) async {
-    await _setSecureInt(_deleteLimitKey, limit);
-    // SharedPreferences'a da yaz (backward compatibility)
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_deleteLimitKey, limit);
+    final deviceId = await getOrCreateUniqueUserId();
+    final key = _deleteLimitKeyForDevice(deviceId);
+    await _setSecureInt(key, limit);
   }
 
-  /// Silme hakkını azalt
+  /// Silme hakkını azalt (cihaz başına tek seferlik kota)
   Future<int> decreaseDeleteLimit(int amount) async {
     final premiumStatus = await isPremium();
     if (premiumStatus) {
       return 999999999; // Premium kullanıcılar için limit düşürme yok
     }
 
-    // İlk çalıştırmada migration yap
     await _migrateToSecureStorage();
 
-    // Günlük reset kontrolü yapmadan direkt secure storage'dan oku
-    final lastReset = await _getSecureString(_deleteLimitLastResetKey);
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final todayString = today.toIso8601String().split('T')[0];
-
-    int currentLimit;
-
-    // Eğer bugün reset edilmemişse, limiti sıfırla
-    if (lastReset == null || lastReset != todayString) {
-      currentLimit = _defaultDeleteLimit;
-      await _setSecureInt(_deleteLimitKey, _defaultDeleteLimit);
-      await _setSecureString(_deleteLimitLastResetKey, todayString);
-    } else {
-      // Secure storage'dan direkt oku (getDeleteLimit metodundaki reset kontrolü olmadan)
-      final limit = await _getSecureInt(_deleteLimitKey);
-      currentLimit = limit ?? _defaultDeleteLimit;
+    final deviceId = await getOrCreateUniqueUserId();
+    final key = _deleteLimitKeyForDevice(deviceId);
+    int currentLimit = await _getSecureInt(key) ?? 0;
+    if (currentLimit == 0) {
+      // Eski key'den migrate et veya varsayılan ver
+      final legacy = await _getSecureInt(_deleteLimitKey);
+      if (legacy != null) {
+        await _setSecureInt(key, legacy);
+        currentLimit = legacy;
+      } else {
+        currentLimit = _defaultDeleteLimit;
+        await _setSecureInt(key, currentLimit);
+      }
     }
 
     final newLimit = (currentLimit - amount).clamp(0, 999999999);
-
-    // Secure storage'a yaz
-    await _setSecureInt(_deleteLimitKey, newLimit);
-    // SharedPreferences'a da yaz (backward compatibility)
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_deleteLimitKey, newLimit);
-
-    // Yazma işleminin tamamlandığından emin ol
+    await _setSecureInt(key, newLimit);
     await Future.delayed(const Duration(milliseconds: 10));
 
     debugPrint(
-      '💾 [PreferencesService] Delete limit azaltıldı: $currentLimit -> $newLimit (azaltılan: $amount)',
+      '💾 [PreferencesService] Delete limit azaltıldı: $currentLimit -> $newLimit (azaltılan: $amount, deviceId: $deviceId)',
     );
 
-    // Doğrulama: Yazdığımız değeri okuyarak kontrol et
-    final verifiedLimit = await _getSecureInt(_deleteLimitKey);
+    final verifiedLimit = await _getSecureInt(key);
     if (verifiedLimit != newLimit) {
       debugPrint(
         '⚠️ [PreferencesService] UYARI: Yazılan değer doğrulanamadı! Beklenen: $newLimit, Okunan: $verifiedLimit',
       );
-      // Tekrar dene
-      await _setSecureInt(_deleteLimitKey, newLimit);
-      await prefs.setInt(_deleteLimitKey, newLimit);
+      await _setSecureInt(key, newLimit);
     }
 
-    // Silme hakkı pozitiften 0'a düştüyse Firestore'a kayıt ekle
     if (currentLimit > 0 && newLimit == 0) {
       debugPrint(
         '📊 [PreferencesService] Silme hakkı sıfıra düştü, Firestore\'a kayıt ekleniyor...',
       );
-      // Firestore'a kayıt ekle (async olarak çalışır, hata olsa bile uygulama devam eder)
       DeleteLimitTrackerService.instance
           .trackDeleteLimitReachedZero()
           .catchError((error) {
@@ -1051,24 +1105,4 @@ class PreferencesService {
     }
   }
 
-  /// Yeni Yıl Event silme sayacını al (1000 hedefi için)
-  Future<int> getNewYearEventDeleteCount() async {
-    final count = await _getSecureInt(_newYearEventDeleteCountKey);
-    return count ?? 0;
-  }
-
-  /// Yeni Yıl Event silme sayacını artır
-  Future<int> incrementNewYearEventDeleteCount(int incrementBy) async {
-    final currentCount = await getNewYearEventDeleteCount();
-    final newCount = (currentCount + incrementBy).clamp(0, 1000);
-    await _setSecureInt(_newYearEventDeleteCountKey, newCount);
-    debugPrint('💾 [PreferencesService] Yeni Yıl Event silme sayacı: $currentCount -> $newCount');
-    return newCount;
-  }
-
-  /// Yeni Yıl Event silme sayacını sıfırla
-  Future<void> resetNewYearEventDeleteCount() async {
-    await _setSecureInt(_newYearEventDeleteCountKey, 0);
-    debugPrint('💾 [PreferencesService] Yeni Yıl Event silme sayacı sıfırlandı');
-  }
 }

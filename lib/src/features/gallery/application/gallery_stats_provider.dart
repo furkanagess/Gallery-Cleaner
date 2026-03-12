@@ -263,7 +263,14 @@ class GalleryStatsCubit extends Cubit<GalleryStatsState> {
 
   /// Manuel olarak yenile (kullanıcı butona bastığında)
   Future<void> refresh() async {
+    // Taramanın en az 3 saniye sürmesini garanti et
+    final start = DateTime.now();
     await _refreshStats(useCache: false);
+    final elapsed = DateTime.now().difference(start);
+    final minDuration = const Duration(seconds: 3);
+    if (elapsed < minDuration) {
+      await Future.delayed(minDuration - elapsed);
+    }
   }
 
   /// Taramayı iptal et

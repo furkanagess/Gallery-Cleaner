@@ -346,7 +346,7 @@ class _SwipeTabState extends State<SwipeTab>
           });
         }
       },
-      error: (_, __) {
+      error: (_, _) {
         // Hata durumunda temizle
         _loadingAlbumId = null;
         _shimmerDelayTimer?.cancel();
@@ -477,7 +477,9 @@ class _SwipeTabState extends State<SwipeTab>
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: theme.colorScheme.primary.withOpacity(0.25),
+                            color: theme.colorScheme.primary.withValues(
+                              alpha: 0.25,
+                            ),
                             blurRadius: 32,
                             offset: const Offset(0, 12),
                             spreadRadius: 0,
@@ -511,17 +513,21 @@ class _SwipeTabState extends State<SwipeTab>
                       ),
                       decoration: BoxDecoration(
                         color: theme.colorScheme.surfaceContainerHighest
-                            .withOpacity(0.5),
+                            .withValues(alpha: 0.5),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: theme.colorScheme.outline.withOpacity(0.1),
+                          color: theme.colorScheme.outline.withValues(
+                            alpha: 0.1,
+                          ),
                           width: 1,
                         ),
                       ),
                       child: Text(
                         l10n.selectAlbumToView,
                         style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurface.withOpacity(0.75),
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.75,
+                          ),
                           height: 1.5,
                           fontSize: 14,
                         ),
@@ -537,7 +543,7 @@ class _SwipeTabState extends State<SwipeTab>
                           final isPremiumAsync = buttonContext
                               .watch<PremiumCubit>()
                               .state;
-                          final isPremium = isPremiumAsync.maybeWhen(
+                          isPremiumAsync.maybeWhen(
                             data: (premium) => premium,
                             orElse: () => false,
                           );
@@ -546,7 +552,7 @@ class _SwipeTabState extends State<SwipeTab>
                           final containerColor = theme
                               .colorScheme
                               .onPrimaryContainer
-                              .withOpacity(0.8);
+                              .withValues(alpha: 0.8);
 
                           return Container(
                             width: double.infinity,
@@ -556,13 +562,13 @@ class _SwipeTabState extends State<SwipeTab>
                                 end: Alignment.bottomRight,
                                 colors: [
                                   containerColor,
-                                  containerColor.withOpacity(0.85),
+                                  containerColor.withValues(alpha: 0.85),
                                 ],
                               ),
                               borderRadius: BorderRadius.circular(16),
                               boxShadow: [
                                 BoxShadow(
-                                  color: containerColor.withOpacity(0.35),
+                                  color: containerColor.withValues(alpha: 0.35),
                                   blurRadius: 16,
                                   offset: const Offset(0, 6),
                                   spreadRadius: 0,
@@ -613,7 +619,9 @@ class _SwipeTabState extends State<SwipeTab>
                           color: theme.colorScheme.surfaceContainerHighest,
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: theme.colorScheme.outline.withOpacity(0.2),
+                            color: theme.colorScheme.outline.withValues(
+                              alpha: 0.2,
+                            ),
                             width: 1.5,
                           ),
                         ),

@@ -1,13 +1,11 @@
 import 'dart:io';
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:lottie/lottie.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import '../../../core/services/in_app_review_service.dart';
 import '../../../../l10n/app_localizations.dart';
-import '../application/theme_controller.dart';
 import '../application/locale_controller.dart';
 import '../../gallery/application/gallery_providers.dart';
 import '../../../app/theme/app_colors.dart';
@@ -20,13 +18,16 @@ class SettingsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final themeMode = context.watch<ThemeCubit>().state;
     final locale = context.watch<LocaleCubit>().state;
 
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: theme.colorScheme.background,
+      backgroundColor: theme.colorScheme.surface,
+      appBar: AppBar(
+        title: Text(l10n.settings),
+        centerTitle: true,
+      ),
       body: Builder(
         builder: (builderContext) {
           return SingleChildScrollView(
@@ -34,247 +35,94 @@ class SettingsPage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Yeni Yıl Başlık Kartı - Özgün tasarım
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
-                  child: Stack(
-                    clipBehavior: Clip.hardEdge,
+                const SizedBox(height: 8),
+                // Premium Section - En üstte
+                _PremiumSection(),
+                const SizedBox(height: 12),
+                // Rate App Section (shows only when user hasn't rated yet)
+                const _RateAppSection(),
+                const SizedBox(height: 12),
+                // Language Selection
+                _SettingsCard(
+                  theme: theme,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        margin: const EdgeInsets.only(bottom: 20),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: SettingsPage._getCardGradientColors(theme),
+                      Text(
+                        l10n.language,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                          color: theme.colorScheme.onPrimaryContainer.withValues(
+                            alpha: 0.8,
                           ),
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: SettingsPage._getCardBoxShadow(theme),
                         ),
-                        child: Stack(
-                          clipBehavior: Clip.none,
+                      ),
+                      const SizedBox(height: 12),
+                      _CompactLanguageSelector(
+                        locale: locale,
+                        onLocaleChanged: (loc) {
+                          context.read<LocaleCubit>().setAppLocale(loc);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _SoundVolumeControl(),
+                const SizedBox(height: 12),
+                // Try swipe (warmup) - opens warmup screen
+
+                // Gallery stats (en altta)
+                _SettingsCard(
+                  theme: theme,
+                  child: Material(
+                    color: AppColors.transparent,
+                    child: InkWell(
+                      onTap: () => context.push('/gallery/stats'),
+                      borderRadius: BorderRadius.circular(16),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: Row(
                           children: [
-                            // Background decorations
-                            Positioned.fill(
-                              child: _CardBackgroundDecorations(
-                                imageAsset:
-                                    'assets/new_year/christmas-tree.png',
-                                imageSize: 120,
+                            Container(
+                              width: 48,
+                              height: 48,
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.primary.withValues(
+                                  alpha: 0.12,
+                                ),
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: Icon(
+                                Icons.bar_chart_rounded,
+                                color: theme.colorScheme.primary,
+                                size: 24,
                               ),
                             ),
-                            // Main content
-                            Padding(
-                              padding: const EdgeInsets.all(20),
-                              child: Row(
-                                children: [
-                                  // Santa Claus ikonu
-                                  Container(
-                                    width: 60,
-                                    height: 60,
-                                    decoration: BoxDecoration(
-                                      color: theme.colorScheme.primary
-                                          .withOpacity(0.18),
-                                      borderRadius: BorderRadius.circular(16),
-                                      border: Border.all(
-                                        color: theme.colorScheme.primary
-                                            .withOpacity(0.4),
-                                        width: 2,
-                                      ),
-                                    ),
-                                    child: Center(
-                                      child: Image.asset(
-                                        'assets/new_year/santa-claus.png',
-                                        width: 40,
-                                        height: 40,
-                                        fit: BoxFit.contain,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          'Happy New Year 2026',
-                                          style: theme.textTheme.titleLarge
-                                              ?.copyWith(
-                                                fontWeight: FontWeight.w900,
-                                                fontSize: 20,
-                                                color:
-                                                    theme.colorScheme.onSurface,
-                                                letterSpacing: -0.5,
-                                              ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            // Dekoratif görseller
-                            Positioned(
-                              top: -10,
-                              right: -10,
-                              child: Opacity(
-                                opacity: 0.35,
-                                child: Image.asset(
-                                  'assets/new_year/christmas-wreath.png',
-                                  width: 80,
-                                  height: 80,
-                                  fit: BoxFit.contain,
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Text(
+                                l10n.galleryStatsTitle,
+                                style: theme.textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color: theme.colorScheme.onPrimaryContainer
+                                      .withValues(alpha: 0.8),
                                 ),
                               ),
                             ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                // Premium Section - En üstte, dikkat çekici
-                _PremiumSection(),
-                const SizedBox(height: 12),
-                // Rate App Section
-                _RateAppSection(),
-                const SizedBox(height: 12),
-                // Theme Selection Container - Ayrı (tek tip renk ve kar efekti)
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
-                  child: Stack(
-                    clipBehavior: Clip.hardEdge,
-                    children: [
-                      Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: SettingsPage._getCardGradientColors(theme),
-                          ),
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: SettingsPage._getCardBoxShadow(theme),
-                        ),
-                        child: Stack(
-                          children: [
-                            // Background decorations
-                            Positioned.fill(
-                              child: _CardBackgroundDecorations(
-                                imageAsset: 'assets/new_year/gift-box.png',
-                                imageSize: 120,
+                            Icon(
+                              Icons.chevron_right_rounded,
+                              color: theme.colorScheme.onSurface.withValues(
+                                alpha: 0.4,
                               ),
-                            ),
-                            // Main content
-                            Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  // Theme Selection - Modern
-                                  Row(
-                                    children: [
-                                      Text(
-                                        l10n.theme,
-                                        style: theme.textTheme.titleSmall
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.w800,
-                                              fontSize: 15,
-                                              color:
-                                                  theme.colorScheme.onSurface,
-                                              letterSpacing: 0.2,
-                                            ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 10),
-                                  _CompactThemeSelector(
-                                    themeMode: themeMode,
-                                    onThemeChanged: (mode) {
-                                      context.read<ThemeCubit>().setThemeMode(
-                                        mode,
-                                      );
-                                    },
-                                  ),
-                                ],
-                              ),
+                              size: 24,
                             ),
                           ],
                         ),
                       ),
-                    ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                // Language Selection Container - Ayrı (tek tip renk ve kar efekti)
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
-                  child: Stack(
-                    clipBehavior: Clip.hardEdge,
-                    children: [
-                      Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: SettingsPage._getCardGradientColors(theme),
-                          ),
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: SettingsPage._getCardBoxShadow(theme),
-                        ),
-                        child: Stack(
-                          children: [
-                            // Background decorations
-                            Positioned.fill(
-                              child: _CardBackgroundDecorations(
-                                imageAsset: 'assets/new_year/santa-claus.png',
-                                imageSize: 120,
-                              ),
-                            ),
-                            // Main content
-                            Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  // Language Selection - Modern
-                                  Row(
-                                    children: [
-                                      Text(
-                                        l10n.language,
-                                        style: theme.textTheme.titleSmall
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.w800,
-                                              fontSize: 15,
-                                              color:
-                                                  theme.colorScheme.onSurface,
-                                              letterSpacing: 0.2,
-                                            ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 10),
-                                  _CompactLanguageSelector(
-                                    locale: locale,
-                                    onLocaleChanged: (loc) {
-                                      context.read<LocaleCubit>().setAppLocale(
-                                        loc,
-                                      );
-                                    },
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-                // Sound Volume Control Container (tek tip renk ve kar efekti)
-                Stack(
-                  clipBehavior: Clip.hardEdge,
-                  children: [_SoundVolumeControl()],
                 ),
                 const SizedBox(height: 12),
                 // Version info - Modern
@@ -286,21 +134,35 @@ class SettingsPage extends StatelessWidget {
                     ),
                     decoration: BoxDecoration(
                       color: theme.colorScheme.surfaceContainerHighest
-                          .withOpacity(0.5),
+                          .withValues(alpha: 0.5),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: theme.colorScheme.outline.withOpacity(0.1),
+                        color: theme.colorScheme.outline.withValues(alpha: 0.1),
                         width: 1,
                       ),
                     ),
-                    child: Text(
-                      'v1.0.0',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurface.withOpacity(0.6),
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.5,
-                      ),
+                    child: FutureBuilder<PackageInfo>(
+                      future: PackageInfo.fromPlatform(),
+                      builder: (context, snapshot) {
+                        final version = snapshot.data?.version;
+                        final buildNumber = snapshot.data?.buildNumber;
+                        final text = (version != null && buildNumber != null)
+                            ? 'v$version'
+                            : 'v--';
+
+                        return Text(
+                          text,
+
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurface.withValues(
+                              alpha: 0.6,
+                            ),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.5,
+                          ),
+                        );
+                      },
                     ),
                   ),
                 ),
@@ -316,146 +178,43 @@ class SettingsPage extends StatelessWidget {
   static void showPurchaseDialog(BuildContext context) {
     context.push('/paywall');
   }
-
-  // Helper method to get card gradient colors based on theme
-  static List<Color> _getCardGradientColors(ThemeData theme) {
-    final isLight = theme.brightness == Brightness.light;
-    if (isLight) {
-      return [
-        AppColors.primary.withOpacity(0.8), // Light blue
-        AppColors.cardLight,
-        AppColors.primary.withOpacity(0.2),
-      ];
-    } else {
-      return [
-        const Color(0xFF1E3A5F), // Midnight blue
-        AppColors.backgroundDark,
-        const Color(0xFF5D9CEC).withOpacity(0.3),
-      ];
-    }
-  }
-
-  // Helper method to get card box shadow based on theme
-  static List<BoxShadow> _getCardBoxShadow(ThemeData theme) {
-    final isLight = theme.brightness == Brightness.light;
-    return [
-      BoxShadow(
-        color: isLight
-            ? AppColors.black.withOpacity(0.1)
-            : AppColors.black.withOpacity(0.3),
-        blurRadius: 16,
-        spreadRadius: 0,
-        offset: const Offset(0, 8),
-      ),
-    ];
-  }
 }
 
-// Helper widget for background decorations with stars and new year images
-class _CardBackgroundDecorations extends StatelessWidget {
-  const _CardBackgroundDecorations({this.imageAsset, this.imageSize = 120});
+/// Modern settings card - surfaceContainerHighest, subtle border
+class _SettingsCard extends StatelessWidget {
+  const _SettingsCard({required this.theme, required this.child});
 
-  final String? imageAsset;
-  final double imageSize;
+  final ThemeData theme;
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        // Kar taneleri - statik/dağınık
-        Positioned.fill(child: _buildSnowflakes(context)),
-        // New year image - sağ tarafta
-        if (imageAsset != null)
-          Positioned(
-            right: -20,
-            bottom: -10,
-            child: Opacity(
-              opacity: 0.4,
-              child: Image.asset(
-                imageAsset!,
-                width: imageSize,
-                height: imageSize,
-                fit: BoxFit.contain,
-              ),
-            ),
-          ),
-        // Sarı parlak noktalar/yıldızlar
-        ...List.generate(8, (index) {
-          return Positioned(
-            top: (index * 15.0) % 100,
-            left: (index * 20.0) % 200,
-            child: Opacity(
-              opacity: 0.3,
-              child: Container(
-                width: 4,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFBBF24), // Gold
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFFFBBF24).withOpacity(0.8),
-                      blurRadius: 4,
-                      spreadRadius: 1,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        }),
-      ],
-    );
-  }
-
-  Widget _buildSnowflakes(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
-    // Tema uyumlu renk paleti
-    final palette = isDark
-        ? [
-            AppColors.white.withOpacity(0.82),
-            theme.colorScheme.secondary.withOpacity(0.78),
-            theme.colorScheme.primary.withOpacity(0.72),
-          ]
-        : [
-            theme.colorScheme.primary.withOpacity(0.72),
-            theme.colorScheme.secondary.withOpacity(0.68),
-            theme.colorScheme.onSurface.withOpacity(0.45),
-          ];
-
-    // Pseudo-random, daha dağınık yerleşim: 20 parçaya çıkarıldı
-    final flakes = List.generate(20, (index) {
-      final top = (index * 47 + 18 * (index % 3)) % 360;
-      final left = (index * 61 + 23 * (index % 4)) % 300;
-      final opacity =
-          (isDark ? 0.18 : 0.14) + (index % 6) * (isDark ? 0.05 : 0.04);
-      final size = 14.0 + (index % 6) * 5.0 + ((index % 3 == 0) ? 3.0 : 0.0);
-      final rotationDeg = (index * 17 + 11 * (index % 5)) % 360;
-      final color = palette[index % palette.length];
-
-      return Positioned(
-        top: top.toDouble(),
-        left: left.toDouble(),
-        child: Opacity(
-          opacity: opacity.clamp(0.12, 0.9),
-          child: Transform.rotate(
-            angle: rotationDeg * math.pi / 180,
-            child: Image.asset(
-              'assets/new_year/snowflake.png',
-              width: size,
-              height: size,
-              fit: BoxFit.contain,
-              color: color,
-              colorBlendMode: BlendMode.srcIn,
-            ),
-          ),
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            theme.colorScheme.primary.withValues(alpha: 0.15),
+            theme.colorScheme.primary.withValues(alpha: 0.08),
+          ],
         ),
-      );
-    });
-
-    return Stack(children: flakes);
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: theme.colorScheme.primary.withValues(alpha: 0.3),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: theme.colorScheme.primary.withValues(alpha: 0.2),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: child,
+    );
   }
 }
 
@@ -470,7 +229,7 @@ class _PremiumSection extends StatelessWidget {
 
     return isPremiumAsync.when(
       loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (e, _) => Center(child: Text(l10n.errorMessage(e.toString()))),
       data: (isPremium) {
         // Premium kullanıcı için hiçbir şey gösterme
         if (isPremium) {
@@ -478,220 +237,142 @@ class _PremiumSection extends StatelessWidget {
         }
 
         // Bottom navigation bar'daki container rengiyle aynı
-        final containerColor = theme.colorScheme.onPrimaryContainer.withOpacity(
-          0.8,
+        final containerColor = theme.colorScheme.onPrimaryContainer.withValues(
+          alpha: 0.8,
         );
 
-        // Premium olmayan kullanıcı için dikkat çekici "Go Premium" bölümü - Rate App gibi
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(20),
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: SettingsPage._getCardGradientColors(theme),
-              ),
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: SettingsPage._getCardBoxShadow(theme),
-            ),
-            child: Material(
-              color: AppColors.transparent,
-              child: InkWell(
-                onTap: () => SettingsPage.showPurchaseDialog(context),
-                borderRadius: BorderRadius.circular(20),
-                child: Stack(
+        return _SettingsCard(
+          theme: theme,
+          child: Material(
+            color: AppColors.transparent,
+            child: InkWell(
+              onTap: () => SettingsPage.showPurchaseDialog(context),
+              borderRadius: BorderRadius.circular(16),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Background decorations - Lottie kar animasyonu
-                    Positioned.fill(
-                      child: IgnorePointer(
-                        child: Opacity(
-                          opacity: 0.4,
-                          child: Builder(
-                            builder: (builderContext) {
-                              final builderTheme = Theme.of(builderContext);
-                              final isLight = builderTheme.brightness == Brightness.light;
-                              final sleighTintColor = isLight
-                                  ? builderTheme.colorScheme.primary.withOpacity(0.9)
-                                  : Colors.white;
-                              return ColorFiltered(
-                                colorFilter: ColorFilter.mode(
-                                  sleighTintColor,
-                                  BlendMode.srcATop,
-                                ),
-                                child: Lottie.asset(
-                                  'assets/new_year/Snowing.json',
-                                  fit: BoxFit.cover,
-                                  repeat: true,
-                                  animate: true,
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ),
-                    ),
-                    // Christmas tree decoration
-                    Positioned(
-                      right: -20,
-                      bottom: -10,
-                      child: Opacity(
-                        opacity: 0.4,
-                        child: Image.asset(
-                          'assets/new_year/christmas-tree.png',
-                          width: 120,
-                          height: 120,
-                          fit: BoxFit.contain,
-                        ),
-                      ),
-                    ),
-                    // Main content
-                    Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              // Premium Icon Container - Daha büyük ve vurgulu
-                              Container(
-                                width: 52,
-                                height: 52,
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                    colors: [
-                                      containerColor,
-                                      containerColor.withOpacity(0.8),
-                                    ],
-                                  ),
-                                  borderRadius: BorderRadius.circular(14),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: containerColor.withOpacity(0.5),
-                                      blurRadius: 16,
-                                      offset: const Offset(0, 6),
-                                      spreadRadius: 2,
-                                    ),
-                                  ],
-                                ),
-                                child: Icon(
-                                  Icons.workspace_premium_rounded,
-                                  color: AppColors.white,
-                                  size: 26,
-                                ),
-                              ),
-                              const SizedBox(width: 14),
-                              // Title and Description
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      l10n.goPremium,
-                                      style: theme.textTheme.titleLarge
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.w900,
-                                            fontSize: 17,
-                                            color: theme.colorScheme.onSurface,
-                                            letterSpacing: -0.4,
-                                            height: 1.2,
-                                          ),
-                                    ),
-                                    const SizedBox(height: 6),
-                                    Text(
-                                      l10n.premiumDescription,
-                                      style: theme.textTheme.bodyMedium
-                                          ?.copyWith(
-                                            fontSize: 13,
-                                            color: theme.colorScheme.onSurface
-                                                .withOpacity(0.75),
-                                            height: 1.4,
-                                          ),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ],
-                                ),
+                    Row(
+                      children: [
+                        // Premium Icon Container - Daha büyük ve vurgulu
+                        Container(
+                          width: 52,
+                          height: 52,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                containerColor,
+                                containerColor.withValues(alpha: 0.8),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(14),
+                            boxShadow: [
+                              BoxShadow(
+                                color: containerColor.withValues(alpha: 0.5),
+                                blurRadius: 16,
+                                offset: const Offset(0, 6),
+                                spreadRadius: 2,
                               ),
                             ],
                           ),
-                          const SizedBox(height: 12),
-                          // Feature Pills - kompakt
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
+                          child: Icon(
+                            Icons.workspace_premium_rounded,
+                            color: AppColors.white,
+                            size: 26,
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        // Title and Description
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              _FeaturePill(
-                                icon: Icons.all_inclusive_rounded,
-                                label: l10n.unlimited,
-                                theme: theme,
-                                containerColor: containerColor,
+                              Text(
+                                l10n.goPremium,
+                                style: theme.textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 17,
+                                  color: theme.colorScheme.onSurface,
+                                  letterSpacing: -0.4,
+                                  height: 1.2,
+                                ),
                               ),
-                              _FeaturePill(
-                                icon: Icons.block_rounded,
-                                label: l10n.adFree,
-                                theme: theme,
-                                containerColor: containerColor,
-                              ),
-                              _FeaturePill(
-                                icon: Icons.verified_rounded,
-                                label: l10n.priority,
-                                theme: theme,
-                                containerColor: containerColor,
+                              const SizedBox(height: 6),
+                              Text(
+                                l10n.premiumDescription,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  fontSize: 13,
+                                  color: theme.colorScheme.onSurface.withValues(
+                                    alpha: 0.75,
+                                  ),
+                                  height: 1.4,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ],
                           ),
-                          const SizedBox(height: 12),
-                          // Call to Action Button - Modern ve dikkat çekici
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 12,
-                              horizontal: 16,
-                            ),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.centerLeft,
-                                end: Alignment.centerRight,
-                                colors: [
-                                  containerColor.withOpacity(0.9),
-                                  containerColor.withOpacity(0.85),
-                                ],
-                              ),
-                              borderRadius: BorderRadius.circular(14),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: containerColor.withOpacity(0.4),
-                                  blurRadius: 12,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.workspace_premium_rounded,
-                                  color: AppColors.white,
-                                  size: 18,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  l10n.upgradeToPremium,
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 14,
-                                    color: AppColors.white,
-                                    letterSpacing: 0.3,
-                                  ),
-                                ),
-                              ],
-                            ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    // Feature Pills - kompakt
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        _FeaturePill(
+                          icon: Icons.all_inclusive_rounded,
+                          label: l10n.unlimited,
+                          theme: theme,
+                          containerColor: containerColor,
+                        ),
+                        _FeaturePill(
+                          icon: Icons.block_rounded,
+                          label: l10n.adFree,
+                          theme: theme,
+                          containerColor: containerColor,
+                        ),
+                        _FeaturePill(
+                          icon: Icons.verified_rounded,
+                          label: l10n.priority,
+                          theme: theme,
+                          containerColor: containerColor,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton(
+                        onPressed: () =>
+                            SettingsPage.showPurchaseDialog(context),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: containerColor,
+                          foregroundColor: AppColors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
                           ),
-                        ],
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.workspace_premium_rounded, size: 20),
+                            const SizedBox(width: 8),
+                            Text(
+                              l10n.upgradeToPremium,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ],
@@ -723,9 +404,12 @@ class _FeaturePill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: containerColor.withOpacity(0.1),
+        color: containerColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: containerColor.withOpacity(0.18), width: 1),
+        border: Border.all(
+          color: containerColor.withValues(alpha: 0.18),
+          width: 1,
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -737,158 +421,10 @@ class _FeaturePill extends StatelessWidget {
             style: theme.textTheme.labelSmall?.copyWith(
               fontWeight: FontWeight.w700,
               fontSize: 11,
-              color: theme.colorScheme.onSurface.withOpacity(0.8),
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _CompactThemeSelector extends StatelessWidget {
-  const _CompactThemeSelector({
-    required this.themeMode,
-    required this.onThemeChanged,
-  });
-
-  final AppThemeMode themeMode;
-  final ValueChanged<AppThemeMode> onThemeChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final l10n = AppLocalizations.of(context)!;
-    final containerColor = theme.colorScheme.onPrimaryContainer.withOpacity(
-      0.8,
-    );
-
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            theme.colorScheme.surfaceContainerHighest.withOpacity(0.6),
-            theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: containerColor.withOpacity(0.15), width: 1.5),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _ModernThemeChip(
-            icon: Icons.light_mode_rounded,
-            label: l10n.light,
-            isSelected: themeMode == AppThemeMode.light,
-            onTap: () => onThemeChanged(AppThemeMode.light),
-            containerColor: containerColor,
-          ),
-          _ModernThemeChip(
-            icon: Icons.dark_mode_rounded,
-            label: l10n.dark,
-            isSelected: themeMode == AppThemeMode.dark,
-            onTap: () => onThemeChanged(AppThemeMode.dark),
-            containerColor: containerColor,
-          ),
-          _ModernThemeChip(
-            icon: Icons.brightness_auto_rounded,
-            label: l10n.system,
-            isSelected: themeMode == AppThemeMode.system,
-            onTap: () => onThemeChanged(AppThemeMode.system),
-            containerColor: containerColor,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ModernThemeChip extends StatelessWidget {
-  const _ModernThemeChip({
-    required this.icon,
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-    required this.containerColor,
-  });
-
-  final IconData icon;
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-  final Color containerColor;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Material(
-      color: AppColors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            gradient: isSelected
-                ? LinearGradient(
-                    colors: [
-                      containerColor.withOpacity(0.2),
-                      containerColor.withOpacity(0.15),
-                    ],
-                  )
-                : null,
-            color: isSelected ? null : AppColors.transparent,
-            borderRadius: BorderRadius.circular(12),
-            border: isSelected
-                ? Border.all(color: containerColor.withOpacity(0.4), width: 1.5)
-                : null,
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: containerColor.withOpacity(0.2),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ]
-                : null,
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                icon,
-                size: 16,
-                color: isSelected
-                    ? containerColor
-                    : theme.colorScheme.onSurface.withOpacity(0.6),
-              ),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                  fontSize: 11,
-                  color: isSelected
-                      ? containerColor
-                      : theme.colorScheme.onSurface.withOpacity(0.7),
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }
@@ -907,8 +443,8 @@ class _CompactLanguageSelector extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
-    final containerColor = theme.colorScheme.onPrimaryContainer.withOpacity(
-      0.8,
+    final containerColor = theme.colorScheme.onPrimaryContainer.withValues(
+      alpha: 0.8,
     );
 
     return Container(
@@ -918,15 +454,18 @@ class _CompactLanguageSelector extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            theme.colorScheme.surfaceContainerHighest.withOpacity(0.6),
-            theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+            theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
+            theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
           ],
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: containerColor.withOpacity(0.15), width: 1.5),
+        border: Border.all(
+          color: containerColor.withValues(alpha: 0.15),
+          width: 1.5,
+        ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.black.withOpacity(0.05),
+            color: AppColors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -993,20 +532,23 @@ class _ModernLanguageChip extends StatelessWidget {
             gradient: isSelected
                 ? LinearGradient(
                     colors: [
-                      containerColor.withOpacity(0.2),
-                      containerColor.withOpacity(0.15),
+                      containerColor.withValues(alpha: 0.2),
+                      containerColor.withValues(alpha: 0.15),
                     ],
                   )
                 : null,
             color: isSelected ? null : AppColors.transparent,
             borderRadius: BorderRadius.circular(12),
             border: isSelected
-                ? Border.all(color: containerColor.withOpacity(0.4), width: 1.5)
+                ? Border.all(
+                    color: containerColor.withValues(alpha: 0.4),
+                    width: 1.5,
+                  )
                 : null,
             boxShadow: isSelected
                 ? [
                     BoxShadow(
-                      color: containerColor.withOpacity(0.2),
+                      color: containerColor.withValues(alpha: 0.2),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -1025,7 +567,7 @@ class _ModernLanguageChip extends StatelessWidget {
                   fontSize: 11,
                   color: isSelected
                       ? containerColor
-                      : theme.colorScheme.onSurface.withOpacity(0.7),
+                      : theme.colorScheme.onSurface.withValues(alpha: 0.7),
                 ),
               ),
             ],
@@ -1036,208 +578,121 @@ class _ModernLanguageChip extends StatelessWidget {
   }
 }
 
-class _RateAppSection extends StatelessWidget {
+class _RateAppSection extends StatefulWidget {
   const _RateAppSection();
 
-  // Store URLs
-  static const String _playStoreUrl =
-      'https://play.google.com/store/apps/details?id=com.furkanages.gallerycleaner';
-  static const String _appStoreUrl =
-      'https://apps.apple.com/us/app/gallery-cleaner-swipe-photo/id6754893118';
+  @override
+  State<_RateAppSection> createState() => _RateAppSectionState();
+}
 
-  Future<void> _openStore(BuildContext context) async {
-    final url = Platform.isAndroid ? _playStoreUrl : _appStoreUrl;
-    final uri = Uri.parse(url);
+class _RateAppSectionState extends State<_RateAppSection> {
+  final PreferencesService _preferencesService = PreferencesService();
+  bool _hasUserRated = false;
+  bool _isLoading = true;
 
-    try {
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(AppLocalizations.of(context)!.couldNotOpenStore),
-              duration: const Duration(seconds: 2),
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      debugPrint('❌ [RateApp] Error opening store: $e');
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(AppLocalizations.of(context)!.couldNotOpenStore),
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
-    }
+  @override
+  void initState() {
+    super.initState();
+    _loadRateStatus();
+  }
+
+  Future<void> _loadRateStatus() async {
+    final hasShown = await _preferencesService.hasShownRateUsDialog();
+    if (!mounted) return;
+    setState(() {
+      _hasUserRated = hasShown;
+      _isLoading = false;
+    });
+  }
+
+  Future<void> _handleTap() async {
+    await openStoreForReview();
+    if (!mounted) return;
+    setState(() {
+      _hasUserRated = true;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading || _hasUserRated) {
+      return const SizedBox.shrink();
+    }
+
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: SettingsPage._getCardGradientColors(theme),
-          ),
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: SettingsPage._getCardBoxShadow(theme),
-        ),
-        child: Material(
-          color: AppColors.transparent,
-          child: InkWell(
-            onTap: () => _openStore(context),
-            borderRadius: BorderRadius.circular(20),
-            child: Stack(
-              children: [
-                // Background decorations
-                Positioned.fill(
-                  child: _CardBackgroundDecorations(
-                    imageAsset: 'assets/new_year/christmas-wreath.png',
-                    imageSize: 120,
-                  ),
-                ),
-                // Main content
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
+    return Column(
+      children: [
+        const SizedBox(height: 12),
+        _SettingsCard(
+          theme: theme,
+          child: Material(
+            color: AppColors.transparent,
+            child: InkWell(
+              onTap: _handleTap,
+              borderRadius: BorderRadius.circular(16),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: AppColors.warning.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Icon(
+                        Platform.isAndroid
+                            ? Icons.star_rounded
+                            : CupertinoIcons.star_fill,
+                        color: AppColors.warning,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          // Star Icon Container - Daha büyük ve vurgulu
-                          Container(
-                            width: 52,
-                            height: 52,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [
-                                  AppColors.warning,
-                                  AppColors.warningLight,
-                                ],
-                              ),
-                              borderRadius: BorderRadius.circular(14),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppColors.warning.withOpacity(0.5),
-                                  blurRadius: 16,
-                                  offset: const Offset(0, 6),
-                                  spreadRadius: 2,
-                                ),
-                              ],
-                            ),
-                            child: Icon(
-                              Platform.isAndroid
-                                  ? Icons.star_rounded
-                                  : CupertinoIcons.star_fill,
-                              color: AppColors.white,
-                              size: 26,
+                          Text(
+                            l10n.rateApp,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: theme.colorScheme.onPrimaryContainer
+                                  .withValues(alpha: 0.8),
                             ),
                           ),
-                          const SizedBox(width: 14),
-                          // Title and Description
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  l10n.rateApp,
-                                  style: theme.textTheme.titleLarge?.copyWith(
-                                    fontWeight: FontWeight.w900,
-                                    fontSize: 17,
-                                    color: theme.colorScheme.onSurface,
-                                    letterSpacing: -0.4,
-                                    height: 1.2,
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  l10n.rateAppDescription,
-                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                    fontSize: 13,
-                                    color: theme.brightness == Brightness.light
-                                        ? AppColors.white.withOpacity(0.9)
-                                        : theme.colorScheme.onSurface
-                                              .withOpacity(0.75),
-                                    height: 1.4,
-                                  ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
+                          const SizedBox(height: 4),
+                          Text(
+                            l10n.rateAppDescription,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              fontSize: 12,
+                              color: theme.colorScheme.onSurface.withValues(
+                                alpha: 0.7,
+                              ),
+                              height: 1.3,
                             ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ],
                       ),
-                      const SizedBox(height: 12),
-                      // Call to Action Button - Modern ve dikkat çekici
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 12,
-                          horizontal: 16,
-                        ),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.centerLeft,
-                            end: Alignment.centerRight,
-                            colors: [
-                              AppColors.warning.withOpacity(0.9),
-                              AppColors.warningLight.withOpacity(0.85),
-                            ],
-                          ),
-                          borderRadius: BorderRadius.circular(14),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.warning.withOpacity(0.4),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Platform.isAndroid
-                                  ? Icons.star_rounded
-                                  : CupertinoIcons.star_fill,
-                              color: AppColors.white,
-                              size: 18,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              l10n.rateApp,
-                              style: TextStyle(
-                                fontWeight: FontWeight.w800,
-                                fontSize: 14,
-                                color: AppColors.white,
-                                letterSpacing: 0.3,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                      size: 24,
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         ),
-      ),
+      ],
     );
   }
 }
@@ -1283,106 +738,69 @@ class _SoundVolumeControlState extends State<_SoundVolumeControl> {
     final theme = Theme.of(context);
 
     // Bottom navigation bar'daki container rengiyle aynı
-    final containerColor = theme.colorScheme.onPrimaryContainer.withOpacity(
-      0.8,
+    final containerColor = theme.colorScheme.onPrimaryContainer.withValues(
+      alpha: 0.8,
     );
 
     if (_isLoading) {
       return const SizedBox.shrink();
     }
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(20),
-      child: Stack(
-        clipBehavior: Clip.hardEdge,
+    return _SettingsCard(
+      theme: theme,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: SettingsPage._getCardGradientColors(theme),
+          Text(
+            'Sound Volume',
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+              fontSize: 14,
+              color: theme.colorScheme.onPrimaryContainer.withValues(
+                alpha: 0.8,
               ),
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: SettingsPage._getCardBoxShadow(theme),
             ),
-            child: Stack(
-              children: [
-                // Background decorations
-                Positioned.fill(
-                  child: _CardBackgroundDecorations(
-                    imageAsset: 'assets/new_year/snowman.png',
-                    imageSize: 120,
-                  ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Icon(
+                Icons.volume_mute_rounded,
+                size: 20,
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Slider(
+                  value: _volume,
+                  min: 0.0,
+                  max: 1.0,
+                  divisions: 10,
+                  activeColor: containerColor,
+                  inactiveColor: containerColor.withValues(alpha: 0.3),
+                  onChanged: _updateVolume,
                 ),
-                // Main content
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Sound Volume Header
-                      Row(
-                        children: [
-                          Text(
-                            'Sound Volume',
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w800,
-                              fontSize: 15,
-                              color: theme.colorScheme.primary,
-                              letterSpacing: 0.2,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      // Volume Slider
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.volume_mute_rounded,
-                            size: 20,
-                            color: theme.colorScheme.onSurface.withOpacity(0.6),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Slider(
-                              value: _volume,
-                              min: 0.0,
-                              max: 1.0,
-                              divisions: 10,
-                              activeColor: containerColor,
-                              inactiveColor: containerColor.withOpacity(0.3),
-                              onChanged: _updateVolume,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Icon(
-                            Icons.volume_up_rounded,
-                            size: 20,
-                            color: theme.colorScheme.onSurface.withOpacity(0.6),
-                          ),
-                          const SizedBox(width: 8),
-                          // Volume percentage text
-                          SizedBox(
-                            width: 45,
-                            child: Text(
-                              '${(_volume * 100).toInt()}%',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 12,
-                                color: containerColor,
-                              ),
-                              textAlign: TextAlign.right,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+              ),
+              const SizedBox(width: 12),
+              Icon(
+                Icons.volume_up_rounded,
+                size: 20,
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+              ),
+              const SizedBox(width: 8),
+              SizedBox(
+                width: 45,
+                child: Text(
+                  '${(_volume * 100).toInt()}%',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 12,
+                    color: containerColor,
                   ),
+                  textAlign: TextAlign.right,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ],
       ),

@@ -55,6 +55,17 @@ b4YA2XO7kzloORD/btiXoHth9zO9F6d1TF01850+FI+FJVQRu7fxgzEHww==
       return;
     }
 
+    // In debug builds we skip the native Apple Search Ads call entirely to
+    // avoid potential AdServices / MethodChannel crashes during development.
+    // Attribution is an optional feature and only needed in production.
+    if (kDebugMode) {
+      debugPrint(
+        'ℹ️ [AppleSearchAds] Skipping Apple Search Ads initialization in debug mode',
+      );
+      _initialized = true;
+      return;
+    }
+
     try {
       debugPrint(
         '🟦 [AppleSearchAds] Initializing Apple Search Ads attribution...',

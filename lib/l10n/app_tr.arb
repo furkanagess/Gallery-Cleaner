@@ -103,7 +103,7 @@
   "cancel": "İptal",
   "restore": "Geri Al",
   "photoRestored": "Fotoğraf geri alındı",
-  "remainingDeletionRights": "Günlük Kalan Silme",
+  "remainingDeletionRights": "Silme Hakkı",
   "@remainingDeletionRights": {
     "description": "Remaining deletion rights label (daily)"
   },
@@ -525,7 +525,7 @@
       }
     }
   },
-  "startNewScan": "Yeni Tarama Başlat",
+  "startNewScan": "Yeni Tarama",
   "scanResults": "Tarama Sonuçları",
   "@startNewScan": {
     "description": "Button to start a new scan"
@@ -590,13 +590,17 @@
   "@noDeleteRightsLeft": {
     "description": "Title when deletion rights are exhausted"
   },
-  "noDeleteRightsLeftMessage": "Silme hakkınız kalmadı. Galerinizi temizlemeye devam etmek için sınırsız silme hakkı satın alın.",
+  "noDeleteRightsLeftMessage": "Tek seferlik ödeme ile sınırsız silme hakkı elde edin.",
   "@noDeleteRightsLeftMessage": {
     "description": "Message when deletion rights are exhausted"
   },
   "galleryStatsTitle": "Galeri İstatistikleri",
   "@galleryStatsTitle": {
     "description": "Gallery statistics page title"
+  },
+  "galleryStatsHistoryTitle": "Hareketlerin",
+  "@galleryStatsHistoryTitle": {
+    "description": "Title for user actions summary (keep/delete/size freed)"
   },
   "generalStatistics": "Genel İstatistikler",
   "@generalStatistics": {
@@ -986,6 +990,68 @@
   "@weNeedYourAccessTitle": {
     "description": "Permission request page title with line break"
   },
+  "warmupTitle": "Haydi biraz ısınalım",
+  "@warmupTitle": {
+    "description": "Warm-up screen title"
+  },
+  "warmupRemaining": "{remaining} kaldı",
+  "@warmupRemaining": {
+    "description": "Warm-up remaining count",
+    "placeholders": {
+      "remaining": {
+        "type": "int"
+      }
+    }
+  },
+  "warmupCountProgress": "{current}/{total} fotoğraf",
+  "@warmupCountProgress": {
+    "description": "Warm-up progress e.g. 1/5 fotoğraf",
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "warmupLoading": "En eski fotoğraflarınız yükleniyor...",
+  "@warmupLoading": {
+    "description": "Warm-up loading message"
+  },
+  "warmupNoPhotos": "Fotoğraf bulunamadı. Uygulamaya geçebilirsiniz.",
+  "@warmupNoPhotos": {
+    "description": "Warm-up no photos message"
+  },
+  "warmupRetry": "Tekrar dene",
+  "@warmupRetry": {
+    "description": "Warm-up retry button"
+  },
+  "warmupSkip": "Uygulamaya geç",
+  "@warmupSkip": {
+    "description": "Warm-up skip button"
+  },
+  "warmupContinue": "Uygulamaya geç",
+  "@warmupContinue": {
+    "description": "Warm-up continue button when 5 deletes done"
+  },
+  "warmupCompletionTitle": "Fotoğrafları silerek devam et",
+  "@warmupCompletionTitle": {
+    "description": "Warm-up completion title after deleting/swiping photos",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "warmupCompletionDescription": "Uygulamaya devam et ve daha fazlasını sil.",
+  "@warmupCompletionDescription": {
+    "description": "Warm-up completion slogan shown at the end of warm-up swipe deck"
+  },
+  "settingsTrySwipeAgain": "Kaydırma denemesi (5 fotoğraf)",
+  "@settingsTrySwipeAgain": {
+    "description": "Settings item to open warmup screen"
+  },
   "resetToStart": "Galeri Başına Dön",
   "@resetToStart": {
     "description": "Button text to reset gallery to start"
@@ -1080,15 +1146,15 @@
   "@openAppAndViewResults": {
     "description": "Message telling user to open app and view scan results"
   },
-  "rateApp": "Uygulamayı Değerlendir",
+  "rateApp": "Bizi Değerlendir",
   "@rateApp": {
     "description": "Title for rate app section"
   },
-  "rateAppDescription": "Uygulamayı beğendiniz mi? Lütfen mağazada bizi değerlendirin!",
+  "rateAppDescription": "Görüşünüz bizim için çok değerli! Mağazada bizi değerlendirir misiniz?",
   "@rateAppDescription": {
     "description": "Description for rate app section"
   },
-  "rateAppSupportMessage": "Gelişimimize destek olun! 3 saniye ayırıp uygulamayı değerlendirir misiniz?",
+  "rateAppSupportMessage": "Bizi değerlendirin! Sadece birkaç saniyenizi alır, gelişimimize katkı olur.",
   "@rateAppSupportMessage": {
     "description": "Support message for rate app dialog"
   },
@@ -1176,6 +1242,10 @@
   "@duplicateModeLevelsDescription": {
     "description": "Detailed description of duplicate detection mode levels"
   },
+  "duplicateSensitivityLevelsDescription": "Düşük: Gevşek eşleşme, daha fazla çift duplicate sayılır\nOrta: Dengeli hassasiyet\nYüksek: Sıkı eşleşme, sadece çok benzer fotoğraflar duplicate sayılır",
+  "@duplicateSensitivityLevelsDescription": {
+    "description": "Description of duplicate detection sensitivity levels (Low/Medium/High)"
+  },
   "allPhotosReviewedTitle": "Tüm Fotoğraflar Gözden Geçirildi!",
   "@allPhotosReviewedTitle": {
     "description": "Title shown when all photos have been reviewed"
@@ -1196,11 +1266,11 @@
   "@doNotLeaveScreenDuringScan": {
     "description": "Warning message shown when user tries to navigate away during scan"
   },
-  "viewResults": "Sonuçları Görüntüle",
+  "viewResults": "Sonuçlar",
   "@viewResults": {
     "description": "Button text to view scan results"
   },
-  "viewLastResults": "Sonuçları Görüntüle",
+  "viewLastResults": "Sonuçlar",
   "@viewLastResults": {
     "description": "Button text to view last scan results"
   },
@@ -1332,10 +1402,6 @@
   "@scanTip15": {
     "description": "Tip shown during scan"
   },
-  "galleryReportTitle": "Galeri Raporu",
-  "@galleryReportTitle": {
-    "description": "Title for gallery report page"
-  },
   "photos": "Fotoğraf",
   "@photos": {
     "description": "Photos label"
@@ -1351,10 +1417,6 @@
   "media": "Medya",
   "@media": {
     "description": "Media label"
-  },
-  "galleryReportDescription": "Kullanıcılarımız ortalama olarak galerilerinin yaklaşık %50'sini temizleyerek depolama alanlarını önemli ölçüde boşaltıyorlar",
-  "@galleryReportDescription": {
-    "description": "Description text on gallery report page"
   },
   "reviewDeletePhotos": "Silinecek Fotoğrafları İncele",
   "@reviewDeletePhotos": {

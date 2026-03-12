@@ -10,12 +10,12 @@ class AppShadows {
 
   static List<BoxShadow> soft(Color color) => [
     BoxShadow(
-      color: color.withOpacity(0.18),
+      color: color.withValues(alpha:0.18),
       blurRadius: 24,
       offset: const Offset(0, 12),
     ),
     BoxShadow(
-      color: AppColors.black.withOpacity(0.06),
+      color: AppColors.black.withValues(alpha:0.06),
       blurRadius: 18,
       offset: const Offset(0, 6),
     ),
@@ -23,7 +23,7 @@ class AppShadows {
 
   static List<BoxShadow> focus(Color color) => [
     BoxShadow(
-      color: color.withOpacity(0.32),
+      color: color.withValues(alpha:0.32),
       blurRadius: 36,
       spreadRadius: 4,
       offset: const Offset(0, 14),
@@ -32,12 +32,12 @@ class AppShadows {
 
   static List<BoxShadow> subtle() => [
     BoxShadow(
-      color: AppColors.black.withOpacity(0.08),
+      color: AppColors.black.withValues(alpha:0.08),
       blurRadius: 18,
       offset: const Offset(0, 10),
     ),
     BoxShadow(
-      color: AppColors.black.withOpacity(0.04),
+      color: AppColors.black.withValues(alpha:0.04),
       blurRadius: 32,
       offset: const Offset(0, 18),
     ),
@@ -56,13 +56,13 @@ class AppDecorations {
     final resolvedOpacity = opacity ?? 0.65;
     return BoxDecoration(
       borderRadius: BorderRadius.circular(borderRadius),
-      border: Border.all(color: AppColors.white.withOpacity(0.12)),
+      border: Border.all(color: AppColors.white.withValues(alpha:0.12)),
       gradient: LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
         colors: [
-          base.withOpacity(resolvedOpacity),
-          base.withOpacity(resolvedOpacity * 0.8),
+          base.withValues(alpha:resolvedOpacity),
+          base.withValues(alpha:resolvedOpacity * 0.8),
         ],
       ),
       boxShadow: AppShadows.subtle(),
@@ -70,17 +70,17 @@ class AppDecorations {
   }
 
   static BoxDecoration floatingCard({double borderRadius = 20, Color? color}) {
-    final surface = color ?? AppColors.cardLight;
+    final surface = color ?? AppColors.cardDark;
     return BoxDecoration(
       gradient: LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-        colors: [surface.withOpacity(0.96), surface.withOpacity(0.88)],
+        colors: [surface.withValues(alpha:0.96), surface.withValues(alpha:0.88)],
       ),
       borderRadius: BorderRadius.circular(borderRadius),
-      border: Border.all(color: AppColors.white.withOpacity(0.1)),
+      border: Border.all(color: AppColors.white.withValues(alpha:0.1)),
       boxShadow: AppShadows.soft(
-        surface == AppColors.cardLight
+        surface == AppColors.cardDark
             ? AppColors.primary
             : AppColors.secondary,
       ),
@@ -93,8 +93,8 @@ class AppDecorations {
           begin: Alignment.centerLeft,
           end: Alignment.centerRight,
           colors: [
-            (color ?? AppColors.primary).withOpacity(0.92),
-            (color ?? AppColors.primary).withOpacity(0.78),
+            (color ?? AppColors.primary).withValues(alpha:0.92),
+            (color ?? AppColors.primary).withValues(alpha:0.78),
           ],
         ),
         borderRadius: BorderRadius.circular(borderRadius),

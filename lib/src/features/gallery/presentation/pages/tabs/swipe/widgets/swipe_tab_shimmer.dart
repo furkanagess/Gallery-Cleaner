@@ -48,11 +48,11 @@ class _ShimmerWidgetState extends State<_ShimmerWidget>
     final brightness = theme.brightness;
 
     final baseColor = brightness == Brightness.light
-        ? theme.colorScheme.surfaceContainerHighest.withOpacity(0.3)
-        : theme.colorScheme.surfaceContainerHighest.withOpacity(0.2);
+        ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3)
+        : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.2);
     final highlightColor = brightness == Brightness.light
-        ? theme.colorScheme.surfaceContainerHighest.withOpacity(0.6)
-        : theme.colorScheme.surfaceContainerHighest.withOpacity(0.4);
+        ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.6)
+        : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4);
 
     return AnimatedBuilder(
       animation: _controller,
@@ -93,7 +93,7 @@ class _ShimmerWidgetState extends State<_ShimmerWidget>
 
 // Comprehensive shimmer for swipe tab covering all components
 class SwipeTabShimmer extends StatefulWidget {
-  const SwipeTabShimmer();
+  const SwipeTabShimmer({super.key});
 
   @override
   State<SwipeTabShimmer> createState() => _SwipeTabShimmerState();
@@ -106,13 +106,14 @@ class _SwipeTabShimmerState extends State<SwipeTabShimmer> {
   int? _totalPhotos;
   int _loadedPhotos = 0;
   StreamSubscription? _galleryPagingSubscription;
-  bool _showProgress = false; // Progress gösterilsin mi? (3 saniyeden fazla sürerse)
+  bool _showProgress =
+      false; // Progress gösterilsin mi? (3 saniyeden fazla sürerse)
 
   // Samimi, açıklayıcı mesajlar - l10n'dan üretilecek
   List<String> _buildLoadingMessages(AppLocalizations l10n) => [
-        l10n.loadingYourGallery,
-        l10n.loadingYourGalleryDescription,
-      ];
+    l10n.loadingYourGallery,
+    l10n.loadingYourGalleryDescription,
+  ];
 
   @override
   void initState() {
@@ -120,9 +121,9 @@ class _SwipeTabShimmerState extends State<SwipeTabShimmer> {
     // Her 3 saniyede bir mesajı değiştir
     _messageTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
       if (mounted) {
-          setState(() {
-            _currentMessageIndex = _currentMessageIndex + 1;
-          });
+        setState(() {
+          _currentMessageIndex = _currentMessageIndex + 1;
+        });
       }
     });
 
@@ -164,10 +165,10 @@ class _SwipeTabShimmerState extends State<SwipeTabShimmer> {
 
   void _listenToGalleryPaging() {
     final galleryPagingCubit = context.read<GalleryPagingCubit>();
-    
+
     // İlk state'i kontrol et
     _updateLoadedPhotos(galleryPagingCubit.state);
-    
+
     // Stream'i dinle
     _galleryPagingSubscription = galleryPagingCubit.stream.listen((state) {
       _updateLoadedPhotos(state);
@@ -191,9 +192,11 @@ class _SwipeTabShimmerState extends State<SwipeTabShimmer> {
           final galleryPagingCubit = context.read<GalleryPagingCubit>();
           final progress = galleryPagingCubit.currentLoadingProgress;
           final total = galleryPagingCubit.currentLoadingTotal;
-          
+
           if (progress > 0) {
-            debugPrint('⏳ [SwipeTabShimmer] Yükleme devam ediyor: $progress / ${total ?? "?"}');
+            debugPrint(
+              '⏳ [SwipeTabShimmer] Yükleme devam ediyor: $progress / ${total ?? "?"}',
+            );
             if (mounted) {
               setState(() {
                 _loadedPhotos = progress;
@@ -222,16 +225,16 @@ class _SwipeTabShimmerState extends State<SwipeTabShimmer> {
         timer.cancel();
         return;
       }
-      
+
       try {
         final galleryPagingCubit = context.read<GalleryPagingCubit>();
         final state = galleryPagingCubit.state;
-        
+
         // Loading state'inde progress bilgisini al
         if (state.isLoading) {
           final progress = galleryPagingCubit.currentLoadingProgress;
           final total = galleryPagingCubit.currentLoadingTotal;
-          
+
           if (progress > 0) {
             setState(() {
               _loadedPhotos = progress;
@@ -260,8 +263,10 @@ class _SwipeTabShimmerState extends State<SwipeTabShimmer> {
   }
 
   String _getProgressText(AppLocalizations l10n) {
-    debugPrint('📊 [SwipeTabShimmer] Progress: loaded=$_loadedPhotos, total=$_totalPhotos');
-    
+    debugPrint(
+      '📊 [SwipeTabShimmer] Progress: loaded=$_loadedPhotos, total=$_totalPhotos',
+    );
+
     if (_totalPhotos == null || _totalPhotos == 0) {
       if (_loadedPhotos > 0) {
         // Örneğin: "120 photos loaded"
@@ -271,15 +276,16 @@ class _SwipeTabShimmerState extends State<SwipeTabShimmer> {
     }
 
     if (_totalPhotos! > 0) {
-      final percentage =
-          (_loadedPhotos / _totalPhotos! * 100).clamp(0, 100).toInt();
+      final percentage = (_loadedPhotos / _totalPhotos! * 100)
+          .clamp(0, 100)
+          .toInt();
       return l10n.photosLoadingProgress(
         _loadedPhotos,
         _totalPhotos!,
         percentage,
       );
     }
-    
+
     return l10n.loading;
   }
 
@@ -339,7 +345,9 @@ class _SwipeTabShimmerState extends State<SwipeTabShimmer> {
                               Container(
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(20),
-                                  color: theme.colorScheme.surface.withOpacity(0.85),
+                                  color: theme.colorScheme.surface.withValues(
+                                    alpha: 0.85,
+                                  ),
                                 ),
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
@@ -355,80 +363,95 @@ class _SwipeTabShimmerState extends State<SwipeTabShimmer> {
                                         animate: true,
                                       ),
                                     ),
-                                const SizedBox(height: 32),
-                                // Samimi mesaj
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                                  child: AnimatedSwitcher(
-                                    duration: const Duration(milliseconds: 500),
-                                    child: Text(
-                                      loadingMessages[
-                                          _currentMessageIndex %
+                                    const SizedBox(height: 32),
+                                    // Samimi mesaj
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 24,
+                                      ),
+                                      child: AnimatedSwitcher(
+                                        duration: const Duration(
+                                          milliseconds: 500,
+                                        ),
+                                        child: Text(
+                                          loadingMessages[_currentMessageIndex %
                                               loadingMessages.length],
-                                      key: ValueKey(
-                                        _currentMessageIndex %
-                                            loadingMessages.length,
-                                      ),
-                                      style: theme.textTheme.titleLarge?.copyWith(
-                                        fontWeight: FontWeight.w600,
-                                        color: theme.colorScheme.onSurface,
-                                      ),
-                                      textAlign: TextAlign.center,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 24),
-                                // Yüzdesel yükleme göstergesi
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                                  child: Column(
-                                    children: [
-                                      // Progress bar
-                                      ClipRRect(
-                                        borderRadius: BorderRadius.circular(8),
-                                        child: LinearProgressIndicator(
-                                          minHeight: 8,
-                                          backgroundColor: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
-                                          valueColor: AlwaysStoppedAnimation<Color>(
-                                            theme.colorScheme.primary,
+                                          key: ValueKey(
+                                            _currentMessageIndex %
+                                                loadingMessages.length,
                                           ),
-                                          value: _totalPhotos != null && _totalPhotos! > 0
-                                              ? (_loadedPhotos / _totalPhotos!).clamp(0.0, 1.0)
-                                              : null,
+                                          style: theme.textTheme.titleLarge
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.w600,
+                                                color:
+                                                    theme.colorScheme.onSurface,
+                                              ),
+                                          textAlign: TextAlign.center,
                                         ),
                                       ),
-                                      const SizedBox(height: 12),
-                                      // Progress text
-                                      Text(
-                                        _getProgressText(l10n),
-                                        style: theme.textTheme.bodyLarge?.copyWith(
-                                          fontWeight: FontWeight.w500,
-                                          color: theme.colorScheme.onSurface.withOpacity(0.8),
-                                        ),
-                                        textAlign: TextAlign.center,
+                                    ),
+                                    const SizedBox(height: 24),
+                                    // Yüzdesel yükleme göstergesi
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 24,
                                       ),
-                                    ],
-                                  ),
-                                ),
+                                      child: Column(
+                                        children: [
+                                          // Progress bar
+                                          ClipRRect(
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                            child: LinearProgressIndicator(
+                                              minHeight: 8,
+                                              backgroundColor: theme
+                                                  .colorScheme
+                                                  .surfaceContainerHighest
+                                                  .withValues(alpha: 0.3),
+                                              valueColor:
+                                                  AlwaysStoppedAnimation<Color>(
+                                                    theme.colorScheme.primary,
+                                                  ),
+                                              value:
+                                                  _totalPhotos != null &&
+                                                      _totalPhotos! > 0
+                                                  ? (_loadedPhotos /
+                                                            _totalPhotos!)
+                                                        .clamp(0.0, 1.0)
+                                                  : null,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 12),
+                                          // Progress text
+                                          Text(
+                                            _getProgressText(l10n),
+                                            style: theme.textTheme.bodyLarge
+                                                ?.copyWith(
+                                                  fontWeight: FontWeight.w500,
+                                                  color: theme
+                                                      .colorScheme
+                                                      .onSurface
+                                                      .withValues(alpha: 0.8),
+                                                ),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
                                   ],
                                 ),
                               ),
-                              // Kar yağma efekti - arka planda
+                              // Arka plan animasyonu
                               Positioned.fill(
                                 child: IgnorePointer(
                                   child: Opacity(
-                                    opacity: 0.6,
-                                    child: ColorFiltered(
-                                      colorFilter: const ColorFilter.mode(
-                                        Colors.white,
-                                        BlendMode.srcATop,
-                                      ),
-                                      child: Lottie.asset(
-                                        'assets/new_year/Snowing.json',
-                                        fit: BoxFit.cover,
-                                        repeat: true,
-                                        animate: true,
-                                      ),
+                                    opacity: 0.4,
+                                    child: Lottie.asset(
+                                      'assets/lottie/gallery_loading.json',
+                                      fit: BoxFit.cover,
+                                      repeat: true,
+                                      animate: true,
                                     ),
                                   ),
                                 ),
@@ -496,4 +519,3 @@ class _SwipeTabShimmerState extends State<SwipeTabShimmer> {
     );
   }
 }
-

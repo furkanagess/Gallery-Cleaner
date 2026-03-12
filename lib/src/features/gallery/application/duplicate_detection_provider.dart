@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/scheduler.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:photo_manager/photo_manager.dart' as pm;
 
@@ -132,7 +131,7 @@ class DuplicateDetectionCubit extends Cubit<DuplicateDetectionState> {
   /// Belirli albümlerde duplicate taraması yap
   Future<void> scanAlbums(
     List<pm.AssetPathEntity> albums, {
-    DuplicateDetectionMode mode = DuplicateDetectionMode.balanced,
+    DuplicateDetectionMode mode = DuplicateDetectionMode.mediumSensitivity,
   }) async {
     debugPrint(
       '🚀 [DuplicateDetection] scanAlbums çağrıldı - Albüm sayısı: ${albums.length}',
@@ -446,7 +445,9 @@ class DuplicateDetectionCubit extends Cubit<DuplicateDetectionState> {
               assetSizes[id] = sizeBytes;
             }
           } catch (e) {
-            debugPrint('⚠️ [DuplicateDetection] Asset boyutu hesaplanamadı (silme öncesi): $id, $e');
+            debugPrint(
+              '⚠️ [DuplicateDetection] Asset boyutu hesaplanamadı (silme öncesi): $id, $e',
+            );
           }
         }
       }
@@ -456,7 +457,7 @@ class DuplicateDetectionCubit extends Cubit<DuplicateDetectionState> {
       final deletedCount = deletedIds.length;
 
       debugPrint(
-        '✅ [DuplicateDetection] ${deletedCount}/${idsToDelete.length} fotoğraf başarıyla silindi',
+        '✅ [DuplicateDetection] $deletedCount/${idsToDelete.length} fotoğraf başarıyla silindi',
       );
 
       // Toplam silinen MB'ı hesapla - saklanan boyutları kullan
@@ -505,7 +506,10 @@ class DuplicateDetectionCubit extends Cubit<DuplicateDetectionState> {
         await _preferencesService.addDeletedPhotoIds(deletedIds);
       }
 
-      return DeleteResult(deletedCount: deletedCount, deletedSizeMB: totalSizeMB);
+      return DeleteResult(
+        deletedCount: deletedCount,
+        deletedSizeMB: totalSizeMB,
+      );
     } catch (e) {
       debugPrint('❌ [DuplicateDetection] Toplu silme hatası: $e');
       return DeleteResult(deletedCount: 0, deletedSizeMB: 0.0);
@@ -584,8 +588,9 @@ class DuplicateDetectionCubit extends Cubit<DuplicateDetectionState> {
         }
 
         // Assetleri filtrele
-        final remainingAssets =
-            group.assets.where((a) => !deletedIds.contains(a.id)).toList();
+        final remainingAssets = group.assets
+            .where((a) => !deletedIds.contains(a.id))
+            .toList();
 
         if (remainingAssets.length <= 1) {
           // Grup artık anlamlı değil, atla

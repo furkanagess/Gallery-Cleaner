@@ -3,7 +3,11 @@ import 'package:photo_manager/photo_manager.dart' as pm;
 import '../../../../app/theme/app_theme.dart';
 
 class TopFolderTargets extends StatelessWidget {
-  const TopFolderTargets({super.key, required this.albums, required this.hoverIndex});
+  const TopFolderTargets({
+    super.key,
+    required this.albums,
+    required this.hoverIndex,
+  });
   final List<pm.AssetPathEntity> albums;
   final int? hoverIndex;
 
@@ -23,7 +27,7 @@ class TopFolderTargets extends StatelessWidget {
             hovered: hovered,
           );
         },
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        separatorBuilder: (_, _) => const SizedBox(width: 8),
         itemCount: albums.length,
       ),
     );
@@ -42,25 +46,37 @@ class _TargetChip extends StatelessWidget {
       duration: const Duration(milliseconds: 150),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: hovered ? Theme.of(context).colorScheme.primaryContainer : Theme.of(context).colorScheme.surface,
+        color: hovered
+            ? Theme.of(context).colorScheme.primaryContainer
+            : Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: hovered ? (sem?.targetHover ?? Theme.of(context).colorScheme.primary) : Theme.of(context).dividerColor,
+          color: hovered
+              ? (sem?.targetHover ?? Theme.of(context).colorScheme.primary)
+              : Theme.of(context).dividerColor,
         ),
         boxShadow: hovered
             ? [
                 BoxShadow(
-                  color: (sem?.targetHover ?? Theme.of(context).colorScheme.primary).withOpacity(0.25),
+                  color:
+                      (sem?.targetHover ??
+                              Theme.of(context).colorScheme.primary)
+                          .withValues(alpha: 0.25),
                   blurRadius: 12,
                   offset: const Offset(0, 6),
-                )
+                ),
               ]
             : null,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.folder, color: hovered ? Theme.of(context).colorScheme.onPrimaryContainer : null),
+          Icon(
+            Icons.folder,
+            color: hovered
+                ? Theme.of(context).colorScheme.onPrimaryContainer
+                : null,
+          ),
           const SizedBox(width: 8),
           Text(label, style: Theme.of(context).textTheme.bodyMedium),
         ],
@@ -68,5 +84,3 @@ class _TargetChip extends StatelessWidget {
     );
   }
 }
-
-

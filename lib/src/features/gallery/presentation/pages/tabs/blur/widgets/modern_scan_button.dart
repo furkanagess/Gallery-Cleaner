@@ -8,6 +8,7 @@ import '../../../../../application/gallery_providers.dart' show PremiumCubit;
 
 class ModernScanButton extends StatelessWidget {
   const ModernScanButton({
+    super.key,
     required this.context,
     required this.theme,
     required this.l10n,
@@ -39,14 +40,11 @@ class ModernScanButton extends StatelessWidget {
   Widget build(BuildContext context) {
     // Premium durumunu kontrol et
     final isPremiumAsync = context.watch<PremiumCubit>().state;
-    final isPremium = isPremiumAsync.maybeWhen(
-      data: (premium) => premium,
-      orElse: () => false,
-    );
+    isPremiumAsync.maybeWhen(data: (premium) => premium, orElse: () => false);
 
     // Bottom navigation bar'daki seçili item container rengiyle aynı renk
-    final containerColor = theme.colorScheme.onPrimaryContainer.withOpacity(
-      0.8,
+    final containerColor = theme.colorScheme.onPrimaryContainer.withValues(
+      alpha: 0.8,
     );
 
     // isError durumunda premium butonu göster
@@ -61,18 +59,18 @@ class ModernScanButton extends StatelessWidget {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  AppColors.error.withOpacity(0.2),
-                  AppColors.error.withOpacity(0.1),
+                  AppColors.error.withValues(alpha: 0.2),
+                  AppColors.error.withValues(alpha: 0.1),
                 ],
               ),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: AppColors.error.withOpacity(0.3),
+                color: AppColors.error.withValues(alpha: 0.3),
                 width: 1.5,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.error.withOpacity(0.15),
+                  color: AppColors.error.withValues(alpha: 0.15),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                   spreadRadius: 0,
@@ -110,19 +108,19 @@ class ModernScanButton extends StatelessWidget {
               icon: Icon(
                 Icons.workspace_premium_rounded,
                 size: 20,
-                color: theme.colorScheme.background,
+                color: theme.colorScheme.surface,
               ),
               label: Text(
                 l10n.getUnlimitedScans,
-                style: TextStyle(color: theme.colorScheme.background),
+                style: TextStyle(color: theme.colorScheme.surface),
               ),
               style: FilledButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 minimumSize: const Size(double.infinity, 56),
                 backgroundColor: AppColors.warningLight,
-                foregroundColor: theme.colorScheme.background,
+                foregroundColor: theme.colorScheme.surface,
                 side: BorderSide(
-                  color: AppColors.warningLight.withOpacity(0.9),
+                  color: AppColors.warningLight.withValues(alpha: 0.9),
                   width: 1.5,
                 ),
                 elevation: 2,
@@ -144,18 +142,18 @@ class ModernScanButton extends StatelessWidget {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  AppColors.warningLight.withOpacity(0.2),
-                  AppColors.warningLight.withOpacity(0.1),
+                  AppColors.warningLight.withValues(alpha: 0.2),
+                  AppColors.warningLight.withValues(alpha: 0.1),
                 ],
               ),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: AppColors.warningLight.withOpacity(0.4),
+                color: AppColors.warningLight.withValues(alpha: 0.4),
                 width: 1,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.warningLight.withOpacity(0.1),
+                  color: AppColors.warningLight.withValues(alpha: 0.1),
                   blurRadius: 4,
                   offset: const Offset(0, 1),
                   spreadRadius: 0,
@@ -201,15 +199,15 @@ class ModernScanButton extends StatelessWidget {
               disabledBackgroundColor:
                   theme.colorScheme.surfaceContainerHighest,
               foregroundColor: isEnabled
-                  ? AppColors.white
-                  : theme.colorScheme.onSurface.withOpacity(0.6),
-              disabledForegroundColor: theme.colorScheme.onSurface.withOpacity(
-                0.6,
+                  ? AppColors.surface
+                  : theme.colorScheme.onSurface.withValues(alpha: 0.6),
+              disabledForegroundColor: theme.colorScheme.onSurface.withValues(
+                alpha: 0.6,
               ),
               side: BorderSide(
                 color: isEnabled
                     ? containerColor
-                    : theme.colorScheme.onSurface.withOpacity(0.3),
+                    : theme.colorScheme.onSurface.withValues(alpha: 0.3),
                 width: 1.5,
               ),
             ),
@@ -225,6 +223,7 @@ class ModernScanButton extends StatelessWidget {
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w700,
                       fontSize: 15,
+                      color: AppColors.surface,
                     ),
                     textAlign: TextAlign.center,
                     maxLines: 1,

@@ -337,7 +337,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get photoRestored => 'Foto restaurada';
 
   @override
-  String get remainingDeletionRights => 'Eliminación Diaria Restante';
+  String get remainingDeletionRights => 'Derecho de Eliminación';
 
   @override
   String get watchAdToEarn => 'Ver Anuncio';
@@ -716,10 +716,13 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get noDeleteRightsLeftMessage =>
-      'No tienes derechos de eliminación. Obtén derechos de eliminación ilimitados para continuar limpiando tu galería.';
+      'Obtén eliminación ilimitada con un único pago.';
 
   @override
   String get galleryStatsTitle => 'Estadísticas de Galería';
+
+  @override
+  String get galleryStatsHistoryTitle => 'Tus acciones';
 
   @override
   String get generalStatistics => 'Estadísticas Generales';
@@ -977,6 +980,47 @@ class AppLocalizationsEs extends AppLocalizations {
   String get weNeedYourAccessTitle => 'Necesitamos Tu\nAcceso';
 
   @override
+  String get warmupTitle => 'Vamos a calentar un poco';
+
+  @override
+  String warmupRemaining(int remaining) {
+    return '$remaining restantes';
+  }
+
+  @override
+  String warmupCountProgress(int current, int total) {
+    return '$current/$total foto';
+  }
+
+  @override
+  String get warmupLoading => 'Cargando tus fotos más antiguas...';
+
+  @override
+  String get warmupNoPhotos =>
+      'No se encontraron fotos. Puedes saltar a la app.';
+
+  @override
+  String get warmupRetry => 'Reintentar';
+
+  @override
+  String get warmupSkip => 'Ir a la app';
+
+  @override
+  String get warmupContinue => 'Continuar a la app';
+
+  @override
+  String warmupCompletionTitle(int count) {
+    return '¡Genial! Limpiaste $count fotos';
+  }
+
+  @override
+  String get warmupCompletionDescription =>
+      '¿Por qué parar aquí? Sigue y empieza a limpiar tu galería.';
+
+  @override
+  String get settingsTrySwipeAgain => 'Probar deslizar (5 fotos)';
+
+  @override
   String get resetToStart => 'Volver al Inicio';
 
   @override
@@ -1039,15 +1083,15 @@ class AppLocalizationsEs extends AppLocalizations {
   String get openAppAndViewResults => 'Abre la aplicación y ve los resultados';
 
   @override
-  String get rateApp => 'Calificar App';
+  String get rateApp => '¡Califícanos!';
 
   @override
   String get rateAppDescription =>
-      '¿Te gusta la app? ¡Por favor califícanos en la tienda!';
+      '¡Tu opinión nos importa! ¿Nos calificarías en la tienda?';
 
   @override
   String get rateAppSupportMessage =>
-      '¡Apoya nuestro crecimiento! ¿Podrías tomar 3 segundos para calificar la app?';
+      '¡Califícanos! Solo toma unos segundos y nos ayuda a mejorar.';
 
   @override
   String get thankYou => '¡Gracias!';
@@ -1109,6 +1153,10 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get duplicateModeLevelsDescription =>
       'Baja Velocidad/Alta Precisión: Resultados más precisos, toma más tiempo\nEquilibrado: Equilibrio entre velocidad y precisión\nAlta Velocidad/Baja Precisión: Resultados rápidos, menos precisos';
+
+  @override
+  String get duplicateSensitivityLevelsDescription =>
+      'Baja: Coincidencia más flexible, más pares se consideran duplicados\nMedia: Sensibilidad equilibrada\nAlta: Coincidencia más estricta, solo fotos muy similares cuentan como duplicados';
 
   @override
   String get allPhotosReviewedTitle => '¡Todas las Fotos Revisadas!';
@@ -1227,9 +1275,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get scanTip15 => '🎮 ¡Juega un juego rápido!';
 
   @override
-  String get galleryReportTitle => 'Informe de Galería';
-
-  @override
   String get videos => 'Videos';
 
   @override
@@ -1237,10 +1282,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get media => 'Medios';
-
-  @override
-  String get galleryReportDescription =>
-      'Nuestros usuarios limpian aproximadamente el 50% de su galería en promedio, liberando significativamente espacio de almacenamiento';
 
   @override
   String get reviewDeletePhotos => 'Revisar Fotos para Eliminar';

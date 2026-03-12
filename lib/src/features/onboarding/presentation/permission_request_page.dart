@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io' show Platform;
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -33,12 +32,13 @@ class _PermissionRequestPageState extends State<PermissionRequestPage> {
     super.initState();
     // İzin durumunu kontrol et (sadece zaten verilmişse navigate et)
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
       final permission = context.read<PermissionsCubit>().state;
       _lastPermission = permission;
 
-      if (permission == GalleryPermissionStatus.authorized) {
+      if (permission == GalleryPermissionStatus.authorized && mounted) {
         // İzin zaten verilmişse direkt navigate et
-        _waitForPhotosAndNavigate(context);
+        _waitForPhotosAndNavigate();
       }
       // İzin verilmemişse hiçbir şey yapma, kullanıcı butona tıklayacak
     });
@@ -50,7 +50,7 @@ class _PermissionRequestPageState extends State<PermissionRequestPage> {
       if (next == GalleryPermissionStatus.authorized &&
           context.mounted &&
           previous != next) {
-        _waitForPhotosAndNavigate(context);
+        _waitForPhotosAndNavigate();
       }
     });
   }
@@ -68,7 +68,7 @@ class _PermissionRequestPageState extends State<PermissionRequestPage> {
     if (currentPermission == GalleryPermissionStatus.authorized) {
       // İzin zaten verilmişse swipe page'e yönlendir
       if (mounted) {
-        _waitForPhotosAndNavigate(context);
+        _waitForPhotosAndNavigate();
       }
       return;
     }
@@ -81,8 +81,15 @@ class _PermissionRequestPageState extends State<PermissionRequestPage> {
     // İzin verildiyse otomatik olarak navigate edilecek (stream listener sayesinde)
   }
 
-  /// İzin verildikten sonra fotoğrafların yüklendiğinden emin ol ve swipe page'e geçiş yap
-  Future<void> _waitForPhotosAndNavigate(BuildContext context) async {
+  /// İzin verildikten sonra fotoğrafların yüklendiğinden emin ol ve warmup'a geçiş yap
+  Future<void> _waitForPhotosAndNavigate() async {
+    if (!mounted) return;
+    final albumsCubit = context.read<AlbumsCubit>();
+    final galleryCubit = context.read<GalleryPagingCubit>();
+    final galleryStatsCubit = context.read<GalleryStatsCubit>();
+    final blurCubit = context.read<BlurDetectionCubit>();
+    final duplicateCubit = context.read<DuplicateDetectionCubit>();
+    final goRouter = GoRouter.of(context);
     debugPrint(
       '🔄 [PermissionRequestPage] İzin verildi, fotoğrafların yüklenmesi bekleniyor...',
     );
@@ -95,14 +102,14 @@ class _PermissionRequestPageState extends State<PermissionRequestPage> {
         : const Duration(milliseconds: 200);
     await Future.delayed(initialDelay);
 
-    if (!mounted || !context.mounted) return;
+    if (!mounted) return;
 
     // Album listesinin yüklendiğini bekle (maksimum ~2 saniye, her 200ms'de bir kontrol)
     bool albumsReady = false;
     for (int attempt = 0; attempt < 10; attempt++) {
-      if (!mounted || !context.mounted) return;
+      if (!mounted) return;
 
-      final albumsAsync = context.read<AlbumsCubit>().state;
+      final albumsAsync = albumsCubit.state;
       final albums = albumsAsync.maybeWhen(
         data: (albums) => albums,
         orElse: () => <pm.AssetPathEntity>[],
@@ -133,12 +140,11 @@ class _PermissionRequestPageState extends State<PermissionRequestPage> {
 
     if (!albumsReady) {
       debugPrint(
-        '⚠️ [PermissionRequestPage] Album listesi yüklenemedi, yine de swipe page\'e geçiliyor...',
+        '⚠️ [PermissionRequestPage] Album listesi yüklenemedi, yine de warmup\'a geçiliyor...',
       );
       await _requestNotificationPermissionIfNeeded();
-      // Yine de gallery report page'e geç (kullanıcı deneyimi için)
-      if (mounted && context.mounted) {
-        context.go('/gallery-report');
+      if (mounted) {
+        goRouter.go('/warmup');
       }
       return;
     }
@@ -146,9 +152,9 @@ class _PermissionRequestPageState extends State<PermissionRequestPage> {
     // Asset'lerin yüklendiğini bekle (maksimum ~2 saniye, her 200ms'de bir kontrol)
     bool assetsReady = false;
     for (int attempt = 0; attempt < 10; attempt++) {
-      if (!mounted || !context.mounted) return;
+      if (!mounted) return;
 
-      final assetsAsync = context.read<GalleryPagingCubit>().state;
+      final assetsAsync = galleryCubit.state;
       final assets = assetsAsync.maybeWhen(
         data: (assets) => assets,
         orElse: () => <dynamic>[],
@@ -172,7 +178,7 @@ class _PermissionRequestPageState extends State<PermissionRequestPage> {
           '⚠️ [PermissionRequestPage] Fotoğraf yükleme hatası, yeniden deniyor... (attempt ${attempt + 1})',
         );
         // Hata varsa reload'u tetikle
-        context.read<GalleryPagingCubit>().reload();
+        galleryCubit.reload();
       } else {
         debugPrint(
           '⚠️ [PermissionRequestPage] Fotoğraflar boş, yeniden deniyor... (attempt ${attempt + 1})',
@@ -184,26 +190,30 @@ class _PermissionRequestPageState extends State<PermissionRequestPage> {
 
     if (!assetsReady) {
       debugPrint(
-        '⚠️ [PermissionRequestPage] Fotoğraflar yüklenemedi, yine de gallery report page\'e geçiliyor...',
+        '⚠️ [PermissionRequestPage] Fotoğraflar yüklenemedi, yine de warmup\'a geçiliyor...',
       );
       await _requestNotificationPermissionIfNeeded();
-      // Yine de gallery report page'e geç (kullanıcı deneyimi için)
-      if (mounted && context.mounted) {
-        context.go('/gallery-report');
+      if (mounted) {
+        goRouter.go('/warmup');
       }
       return;
     }
 
-    // Fotoğraflar yüklendi, hızlı geçiş: stats taramasını başlat ve direkt yönlendir
     debugPrint(
-      '✅ [PermissionRequestPage] Fotoğraflar hazır, gallery stats arka planda başlatılıyor...',
+      '✅ [PermissionRequestPage] Fotoğraflar hazır, warmup\'a yönlendiriliyor...',
     );
     await _requestNotificationPermissionIfNeeded();
-    await _startAutoDetections(context, readyAlbums ?? const []);
-    context.read<GalleryStatsCubit>().refresh();
+    if (!mounted) return;
+    await _startAutoDetections(
+      blurCubit,
+      duplicateCubit,
+      readyAlbums ?? const [],
+    );
+    if (!mounted) return;
+    galleryStatsCubit.refresh();
 
-    if (mounted && context.mounted) {
-      context.go('/gallery-report');
+    if (mounted) {
+      goRouter.go('/warmup');
     }
   }
 
@@ -212,23 +222,25 @@ class _PermissionRequestPageState extends State<PermissionRequestPage> {
     _notificationPrompted = true;
     try {
       await FCMService.instance.requestNotificationPermission();
-      debugPrint('🔔 [PermissionRequestPage] Notification permission requested.');
+      debugPrint(
+        '🔔 [PermissionRequestPage] Notification permission requested.',
+      );
     } catch (e) {
-      debugPrint('⚠️ [PermissionRequestPage] Notification permission request failed: $e');
+      debugPrint(
+        '⚠️ [PermissionRequestPage] Notification permission request failed: $e',
+      );
     }
   }
 
   Future<void> _startAutoDetections(
-    BuildContext context,
+    BlurDetectionCubit blurCubit,
+    DuplicateDetectionCubit duplicateCubit,
     List<pm.AssetPathEntity> albums,
   ) async {
     if (!mounted || albums.isEmpty) return;
 
     final usableAlbums = albums.where((a) => !a.isAll).toList();
     if (usableAlbums.isEmpty) return;
-
-    final blurCubit = context.read<BlurDetectionCubit>();
-    final duplicateCubit = context.read<DuplicateDetectionCubit>();
 
     final blurState = blurCubit.state;
     if (!blurState.isScanning &&
@@ -251,24 +263,21 @@ class _PermissionRequestPageState extends State<PermissionRequestPage> {
 
     final theme = Theme.of(context);
 
-    // İzin verilmişse direkt gallery-report'a yönlendir (loading ekranı gallery-report'ta gösterilecek)
+    // İzin verilmişse warmup'a yönlendir (5 fotoğraf ısındırma ekranı)
     if (permission == GalleryPermissionStatus.authorized) {
-      // Direkt gallery-report'a yönlendir, loading ekranı orada gösterilecek
-        WidgetsBinding.instance.addPostFrameCallback((_) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted && context.mounted) {
-          context.go('/gallery-report');
-          }
-        });
-      
+          context.go('/warmup');
+        }
+      });
+
       // Geçici olarak boş bir scaffold göster (çok kısa süre)
-      return Scaffold(
-        backgroundColor: Theme.of(context).colorScheme.background,
-      );
+      return Scaffold(backgroundColor: Theme.of(context).colorScheme.surface);
     }
 
     // İzin isteniyor
     return Scaffold(
-      backgroundColor: theme.colorScheme.background,
+      backgroundColor: theme.colorScheme.surface,
       body: Stack(
         children: [
           Positioned(
@@ -280,8 +289,8 @@ class _PermissionRequestPageState extends State<PermissionRequestPage> {
               decoration: BoxDecoration(
                 color: (() {
                   final containerColor = theme.colorScheme.onPrimaryContainer
-                      .withOpacity(0.8);
-                  return containerColor.withOpacity(0.10);
+                      .withValues(alpha: 0.8);
+                  return containerColor.withValues(alpha: 0.10);
                 })(),
                 shape: BoxShape.circle,
               ),
@@ -294,7 +303,7 @@ class _PermissionRequestPageState extends State<PermissionRequestPage> {
               width: 160,
               height: 160,
               decoration: BoxDecoration(
-                color: theme.colorScheme.tertiary.withOpacity(0.10),
+                color: theme.colorScheme.tertiary.withValues(alpha: 0.10),
                 shape: BoxShape.circle,
               ),
             ),
@@ -311,7 +320,7 @@ class _PermissionRequestPageState extends State<PermissionRequestPage> {
                       final containerColor = theme
                           .colorScheme
                           .onPrimaryContainer
-                          .withOpacity(0.8);
+                          .withValues(alpha: 0.8);
                       return Icon(
                         Icons.photo_library_outlined,
                         size: 120,
@@ -332,21 +341,6 @@ class _PermissionRequestPageState extends State<PermissionRequestPage> {
                       );
                     },
                   ),
-                  const SizedBox(height: 16),
-                  Builder(
-                    builder: (ctx) {
-                      final l10n = AppLocalizations.of(ctx)!;
-                      return Text(
-                        l10n.galleryPermissionDescription,
-                        textAlign: TextAlign.center,
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                          color: theme.textTheme.bodyMedium?.color?.withOpacity(
-                            0.8,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
                   const SizedBox(height: 24),
                   // Privacy and Security Info
                   Builder(
@@ -360,8 +354,8 @@ class _PermissionRequestPageState extends State<PermissionRequestPage> {
                             final containerColor = theme
                                 .colorScheme
                                 .onPrimaryContainer
-                                .withOpacity(0.8);
-                            return containerColor.withOpacity(0.3);
+                                .withValues(alpha: 0.8);
+                            return containerColor.withValues(alpha: 0.3);
                           })(),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
@@ -369,8 +363,8 @@ class _PermissionRequestPageState extends State<PermissionRequestPage> {
                               final containerColor = theme
                                   .colorScheme
                                   .onPrimaryContainer
-                                  .withOpacity(0.8);
-                              return containerColor.withOpacity(0.2);
+                                  .withValues(alpha: 0.8);
+                              return containerColor.withValues(alpha: 0.2);
                             })(),
                             width: 1.5,
                           ),
@@ -385,7 +379,7 @@ class _PermissionRequestPageState extends State<PermissionRequestPage> {
                                     final containerColor = theme
                                         .colorScheme
                                         .onPrimaryContainer
-                                        .withOpacity(0.8);
+                                        .withValues(alpha: 0.8);
                                     return Icon(
                                       Icons.security,
                                       color: containerColor,
@@ -401,7 +395,7 @@ class _PermissionRequestPageState extends State<PermissionRequestPage> {
                                         ?.copyWith(
                                           fontWeight: FontWeight.bold,
                                           color: theme.colorScheme.onSurface
-                                              .withOpacity(0.9),
+                                              .withValues(alpha: 0.9),
                                         ),
                                   ),
                                 ),
@@ -439,8 +433,8 @@ class _PermissionRequestPageState extends State<PermissionRequestPage> {
                           icon: Icons.lock_open,
                           onPressed: _requestPermission,
                           baseColor: theme.colorScheme.onPrimaryContainer
-                              .withOpacity(0.92),
-                          textColor: theme.colorScheme.background,
+                              .withValues(alpha: 0.92),
+                          textColor: theme.colorScheme.surface,
                           fullWidth: true,
                           height: 56,
                         ),
@@ -454,7 +448,7 @@ class _PermissionRequestPageState extends State<PermissionRequestPage> {
                       final containerColor = theme
                           .colorScheme
                           .onPrimaryContainer
-                          .withOpacity(0.8);
+                          .withValues(alpha: 0.8);
 
                       return ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 400),
@@ -462,13 +456,13 @@ class _PermissionRequestPageState extends State<PermissionRequestPage> {
                           label: l10n.openSettings,
                           onPressed: () =>
                               context.read<PermissionsCubit>().openSettings(),
-                          baseColor: containerColor.withOpacity(0.5),
+                          baseColor: containerColor.withValues(alpha: 0.5),
                           fullWidth: true,
                           height: 52,
-                                          padding: const EdgeInsets.symmetric(
+                          padding: const EdgeInsets.symmetric(
                             horizontal: 18,
                             vertical: 12,
-                                          ),
+                          ),
                           fontWeight: FontWeight.w700,
                         ),
                       );
@@ -482,8 +476,8 @@ class _PermissionRequestPageState extends State<PermissionRequestPage> {
       ),
     );
   }
-
 }
+
 class _PrivacyBulletPoint extends StatelessWidget {
   const _PrivacyBulletPoint({required this.text, required this.theme});
 
@@ -503,7 +497,7 @@ class _PrivacyBulletPoint extends StatelessWidget {
             decoration: BoxDecoration(
               color: (() {
                 final containerColor = theme.colorScheme.onPrimaryContainer
-                    .withOpacity(0.8);
+                    .withValues(alpha: 0.8);
                 return containerColor;
               })(),
               shape: BoxShape.circle,
@@ -515,7 +509,7 @@ class _PrivacyBulletPoint extends StatelessWidget {
           child: Text(
             text,
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurface.withOpacity(0.9),
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.9),
               height: 1.5,
             ),
           ),

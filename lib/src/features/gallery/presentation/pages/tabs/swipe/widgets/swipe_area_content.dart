@@ -1,11 +1,9 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:photo_manager/photo_manager.dart' as pm;
 import '../../../../../../../core/utils/view_refresh_cubit.dart';
 import '../../../../../application/gallery_providers.dart';
@@ -19,18 +17,18 @@ import '../../../../../../../../l10n/app_localizations.dart'
     show AppLocalizations;
 import '../../../../widgets/photo_swipe_deck.dart'
     show PhotoSwipeDeck, SwipeDecision;
-import '../../../../widgets/new_year_event_card.dart' show NewYearEventCard;
 import '../../../../../../../../src/core/services/sound_service.dart'
     show SoundService;
 import '../../../../../../../../src/core/services/preferences_service.dart'
     show PreferencesService;
+import '../../../../../../../../src/core/services/in_app_review_service.dart'
+    show requestInAppReview;
 import 'swipe_tab_helpers.dart'
     show
         isPositionOverWidget,
         getWidgetCenter,
         showAlbumSelectionDialog,
         maybePrefetch;
-import 'album_selection_sheet.dart' show AlbumSelectionSheet;
 
 // iOS için basit sayaç widget'ı - ChangeNotifier ile çalışır
 class _IOSSwipeCounterNotifier extends ChangeNotifier {
@@ -70,11 +68,11 @@ class _IOSSwipeCounter extends StatelessWidget {
           key: ValueKey('ios_counter_$index'),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface.withOpacity(0.9),
+            color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.9),
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: AppColors.black.withOpacity(0.2),
+                color: AppColors.black.withValues(alpha: 0.2),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
                 spreadRadius: 0,
@@ -138,8 +136,7 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
   bool _isDraggingToAlbum = false;
   Offset? _dragStartPosition;
   bool _isDialogShowing = false;
-  Offset _photoSwipeDragOffset =
-      Offset.zero; // PhotoSwipeDeck'ten gelen drag offset
+  // PhotoSwipeDeck'ten gelen drag offset
   Offset? _pendingDragOffset; // Build sırasında update'i geciktirmek için
   bool _hasPendingOffsetUpdate =
       false; // Build sırasında update'i geciktirmek için
@@ -149,9 +146,6 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
   // Overlay genişlikleri - titremeyi önlemek için cache
   double _cachedDeleteOverlayWidth = 0.0;
   double _cachedKeepOverlayWidth = 0.0;
-  // New Year Event Card görünürlüğü
-  bool _showNewYearEventCard = true;
-
   @override
   void initState() {
     super.initState();
@@ -251,9 +245,17 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
 
   @override
   Widget build(BuildContext context) {
-    // Kullanıcı her zaman swipe edebilsin; gerçek silme hakkı,
-    // review/delete aşamasında DeleteLimitCubit ile kontrol ediliyor.
-    const canDelete = true;
+    // Kalan silme hakkından fazla sola kaydırmaya izin verme; hak dolunca uyarı dialogu göster
+    final deleteLimitAsync = context.watch<DeleteLimitCubit>().state;
+    final isPremiumAsync = context.watch<PremiumCubit>().state;
+    final pendingDeletes = context.watch<ReviewActionsCubit>().state;
+    final deleteLimit = deleteLimitAsync.valueOrNull ?? 0;
+    final isPremium = isPremiumAsync.valueOrNull ?? false;
+    final pendingDeleteCount = pendingDeletes.length;
+    final remainingRights = isPremium
+        ? 999999
+        : (deleteLimit - pendingDeleteCount);
+    final canDelete = remainingRights > 0;
 
     // iOS için buildWithCubit kullanma - normal build kullan
     // Android için buildWithCubit kullan
@@ -264,25 +266,6 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
           Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // New Year Event Card - Altta, Swipe Deck'in üstünde
-              if (_showNewYearEventCard)
-                NewYearEventCard(
-                  onDismiss: () {
-                    if (Platform.isIOS) {
-                      setState(() {
-                        _showNewYearEventCard = false;
-                      });
-                    } else {
-                      cubitSetState(() {
-                        _showNewYearEventCard = false;
-                      });
-                    }
-                  },
-                  onTap: () {
-                    // Event card'a tıklandığında yapılacak işlem
-                    // Örneğin: Event detay sayfasına git veya paywall göster
-                  },
-                ),
               // Ana içerik - Swipe Deck (daha küçük)
               Flexible(
                 child: Column(
@@ -291,10 +274,10 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
                     Padding(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 16,
-                        vertical: 8,
+                        vertical: 4,
                       ),
                       child: AspectRatio(
-                        aspectRatio: 5 / 6,
+                        aspectRatio: 5 / 7,
                         child: AnimatedScale(
                           scale: _dragScale,
                           duration: const Duration(milliseconds: 150),
@@ -305,66 +288,6 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
                               fit: StackFit.expand,
                               clipBehavior: Clip.none,
                               children: [
-                                // Kar birikimi efekti - Alt kısım
-                                Positioned(
-                                  bottom: 0,
-                                  left: 0,
-                                  right: 0,
-                                  height: 40,
-                                  child: IgnorePointer(
-                                    child: ClipRRect(
-                                      borderRadius: const BorderRadius.only(
-                                        bottomLeft: Radius.circular(20),
-                                        bottomRight: Radius.circular(20),
-                                      ),
-                                      child: _buildSnowAccumulation(
-                                        width: double.infinity,
-                                        height: 40,
-                                        isHorizontal: true,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                // Kar birikimi efekti - Sol kenar
-                                Positioned(
-                                  left: 0,
-                                  top: 0,
-                                  bottom: 0,
-                                  width: 30,
-                                  child: IgnorePointer(
-                                    child: ClipRRect(
-                                      borderRadius: const BorderRadius.only(
-                                        topLeft: Radius.circular(20),
-                                        bottomLeft: Radius.circular(20),
-                                      ),
-                                      child: _buildSnowAccumulation(
-                                        width: 30,
-                                        height: double.infinity,
-                                        isHorizontal: false,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                // Kar birikimi efekti - Sağ kenar
-                                Positioned(
-                                  right: 0,
-                                  top: 0,
-                                  bottom: 0,
-                                  width: 30,
-                                  child: IgnorePointer(
-                                    child: ClipRRect(
-                                      borderRadius: const BorderRadius.only(
-                                        topRight: Radius.circular(20),
-                                        bottomRight: Radius.circular(20),
-                                      ),
-                                      child: _buildSnowAccumulation(
-                                        width: 30,
-                                        height: double.infinity,
-                                        isHorizontal: false,
-                                      ),
-                                    ),
-                                  ),
-                                ),
                                 PhotoSwipeDeck(
                                   key: ValueKey(
                                     widget.assets.isEmpty
@@ -426,7 +349,9 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
                                               : 0.0;
                                           final targetDeleteOpacity =
                                               deleteProgressCalc > 0.0
-                                              ? (0.3 + (deleteProgressCalc * 0.7))
+                                              ? (0.3 +
+                                                        (deleteProgressCalc *
+                                                            0.7))
                                                     .clamp(0.3, 1.0)
                                               : 0.0;
 
@@ -435,7 +360,8 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
                                               : 0.0;
                                           final keepProgressCalc =
                                               keepOffsetCalc >= 10.0
-                                              ? ((keepOffsetCalc - 10.0) / 100.0)
+                                              ? ((keepOffsetCalc - 10.0) /
+                                                        100.0)
                                                     .clamp(0.0, 1.0)
                                               : 0.0;
                                           final targetKeepOpacity =
@@ -445,42 +371,71 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
                                               : 0.0;
 
                                           // Overlay genişliklerini hesapla (sadece gerekli olduğunda)
-                                          final screenWidth = MediaQuery.of(context).size.width;
+                                          final screenWidth = MediaQuery.of(
+                                            context,
+                                          ).size.width;
                                           const buttonSize = 80.0;
-                                          final leftButtonCenterX = screenWidth / 2 - 70;
-                                          final rightButtonCenterX = screenWidth / 2 + 70;
-                                          final leftButtonRightEdge = leftButtonCenterX + (buttonSize / 2);
-                                          final rightButtonLeftEdge = rightButtonCenterX - (buttonSize / 2);
-                                          final leftToButton = leftButtonRightEdge;
-                                          final rightToButton = screenWidth - rightButtonLeftEdge;
-                                          
-                                          final newDeleteOverlayWidth = deleteProgressCalc * leftToButton;
-                                          final newKeepOverlayWidth = keepProgressCalc * rightToButton;
-                                          
+                                          final leftButtonCenterX =
+                                              screenWidth / 2 - 70;
+                                          final rightButtonCenterX =
+                                              screenWidth / 2 + 70;
+                                          final leftButtonRightEdge =
+                                              leftButtonCenterX +
+                                              (buttonSize / 2);
+                                          final rightButtonLeftEdge =
+                                              rightButtonCenterX -
+                                              (buttonSize / 2);
+                                          final leftToButton =
+                                              leftButtonRightEdge;
+                                          final rightToButton =
+                                              screenWidth - rightButtonLeftEdge;
+
+                                          final newDeleteOverlayWidth =
+                                              deleteProgressCalc * leftToButton;
+                                          final newKeepOverlayWidth =
+                                              keepProgressCalc * rightToButton;
+
                                           // Titremeyi önlemek için minimum threshold kontrolü
                                           // Sadece 0.05'ten büyük değişikliklerde güncelle
-                                          final deleteOpacityDelta = (targetDeleteOpacity - _animatedDeleteOpacity).abs();
-                                          final keepOpacityDelta = (targetKeepOpacity - _animatedKeepOpacity).abs();
-                                          
+                                          final deleteOpacityDelta =
+                                              (targetDeleteOpacity -
+                                                      _animatedDeleteOpacity)
+                                                  .abs();
+                                          final keepOpacityDelta =
+                                              (targetKeepOpacity -
+                                                      _animatedKeepOpacity)
+                                                  .abs();
+
                                           // Overlay genişlik değişikliklerini kontrol et (2 pixel threshold)
-                                          final deleteWidthDelta = (newDeleteOverlayWidth - _cachedDeleteOverlayWidth).abs();
-                                          final keepWidthDelta = (newKeepOverlayWidth - _cachedKeepOverlayWidth).abs();
-                                          
-                                          if (deleteOpacityDelta > 0.05 || keepOpacityDelta > 0.05 || 
-                                              deleteWidthDelta > 2.0 || keepWidthDelta > 2.0 ||
-                                              (targetDeleteOpacity == 0.0 && _animatedDeleteOpacity > 0.0) ||
-                                              (targetKeepOpacity == 0.0 && _animatedKeepOpacity > 0.0)) {
+                                          final deleteWidthDelta =
+                                              (newDeleteOverlayWidth -
+                                                      _cachedDeleteOverlayWidth)
+                                                  .abs();
+                                          final keepWidthDelta =
+                                              (newKeepOverlayWidth -
+                                                      _cachedKeepOverlayWidth)
+                                                  .abs();
+
+                                          if (deleteOpacityDelta > 0.05 ||
+                                              keepOpacityDelta > 0.05 ||
+                                              deleteWidthDelta > 2.0 ||
+                                              keepWidthDelta > 2.0 ||
+                                              (targetDeleteOpacity == 0.0 &&
+                                                  _animatedDeleteOpacity >
+                                                      0.0) ||
+                                              (targetKeepOpacity == 0.0 &&
+                                                  _animatedKeepOpacity > 0.0)) {
                                             setState(() {
-                                              _photoSwipeDragOffset =
-                                                  offsetToApply;
                                               // Animasyonlu opacity değerlerini güncelle (AnimatedOpacity animasyonu yapacak)
                                               _animatedDeleteOpacity =
                                                   targetDeleteOpacity;
                                               _animatedKeepOpacity =
                                                   targetKeepOpacity;
                                               // Overlay genişliklerini güncelle
-                                              _cachedDeleteOverlayWidth = newDeleteOverlayWidth;
-                                              _cachedKeepOverlayWidth = newKeepOverlayWidth;
+                                              _cachedDeleteOverlayWidth =
+                                                  newDeleteOverlayWidth;
+                                              _cachedKeepOverlayWidth =
+                                                  newKeepOverlayWidth;
                                             });
                                           }
 
@@ -509,6 +464,7 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
                         ),
                       ),
                     ),
+                    const SizedBox(height: 24),
                     // Delete Photos Butonu - Swipe Deck'in hemen altında
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -529,14 +485,14 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
                                             .extension<AppSemanticColors>()
                                             ?.delete ??
                                         theme.colorScheme.error)
-                                  : theme.colorScheme.onSurface.withOpacity(
-                                      0.15,
+                                  : theme.colorScheme.onSurface.withValues(
+                                      alpha: 0.15,
                                     );
 
                               final textColor = hasPending
                                   ? AppColors.white
-                                  : theme.colorScheme.onSurface.withOpacity(
-                                      0.6,
+                                  : theme.colorScheme.onSurface.withValues(
+                                      alpha: 0.6,
                                     );
 
                               return IgnorePointer(
@@ -713,10 +669,14 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
       await actions.onDelete(asset);
     }
 
-    // Swipe sayacını artır (rate us dialog artık gösterilmiyor)
+    // Swipe sayacını artır; 10 swipe sonrası in_app_review ile değerlendirme iste
     final prefsService = PreferencesService();
-    await prefsService.incrementSwipeCount();
+    final shouldShowRateUs = await prefsService.incrementSwipeCount();
+    if (shouldShowRateUs) {
+      unawaited(requestInAppReview());
+    }
 
+    if (!mounted) return;
     maybePrefetch(context, widget.assets, asset);
     _resetVisuals();
   }
@@ -725,6 +685,7 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
     pm.AssetEntity asset,
     SwipeDecision decision,
   ) async {
+    if (!mounted) return;
     final actions = context.read<ReviewActionsCubit>();
     await actions.undoDecision(asset, wasKeep: decision == SwipeDecision.keep);
   }
@@ -738,7 +699,6 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
         _dragOffset = Offset.zero;
         _isDraggingToAlbum = false;
         _dragStartPosition = null;
-        _photoSwipeDragOffset = Offset.zero;
       });
     } else {
       cubitSetState(() {
@@ -746,58 +706,8 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
         _dragOffset = Offset.zero;
         _isDraggingToAlbum = false;
         _dragStartPosition = null;
-        _photoSwipeDragOffset = Offset.zero;
       });
     }
-  }
-
-  // Kar birikimi efekti builder
-  Widget _buildSnowAccumulation({
-    required double width,
-    required double height,
-    required bool isHorizontal,
-  }) {
-    const double snowSize = 20.0; // snow.png görselinin boyutu
-
-    // Infinity veya NaN kontrolü
-    final safeWidth = width.isFinite && width > 0 ? width : 0.0;
-    final safeHeight = height.isFinite && height > 0 ? height : 0.0;
-
-    final int count = isHorizontal
-        ? (safeWidth / snowSize).ceil().clamp(
-            0,
-            1000,
-          ) // Maksimum 1000 ile sınırla
-        : (safeHeight / snowSize).ceil().clamp(
-            0,
-            1000,
-          ); // Maksimum 1000 ile sınırla
-
-    return isHorizontal
-        ? Row(
-            mainAxisSize: MainAxisSize.min,
-            children: List.generate(
-              count,
-              (index) => Image.asset(
-                'assets/new_year/snow.png',
-                width: snowSize,
-                height: snowSize,
-                fit: BoxFit.cover,
-              ),
-            ),
-          )
-        : Column(
-            mainAxisSize: MainAxisSize.min,
-            children: List.generate(
-              count,
-              (index) => Image.asset(
-                'assets/new_year/snow.png',
-                width: snowSize,
-                height: snowSize,
-                fit: BoxFit.cover,
-              ),
-            ),
-          );
   }
 
   // Sayaç widget builder
@@ -825,11 +735,11 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
           key: ValueKey('counter_android_$currentIndex'),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface.withOpacity(0.9),
+            color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.9),
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: AppColors.black.withOpacity(0.2),
+                color: AppColors.black.withValues(alpha: 0.2),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
                 spreadRadius: 0,
@@ -891,8 +801,8 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
                       begin: Alignment.centerLeft,
                       end: Alignment.centerRight,
                       colors: [
-                        AppColors.error.withOpacity(0.6),
-                        AppColors.error.withOpacity(0.0),
+                        AppColors.error.withValues(alpha: 0.6),
+                        AppColors.error.withValues(alpha: 0.0),
                       ],
                       stops: const [0.0, 1.0],
                     ),
@@ -919,8 +829,8 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
                       begin: Alignment.centerRight,
                       end: Alignment.centerLeft,
                       colors: [
-                        AppColors.success.withOpacity(0.6),
-                        AppColors.success.withOpacity(0.0),
+                        AppColors.success.withValues(alpha: 0.6),
+                        AppColors.success.withValues(alpha: 0.0),
                       ],
                       stops: const [0.0, 1.0],
                     ),
@@ -947,11 +857,10 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
                     shape: BoxShape.circle,
                   ),
                   child: Center(
-                    child: Image.asset(
-                      'assets/new_year/christmas-tree.png',
-                      width: buttonIconSize,
-                      height: buttonIconSize,
-                      fit: BoxFit.contain,
+                    child: Icon(
+                      Icons.delete_forever_rounded,
+                      size: buttonIconSize,
+                      color: AppColors.white,
                     ),
                   ),
                 ),
@@ -976,11 +885,10 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
                     shape: BoxShape.circle,
                   ),
                   child: Center(
-                    child: Image.asset(
-                      'assets/new_year/candy-cane.png',
-                      width: buttonIconSize,
-                      height: buttonIconSize,
-                      fit: BoxFit.contain,
+                    child: Icon(
+                      Icons.favorite_rounded,
+                      size: buttonIconSize,
+                      color: AppColors.white,
                     ),
                   ),
                 ),
@@ -1002,160 +910,121 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
     showDialog(
       context: context,
       barrierDismissible: false,
-      barrierColor: AppColors.black.withOpacity(0.6),
+      barrierColor: AppColors.black.withValues(alpha: 0.6),
       builder: (dialogContext) => Dialog(
         backgroundColor: AppColors.transparent,
         elevation: 0,
         insetPadding: const EdgeInsets.symmetric(horizontal: 24),
-        child: TweenAnimationBuilder<double>(
-          tween: Tween(begin: 0.0, end: 1.0),
-          duration: const Duration(milliseconds: 400),
-          curve: Curves.easeOutCubic,
-          builder: (context, value, child) {
-            return Transform.scale(
-              scale: 0.8 + (value * 0.2),
-              child: Opacity(opacity: value, child: child),
-            );
-          },
-          child: Container(
-            constraints: const BoxConstraints(maxWidth: 400),
-            padding: const EdgeInsets.all(28),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
-              borderRadius: BorderRadius.circular(28),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.black.withOpacity(0.25),
-                  blurRadius: 32,
-                  spreadRadius: 2,
-                  offset: const Offset(0, 16),
-                ),
-              ],
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 320),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: theme.colorScheme.outline.withValues(alpha: 0.15),
+              width: 1,
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Icon
-                Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        theme.colorScheme.error,
-                        theme.colorScheme.error.withOpacity(0.7),
-                      ],
-                    ),
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: theme.colorScheme.error.withOpacity(0.3),
-                        blurRadius: 16,
-                        spreadRadius: 2,
-                      ),
-                    ],
-                  ),
-                  child: Icon(
-                    Icons.block,
-                    size: 40,
-                    color: theme.colorScheme.onError,
-                  ),
+            boxShadow: [
+              BoxShadow(
+                color: theme.colorScheme.shadow.withValues(alpha: 0.12),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.error.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
                 ),
-                const SizedBox(height: 24),
-                // Title
-                Text(
-                  l10n.noDeleteRightsLeft,
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 22,
-                    letterSpacing: -0.5,
-                    color: theme.colorScheme.onSurface,
-                  ),
-                  textAlign: TextAlign.center,
-                  overflow: TextOverflow.ellipsis,
+                child: Icon(
+                  Icons.block_rounded,
+                  size: 28,
+                  color: theme.colorScheme.error,
                 ),
-                const SizedBox(height: 12),
-                // Message
-                Text(
-                  l10n.noDeleteRightsLeftMessage,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.7),
-                    height: 1.5,
-                  ),
-                  textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                l10n.noDeleteRightsLeft,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 18,
+                  color: theme.colorScheme.onSurface,
                 ),
-                const SizedBox(height: 28),
-                // Purchase button with gradient
-                SizedBox(
-                  width: double.infinity,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          theme.colorScheme.primary,
-                          theme.colorScheme.primary.withOpacity(0.8),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: theme.colorScheme.primary.withOpacity(0.3),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                          spreadRadius: 0,
-                        ),
-                      ],
-                    ),
-                    child: Material(
-                      color: AppColors.transparent,
-                      child: InkWell(
-                        onTap: () {
-                          Navigator.of(dialogContext).pop();
-                          _isDialogShowing = false;
-                          context.push('/paywall');
-                        },
-                        borderRadius: BorderRadius.circular(16),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 24,
-                            vertical: 16,
-                          ),
-                          child: Text(
-                            l10n.getUnlimitedDeletions,
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                              color: AppColors.white,
-                              letterSpacing: 0.5,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                l10n.noDeleteRightsLeftMessage,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.75),
+                  fontSize: 14,
+                  height: 1.4,
                 ),
-                const SizedBox(height: 12),
-                // Cancel button
-                TextButton(
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
                   onPressed: () {
                     Navigator.of(dialogContext).pop();
+                    _isDialogShowing = false;
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (context.mounted) {
+                        context.push('/paywall');
+                      }
+                    });
                   },
+                  style: FilledButton.styleFrom(
+                    backgroundColor: theme.colorScheme.primary,
+                    foregroundColor: theme.colorScheme.onPrimary,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 0,
+                  ),
                   child: Text(
-                    l10n.maybeLater,
-                    style: TextStyle(
-                      color: theme.colorScheme.onSurface.withOpacity(0.6),
+                    l10n.getUnlimitedDeletions,
+                    style: theme.textTheme.labelLarge?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
-                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(height: 12),
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                style: TextButton.styleFrom(
+                  minimumSize: Size.zero,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  backgroundColor: AppColors.transparent,
+                  foregroundColor: theme.colorScheme.onSurface.withValues(
+                    alpha: 0.6,
+                  ),
+                  side: BorderSide.none,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(0),
+                  ),
+                ),
+                child: Text(
+                  l10n.maybeLater,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),

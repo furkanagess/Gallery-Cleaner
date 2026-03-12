@@ -165,7 +165,7 @@ class _SelectableChip extends StatelessWidget {
           boxShadow: selected
               ? [
                   BoxShadow(
-                    color: theme.colorScheme.primary.withOpacity(0.25),
+                    color: theme.colorScheme.primary.withValues(alpha:0.25),
                     blurRadius: 12,
                     offset: const Offset(0, 6),
                   )

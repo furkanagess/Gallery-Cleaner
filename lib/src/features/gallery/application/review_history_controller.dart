@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:photo_manager/photo_manager.dart' as pm;
@@ -8,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'asset_size_helper.dart';
 
 enum ReviewActionType { keep, delete, move }
+
 enum ReviewActionStatus { pending, applied, undone }
 
 class ReviewActionItem {
@@ -27,7 +27,8 @@ class ReviewActionItem {
   final String? targetAlbumId;
   final ReviewActionStatus status;
   final int fileSizeBytes; // Dosya boyutu byte cinsinden
-  final Uint8List? thumbnailBytes; // Silinen görsellerin thumbnail'ı (base64 olarak kaydedilecek)
+  final Uint8List?
+  thumbnailBytes; // Silinen görsellerin thumbnail'ı (base64 olarak kaydedilecek)
 
   ReviewActionItem copyWith({
     ReviewActionStatus? status,
@@ -46,14 +47,16 @@ class ReviewActionItem {
   }
 
   Map<String, dynamic> toJson() => {
-        'assetId': assetId,
-        'type': type.name,
-        'timestampMs': timestampMs,
-        'targetAlbumId': targetAlbumId,
-        'status': status.name,
-        'fileSizeBytes': fileSizeBytes,
-        'thumbnailBytes': thumbnailBytes != null ? base64Encode(thumbnailBytes!) : null,
-      };
+    'assetId': assetId,
+    'type': type.name,
+    'timestampMs': timestampMs,
+    'targetAlbumId': targetAlbumId,
+    'status': status.name,
+    'fileSizeBytes': fileSizeBytes,
+    'thumbnailBytes': thumbnailBytes != null
+        ? base64Encode(thumbnailBytes!)
+        : null,
+  };
 
   static ReviewActionItem fromJson(Map<String, dynamic> json) {
     Uint8List? thumbnailBytes;
@@ -66,12 +69,14 @@ class ReviewActionItem {
     }
     return ReviewActionItem(
       assetId: json['assetId'] as String,
-      type: ReviewActionType.values
-          .firstWhere((e) => e.name == (json['type'] as String)),
+      type: ReviewActionType.values.firstWhere(
+        (e) => e.name == (json['type'] as String),
+      ),
       timestampMs: json['timestampMs'] as int,
       targetAlbumId: json['targetAlbumId'] as String?,
-      status: ReviewActionStatus.values
-          .firstWhere((e) => e.name == (json['status'] as String)),
+      status: ReviewActionStatus.values.firstWhere(
+        (e) => e.name == (json['status'] as String),
+      ),
       fileSizeBytes: (json['fileSizeBytes'] as num?)?.toInt() ?? 0,
       thumbnailBytes: thumbnailBytes,
     );
@@ -87,31 +92,47 @@ class ReviewHistoryCubit extends Cubit<List<ReviewActionItem>> {
   static const String _prefsKey = 'review_history_v1';
 
   void addKeep(String assetId, {int fileSizeBytes = 0}) {
-    _push(ReviewActionItem(
-      assetId: assetId,
-      type: ReviewActionType.keep,
-      timestampMs: DateTime.now().millisecondsSinceEpoch,
-      fileSizeBytes: fileSizeBytes,
-    ));
+    _push(
+      ReviewActionItem(
+        assetId: assetId,
+        type: ReviewActionType.keep,
+        timestampMs: DateTime.now().millisecondsSinceEpoch,
+        fileSizeBytes: fileSizeBytes,
+      ),
+    );
   }
 
   void addDeletePending(String assetId, {int fileSizeBytes = 0}) {
-    _push(ReviewActionItem(
-      assetId: assetId,
-      type: ReviewActionType.delete,
-      timestampMs: DateTime.now().millisecondsSinceEpoch,
-      status: ReviewActionStatus.pending,
-      fileSizeBytes: fileSizeBytes,
-    ));
+    _push(
+      ReviewActionItem(
+        assetId: assetId,
+        type: ReviewActionType.delete,
+        timestampMs: DateTime.now().millisecondsSinceEpoch,
+        status: ReviewActionStatus.pending,
+        fileSizeBytes: fileSizeBytes,
+      ),
+    );
   }
 
-  Future<void> markDeleteApplied(String assetId, {Uint8List? thumbnailBytes}) async {
+  Future<void> markDeleteApplied(
+    String assetId, {
+    Uint8List? thumbnailBytes,
+  }) async {
     if (thumbnailBytes != null && thumbnailBytes.isNotEmpty) {
-      debugPrint('💾 [ReviewHistoryController] Thumbnail kaydediliyor: $assetId, boyut: ${thumbnailBytes.length} bytes');
+      debugPrint(
+        '💾 [ReviewHistoryController] Thumbnail kaydediliyor: $assetId, boyut: ${thumbnailBytes.length} bytes',
+      );
     } else {
       debugPrint('⚠️ [ReviewHistoryController] Thumbnail yok: $assetId');
     }
-    _updateFirst(assetId, (it) => it.type == ReviewActionType.delete, (it) => it.copyWith(status: ReviewActionStatus.applied, thumbnailBytes: thumbnailBytes));
+    _updateFirst(
+      assetId,
+      (it) => it.type == ReviewActionType.delete,
+      (it) => it.copyWith(
+        status: ReviewActionStatus.applied,
+        thumbnailBytes: thumbnailBytes,
+      ),
+    );
   }
 
   void undoDelete(String assetId) {
@@ -134,14 +155,16 @@ class ReviewHistoryCubit extends Cubit<List<ReviewActionItem>> {
   }
 
   void addMove(String assetId, String albumId, {int fileSizeBytes = 0}) {
-    _push(ReviewActionItem(
-      assetId: assetId,
-      type: ReviewActionType.move,
-      timestampMs: DateTime.now().millisecondsSinceEpoch,
-      targetAlbumId: albumId,
-      status: ReviewActionStatus.applied,
-      fileSizeBytes: fileSizeBytes,
-    ));
+    _push(
+      ReviewActionItem(
+        assetId: assetId,
+        type: ReviewActionType.move,
+        timestampMs: DateTime.now().millisecondsSinceEpoch,
+        targetAlbumId: albumId,
+        status: ReviewActionStatus.applied,
+        fileSizeBytes: fileSizeBytes,
+      ),
+    );
   }
 
   Future<void> addMoveFromAsset(pm.AssetEntity asset, String albumId) async {
@@ -162,7 +185,11 @@ class ReviewHistoryCubit extends Cubit<List<ReviewActionItem>> {
     _persist();
   }
 
-  void _updateFirst(String assetId, bool Function(ReviewActionItem it) match, ReviewActionItem Function(ReviewActionItem it) update) {
+  void _updateFirst(
+    String assetId,
+    bool Function(ReviewActionItem it) match,
+    ReviewActionItem Function(ReviewActionItem it) update,
+  ) {
     final idx = state.indexWhere((e) => e.assetId == assetId && match(e));
     if (idx == -1) return;
     final copy = [...state];
@@ -176,27 +203,39 @@ class ReviewHistoryCubit extends Cubit<List<ReviewActionItem>> {
       final prefs = await SharedPreferences.getInstance();
       final list = state.map((e) => e.toJson()).toList();
       final jsonString = jsonEncode(list);
-      
+
       // JSON string'in boyutunu kontrol et (SharedPreferences limiti ~1MB)
       if (jsonString.length > 900000) {
-        debugPrint('⚠️ [ReviewHistoryController] JSON çok büyük: ${jsonString.length} bytes, thumbnail\'ları temizliyoruz...');
+        debugPrint(
+          '⚠️ [ReviewHistoryController] JSON çok büyük: ${jsonString.length} bytes, thumbnail\'ları temizliyoruz...',
+        );
         // Eski kayıtların thumbnail'larını temizle (en eski 50 tanesini)
         final cleanedList = state.map((e) {
           // En eski 50 kayıt için thumbnail'ı temizle
-          final sortedByTime = [...state]..sort((a, b) => a.timestampMs.compareTo(b.timestampMs));
-          final oldest50 = sortedByTime.take(50).map((item) => item.assetId).toSet();
+          final sortedByTime = [...state]
+            ..sort((a, b) => a.timestampMs.compareTo(b.timestampMs));
+          final oldest50 = sortedByTime
+              .take(50)
+              .map((item) => item.assetId)
+              .toSet();
           if (oldest50.contains(e.assetId)) {
             return e.copyWith(thumbnailBytes: null);
           }
           return e;
         }).toList();
-        
-        final cleanedJsonString = jsonEncode(cleanedList.map((e) => e.toJson()).toList());
+
+        final cleanedJsonString = jsonEncode(
+          cleanedList.map((e) => e.toJson()).toList(),
+        );
         await prefs.setString(_prefsKey, cleanedJsonString);
-        debugPrint('✅ [ReviewHistoryController] Thumbnail\'lar temizlendi, yeni boyut: ${cleanedJsonString.length} bytes');
+        debugPrint(
+          '✅ [ReviewHistoryController] Thumbnail\'lar temizlendi, yeni boyut: ${cleanedJsonString.length} bytes',
+        );
       } else {
         await prefs.setString(_prefsKey, jsonString);
-        debugPrint('✅ [ReviewHistoryController] History kaydedildi: ${list.length} item, ${jsonString.length} bytes');
+        debugPrint(
+          '✅ [ReviewHistoryController] History kaydedildi: ${list.length} item, ${jsonString.length} bytes',
+        );
       }
     } catch (e) {
       debugPrint('❌ [ReviewHistoryController] History kaydedilemedi: $e');

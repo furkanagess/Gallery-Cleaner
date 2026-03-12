@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 
 import 'router.dart';
 import 'theme/app_theme.dart';
-import '../features/settings/application/theme_controller.dart';
 import '../features/settings/application/locale_controller.dart';
 import '../../l10n/app_localizations.dart';
 
@@ -17,21 +16,13 @@ class App extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final themeModeState = context.watch<ThemeCubit>().state;
     final locale = context.watch<LocaleCubit>().state;
-
-    final themeMode = themeModeState == AppThemeMode.light
-        ? ThemeMode.light
-        : themeModeState == AppThemeMode.dark
-            ? ThemeMode.dark
-            : ThemeMode.system;
 
     return MaterialApp.router(
       title: 'Gallery Cleaner',
       debugShowCheckedModeBanner: false,
-      theme: _appTheme.light,
       darkTheme: _appTheme.dark,
-      themeMode: themeMode,
+      themeMode: ThemeMode.dark,
       locale: locale,
       supportedLocales: const [
         Locale('en', 'US'),

@@ -5,10 +5,9 @@ import 'package:flutter/foundation.dart';
 import 'app_colors.dart';
 
 class AppThemeData {
-  final ThemeData light;
   final ThemeData dark;
 
-  const AppThemeData({required this.light, required this.dark});
+  const AppThemeData({required this.dark});
 }
 
 @immutable
@@ -77,76 +76,46 @@ extension AppSemanticColorsExtension on ThemeData {
 }
 
 AppThemeData buildAppTheme() {
-  ThemeData themed(Brightness brightness) {
-    final isLight = brightness == Brightness.light;
+  ThemeData themedDark() {
+    const brightness = Brightness.dark;
 
     // Create ColorScheme with new color palette
     final colorScheme = ColorScheme(
       brightness: brightness,
       // Primary colors
       primary: AppColors.primary,
-      onPrimary: isLight ? AppColors.white : AppColors.textPrimaryDark,
-      primaryContainer: isLight
-          ? AppColors.primary.withOpacity(0.1)
-          : AppColors.primary.withOpacity(0.2),
-      onPrimaryContainer: isLight ? AppColors.primary : AppColors.accent,
+      onPrimary: AppColors.textPrimaryDark,
+      primaryContainer: AppColors.primary.withValues(alpha: 0.2),
+      onPrimaryContainer: AppColors.accent,
       // Secondary colors
       secondary: AppColors.secondary,
-      onSecondary: isLight ? AppColors.white : AppColors.textPrimaryDark,
-      secondaryContainer: isLight
-          ? AppColors.secondary.withOpacity(0.1)
-          : AppColors.secondary.withOpacity(0.2),
-      onSecondaryContainer: isLight ? AppColors.secondary : AppColors.accent,
+      onSecondary: AppColors.textPrimaryDark,
+      secondaryContainer: AppColors.secondary.withValues(alpha: 0.2),
+      onSecondaryContainer: AppColors.accent,
       // Tertiary/Accent
       tertiary: AppColors.accent,
-      onTertiary: isLight
-          ? AppColors.textPrimaryLight
-          : AppColors.textPrimaryDark,
-      tertiaryContainer: isLight
-          ? AppColors.accent.withOpacity(0.1)
-          : AppColors.accent.withOpacity(0.2),
-      onTertiaryContainer: isLight
-          ? AppColors.textPrimaryLight
-          : AppColors.accent,
+      onTertiary: AppColors.textPrimaryDark,
+      tertiaryContainer: AppColors.accent.withValues(alpha: 0.2),
+      onTertiaryContainer: AppColors.accent,
       // Error
       error: AppColors.error,
       onError: AppColors.white,
-      errorContainer: isLight
-          ? AppColors.error.withOpacity(0.1)
-          : AppColors.error.withOpacity(0.2),
+      errorContainer: AppColors.error.withValues(alpha: 0.2),
       onErrorContainer: AppColors.error,
       // Surface
-      surface: isLight ? AppColors.cardLight : AppColors.cardDark,
-      onSurface: isLight
-          ? AppColors.textPrimaryLight
-          : AppColors.textPrimaryDark,
-      surfaceContainerHighest: isLight
-          ? AppColors.borderLight
-          : AppColors.borderDark,
-      onSurfaceVariant: isLight
-          ? AppColors.textSecondaryLight
-          : AppColors.textSecondaryDark,
-      // Background
-      background: isLight
-          ? AppColors.backgroundLight
-          : AppColors.backgroundDark,
-      onBackground: isLight
-          ? AppColors.textPrimaryLight
-          : AppColors.textPrimaryDark,
+      // Requested: all surface backgrounds = #0E0E0E
+      surface: AppColors.surface,
+      onSurface: AppColors.textPrimaryDark,
+      surfaceContainerHighest: AppColors.cardDark,
+      onSurfaceVariant: AppColors.textSecondaryDark,
       // Outline
-      outline: isLight ? AppColors.borderLight : AppColors.borderDark,
-      outlineVariant: isLight
-          ? AppColors.borderLight.withOpacity(0.5)
-          : AppColors.borderDark.withOpacity(0.5),
+      outline: AppColors.borderDark,
+      outlineVariant: AppColors.borderDark.withValues(alpha: 0.5),
       // Shadow
-      shadow: isLight ? AppColors.shadowLight : AppColors.shadowDark,
-      scrim: AppColors.black.withOpacity(0.3),
-      inverseSurface: isLight
-          ? AppColors.textPrimaryDark
-          : AppColors.textPrimaryLight,
-      onInverseSurface: isLight
-          ? AppColors.backgroundDark
-          : AppColors.backgroundLight,
+      shadow: AppColors.shadowDark,
+      scrim: AppColors.black.withValues(alpha:0.3),
+      inverseSurface: AppColors.textPrimaryDark,
+      onInverseSurface: AppColors.backgroundDark,
       inversePrimary: AppColors.primary,
       surfaceTint: AppColors.primary,
     );
@@ -173,16 +142,16 @@ AppThemeData buildAppTheme() {
         }),
         shadowColor: MaterialStateProperty.resolveWith((states) {
           if (states.contains(MaterialState.disabled)) {
-            return AppColors.black.withOpacity(0.0);
+            return AppColors.black.withValues(alpha:0.0);
           }
-          return AppColors.black.withOpacity(0.15);
+          return AppColors.black.withValues(alpha:0.15);
         }),
         backgroundColor: MaterialStateProperty.resolveWith((states) {
           if (states.contains(MaterialState.disabled)) {
-            return AppColors.primary.withOpacity(0.28);
+            return AppColors.primary.withValues(alpha:0.28);
           }
           // İç rengi daha soluk yap
-          return AppColors.primary.withOpacity(0.85);
+          return AppColors.primary.withValues(alpha:0.85);
         }),
         foregroundColor: MaterialStateProperty.all(AppColors.white),
         overlayColor: MaterialStateProperty.all(AppColors.transparent),
@@ -190,8 +159,8 @@ AppThemeData buildAppTheme() {
         side: MaterialStateProperty.resolveWith(
           (states) => BorderSide(
             color: states.contains(MaterialState.disabled)
-                ? AppColors.primary.withOpacity(0.2)
-                : AppColors.primary.withOpacity(0.9), // Koyu border
+                ? AppColors.primary.withValues(alpha:0.2)
+                : AppColors.primary.withValues(alpha:0.9), // Koyu border
             width: 1.5,
           ),
         ),
@@ -207,16 +176,16 @@ AppThemeData buildAppTheme() {
         side: MaterialStateProperty.resolveWith(
           (states) => BorderSide(
             color: states.contains(MaterialState.disabled)
-                ? AppColors.primary.withOpacity(0.2)
+                ? AppColors.primary.withValues(alpha:0.2)
                 : states.contains(MaterialState.pressed)
-                ? AppColors.primary.withOpacity(0.9) // Koyu border
-                : AppColors.primary.withOpacity(0.8), // Koyu border
+                ? AppColors.primary.withValues(alpha:0.9) // Koyu border
+                : AppColors.primary.withValues(alpha:0.8), // Koyu border
             width: 1.5,
           ),
         ),
         foregroundColor: MaterialStateProperty.resolveWith(
           (states) => states.contains(MaterialState.disabled)
-              ? AppColors.primary.withOpacity(0.35)
+              ? AppColors.primary.withValues(alpha:0.35)
               : AppColors.primary,
         ),
         overlayColor: MaterialStateProperty.all(AppColors.transparent),
@@ -227,15 +196,15 @@ AppThemeData buildAppTheme() {
         }),
         shadowColor: MaterialStateProperty.resolveWith((states) {
           if (states.contains(MaterialState.disabled)) {
-            return AppColors.black.withOpacity(0.0);
+            return AppColors.black.withValues(alpha:0.0);
           }
-          return AppColors.black.withOpacity(0.1);
+          return AppColors.black.withValues(alpha:0.1);
         }),
         // İç rengi daha soluk yap
         backgroundColor: MaterialStateProperty.resolveWith(
           (states) => states.contains(MaterialState.disabled)
               ? AppColors.transparent
-              : AppColors.primary.withOpacity(0.08), // Çok soluk iç renk
+              : AppColors.primary.withValues(alpha:0.08), // Çok soluk iç renk
         ),
       );
     }
@@ -252,8 +221,8 @@ AppThemeData buildAppTheme() {
         side: MaterialStateProperty.resolveWith(
           (states) => BorderSide(
             color: states.contains(MaterialState.disabled)
-                ? AppColors.primary.withOpacity(0.2)
-                : AppColors.primary.withOpacity(0.7), // Koyu border
+                ? AppColors.primary.withValues(alpha:0.2)
+                : AppColors.primary.withValues(alpha:0.7), // Koyu border
             width: 1.5,
           ),
         ),
@@ -261,7 +230,7 @@ AppThemeData buildAppTheme() {
         backgroundColor: MaterialStateProperty.resolveWith(
           (states) => states.contains(MaterialState.disabled)
               ? AppColors.transparent
-              : AppColors.primary.withOpacity(0.06), // Çok soluk iç renk
+              : AppColors.primary.withValues(alpha:0.06), // Çok soluk iç renk
         ),
         elevation: MaterialStateProperty.resolveWith((states) {
           if (states.contains(MaterialState.pressed)) return 1;
@@ -270,9 +239,9 @@ AppThemeData buildAppTheme() {
         }),
         shadowColor: MaterialStateProperty.resolveWith((states) {
           if (states.contains(MaterialState.disabled)) {
-            return AppColors.black.withOpacity(0.0);
+            return AppColors.black.withValues(alpha:0.0);
           }
-          return AppColors.black.withOpacity(0.08);
+          return AppColors.black.withValues(alpha:0.08);
         }),
       );
     }
@@ -285,18 +254,15 @@ AppThemeData buildAppTheme() {
       primaryTextTheme: baseTextTheme,
       typography: Typography.material2021(platform: defaultTargetPlatform),
       visualDensity: VisualDensity.adaptivePlatformDensity,
+      scaffoldBackgroundColor: AppColors.surface,
       // Disable ripple/splash effects globally
       splashFactory: NoSplash.splashFactory,
       splashColor: AppColors.transparent,
       highlightColor: AppColors.transparent,
       // AppBar Theme
       appBarTheme: AppBarTheme(
-        backgroundColor: isLight
-            ? AppColors.backgroundLight
-            : AppColors.backgroundDark,
-        foregroundColor: isLight
-            ? AppColors.textPrimaryLight
-            : AppColors.textPrimaryDark,
+        backgroundColor: AppColors.surface,
+        foregroundColor: AppColors.textPrimaryDark,
         elevation: 0,
         surfaceTintColor: AppColors.transparent,
       ),
@@ -309,9 +275,9 @@ AppThemeData buildAppTheme() {
       textButtonTheme: TextButtonThemeData(style: textButtonStyle()),
       // Card Theme
       cardTheme: CardThemeData(
-        color: isLight ? AppColors.cardLight : AppColors.cardDark,
+        color: AppColors.cardDark,
         elevation: 2,
-        shadowColor: AppColors.black.withOpacity(isLight ? 0.08 : 0.25),
+        shadowColor: AppColors.black.withValues(alpha:0.25),
         surfaceTintColor: AppColors.transparent,
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(26)),
@@ -338,16 +304,14 @@ AppThemeData buildAppTheme() {
         overlayColor: MaterialStateProperty.all(AppColors.transparent),
       ),
       dialogTheme: DialogThemeData(
-        backgroundColor: isLight
-            ? AppColors.cardLight.withOpacity(0.96)
-            : AppColors.cardDark.withOpacity(0.94),
+        backgroundColor: AppColors.cardDark.withValues(alpha:0.94),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
         elevation: 12,
       ),
       dropdownMenuTheme: DropdownMenuThemeData(
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
-          fillColor: isLight ? AppColors.backgroundLight : AppColors.cardDark,
+          fillColor: AppColors.cardDark,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(18),
             borderSide: BorderSide(color: AppColors.border(brightness)),
@@ -356,14 +320,10 @@ AppThemeData buildAppTheme() {
       ),
       // Chip Theme
       chipTheme: ChipThemeData(
-        backgroundColor: isLight
-            ? AppColors.backgroundLight
-            : AppColors.cardDark,
-        selectedColor: AppColors.primary.withOpacity(0.1),
+        backgroundColor: AppColors.cardDark,
+        selectedColor: AppColors.primary.withValues(alpha:0.1),
         labelStyle: TextStyle(
-          color: isLight
-              ? AppColors.textPrimaryLight
-              : AppColors.textPrimaryDark,
+          color: AppColors.textPrimaryDark,
         ),
         secondaryLabelStyle: TextStyle(color: AppColors.primary),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -378,7 +338,7 @@ AppThemeData buildAppTheme() {
       // Input Decoration Theme
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: isLight ? AppColors.backgroundLight : AppColors.cardDark,
+        fillColor: AppColors.cardDark,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide(color: AppColors.border(brightness)),
@@ -406,7 +366,6 @@ AppThemeData buildAppTheme() {
     );
   }
 
-  final light = themed(Brightness.light);
-  final dark = themed(Brightness.dark);
-  return AppThemeData(light: light, dark: dark);
+  final dark = themedDark();
+  return AppThemeData(dark: dark);
 }

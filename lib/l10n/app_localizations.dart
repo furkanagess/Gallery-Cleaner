@@ -673,7 +673,7 @@ abstract class AppLocalizations {
   /// Remaining deletion rights label (daily)
   ///
   /// In en, this message translates to:
-  /// **'Daily Remaining Deletion'**
+  /// **'Deletion Right'**
   String get remainingDeletionRights;
 
   /// Button text to watch ad
@@ -1339,7 +1339,7 @@ abstract class AppLocalizations {
   /// Message when deletion rights are exhausted
   ///
   /// In en, this message translates to:
-  /// **'You have no deletion rights left. Get unlimited deletion rights to continue cleaning your gallery.'**
+  /// **'Get unlimited deletion with a one-time payment.'**
   String get noDeleteRightsLeftMessage;
 
   /// Gallery statistics page title
@@ -1347,6 +1347,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Gallery Statistics'**
   String get galleryStatsTitle;
+
+  /// Title for user actions summary (keep/delete/size freed)
+  ///
+  /// In en, this message translates to:
+  /// **'Your actions'**
+  String get galleryStatsHistoryTitle;
 
   /// General statistics section title
   ///
@@ -1792,6 +1798,72 @@ abstract class AppLocalizations {
   /// **'We Need Your\nAccess'**
   String get weNeedYourAccessTitle;
 
+  /// Warm-up screen title
+  ///
+  /// In en, this message translates to:
+  /// **'Let\'s warm up a bit'**
+  String get warmupTitle;
+
+  /// Warm-up remaining count
+  ///
+  /// In en, this message translates to:
+  /// **'{remaining} left'**
+  String warmupRemaining(int remaining);
+
+  /// Warm-up progress e.g. 1/5 photo
+  ///
+  /// In en, this message translates to:
+  /// **'{current}/{total} photo'**
+  String warmupCountProgress(int current, int total);
+
+  /// Warm-up loading message
+  ///
+  /// In en, this message translates to:
+  /// **'Loading your oldest photos...'**
+  String get warmupLoading;
+
+  /// Warm-up no photos message
+  ///
+  /// In en, this message translates to:
+  /// **'No photos found. You can skip to the app.'**
+  String get warmupNoPhotos;
+
+  /// Warm-up retry button
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get warmupRetry;
+
+  /// Warm-up skip button
+  ///
+  /// In en, this message translates to:
+  /// **'Skip to app'**
+  String get warmupSkip;
+
+  /// Warm-up continue button when 5 deletes done
+  ///
+  /// In en, this message translates to:
+  /// **'Continue to app'**
+  String get warmupContinue;
+
+  /// Warm-up completion title after deleting/swiping photos
+  ///
+  /// In en, this message translates to:
+  /// **'Nice! You cleaned {count} photos'**
+  String warmupCompletionTitle(int count);
+
+  /// Warm-up completion slogan shown at the end of warm-up swipe deck
+  ///
+  /// In en, this message translates to:
+  /// **'Why stop there? Keep going and start cleaning your gallery.'**
+  String get warmupCompletionDescription;
+
+  /// Settings item to open warmup screen
+  ///
+  /// In en, this message translates to:
+  /// **'Try swipe (5 photos)'**
+  String get settingsTrySwipeAgain;
+
   /// Button text to reset gallery to start
   ///
   /// In en, this message translates to:
@@ -1903,19 +1975,19 @@ abstract class AppLocalizations {
   /// Title for rate app section
   ///
   /// In en, this message translates to:
-  /// **'Rate App'**
+  /// **'Rate Us'**
   String get rateApp;
 
   /// Description for rate app section
   ///
   /// In en, this message translates to:
-  /// **'Enjoying the app? Please rate us on the store!'**
+  /// **'Your opinion matters! Would you rate us on the store?'**
   String get rateAppDescription;
 
   /// Support message for rate app dialog
   ///
   /// In en, this message translates to:
-  /// **'Support our growth! Could you take 3 seconds to rate the app?'**
+  /// **'Rate us! It only takes a few seconds and helps us grow.'**
   String get rateAppSupportMessage;
 
   /// Thank you message
@@ -2013,6 +2085,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Low Speed/High Accuracy: Most accurate results, takes longer\nBalanced: Speed and accuracy balance\nHigh Speed/Low Accuracy: Fast results, less accurate'**
   String get duplicateModeLevelsDescription;
+
+  /// Description of duplicate detection sensitivity levels (Low/Medium/High)
+  ///
+  /// In en, this message translates to:
+  /// **'Low: Looser matching, more pairs count as duplicates\nMedium: Balanced sensitivity\nHigh: Stricter matching, only very similar photos count as duplicates'**
+  String get duplicateSensitivityLevelsDescription;
 
   /// Title shown when all photos have been reviewed
   ///
@@ -2236,12 +2314,6 @@ abstract class AppLocalizations {
   /// **'🎮 Play a quick game!'**
   String get scanTip15;
 
-  /// Title for gallery report page
-  ///
-  /// In en, this message translates to:
-  /// **'Gallery Report'**
-  String get galleryReportTitle;
-
   /// Videos label
   ///
   /// In en, this message translates to:
@@ -2259,12 +2331,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Media'**
   String get media;
-
-  /// Description text on gallery report page
-  ///
-  /// In en, this message translates to:
-  /// **'Our users clean approximately 50% of their gallery on average, significantly freeing up storage space'**
-  String get galleryReportDescription;
 
   /// Title for review delete photos page
   ///
