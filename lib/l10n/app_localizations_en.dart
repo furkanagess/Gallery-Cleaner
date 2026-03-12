@@ -332,7 +332,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get photoRestored => 'Photo restored';
 
   @override
-  String get remainingDeletionRights => 'Daily Remaining Deletion';
+  String get remainingDeletionRights => 'Deletion Right';
 
   @override
   String get watchAdToEarn => 'Watch Ad';
@@ -708,10 +708,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noDeleteRightsLeftMessage =>
-      'You have no deletion rights left. Get unlimited deletion rights to continue cleaning your gallery.';
+      'Get unlimited deletion with a one-time payment.';
 
   @override
   String get galleryStatsTitle => 'Gallery Statistics';
+
+  @override
+  String get galleryStatsHistoryTitle => 'Your actions';
 
   @override
   String get generalStatistics => 'General Statistics';
@@ -969,6 +972,46 @@ class AppLocalizationsEn extends AppLocalizations {
   String get weNeedYourAccessTitle => 'We Need Your\nAccess';
 
   @override
+  String get warmupTitle => 'Let\'s warm up a bit';
+
+  @override
+  String warmupRemaining(int remaining) {
+    return '$remaining left';
+  }
+
+  @override
+  String warmupCountProgress(int current, int total) {
+    return '$current/$total photo';
+  }
+
+  @override
+  String get warmupLoading => 'Loading your oldest photos...';
+
+  @override
+  String get warmupNoPhotos => 'No photos found. You can skip to the app.';
+
+  @override
+  String get warmupRetry => 'Retry';
+
+  @override
+  String get warmupSkip => 'Skip to app';
+
+  @override
+  String get warmupContinue => 'Continue to app';
+
+  @override
+  String warmupCompletionTitle(int count) {
+    return 'Nice! You cleaned $count photos';
+  }
+
+  @override
+  String get warmupCompletionDescription =>
+      'Why stop there? Keep going and start cleaning your gallery.';
+
+  @override
+  String get settingsTrySwipeAgain => 'Try swipe (5 photos)';
+
+  @override
   String get resetToStart => 'Reset to Start';
 
   @override
@@ -1031,15 +1074,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get openAppAndViewResults => 'Open the app and view results';
 
   @override
-  String get rateApp => 'Rate App';
+  String get rateApp => 'Rate Us';
 
   @override
   String get rateAppDescription =>
-      'Enjoying the app? Please rate us on the store!';
+      'Your opinion matters! Would you rate us on the store?';
 
   @override
   String get rateAppSupportMessage =>
-      'Support our growth! Could you take 3 seconds to rate the app?';
+      'Rate us! It only takes a few seconds and helps us grow.';
 
   @override
   String get thankYou => 'Thank You!';
@@ -1099,6 +1142,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get duplicateModeLevelsDescription =>
       'Low Speed/High Accuracy: Most accurate results, takes longer\nBalanced: Speed and accuracy balance\nHigh Speed/Low Accuracy: Fast results, less accurate';
+
+  @override
+  String get duplicateSensitivityLevelsDescription =>
+      'Low: Looser matching, more pairs count as duplicates\nMedium: Balanced sensitivity\nHigh: Stricter matching, only very similar photos count as duplicates';
 
   @override
   String get allPhotosReviewedTitle => 'All Photos Reviewed!';
@@ -1216,9 +1263,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get scanTip15 => '🎮 Play a quick game!';
 
   @override
-  String get galleryReportTitle => 'Gallery Report';
-
-  @override
   String get videos => 'Videos';
 
   @override
@@ -1226,10 +1270,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get media => 'Media';
-
-  @override
-  String get galleryReportDescription =>
-      'Our users clean approximately 50% of their gallery on average, significantly freeing up storage space';
 
   @override
   String get reviewDeletePhotos => 'Review Photos to Delete';

@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -49,7 +51,8 @@ class _AppThreeDButtonState extends State<AppThreeDButton> {
     final colorScheme = theme.colorScheme;
 
     final Color base =
-        widget.baseColor ?? colorScheme.onPrimaryContainer.withOpacity(0.9);
+        widget.baseColor ??
+        colorScheme.onPrimaryContainer.withValues(alpha: 0.9);
     // Resolve foreground with contrast guarantee:
     // 1) Use provided textColor if given, but fix contrast if too close.
     // 2) Otherwise auto-pick based on base.
@@ -63,19 +66,19 @@ class _AppThreeDButtonState extends State<AppThreeDButton> {
     final shadow = _pressed
         ? [
             BoxShadow(
-              color: AppColors.black.withOpacity(0.28),
+              color: AppColors.black.withValues(alpha: 0.28),
               blurRadius: 8,
               offset: const Offset(0, 3),
             ),
           ]
         : [
             BoxShadow(
-              color: AppColors.black.withOpacity(0.35),
+              color: AppColors.black.withValues(alpha: 0.35),
               blurRadius: 0,
               offset: const Offset(0, 7),
             ),
             BoxShadow(
-              color: AppColors.black.withOpacity(0.22),
+              color: AppColors.black.withValues(alpha: 0.22),
               blurRadius: 14,
               offset: const Offset(0, 10),
             ),
@@ -102,8 +105,8 @@ class _AppThreeDButtonState extends State<AppThreeDButton> {
         borderRadius: borderRadius,
         child: InkWell(
           borderRadius: borderRadius,
-          splashColor: _tint(base, 0.25).withOpacity(0.25),
-          highlightColor: Colors.transparent,
+          splashColor: _tint(base, 0.25).withValues(alpha: 0.25),
+          highlightColor: AppColors.transparent,
           onHighlightChanged: (value) => setState(() => _pressed = value),
           onTap: widget.onPressed,
           child: Padding(
@@ -156,16 +159,16 @@ class _AppThreeDButtonState extends State<AppThreeDButton> {
 }
 
 Color _tint(Color color, double amount) =>
-    Color.lerp(color, Colors.white, amount) ?? color;
+    Color.lerp(color, AppColors.white, amount) ?? color;
 
 Color _shade(Color color, double amount) =>
-    Color.lerp(color, Colors.black, amount) ?? color;
+    Color.lerp(color, AppColors.black, amount) ?? color;
 
 Color _autoTextColor(Color base, ColorScheme scheme) {
   final lum = base.computeLuminance();
   if (lum > 0.6) {
     // Bright base -> dark readable text
-    return scheme.onSurface.withOpacity(0.98);
+    return scheme.onSurface.withValues(alpha: 0.98);
   }
   // Dark base -> light text
   return scheme.onPrimary;

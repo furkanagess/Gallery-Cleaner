@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/scheduler.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:photo_manager/photo_manager.dart' as pm;
 
@@ -410,7 +409,9 @@ class BlurDetectionCubit extends Cubit<BlurDetectionState> {
               assetSizes[id] = sizeBytes;
             }
           } catch (e) {
-            debugPrint('⚠️ [BlurDetection] Asset boyutu hesaplanamadı (silme öncesi): $id, $e');
+            debugPrint(
+              '⚠️ [BlurDetection] Asset boyutu hesaplanamadı (silme öncesi): $id, $e',
+            );
           }
         }
       }
@@ -461,7 +462,10 @@ class BlurDetectionCubit extends Cubit<BlurDetectionState> {
         await _preferencesService.addDeletedPhotoIds(deletedIds);
       }
 
-      return DeleteResult(deletedCount: deletedCount, deletedSizeMB: totalSizeMB);
+      return DeleteResult(
+        deletedCount: deletedCount,
+        deletedSizeMB: totalSizeMB,
+      );
     } catch (e) {
       debugPrint('❌ [BlurDetection] Toplu silme hatası: $e');
       return DeleteResult(deletedCount: 0, deletedSizeMB: 0.0);

@@ -87,11 +87,14 @@ Widget buildBlurGridView(
   AppLocalizations l10n, {
   bool shrinkWrap = false,
   ScrollPhysics? physics,
+  Set<String>? selectedIds,
+  void Function(String assetId)? onToggle,
+  EdgeInsets? padding,
 }) {
   return GridView.builder(
     shrinkWrap: shrinkWrap,
     physics: physics,
-    padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
+    padding: padding ?? const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
       crossAxisCount: 2,
       crossAxisSpacing: 8,
@@ -102,6 +105,7 @@ Widget buildBlurGridView(
     itemBuilder: (context, index) {
       final photo = allPhotos[index];
       return TweenAnimationBuilder<double>(
+        key: ValueKey(photo.asset.id),
         tween: Tween(begin: 0.0, end: 1.0),
         duration: Duration(milliseconds: 300 + (index * 50)),
         curve: Curves.easeOut,
@@ -114,7 +118,14 @@ Widget buildBlurGridView(
             ),
           );
         },
-        child: buildBlurPhotoCard(context, photo, theme, l10n),
+        child: buildBlurPhotoCard(
+          context,
+          photo,
+          theme,
+          l10n,
+          selectedIds: selectedIds,
+          onToggle: onToggle,
+        ),
       );
     },
   );
@@ -124,8 +135,14 @@ Widget buildBlurPhotoCard(
   BuildContext context,
   BlurPhoto photo,
   ThemeData theme,
-  AppLocalizations l10n,
-) {
+  AppLocalizations l10n, {
+  Set<String>? selectedIds,
+  void Function(String assetId)? onToggle,
+}) {
+  final isSelectionMode = onToggle != null;
+  final isSelected =
+      selectedIds != null && selectedIds.contains(photo.asset.id);
+
   return Container(
     decoration: BoxDecoration(
       borderRadius: BorderRadius.circular(20),
@@ -143,7 +160,13 @@ Widget buildBlurPhotoCard(
       child: Material(
         color: theme.colorScheme.surface,
         child: InkWell(
-          onTap: () => showBlurPhotoDetail(context, photo, theme, l10n),
+          onTap: () {
+            if (isSelectionMode) {
+              onToggle(photo.asset.id);
+            } else {
+              showBlurPhotoDetail(context, photo, theme, l10n);
+            }
+          },
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -190,13 +213,15 @@ Widget buildBlurPhotoCard(
                               Image.memory(
                                 snapshot.data!,
                                 fit: BoxFit.cover,
+                                cacheWidth: 400,
+                                cacheHeight: 400,
+                                gaplessPlayback: true,
                                 errorBuilder: (context, error, stackTrace) {
                                   return Container(
                                     color: theme.colorScheme.errorContainer,
                                     child: Icon(
                                       Icons.broken_image,
-                                      color:
-                                          theme.colorScheme.onErrorContainer,
+                                      color: theme.colorScheme.onErrorContainer,
                                     ),
                                   );
                                 },
@@ -211,28 +236,62 @@ Widget buildBlurPhotoCard(
                                     vertical: 4,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: Colors.black.withOpacity(0.55),
+                                    color: AppColors.black.withValues(alpha: 0.55),
                                     borderRadius: BorderRadius.circular(8),
                                     border: Border.all(
-                                      color: Colors.white.withOpacity(0.9),
+                                      color: AppColors.white.withValues(
+                                        alpha: 0.9,
+                                      ),
                                       width: 1,
                                     ),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: Colors.black.withOpacity(0.35),
+                                        color: AppColors.black.withValues(
+                                          alpha: 0.35,
+                                        ),
                                         blurRadius: 8,
                                         offset: const Offset(0, 3),
                                       ),
                                     ],
                                   ),
                                   child: Text(
-                                    DateFormat('dd.MM.yyyy')
-                                        .format(photo.asset.createDateTime),
+                                    DateFormat(
+                                      'dd.MM.yyyy',
+                                    ).format(photo.asset.createDateTime),
                                     style: const TextStyle(
-                                      color: Colors.white,
+                                      color: AppColors.white,
                                       fontSize: 11,
                                       fontWeight: FontWeight.w600,
                                       letterSpacing: 0.2,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              // MB bilgisi - sol alt köşe
+                              Positioned(
+                                bottom: 10,
+                                left: 10,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.black.withValues(alpha: 0.55),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: AppColors.white.withValues(
+                                        alpha: 0.9,
+                                      ),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    '${photo.estimatedSizeMB.toStringAsFixed(1)} MB',
+                                    style: const TextStyle(
+                                      color: AppColors.white,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
                                     ),
                                   ),
                                 ),
@@ -251,28 +310,60 @@ Widget buildBlurPhotoCard(
                         );
                       },
                     ),
-                    // Delete button
-                    Positioned(
-                      top: 12,
-                      right: 12,
-                      child: Material(
-                        color: AppColors.black.withValues(alpha: 0.5),
-                        shape: const CircleBorder(),
-                        child: InkWell(
-                          onTap: () =>
-                              deleteBlurPhoto(context, photo, theme, l10n),
-                          customBorder: const CircleBorder(),
-                          child: Container(
-                            padding: const EdgeInsets.all(8),
-                            child: const Icon(
-                              Icons.delete_outline,
-                              size: 18,
-                              color: AppColors.white,
+                    // Seçiliyken kırmızı border (silinecek fotoğraflar ekranı ile aynı)
+                    if (isSelectionMode && isSelected)
+                      Positioned.fill(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: AppColors.error,
+                              width: 2,
                             ),
                           ),
                         ),
                       ),
-                    ),
+                    // Seçiliyken sağ üstte silme ikonu
+                    if (isSelectionMode && isSelected)
+                      Positioned(
+                        top: 8,
+                        right: 8,
+                        child: Container(
+                          width: 28,
+                          height: 28,
+                          decoration: const BoxDecoration(
+                            color: AppColors.error,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.delete_outline,
+                            size: 18,
+                            color: AppColors.white,
+                          ),
+                        ),
+                      )
+                    else if (!isSelectionMode)
+                      Positioned(
+                        top: 12,
+                        right: 12,
+                        child: Material(
+                          color: AppColors.black.withValues(alpha: 0.5),
+                          shape: const CircleBorder(),
+                          child: InkWell(
+                            onTap: () =>
+                                deleteBlurPhoto(context, photo, theme, l10n),
+                            customBorder: const CircleBorder(),
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              child: const Icon(
+                                Icons.delete_outline,
+                                size: 18,
+                                color: AppColors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -357,9 +448,9 @@ Future<void> showBlurPhotoDetail(
 
   await showDialog(
     context: context,
-    barrierColor: Colors.black.withOpacity(0.7),
+    barrierColor: AppColors.black.withValues(alpha: 0.7),
     builder: (context) => Dialog(
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppColors.transparent,
       insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(24),
@@ -374,18 +465,20 @@ Future<void> showBlurPhotoDetail(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  theme.colorScheme.surface.withOpacity(0.95),
-                  theme.colorScheme.surfaceContainerHighest.withOpacity(0.9),
+                  theme.colorScheme.surface.withValues(alpha: 0.95),
+                  theme.colorScheme.surfaceContainerHighest.withValues(
+                    alpha: 0.9,
+                  ),
                 ],
               ),
               borderRadius: BorderRadius.circular(24),
               border: Border.all(
-                color: theme.colorScheme.outline.withOpacity(0.1),
+                color: theme.colorScheme.outline.withValues(alpha: 0.1),
                 width: 1,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
+                  color: AppColors.black.withValues(alpha: 0.2),
                   blurRadius: 20,
                   offset: const Offset(0, 10),
                   spreadRadius: 0,
@@ -409,13 +502,13 @@ Future<void> showBlurPhotoDetail(
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: [
-                              problemColor.withOpacity(0.2),
-                              problemColor.withOpacity(0.1),
+                              problemColor.withValues(alpha: 0.2),
+                              problemColor.withValues(alpha: 0.1),
                             ],
                           ),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: problemColor.withOpacity(0.3),
+                            color: problemColor.withValues(alpha: 0.3),
                             width: 1,
                           ),
                         ),
@@ -447,7 +540,9 @@ Future<void> showBlurPhotoDetail(
                         onPressed: () => Navigator.of(context).pop(),
                         icon: Icon(
                           Icons.close_rounded,
-                          color: theme.colorScheme.onSurface.withOpacity(0.7),
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.7,
+                          ),
                         ),
                         style: IconButton.styleFrom(
                           backgroundColor:
@@ -466,7 +561,7 @@ Future<void> showBlurPhotoDetail(
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.15),
+                          color: AppColors.black.withValues(alpha: 0.15),
                           blurRadius: 15,
                           offset: const Offset(0, 5),
                           spreadRadius: 0,
@@ -490,7 +585,7 @@ Future<void> showBlurPhotoDetail(
                                   colors: [
                                     theme.colorScheme.surfaceContainerHighest,
                                     theme.colorScheme.surfaceContainerHighest
-                                        .withOpacity(0.5),
+                                        .withValues(alpha: 0.5),
                                   ],
                                 ),
                               ),
@@ -515,8 +610,8 @@ Future<void> showBlurPhotoDetail(
                               gradient: LinearGradient(
                                 colors: [
                                   theme.colorScheme.errorContainer,
-                                  theme.colorScheme.errorContainer.withOpacity(
-                                    0.7,
+                                  theme.colorScheme.errorContainer.withValues(
+                                    alpha: 0.7,
                                   ),
                                 ],
                               ),
@@ -560,13 +655,13 @@ Future<void> showBlurPhotoDetail(
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                             colors: [
-                              problemColor.withOpacity(0.15),
-                              problemColor.withOpacity(0.05),
+                              problemColor.withValues(alpha: 0.15),
+                              problemColor.withValues(alpha: 0.05),
                             ],
                           ),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: problemColor.withOpacity(0.2),
+                            color: problemColor.withValues(alpha: 0.2),
                             width: 1,
                           ),
                         ),
@@ -575,7 +670,7 @@ Future<void> showBlurPhotoDetail(
                             Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: problemColor.withOpacity(0.2),
+                                color: problemColor.withValues(alpha: 0.2),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Icon(
@@ -594,7 +689,7 @@ Future<void> showBlurPhotoDetail(
                                     style: theme.textTheme.labelMedium
                                         ?.copyWith(
                                           color: theme.colorScheme.onSurface
-                                              .withOpacity(0.7),
+                                              .withValues(alpha: 0.7),
                                           fontSize: 12,
                                         ),
                                   ),
@@ -632,7 +727,7 @@ Future<void> showBlurPhotoDetail(
                               borderRadius: BorderRadius.circular(12),
                             ),
                             side: BorderSide(
-                              color: AppColors.error.withOpacity(0.9),
+                              color: AppColors.error.withValues(alpha: 0.9),
                               width: 1.5,
                             ),
                           ),
@@ -721,7 +816,9 @@ Widget buildDuplicateGroupCard(
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
-                color: AppColors.secondary.withOpacity(isDark ? 0.3 : 0.2),
+                color: AppColors.secondary.withValues(
+                  alpha: isDark ? 0.3 : 0.2,
+                ),
                 blurRadius: 20,
                 offset: const Offset(0, 8),
                 spreadRadius: 2,
@@ -748,17 +845,17 @@ Widget buildDuplicateGroupCard(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [
-                        theme.colorScheme.surface.withOpacity(
-                          isDark ? 0.95 : 0.98,
+                        theme.colorScheme.surface.withValues(
+                          alpha: isDark ? 0.95 : 0.98,
                         ),
-                        theme.colorScheme.surfaceContainerHighest.withOpacity(
-                          isDark ? 0.8 : 0.9,
+                        theme.colorScheme.surfaceContainerHighest.withValues(
+                          alpha: isDark ? 0.8 : 0.9,
                         ),
                       ],
                     ),
                     border: Border.all(
-                      color: theme.colorScheme.outline.withOpacity(
-                        isDark ? 0.2 : 0.15,
+                      color: theme.colorScheme.outline.withValues(
+                        alpha: isDark ? 0.2 : 0.15,
                       ),
                       width: 1.5,
                     ),
@@ -791,7 +888,7 @@ Widget buildDuplicateGroupCard(
                                           theme
                                               .colorScheme
                                               .surfaceContainerHighest
-                                              .withOpacity(0.7),
+                                              .withValues(alpha: 0.7),
                                         ],
                                       ),
                                     ),
@@ -843,19 +940,23 @@ Widget buildDuplicateGroupCard(
                                             vertical: 4,
                                           ),
                                           decoration: BoxDecoration(
-                                            color:
-                                                Colors.black.withOpacity(0.55),
-                                            borderRadius:
-                                                BorderRadius.circular(8),
+                                            color: AppColors.black.withValues(
+                                              alpha: 0.55,
+                                            ),
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
                                             border: Border.all(
-                                              color: Colors.white
-                                                  .withOpacity(0.9),
+                                              color: AppColors.white.withValues(
+                                                alpha: 0.9,
+                                              ),
                                               width: 1,
                                             ),
                                             boxShadow: [
                                               BoxShadow(
-                                                color: Colors.black
-                                                    .withOpacity(0.35),
+                                                color: AppColors.black.withValues(
+                                                  alpha: 0.35,
+                                                ),
                                                 blurRadius: 8,
                                                 offset: const Offset(0, 3),
                                               ),
@@ -866,7 +967,7 @@ Widget buildDuplicateGroupCard(
                                               group.keepAsset.createDateTime,
                                             ),
                                             style: const TextStyle(
-                                              color: Colors.white,
+                                              color: AppColors.white,
                                               fontSize: 11,
                                               fontWeight: FontWeight.w600,
                                               letterSpacing: 0.2,
@@ -886,7 +987,7 @@ Widget buildDuplicateGroupCard(
                                       colors: [
                                         theme.colorScheme.errorContainer,
                                         theme.colorScheme.errorContainer
-                                            .withOpacity(0.7),
+                                            .withValues(alpha: 0.7),
                                       ],
                                     ),
                                   ),
@@ -912,18 +1013,22 @@ Widget buildDuplicateGroupCard(
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
                                     colors: [
-                                      AppColors.error.withOpacity(0.95),
-                                      AppColors.error.withOpacity(0.85),
+                                      AppColors.error.withValues(alpha: 0.95),
+                                      AppColors.error.withValues(alpha: 0.85),
                                     ],
                                   ),
                                   borderRadius: BorderRadius.circular(16),
                                   border: Border.all(
-                                    color: AppColors.white.withOpacity(0.3),
+                                    color: AppColors.white.withValues(
+                                      alpha: 0.3,
+                                    ),
                                     width: 1,
                                   ),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: AppColors.error.withOpacity(0.4),
+                                      color: AppColors.error.withValues(
+                                        alpha: 0.4,
+                                      ),
                                       blurRadius: 12,
                                       offset: const Offset(0, 4),
                                       spreadRadius: 0,
@@ -967,18 +1072,22 @@ Widget buildDuplicateGroupCard(
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
                                     colors: [
-                                      AppColors.success.withOpacity(0.95),
-                                      AppColors.success.withOpacity(0.85),
+                                      AppColors.success.withValues(alpha: 0.95),
+                                      AppColors.success.withValues(alpha: 0.85),
                                     ],
                                   ),
                                   borderRadius: BorderRadius.circular(16),
                                   border: Border.all(
-                                    color: AppColors.white.withOpacity(0.3),
+                                    color: AppColors.white.withValues(
+                                      alpha: 0.3,
+                                    ),
                                     width: 1,
                                   ),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: AppColors.success.withOpacity(0.4),
+                                      color: AppColors.success.withValues(
+                                        alpha: 0.4,
+                                      ),
                                       blurRadius: 12,
                                       offset: const Offset(0, 4),
                                       spreadRadius: 0,
@@ -1019,11 +1128,11 @@ Widget buildDuplicateGroupCard(
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                             colors: [
-                              theme.colorScheme.surface.withOpacity(
-                                isDark ? 0.95 : 0.98,
+                              theme.colorScheme.surface.withValues(
+                                alpha: isDark ? 0.95 : 0.98,
                               ),
                               theme.colorScheme.surfaceContainerHighest
-                                  .withOpacity(isDark ? 0.85 : 0.92),
+                                  .withValues(alpha: isDark ? 0.85 : 0.92),
                             ],
                           ),
                         ),
@@ -1032,8 +1141,8 @@ Widget buildDuplicateGroupCard(
                             Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: AppColors.secondary.withOpacity(
-                                  isDark ? 0.2 : 0.15,
+                                color: AppColors.secondary.withValues(
+                                  alpha: isDark ? 0.2 : 0.15,
                                 ),
                                 borderRadius: BorderRadius.circular(12),
                               ),
@@ -1101,9 +1210,7 @@ Future<void> showDuplicateGroupDetail(
     context: context,
     isScrollControlled: true,
     backgroundColor: AppColors.transparent,
-    builder: (context) => DuplicateGroupDetailSheet(
-      group: group,
-    ),
+    builder: (context) => DuplicateGroupDetailSheet(group: group),
   );
 }
 
@@ -1130,7 +1237,7 @@ Future<void> deleteDuplicateGroup(
           style: FilledButton.styleFrom(
             backgroundColor: theme.colorScheme.error,
             side: BorderSide(
-              color: AppColors.error.withOpacity(0.9),
+              color: AppColors.error.withValues(alpha: 0.9),
               width: 1.5,
             ),
           ),
@@ -1265,7 +1372,7 @@ Future<void> showDeleteSuccessDialog(
       context: context,
       useRootNavigator: true,
       barrierDismissible: true,
-      barrierColor: AppColors.black.withOpacity(0.5),
+      barrierColor: AppColors.black.withValues(alpha: 0.5),
       builder: (dialogContext) {
         return Dialog(
           backgroundColor: AppColors.transparent,
@@ -1284,298 +1391,281 @@ Future<void> showDeleteSuccessDialog(
             child: Stack(
               children: [
                 Container(
-              constraints: const BoxConstraints(maxWidth: 400),
-              padding: const EdgeInsets.all(32),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
-                borderRadius: BorderRadius.circular(28),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.black.withOpacity(0.2),
-                    blurRadius: 32,
-                    spreadRadius: 0,
-                    offset: const Offset(0, 12),
+                  constraints: const BoxConstraints(maxWidth: 400),
+                  padding: const EdgeInsets.all(32),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surface,
+                    borderRadius: BorderRadius.circular(28),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.black.withValues(alpha: 0.2),
+                        blurRadius: 32,
+                        spreadRadius: 0,
+                        offset: const Offset(0, 12),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                      // Success icon with background - New Year themed
-                  Container(
-                    width: 100,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primaryContainer.withOpacity(0.2),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Center(
-                      child: SizedBox(
-                        width: 80,
-                        height: 80,
-                    child: Lottie.asset(
-                              'assets/new_year/Santa surprise gift.json',
-                      fit: BoxFit.contain,
-                      repeat: true,
-                      animate: true,
-                    ),
-                  ),
-                    ),
-                  ),
-                  const SizedBox(height: 22),
-                  Text(
-                    l10n.cleanupComplete,
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w900,
-                      fontSize: 24,
-                      color: theme.colorScheme.onSurface,
-                      letterSpacing: -0.4,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 14),
-                  // Big animated MB headline
-                  TweenAnimationBuilder<double>(
-                    tween: Tween(begin: 0, end: deletedSizeMB),
-                    duration: const Duration(milliseconds: 1100),
-                    curve: Curves.easeOutCubic,
-                    builder: (context, animMb, _) {
-                      final shownMb =
-                          animMb.clamp(0, deletedSizeMB).toStringAsFixed(
-                                animMb >= 100 ? 0 : 1,
-                              );
-                      return Column(
-                        children: [
-                          Text(
-                            '$shownMb MB',
-                            style: theme.textTheme.displaySmall?.copyWith(
-                              fontWeight: FontWeight.w900,
-                              fontSize: 40,
-                              color: theme.colorScheme.primary,
-                              letterSpacing: -1.0,
-                            ),
-                            textAlign: TextAlign.center,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Success icon
+                      Container(
+                        width: 100,
+                        height: 100,
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.primaryContainer.withValues(
+                            alpha: 0.2,
                           ),
-                          const SizedBox(height: 6),
-                          TweenAnimationBuilder<double>(
-                            tween:
-                                Tween(begin: 0, end: deletedCount.toDouble()),
-                            duration: const Duration(milliseconds: 900),
-                            curve: Curves.easeOutCubic,
-                            builder: (context, animCount, __) {
-                              final shownCount = animCount
-                                  .clamp(0, deletedCount.toDouble())
-                                  .round();
-                              return Text(
-                                '${shownCount.toString()} ${shownCount == 1 ? l10n.photo : l10n.photos}',
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w700,
-                                  color: theme.colorScheme.onSurface
-                                      .withOpacity(0.7),
-                                ),
-                                textAlign: TextAlign.center,
-                              );
-                            },
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 18),
-                  // Animated stats (compact card)
-                  TweenAnimationBuilder<double>(
-                    tween: Tween(begin: 0, end: deletedCount.toDouble()),
-                    duration: const Duration(milliseconds: 900),
-                    curve: Curves.easeOutCubic,
-                    builder: (context, animCount, _) {
-                      final shownCount =
-                          animCount.clamp(0, deletedCount.toDouble()).round();
-
-                      return TweenAnimationBuilder<double>(
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.auto_awesome_rounded,
+                          size: 64,
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                      const SizedBox(height: 22),
+                      Text(
+                        l10n.cleanupComplete,
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 24,
+                          color: theme.colorScheme.onSurface,
+                          letterSpacing: -0.4,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 14),
+                      // Big animated MB headline
+                      TweenAnimationBuilder<double>(
                         tween: Tween(begin: 0, end: deletedSizeMB),
                         duration: const Duration(milliseconds: 1100),
                         curve: Curves.easeOutCubic,
-                        builder: (context, animMb, __) {
-                          final shownMb =
-                              animMb.clamp(0, deletedSizeMB).toStringAsFixed(
-                                    animMb >= 100 ? 0 : 1,
+                        builder: (context, animMb, _) {
+                          final shownMb = animMb
+                              .clamp(0, deletedSizeMB)
+                              .toStringAsFixed(animMb >= 100 ? 0 : 1);
+                          return Column(
+                            children: [
+                              Text(
+                                '$shownMb MB',
+                                style: theme.textTheme.displaySmall?.copyWith(
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 40,
+                                  color: theme.colorScheme.primary,
+                                  letterSpacing: -1.0,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 6),
+                              TweenAnimationBuilder<double>(
+                                tween: Tween(
+                                  begin: 0,
+                                  end: deletedCount.toDouble(),
+                                ),
+                                duration: const Duration(milliseconds: 900),
+                                curve: Curves.easeOutCubic,
+                                builder: (context, animCount, _) {
+                                  final shownCount = animCount
+                                      .clamp(0, deletedCount.toDouble())
+                                      .round();
+                                  return Text(
+                                    '${shownCount.toString()} ${shownCount == 1 ? l10n.photo : l10n.photos}',
+                                    style: theme.textTheme.titleMedium
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.w700,
+                                          color: theme.colorScheme.onSurface
+                                              .withValues(alpha: 0.7),
+                                        ),
+                                    textAlign: TextAlign.center,
                                   );
-
-                          return Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 18,
-                              vertical: 14,
-                            ),
-                    decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [
-                                  theme.colorScheme.primary.withOpacity(0.12),
-                                  theme.colorScheme.secondary.withOpacity(0.12),
-                                ],
+                                },
                               ),
-                              borderRadius: BorderRadius.circular(18),
-                              border: Border.all(
-                                color:
-                                    theme.colorScheme.primary.withOpacity(0.2),
-                                width: 1.2,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color:
-                                      theme.colorScheme.shadow.withOpacity(0.12),
-                                  blurRadius: 18,
-                                  offset: const Offset(0, 8),
-                                ),
-                              ],
-                            ),
-                            child: Row(
-                              children: [
-                                Expanded(
-                    child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                      children: [
-                                      Text(
-                                        l10n.photoUnit,
-                                        style: theme.textTheme.labelMedium
-                                            ?.copyWith(
-                                          color: theme.colorScheme.onSurface
-                                              .withOpacity(0.7),
-                                        ),
-                            ),
-                                      const SizedBox(height: 4),
-                  Text(
-                                        shownCount.toString(),
-                                        style: theme.textTheme.headlineSmall
-                                            ?.copyWith(
-                                          fontWeight: FontWeight.w900,
-                                          color: theme.colorScheme.primary,
-                              ),
-                            ),
-                          ],
-                        ),
-                                ),
-                                Container(
-                                  width: 1,
-                                  height: 42,
-                                  color: theme.colorScheme.outline
-                                      .withOpacity(0.1),
-                                ),
-                                const SizedBox(width: 14),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                          children: [
-                                      Text(
-                                        'MB',
-                                        style: theme.textTheme.labelMedium
-                                            ?.copyWith(
-                                          color: theme.colorScheme.onSurface
-                                              .withOpacity(0.7),
-                                        ),
-                            ),
-                                      const SizedBox(height: 4),
-                            Text(
-                                        shownMb,
-                                        style: theme.textTheme.headlineSmall
-                                            ?.copyWith(
-                                          fontWeight: FontWeight.w900,
-                                          color: theme.colorScheme.error,
-                              ),
-                            ),
-                          ],
-                                  ),
-                        ),
-                      ],
-                    ),
+                            ],
                           );
                         },
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 20),
-                  Text(
-                    l10n.cleanupCompleteMessageWithCountAndSize(
-                      deletedCount,
-                      deletedSizeMB.toStringAsFixed(1),
-                    ),
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurface.withOpacity(0.75),
-                      fontSize: 15,
-                      height: 1.6,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 28),
-                  // Upsell CTA
+                      ),
+                      const SizedBox(height: 18),
+                      // Animated stats (compact card)
+                      TweenAnimationBuilder<double>(
+                        tween: Tween(begin: 0, end: deletedCount.toDouble()),
+                        duration: const Duration(milliseconds: 900),
+                        curve: Curves.easeOutCubic,
+                        builder: (context, animCount, _) {
+                          final shownCount = animCount
+                              .clamp(0, deletedCount.toDouble())
+                              .round();
+
+                          return TweenAnimationBuilder<double>(
+                            tween: Tween(begin: 0, end: deletedSizeMB),
+                            duration: const Duration(milliseconds: 1100),
+                            curve: Curves.easeOutCubic,
+                            builder: (context, animMb, _) {
+                              final shownMb = animMb
+                                  .clamp(0, deletedSizeMB)
+                                  .toStringAsFixed(animMb >= 100 ? 0 : 1);
+
+                              return Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 18,
+                                  vertical: 14,
+                                ),
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [
+                                      theme.colorScheme.primary.withValues(
+                                        alpha: 0.12,
+                                      ),
+                                      theme.colorScheme.secondary.withValues(
+                                        alpha: 0.12,
+                                      ),
+                                    ],
+                                  ),
+                                  borderRadius: BorderRadius.circular(18),
+                                  border: Border.all(
+                                    color: theme.colorScheme.primary.withValues(
+                                      alpha: 0.2,
+                                    ),
+                                    width: 1.2,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: theme.colorScheme.shadow
+                                          .withValues(alpha: 0.12),
+                                      blurRadius: 18,
+                                      offset: const Offset(0, 8),
+                                    ),
+                                  ],
+                                ),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            l10n.photoUnit,
+                                            style: theme.textTheme.labelMedium
+                                                ?.copyWith(
+                                                  color: theme
+                                                      .colorScheme
+                                                      .onSurface
+                                                      .withValues(alpha: 0.7),
+                                                ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            shownCount.toString(),
+                                            style: theme.textTheme.headlineSmall
+                                                ?.copyWith(
+                                                  fontWeight: FontWeight.w900,
+                                                  color:
+                                                      theme.colorScheme.primary,
+                                                ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Container(
+                                      width: 1,
+                                      height: 42,
+                                      color: theme.colorScheme.outline
+                                          .withValues(alpha: 0.1),
+                                    ),
+                                    const SizedBox(width: 14),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'MB',
+                                            style: theme.textTheme.labelMedium
+                                                ?.copyWith(
+                                                  color: theme
+                                                      .colorScheme
+                                                      .onSurface
+                                                      .withValues(alpha: 0.7),
+                                                ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            shownMb,
+                                            style: theme.textTheme.headlineSmall
+                                                ?.copyWith(
+                                                  fontWeight: FontWeight.w900,
+                                                  color:
+                                                      theme.colorScheme.error,
+                                                ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        l10n.cleanupCompleteMessageWithCountAndSize(
+                          deletedCount,
+                          deletedSizeMB.toStringAsFixed(1),
+                        ),
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.75,
+                          ),
+                          fontSize: 15,
+                          height: 1.6,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 28),
+                      // Upsell CTA
                       AppThreeDButton(
-                    label: 'Get unlimited deletions',
-                    icon: Icons.workspace_premium_rounded,
-                    baseColor: theme.colorScheme.primary,
+                        label: 'Get unlimited deletions',
+                        icon: Icons.workspace_premium_rounded,
+                        baseColor: theme.colorScheme.primary,
                         textColor: AppColors.white,
                         fullWidth: true,
                         height: 56,
-                    onPressed: () {
-                      Navigator.of(dialogContext).pop();
-                      context.go('/paywall');
-                    },
-                  ),
-                  const SizedBox(height: 14),
-                  // Compact done button
-                  Align(
-                    alignment: Alignment.center,
-                    child: TextButton(
-                      onPressed: () => Navigator.of(dialogContext).pop(),
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
+                        onPressed: () {
+                          Navigator.of(dialogContext).pop();
+                          context.go('/paywall');
+                        },
+                      ),
+                      const SizedBox(height: 14),
+                      // Compact done button
+                      Align(
+                        alignment: Alignment.center,
+                        child: TextButton(
+                          onPressed: () => Navigator.of(dialogContext).pop(),
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                            foregroundColor: theme.colorScheme.onSurface,
+                          ),
+                          child: Text(
+                            l10n.done,
+                            style: theme.textTheme.labelLarge?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
                         ),
-                        foregroundColor: theme.colorScheme.onSurface,
                       ),
-                      child: Text(
-                        l10n.done,
-                        style: theme.textTheme.labelLarge?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                        ],
-                      ),
-                ),
-                // Decorative New Year elements
-                Positioned(
-                  top: -30,
-                  right: -30,
-                  child: Opacity(
-                    opacity: 0.3,
-                    child: Image.asset(
-                      'assets/new_year/gift-box.png',
-                      width: 100,
-                      height: 100,
-                      fit: BoxFit.contain,
-                    ),
+                      const SizedBox(height: 8),
+                    ],
                   ),
                 ),
-                Positioned(
-                  bottom: -20,
-                  left: -20,
-                  child: Opacity(
-                    opacity: 0.25,
-                    child: Image.asset(
-                      'assets/new_year/candy-cane.png',
-                      width: 80,
-                      height: 80,
-                      fit: BoxFit.contain,
-                      ),
-                    ),
-                  ),
-                ],
+              ],
             ),
           ),
         );
@@ -1587,10 +1677,7 @@ Future<void> showDeleteSuccessDialog(
 }
 
 class DuplicateGroupDetailSheet extends StatefulWidget {
-  const DuplicateGroupDetailSheet({
-    super.key,
-    required this.group,
-  });
+  const DuplicateGroupDetailSheet({super.key, required this.group});
 
   final DuplicatePhotoGroup group;
 
@@ -1599,8 +1686,7 @@ class DuplicateGroupDetailSheet extends StatefulWidget {
       _DuplicateGroupDetailSheetState();
 }
 
-class _DuplicateGroupDetailSheetState
-    extends State<DuplicateGroupDetailSheet> {
+class _DuplicateGroupDetailSheetState extends State<DuplicateGroupDetailSheet> {
   late final List<pm.AssetEntity> _sortedAssets;
   late final Set<String> _selectedIds; // Silinecekler
 
@@ -1609,23 +1695,16 @@ class _DuplicateGroupDetailSheetState
     super.initState();
     _sortedAssets = List<pm.AssetEntity>.from(widget.group.assets)
       ..sort((a, b) => a.createDateTime.compareTo(b.createDateTime));
-    _selectedIds =
-        widget.group.duplicatesToDelete.map((a) => a.id).toSet(); // varsayılan
+    _selectedIds = widget.group.duplicatesToDelete
+        .map((a) => a.id)
+        .toSet(); // varsayılan
   }
 
   void _toggleSelection(String assetId) {
     setState(() {
       if (_selectedIds.contains(assetId)) {
-        // En az bir fotoğraf silinmeden kalmalı, tümünü seçili yapma
-        if (_selectedIds.length == 1) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Keep at least one photo'),
-              duration: Duration(seconds: 2),
-            ),
-          );
-          return;
-        }
+        // En az bir fotoğraf silinmeden kalmalı
+        if (_selectedIds.length == 1) return;
         _selectedIds.remove(assetId);
       } else {
         _selectedIds.add(assetId);
@@ -1642,7 +1721,7 @@ class _DuplicateGroupDetailSheetState
     return Container(
       height: MediaQuery.of(context).size.height * 0.9,
       decoration: BoxDecoration(
-        color: theme.colorScheme.background,
+        color: theme.colorScheme.surface,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Column(
@@ -1651,10 +1730,10 @@ class _DuplicateGroupDetailSheetState
           Container(
             padding: const EdgeInsets.fromLTRB(20, 16, 12, 16),
             decoration: BoxDecoration(
-              color: theme.colorScheme.background,
+              color: theme.colorScheme.surface,
               border: Border(
                 bottom: BorderSide(
-                  color: theme.colorScheme.outline.withOpacity(0.1),
+                  color: theme.colorScheme.outline.withValues(alpha: 0.1),
                   width: 1,
                 ),
               ),
@@ -1664,7 +1743,7 @@ class _DuplicateGroupDetailSheetState
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: AppColors.secondary.withOpacity(0.15),
+                    color: AppColors.secondary.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
@@ -1749,41 +1828,41 @@ class _DuplicateGroupDetailSheetState
           // Selection summary + action
           Container(
             padding: const EdgeInsets.all(16),
-                                      decoration: BoxDecoration(
-              color: theme.colorScheme.background,
-                                        boxShadow: [
-                                          BoxShadow(
-                  color: AppColors.black.withOpacity(0.1),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.black.withValues(alpha: 0.1),
                   blurRadius: 10,
                   offset: const Offset(0, -2),
-                                          ),
-                                        ],
-                                      ),
+                ),
+              ],
+            ),
             child: SafeArea(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
-                                        children: [
+                children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                                          Text(
+                      Text(
                         l10n.keep,
                         style: theme.textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.w700,
                           color: theme.colorScheme.onSurface.withValues(
                             alpha: 0.8,
                           ),
-                                                ),
-                                          ),
+                        ),
+                      ),
                       Text(
                         '${_sortedAssets.length - _selectedIds.length}',
                         style: theme.textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.w700,
                           color: theme.colorScheme.onSurface,
-                                    ),
-                                  ),
-                              ],
-                            ),
+                        ),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 6),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1801,9 +1880,9 @@ class _DuplicateGroupDetailSheetState
                           fontWeight: FontWeight.w700,
                           color: AppColors.error,
                         ),
-                ),
-              ],
-            ),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 12),
                   BlocBuilder<DeleteLimitCubit, AsyncValue<int>>(
                     builder: (context, deleteLimitAsync) {
@@ -1831,22 +1910,24 @@ class _DuplicateGroupDetailSheetState
                             return;
                           }
 
-                          if (_selectedIds.isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(l10n.noPhotosToDelete),
-                                duration: const Duration(seconds: 2),
-                              ),
-                            );
-                            return;
-                          }
+                          if (_selectedIds.isEmpty) return;
+
+                          if (!context.mounted) return;
+                          final duplicateCubit = context
+                              .read<DuplicateDetectionCubit>();
+                          final deleteLimitCubit = context
+                              .read<DeleteLimitCubit>();
+                          final nav = Navigator.of(context);
+                          final dialogContext = context;
 
                           final confirmed = await showDialog<bool>(
-                            context: context,
+                            context: dialogContext,
                             builder: (context) => AlertDialog(
                               title: Text(l10n.deleteDuplicates),
                               content: Text(
-                                l10n.deleteDuplicatesMessage(_selectedIds.length),
+                                l10n.deleteDuplicatesMessage(
+                                  _selectedIds.length,
+                                ),
                               ),
                               actions: [
                                 TextButton(
@@ -1860,7 +1941,9 @@ class _DuplicateGroupDetailSheetState
                                   style: FilledButton.styleFrom(
                                     backgroundColor: theme.colorScheme.error,
                                     side: BorderSide(
-                                      color: AppColors.error.withOpacity(0.9),
+                                      color: AppColors.error.withValues(
+                                        alpha: 0.9,
+                                      ),
                                       width: 1.5,
                                     ),
                                   ),
@@ -1870,34 +1953,35 @@ class _DuplicateGroupDetailSheetState
                             ),
                           );
 
-                          if (confirmed != true || !mounted) return;
+                          if (confirmed != true || !dialogContext.mounted) {
+                            return;
+                          }
 
-                          final duplicateCubit =
-                              context.read<DuplicateDetectionCubit>();
-                          final deleteResult =
-                              await duplicateCubit.deleteSelectedDuplicateAssets(
-                            _selectedIds.toList(),
-                            groupHash: widget.group.hash,
-                          );
+                          final deleteResult = await duplicateCubit
+                              .deleteSelectedDuplicateAssets(
+                                _selectedIds.toList(),
+                                groupHash: widget.group.hash,
+                              );
 
-                          if (!mounted) return;
+                          if (!dialogContext.mounted) return;
 
-                          final deleteLimitCubit =
-                              context.read<DeleteLimitCubit>();
                           await deleteLimitCubit.decrease(
                             deleteResult.deletedCount,
                           );
 
-                          if (!mounted || deleteResult.deletedCount <= 0) return;
+                          if (!dialogContext.mounted ||
+                              deleteResult.deletedCount <= 0) {
+                            return;
+                          }
 
                           await showDeleteSuccessDialog(
-                            context,
+                            dialogContext,
                             deleteResult.deletedCount,
                             deletedSizeMB: deleteResult.deletedSizeMB,
                           );
 
-                          if (mounted) {
-                            Navigator.of(context).pop(); // sheet kapat
+                          if (dialogContext.mounted) {
+                            nav.pop(); // sheet kapat
                           }
                         },
                       );
@@ -1935,214 +2019,209 @@ class _PhotoGridItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.secondary.withOpacity(
-                            isDark ? 0.3 : 0.2,
-                          ),
-                          blurRadius: 20,
-                          offset: const Offset(0, 8),
-                          spreadRadius: 2,
-                        ),
-                        BoxShadow(
-                          color: AppColors.black.withValues(
-                            alpha: isDark ? 0.3 : 0.15,
-                          ),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                          spreadRadius: 0,
-                        ),
-                      ],
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(20),
-                      child: Material(
-                        color: AppColors.transparent,
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.secondary.withValues(alpha: isDark ? 0.3 : 0.2),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+            spreadRadius: 2,
+          ),
+          BoxShadow(
+            color: AppColors.black.withValues(alpha: isDark ? 0.3 : 0.15),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+            spreadRadius: 0,
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Material(
+          color: AppColors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(20),
             onTap: onTap,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [
-                                  theme.colorScheme.surface.withOpacity(
-                                    isDark ? 0.95 : 0.98,
-                                  ),
-                                  theme.colorScheme.surfaceContainerHighest
-                                      .withOpacity(isDark ? 0.8 : 0.9),
-                                ],
-                              ),
-                              border: Border.all(
-                                color: theme.colorScheme.outline.withOpacity(
-                                  isDark ? 0.2 : 0.15,
-                                ),
-                                width: 1.5,
-                              ),
-                            ),
-                            child: Stack(
-                              fit: StackFit.expand,
-                              children: [
-                                // Image with overlay gradient
-                                FutureBuilder<Uint8List?>(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    theme.colorScheme.surface.withValues(
+                      alpha: isDark ? 0.95 : 0.98,
+                    ),
+                    theme.colorScheme.surfaceContainerHighest.withValues(
+                      alpha: isDark ? 0.8 : 0.9,
+                    ),
+                  ],
+                ),
+                border: Border.all(
+                  color: theme.colorScheme.outline.withValues(
+                    alpha: isDark ? 0.2 : 0.15,
+                  ),
+                  width: 1.5,
+                ),
+              ),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  // Image with overlay gradient
+                  FutureBuilder<Uint8List?>(
                     key: ValueKey('thumb_${asset.id}'),
-                                  future: asset.thumbnailDataWithSize(
-                                    const pm.ThumbnailSize(600, 600),
-                                    quality: 90,
-                                  ),
-                                  builder: (context, snapshot) {
-                                    if (snapshot.connectionState ==
-                                        ConnectionState.waiting) {
-                                      return Container(
-                                        decoration: BoxDecoration(
-                                          gradient: LinearGradient(
-                                            begin: Alignment.topLeft,
-                                            end: Alignment.bottomRight,
-                                            colors: [
+                    future: asset.thumbnailDataWithSize(
+                      const pm.ThumbnailSize(600, 600),
+                      quality: 90,
+                    ),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
                                 theme.colorScheme.surfaceContainerHighest,
                                 theme.colorScheme.surfaceContainerHighest
-                                                  .withOpacity(0.7),
-                                            ],
-                                          ),
-                                        ),
-                                        child: Center(
-                                          child: SizedBox(
-                                            width: 40,
-                                            height: 40,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 3,
-                                              valueColor:
-                                                  AlwaysStoppedAnimation<Color>(
-                                                    AppColors.primary,
-                                                  ),
-                                            ),
-                                          ),
-                                        ),
-                                      );
-                                    }
-                                    if (snapshot.hasData) {
-                                      return Stack(
-                                        fit: StackFit.expand,
-                                        children: [
-                                          Image.memory(
-                                            snapshot.data!,
-                                            fit: BoxFit.cover,
-                              key: ValueKey('img_${asset.id}'),
-                                          ),
-                                          // Gradient overlay for better badge readability
-                                          Positioned.fill(
-                                            child: Container(
-                                              decoration: BoxDecoration(
-                                                gradient: LinearGradient(
-                                                  begin: Alignment.topCenter,
-                                                  end: Alignment.bottomCenter,
-                                                  colors: [
-                                                    AppColors.transparent,
-                                                    AppColors.black.withValues(
-                                                      alpha: 0.3,
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      );
-                                    }
-                                    return Container(
-                                      decoration: BoxDecoration(
-                                        color: theme.colorScheme.errorContainer,
-                                        gradient: LinearGradient(
-                                          begin: Alignment.topLeft,
-                                          end: Alignment.bottomRight,
-                                          colors: [
-                                            theme.colorScheme.errorContainer,
-                                            theme.colorScheme.errorContainer
-                                                .withOpacity(0.7),
-                                          ],
-                                        ),
-                                      ),
-                                      child: Icon(
-                                        Icons.error_outline,
-                          color: theme.colorScheme.onErrorContainer,
-                                        size: 32,
-                                      ),
-                                    );
-                                  },
+                                    .withValues(alpha: 0.7),
+                              ],
+                            ),
+                          ),
+                          child: Center(
+                            child: SizedBox(
+                              width: 40,
+                              height: 40,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 3,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  AppColors.primary,
                                 ),
+                              ),
+                            ),
+                          ),
+                        );
+                      }
+                      if (snapshot.hasData) {
+                        return Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            Image.memory(
+                              snapshot.data!,
+                              fit: BoxFit.cover,
+                              key: ValueKey('img_${asset.id}'),
+                            ),
+                            // Gradient overlay for better badge readability
+                            Positioned.fill(
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors: [
+                                      AppColors.transparent,
+                                      AppColors.black.withValues(alpha: 0.3),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      }
+                      return Container(
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.errorContainer,
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              theme.colorScheme.errorContainer,
+                              theme.colorScheme.errorContainer.withValues(
+                                alpha: 0.7,
+                              ),
+                            ],
+                          ),
+                        ),
+                        child: Icon(
+                          Icons.error_outline,
+                          color: theme.colorScheme.onErrorContainer,
+                          size: 32,
+                        ),
+                      );
+                    },
+                  ),
                   // Selection badge (keep/delete toggle)
-                                  Positioned(
-                                    top: 10,
-                                    left: 10,
+                  Positioned(
+                    top: 10,
+                    left: 10,
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
                       curve: Curves.easeInOut,
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 10,
-                                        vertical: 6,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        gradient: LinearGradient(
-                                          begin: Alignment.topLeft,
-                                          end: Alignment.bottomRight,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
                           colors: isToDelete
                               ? [
-                                  AppColors.error.withOpacity(0.95),
-                                  AppColors.error.withOpacity(0.85),
+                                  AppColors.error.withValues(alpha: 0.95),
+                                  AppColors.error.withValues(alpha: 0.85),
                                 ]
                               : [
-                                            AppColors.success.withOpacity(0.95),
-                                            AppColors.success.withOpacity(0.85),
-                                          ],
-                                        ),
-                                        borderRadius: BorderRadius.circular(16),
-                                        border: Border.all(
-                          color: AppColors.white.withOpacity(0.2),
-                                          width: 1,
-                                        ),
-                                        boxShadow: [
-                                          BoxShadow(
-                            color: (isToDelete
-                                    ? AppColors.error
-                                    : AppColors.success)
-                                                .withOpacity(0.4),
-                                            blurRadius: 12,
-                                            offset: const Offset(0, 4),
-                                            spreadRadius: 0,
-                                          ),
-                                        ],
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(
+                                  AppColors.success.withValues(alpha: 0.95),
+                                  AppColors.success.withValues(alpha: 0.85),
+                                ],
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: AppColors.white.withValues(alpha: 0.2),
+                          width: 1,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color:
+                                (isToDelete
+                                        ? AppColors.error
+                                        : AppColors.success)
+                                    .withValues(alpha: 0.4),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                            spreadRadius: 0,
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
                             isToDelete
                                 ? Icons.delete_forever_rounded
                                 : Icons.check_circle_outline,
-                                            size: 14,
-                                            color: AppColors.white,
-                                          ),
-                                          const SizedBox(width: 4),
-                                          Text(
+                            size: 14,
+                            color: AppColors.white,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
                             isToDelete ? l10n.delete : l10n.keep,
                             style: theme.textTheme.labelSmall?.copyWith(
-                                                  color: AppColors.white,
-                                                  fontWeight: FontWeight.w800,
-                                                  fontSize: 11,
-                                                  letterSpacing: 0.5,
-                                                ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
+                              color: AppColors.white,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 11,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                   // Photo size badge (bottom right)
-                                  Positioned(
+                  Positioned(
                     bottom: 10,
-                                    right: 10,
+                    right: 10,
                     child: FutureBuilder<int>(
                       key: ValueKey('size_${asset.id}'),
                       future: estimateAssetSize(asset),
@@ -2157,38 +2236,38 @@ class _PhotoGridItem extends StatelessWidget {
                               ? '${sizeMB.toStringAsFixed(1)} MB'
                               : '${(sizeMB * 1024).toStringAsFixed(0)} KB';
                           return Container(
-                                      padding: const EdgeInsets.symmetric(
+                            padding: const EdgeInsets.symmetric(
                               horizontal: 8,
                               vertical: 4,
-                                      ),
-                                      decoration: BoxDecoration(
-                              color: AppColors.black.withOpacity(0.7),
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.black.withValues(alpha: 0.7),
                               borderRadius: BorderRadius.circular(12),
-                                        border: Border.all(
-                                color: AppColors.white.withOpacity(0.2),
-                                          width: 1,
-                                        ),
+                              border: Border.all(
+                                color: AppColors.white.withValues(alpha: 0.2),
+                                width: 1,
+                              ),
                             ),
                             child: Text(
                               sizeText,
                               style: theme.textTheme.labelSmall?.copyWith(
-                                            color: AppColors.white,
+                                color: AppColors.white,
                                 fontWeight: FontWeight.w700,
                                 fontSize: 10,
                                 letterSpacing: 0.3,
-                    ),
-                  ),
-                );
+                              ),
+                            ),
+                          );
                         }
                         return const SizedBox.shrink();
                       },
                     ),
-                ),
-              ],
-            ),
-                    ),
                   ),
-                ),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

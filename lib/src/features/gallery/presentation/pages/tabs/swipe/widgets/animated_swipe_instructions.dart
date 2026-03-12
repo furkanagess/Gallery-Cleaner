@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
-import '../../../../../../../../src/app/theme/app_theme.dart' show AppSemanticColors;
-import '../../../../../../../../l10n/app_localizations.dart' show AppLocalizations;
+import '../../../../../../../../src/app/theme/app_theme.dart'
+    show AppSemanticColors;
+import '../../../../../../../../l10n/app_localizations.dart'
+    show AppLocalizations;
 
 class AnimatedSwipeInstructions extends StatefulWidget {
-  const AnimatedSwipeInstructions();
+  const AnimatedSwipeInstructions({super.key});
 
   @override
   State<AnimatedSwipeInstructions> createState() =>
@@ -53,15 +55,21 @@ class _AnimatedSwipeInstructionsState extends State<AnimatedSwipeInstructions>
               duration: const Duration(milliseconds: 200),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: sem.delete.withOpacity(0.1 * _pulseAnimation.value),
+                color: sem.delete.withValues(
+                  alpha: 0.1 * _pulseAnimation.value,
+                ),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: sem.delete.withOpacity(0.4 * _pulseAnimation.value),
+                  color: sem.delete.withValues(
+                    alpha: 0.4 * _pulseAnimation.value,
+                  ),
                   width: 1.5,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: sem.delete.withOpacity(0.2 * _pulseAnimation.value),
+                    color: sem.delete.withValues(
+                      alpha: 0.2 * _pulseAnimation.value,
+                    ),
                     blurRadius: 8 * _pulseAnimation.value,
                     spreadRadius: 1 * _pulseAnimation.value,
                   ),
@@ -106,7 +114,7 @@ class _AnimatedSwipeInstructionsState extends State<AnimatedSwipeInstructions>
               child: Container(
                 width: 1,
                 height: 16,
-                color: theme.colorScheme.outline.withOpacity(0.2),
+                color: theme.colorScheme.outline.withValues(alpha: 0.2),
               ),
             ),
             // Keep action - animated
@@ -114,15 +122,19 @@ class _AnimatedSwipeInstructionsState extends State<AnimatedSwipeInstructions>
               duration: const Duration(milliseconds: 200),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: sem.keep.withOpacity(0.1 * _pulseAnimation.value),
+                color: sem.keep.withValues(alpha: 0.1 * _pulseAnimation.value),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: sem.keep.withOpacity(0.4 * _pulseAnimation.value),
+                  color: sem.keep.withValues(
+                    alpha: 0.4 * _pulseAnimation.value,
+                  ),
                   width: 1.5,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: sem.keep.withOpacity(0.2 * _pulseAnimation.value),
+                    color: sem.keep.withValues(
+                      alpha: 0.2 * _pulseAnimation.value,
+                    ),
                     blurRadius: 8 * _pulseAnimation.value,
                     spreadRadius: 1 * _pulseAnimation.value,
                   ),
@@ -156,9 +168,7 @@ class _AnimatedSwipeInstructionsState extends State<AnimatedSwipeInstructions>
                         height: 32,
                         fit: BoxFit.contain,
                         repeat: true,
-                        options: LottieOptions(
-                          enableMergePaths: true,
-                        ),
+                        options: LottieOptions(enableMergePaths: true),
                       ),
                     ),
                   ),
@@ -171,4 +181,3 @@ class _AnimatedSwipeInstructionsState extends State<AnimatedSwipeInstructions>
     );
   }
 }
-

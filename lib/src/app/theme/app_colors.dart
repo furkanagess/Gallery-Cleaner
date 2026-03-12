@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 
 /// Modern and professional color palette for Gallery Cleaner app
-/// Based on the design system with light and dark mode support
+/// Dark theme only.
 class AppColors {
   AppColors._();
+
+  // ==================== APP SURFACES ====================
+  /// App surface/background (Material `colorScheme.surface`).
+  /// Requested: all surface backgrounds = #0E0E0E
+  static const Color surface = Color(0xFF0E0E0E);
 
   // ==================== PRIMARY COLORS ====================
   /// Primary Color: #5D9CEC
@@ -47,11 +52,8 @@ class AppColors {
   static const Color duplicateTab = Color(0xFFA5F1E9);
 
   // ==================== NEUTRAL COLORS ====================
-  /// Background Light: #F8FAFC
-  static const Color backgroundLight = Color(0xFFF8FAFC);
-
-  /// Background Dark: #191C24
-  static const Color backgroundDark = Color(0xFF191C24);
+  /// Background Dark (legacy semantic). Prefer using `surface`.
+  static const Color backgroundDark = surface;
 
   /// Pure White
   static const Color white = Color(0xFFFFFFFF);
@@ -68,34 +70,19 @@ class AppColors {
   /// Transparent
   static const Color transparent = Color(0x00000000);
 
-  /// Card Background Light: #FFFFFF
-  static const Color cardLight = white;
-
   /// Card Background Dark: #1E293B
   static const Color cardDark = Color(0xFF1E293B);
-
-  /// Text Primary Light: #1E293B
-  static const Color textPrimaryLight = Color(0xFF1E293B);
 
   /// Text Primary Dark: #E2E8F0
   static const Color textPrimaryDark = Color(0xFFE2E8F0);
 
-  /// Text Secondary Light: #64748B
-  static const Color textSecondaryLight = Color(0xFF64748B);
-
   /// Text Secondary Dark: #94A3B8
   static const Color textSecondaryDark = Color(0xFF94A3B8);
-
-  /// Border/Divider Light: #E2E8F0
-  static const Color borderLight = Color(0xFFE2E8F0);
 
   /// Border/Divider Dark: #334155
   static const Color borderDark = Color(0xFF334155);
 
   // ==================== SHADOWS ====================
-  /// Shadow Light: rgba(0, 0, 0, 0.05)
-  static const Color shadowLight = Color.fromRGBO(0, 0, 0, 0.05);
-
   /// Shadow Dark: rgba(0, 0, 0, 0.25)
   static const Color shadowDark = Color.fromRGBO(0, 0, 0, 0.25);
 
@@ -133,34 +120,12 @@ class AppColors {
   );
 
   // ==================== HELPER METHODS ====================
-  /// Get background color based on brightness
-  static Color background(Brightness brightness) {
-    return brightness == Brightness.light ? backgroundLight : backgroundDark;
-  }
-
-  /// Get card color based on brightness
-  static Color card(Brightness brightness) {
-    return brightness == Brightness.light ? cardLight : cardDark;
-  }
-
-  /// Get text primary color based on brightness
-  static Color textPrimary(Brightness brightness) {
-    return brightness == Brightness.light ? textPrimaryLight : textPrimaryDark;
-  }
-
-  /// Get text secondary color based on brightness
-  static Color textSecondary(Brightness brightness) {
-    return brightness == Brightness.light ? textSecondaryLight : textSecondaryDark;
-  }
-
-  /// Get border color based on brightness
-  static Color border(Brightness brightness) {
-    return brightness == Brightness.light ? borderLight : borderDark;
-  }
-
-  /// Get shadow color based on brightness
-  static Color shadow(Brightness brightness) {
-    return brightness == Brightness.light ? shadowLight : shadowDark;
-  }
+  /// Helpers kept for backwards compatibility (brightness ignored; dark only).
+  static Color background(Brightness _) => backgroundDark;
+  static Color card(Brightness _) => cardDark;
+  static Color textPrimary(Brightness _) => textPrimaryDark;
+  static Color textSecondary(Brightness _) => textSecondaryDark;
+  static Color border(Brightness _) => borderDark;
+  static Color shadow(Brightness _) => shadowDark;
 }
 

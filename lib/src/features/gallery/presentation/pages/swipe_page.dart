@@ -1,10 +1,6 @@
-// ignore_for_file: unused_element
-
 import 'dart:async';
-import 'dart:math' as math;
 import 'dart:ui';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -49,6 +45,7 @@ class _ShimmerWidget extends StatefulWidget {
   const _ShimmerWidget({
     required this.width,
     required this.height,
+    // ignore: unused_element_parameter
     this.borderRadius,
   });
 
@@ -86,11 +83,11 @@ class _ShimmerWidgetState extends State<_ShimmerWidget>
 
     // More subtle colors for a modern look
     final baseColor = brightness == Brightness.light
-        ? theme.colorScheme.surfaceContainerHighest.withOpacity(0.3)
-        : theme.colorScheme.surfaceContainerHighest.withOpacity(0.2);
+        ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3)
+        : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.2);
     final highlightColor = brightness == Brightness.light
-        ? theme.colorScheme.surfaceContainerHighest.withOpacity(0.6)
-        : theme.colorScheme.surfaceContainerHighest.withOpacity(0.4);
+        ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.6)
+        : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4);
 
     return AnimatedBuilder(
       animation: _controller,
@@ -126,64 +123,6 @@ class _ShimmerWidgetState extends State<_ShimmerWidget>
           ),
         );
       },
-    );
-  }
-}
-
-// Shimmer for scan form (blur/duplicate tabs)
-// ignore:
-class _ScanFormShimmer extends StatelessWidget {
-  const _ScanFormShimmer();
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Title shimmer
-          _ShimmerWidget(
-            width: 200,
-            height: 24,
-            borderRadius: BorderRadius.circular(4),
-          ),
-          const SizedBox(height: 24),
-          // Description shimmer
-          _ShimmerWidget(
-            width: double.infinity,
-            height: 16,
-            borderRadius: BorderRadius.circular(4),
-          ),
-          const SizedBox(height: 8),
-          _ShimmerWidget(
-            width: double.infinity,
-            height: 16,
-            borderRadius: BorderRadius.circular(4),
-          ),
-          const SizedBox(height: 32),
-          // Button shimmer
-          _ShimmerWidget(
-            width: double.infinity,
-            height: 56,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          const SizedBox(height: 16),
-          // Estimated time shimmer
-          _ShimmerWidget(
-            width: 150,
-            height: 40,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          const SizedBox(height: 12),
-          // Warning shimmer
-          _ShimmerWidget(
-            width: double.infinity,
-            height: 50,
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -246,14 +185,11 @@ Future<void> _presentAlbumPicker({
     builder: (context) {
       // Premium durumunu kontrol et
       final isPremiumAsync = context.watch<PremiumCubit>().state;
-      final isPremium = isPremiumAsync.maybeWhen(
-        data: (premium) => premium,
-        orElse: () => false,
-      );
+      isPremiumAsync.maybeWhen(data: (premium) => premium, orElse: () => false);
 
       // Bottom navigation bar'daki container rengiyle aynı
-      final containerColor = theme.colorScheme.onPrimaryContainer.withOpacity(
-        0.8,
+      final containerColor = theme.colorScheme.onPrimaryContainer.withValues(
+        alpha: 0.8,
       );
 
       // StatefulBuilder içinde state tutmak için Map kullan - closure ile erişim
@@ -279,28 +215,7 @@ Future<void> _presentAlbumPicker({
               filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
               child: Stack(
                 children: [
-                  // Kar efekti - new year
-                  Positioned.fill(
-                    child: ClipRRect(
-                      borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(24),
-                      ),
-                      child: Opacity(
-                        opacity: 0.18,
-                        child: ColorFiltered(
-                          colorFilter: ColorFilter.mode(
-                            AppColors.white,
-                            BlendMode.srcATop,
-                          ),
-                          child: Lottie.asset(
-                            'assets/new_year/Snowing.json',
-                            fit: BoxFit.cover,
-                            repeat: true,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
+                  // Background ambiance layer
                   Container(
                     constraints: BoxConstraints(
                       maxHeight: MediaQuery.of(context).size.height * 0.85,
@@ -310,9 +225,9 @@ Future<void> _presentAlbumPicker({
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: [
-                          theme.colorScheme.surface.withOpacity(0.95),
-                          theme.colorScheme.surfaceContainerHighest.withOpacity(
-                            0.9,
+                          theme.colorScheme.surface.withValues(alpha: 0.95),
+                          theme.colorScheme.surfaceContainerHighest.withValues(
+                            alpha: 0.9,
                           ),
                         ],
                       ),
@@ -321,13 +236,17 @@ Future<void> _presentAlbumPicker({
                       ),
                       border: Border(
                         top: BorderSide(
-                          color: theme.colorScheme.outline.withOpacity(0.1),
+                          color: theme.colorScheme.outline.withValues(
+                            alpha: 0.1,
+                          ),
                           width: 1,
                         ),
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: theme.colorScheme.shadow.withOpacity(0.1),
+                          color: theme.colorScheme.shadow.withValues(
+                            alpha: 0.1,
+                          ),
                           blurRadius: 20,
                           offset: const Offset(0, -5),
                         ),
@@ -341,7 +260,9 @@ Future<void> _presentAlbumPicker({
                           width: 40,
                           height: 4,
                           decoration: BoxDecoration(
-                            color: theme.colorScheme.onSurface.withOpacity(0.2),
+                            color: theme.colorScheme.onSurface.withValues(
+                              alpha: 0.2,
+                            ),
                             borderRadius: BorderRadius.circular(2),
                           ),
                         ),
@@ -354,17 +275,16 @@ Future<void> _presentAlbumPicker({
                                 decoration: BoxDecoration(
                                   gradient: LinearGradient(
                                     colors: [
-                                      containerColor.withOpacity(0.2),
-                                      containerColor.withOpacity(0.1),
+                                      containerColor.withValues(alpha: 0.2),
+                                      containerColor.withValues(alpha: 0.1),
                                     ],
                                   ),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                child: Image.asset(
-                                  'assets/new_year/christmas-tree.png',
-                                  width: 24,
-                                  height: 24,
-                                  fit: BoxFit.contain,
+                                child: Icon(
+                                  Icons.photo_library_rounded,
+                                  size: 24,
+                                  color: theme.colorScheme.onSurface,
                                 ),
                               ),
                               const SizedBox(width: 16),
@@ -386,7 +306,7 @@ Future<void> _presentAlbumPicker({
                                       style: theme.textTheme.bodySmall
                                           ?.copyWith(
                                             color: theme.colorScheme.onSurface
-                                                .withOpacity(0.6),
+                                                .withValues(alpha: 0.6),
                                           ),
                                     ),
                                   ],
@@ -457,12 +377,12 @@ Future<void> _presentAlbumPicker({
                                                       ? LinearGradient(
                                                           colors: [
                                                             containerColor
-                                                                .withOpacity(
-                                                                  0.3,
+                                                                .withValues(
+                                                                  alpha: 0.3,
                                                                 ),
                                                             containerColor
-                                                                .withOpacity(
-                                                                  0.1,
+                                                                .withValues(
+                                                                  alpha: 0.1,
                                                                 ),
                                                           ],
                                                         )
@@ -472,17 +392,23 @@ Future<void> _presentAlbumPicker({
                                                       : theme
                                                             .colorScheme
                                                             .surfaceContainerHighest
-                                                            .withOpacity(0.5),
+                                                            .withValues(
+                                                              alpha: 0.5,
+                                                            ),
                                                   borderRadius:
                                                       BorderRadius.circular(16),
                                                   border: Border.all(
                                                     color: isSelected
                                                         ? containerColor
-                                                              .withOpacity(0.3)
+                                                              .withValues(
+                                                                alpha: 0.3,
+                                                              )
                                                         : theme
                                                               .colorScheme
                                                               .outline
-                                                              .withOpacity(0.1),
+                                                              .withValues(
+                                                                alpha: 0.1,
+                                                              ),
                                                     width: isSelected ? 1.5 : 1,
                                                   ),
                                                 ),
@@ -500,14 +426,14 @@ Future<void> _presentAlbumPicker({
                                                       decoration: BoxDecoration(
                                                         color: isSelected
                                                             ? containerColor
-                                                                  .withOpacity(
-                                                                    0.2,
+                                                                  .withValues(
+                                                                    alpha: 0.2,
                                                                   )
                                                             : theme
                                                                   .colorScheme
                                                                   .onSurface
-                                                                  .withOpacity(
-                                                                    0.1,
+                                                                  .withValues(
+                                                                    alpha: 0.1,
                                                                   ),
                                                         borderRadius:
                                                             BorderRadius.circular(
@@ -521,8 +447,8 @@ Future<void> _presentAlbumPicker({
                                                             : theme
                                                                   .colorScheme
                                                                   .onSurface
-                                                                  .withOpacity(
-                                                                    0.7,
+                                                                  .withValues(
+                                                                    alpha: 0.7,
                                                                   ),
                                                         size: 20,
                                                       ),
@@ -604,9 +530,13 @@ Future<void> _presentAlbumPicker({
                                                     ? LinearGradient(
                                                         colors: [
                                                           containerColor
-                                                              .withOpacity(0.3),
+                                                              .withValues(
+                                                                alpha: 0.3,
+                                                              ),
                                                           containerColor
-                                                              .withOpacity(0.1),
+                                                              .withValues(
+                                                                alpha: 0.1,
+                                                              ),
                                                         ],
                                                       )
                                                     : null,
@@ -615,17 +545,23 @@ Future<void> _presentAlbumPicker({
                                                     : theme
                                                           .colorScheme
                                                           .surfaceContainerHighest
-                                                          .withOpacity(0.5),
+                                                          .withValues(
+                                                            alpha: 0.5,
+                                                          ),
                                                 borderRadius:
                                                     BorderRadius.circular(16),
                                                 border: Border.all(
                                                   color: isSelected
                                                       ? containerColor
-                                                            .withOpacity(0.3)
+                                                            .withValues(
+                                                              alpha: 0.3,
+                                                            )
                                                       : theme
                                                             .colorScheme
                                                             .outline
-                                                            .withOpacity(0.1),
+                                                            .withValues(
+                                                              alpha: 0.1,
+                                                            ),
                                                   width: isSelected ? 1.5 : 1,
                                                 ),
                                               ),
@@ -639,14 +575,14 @@ Future<void> _presentAlbumPicker({
                                                     decoration: BoxDecoration(
                                                       color: isSelected
                                                           ? containerColor
-                                                                .withOpacity(
-                                                                  0.2,
+                                                                .withValues(
+                                                                  alpha: 0.2,
                                                                 )
                                                           : theme
                                                                 .colorScheme
                                                                 .onSurface
-                                                                .withOpacity(
-                                                                  0.1,
+                                                                .withValues(
+                                                                  alpha: 0.1,
                                                                 ),
                                                       borderRadius:
                                                           BorderRadius.circular(
@@ -660,8 +596,8 @@ Future<void> _presentAlbumPicker({
                                                           : theme
                                                                 .colorScheme
                                                                 .onSurface
-                                                                .withOpacity(
-                                                                  0.7,
+                                                                .withValues(
+                                                                  alpha: 0.7,
                                                                 ),
                                                       size: 20,
                                                     ),
@@ -763,9 +699,13 @@ Future<void> _presentAlbumPicker({
                                                   ? LinearGradient(
                                                       colors: [
                                                         containerColor
-                                                            .withOpacity(0.3),
+                                                            .withValues(
+                                                              alpha: 0.3,
+                                                            ),
                                                         containerColor
-                                                            .withOpacity(0.1),
+                                                            .withValues(
+                                                              alpha: 0.1,
+                                                            ),
                                                       ],
                                                     )
                                                   : null,
@@ -774,15 +714,18 @@ Future<void> _presentAlbumPicker({
                                                   : theme
                                                         .colorScheme
                                                         .surfaceContainerHighest
-                                                        .withOpacity(0.6),
+                                                        .withValues(alpha: 0.6),
                                               borderRadius:
                                                   BorderRadius.circular(16),
                                               border: Border.all(
                                                 color: tempStartDate != null
-                                                    ? containerColor
-                                                          .withOpacity(0.3)
+                                                    ? containerColor.withValues(
+                                                        alpha: 0.3,
+                                                      )
                                                     : theme.colorScheme.outline
-                                                          .withOpacity(0.15),
+                                                          .withValues(
+                                                            alpha: 0.15,
+                                                          ),
                                                 width: tempStartDate != null
                                                     ? 1.5
                                                     : 1,
@@ -803,8 +746,8 @@ Future<void> _presentAlbumPicker({
                                                           : theme
                                                                 .colorScheme
                                                                 .onSurface
-                                                                .withOpacity(
-                                                                  0.5,
+                                                                .withValues(
+                                                                  alpha: 0.5,
                                                                 ),
                                                     ),
                                                     const SizedBox(width: 6),
@@ -821,8 +764,9 @@ Future<void> _presentAlbumPicker({
                                                                 : theme
                                                                       .colorScheme
                                                                       .onSurface
-                                                                      .withOpacity(
-                                                                        0.6,
+                                                                      .withValues(
+                                                                        alpha:
+                                                                            0.6,
                                                                       ),
                                                             fontWeight:
                                                                 FontWeight.w600,
@@ -852,8 +796,8 @@ Future<void> _presentAlbumPicker({
                                                             : theme
                                                                   .colorScheme
                                                                   .onSurface
-                                                                  .withOpacity(
-                                                                    0.5,
+                                                                  .withValues(
+                                                                    alpha: 0.5,
                                                                   ),
                                                       ),
                                                 ),
@@ -894,9 +838,13 @@ Future<void> _presentAlbumPicker({
                                                   ? LinearGradient(
                                                       colors: [
                                                         containerColor
-                                                            .withOpacity(0.3),
+                                                            .withValues(
+                                                              alpha: 0.3,
+                                                            ),
                                                         containerColor
-                                                            .withOpacity(0.1),
+                                                            .withValues(
+                                                              alpha: 0.1,
+                                                            ),
                                                       ],
                                                     )
                                                   : null,
@@ -905,15 +853,18 @@ Future<void> _presentAlbumPicker({
                                                   : theme
                                                         .colorScheme
                                                         .surfaceContainerHighest
-                                                        .withOpacity(0.6),
+                                                        .withValues(alpha: 0.6),
                                               borderRadius:
                                                   BorderRadius.circular(16),
                                               border: Border.all(
                                                 color: tempEndDate != null
-                                                    ? containerColor
-                                                          .withOpacity(0.3)
+                                                    ? containerColor.withValues(
+                                                        alpha: 0.3,
+                                                      )
                                                     : theme.colorScheme.outline
-                                                          .withOpacity(0.15),
+                                                          .withValues(
+                                                            alpha: 0.15,
+                                                          ),
                                                 width: tempEndDate != null
                                                     ? 1.5
                                                     : 1,
@@ -933,8 +884,8 @@ Future<void> _presentAlbumPicker({
                                                           : theme
                                                                 .colorScheme
                                                                 .onSurface
-                                                                .withOpacity(
-                                                                  0.5,
+                                                                .withValues(
+                                                                  alpha: 0.5,
                                                                 ),
                                                     ),
                                                     const SizedBox(width: 6),
@@ -951,8 +902,9 @@ Future<void> _presentAlbumPicker({
                                                                 : theme
                                                                       .colorScheme
                                                                       .onSurface
-                                                                      .withOpacity(
-                                                                        0.6,
+                                                                      .withValues(
+                                                                        alpha:
+                                                                            0.6,
                                                                       ),
                                                             fontWeight:
                                                                 FontWeight.w600,
@@ -981,8 +933,8 @@ Future<void> _presentAlbumPicker({
                                                             : theme
                                                                   .colorScheme
                                                                   .onSurface
-                                                                  .withOpacity(
-                                                                    0.5,
+                                                                  .withValues(
+                                                                    alpha: 0.5,
                                                                   ),
                                                       ),
                                                 ),
@@ -1034,14 +986,14 @@ Future<void> _presentAlbumPicker({
                                     final isPremiumAsync = builderContext
                                         .watch<PremiumCubit>()
                                         .state;
-                                    final isPremium = isPremiumAsync.maybeWhen(
+                                    isPremiumAsync.maybeWhen(
                                       data: (premium) => premium,
                                       orElse: () => false,
                                     );
                                     final containerColorSort = theme
                                         .colorScheme
                                         .onPrimaryContainer
-                                        .withOpacity(0.8);
+                                        .withValues(alpha: 0.8);
 
                                     return Column(
                                       crossAxisAlignment:
@@ -1060,7 +1012,10 @@ Future<void> _presentAlbumPicker({
                                               style: theme.textTheme.titleMedium
                                                   ?.copyWith(
                                                     fontWeight: FontWeight.bold,
-                                                    color: containerColorSort,
+                                                  color: theme
+                                                      .colorScheme
+                                                      .onPrimaryContainer
+                                                      .withValues(alpha: 0.8),
                                                   ),
                                             ),
                                           ],
@@ -1094,8 +1049,8 @@ Future<void> _presentAlbumPicker({
                                                           : theme
                                                                 .colorScheme
                                                                 .surfaceContainerHighest
-                                                                .withOpacity(
-                                                                  0.5,
+                                                                .withValues(
+                                                                  alpha: 0.5,
                                                                 ),
                                                       borderRadius:
                                                           BorderRadius.circular(
@@ -1109,8 +1064,8 @@ Future<void> _presentAlbumPicker({
                                                             : theme
                                                                   .colorScheme
                                                                   .outline
-                                                                  .withOpacity(
-                                                                    0.15,
+                                                                  .withValues(
+                                                                    alpha: 0.15,
                                                                   ),
                                                         width:
                                                             tempSortOrder ==
@@ -1128,17 +1083,17 @@ Future<void> _presentAlbumPicker({
                                                           Icons
                                                               .arrow_downward_rounded,
                                                           size: 20,
-                                                          color:
-                                                              tempSortOrder ==
+                                                          color: tempSortOrder ==
                                                                   SortOrder
                                                                       .newest
-                                                              ? AppColors.white
+                                                              ? AppColors
+                                                                  .surface
                                                               : theme
-                                                                    .colorScheme
-                                                                    .onSurface
-                                                                    .withOpacity(
-                                                                      0.7,
-                                                                    ),
+                                                                  .colorScheme
+                                                                  .onSurface
+                                                                  .withValues(
+                                                                    alpha: 0.7,
+                                                                  ),
                                                         ),
                                                         const SizedBox(
                                                           width: 8,
@@ -1154,15 +1109,14 @@ Future<void> _presentAlbumPicker({
                                                                       .w600
                                                                 : FontWeight
                                                                       .w500,
-                                                            color:
-                                                                tempSortOrder ==
+                                                            color: tempSortOrder ==
                                                                     SortOrder
                                                                         .newest
                                                                 ? AppColors
-                                                                      .white
+                                                                    .surface
                                                                 : theme
-                                                                      .colorScheme
-                                                                      .onSurface,
+                                                                    .colorScheme
+                                                                    .onSurface,
                                                           ),
                                                         ),
                                                       ],
@@ -1198,8 +1152,8 @@ Future<void> _presentAlbumPicker({
                                                           : theme
                                                                 .colorScheme
                                                                 .surfaceContainerHighest
-                                                                .withOpacity(
-                                                                  0.5,
+                                                                .withValues(
+                                                                  alpha: 0.5,
                                                                 ),
                                                       borderRadius:
                                                           BorderRadius.circular(
@@ -1213,8 +1167,8 @@ Future<void> _presentAlbumPicker({
                                                             : theme
                                                                   .colorScheme
                                                                   .outline
-                                                                  .withOpacity(
-                                                                    0.15,
+                                                                  .withValues(
+                                                                    alpha: 0.15,
                                                                   ),
                                                         width:
                                                             tempSortOrder ==
@@ -1232,17 +1186,17 @@ Future<void> _presentAlbumPicker({
                                                           Icons
                                                               .arrow_upward_rounded,
                                                           size: 20,
-                                                          color:
-                                                              tempSortOrder ==
+                                                          color: tempSortOrder ==
                                                                   SortOrder
                                                                       .oldest
-                                                              ? AppColors.white
+                                                              ? AppColors
+                                                                  .surface
                                                               : theme
-                                                                    .colorScheme
-                                                                    .onSurface
-                                                                    .withOpacity(
-                                                                      0.7,
-                                                                    ),
+                                                                  .colorScheme
+                                                                  .onSurface
+                                                                  .withValues(
+                                                                    alpha: 0.7,
+                                                                  ),
                                                         ),
                                                         const SizedBox(
                                                           width: 8,
@@ -1258,15 +1212,14 @@ Future<void> _presentAlbumPicker({
                                                                       .w600
                                                                 : FontWeight
                                                                       .w500,
-                                                            color:
-                                                                tempSortOrder ==
+                                                            color: tempSortOrder ==
                                                                     SortOrder
                                                                         .oldest
                                                                 ? AppColors
-                                                                      .white
+                                                                    .surface
                                                                 : theme
-                                                                      .colorScheme
-                                                                      .onSurface,
+                                                                    .colorScheme
+                                                                    .onSurface,
                                                           ),
                                                         ),
                                                       ],
@@ -1293,8 +1246,10 @@ Future<void> _presentAlbumPicker({
                               begin: Alignment.topCenter,
                               end: Alignment.bottomCenter,
                               colors: [
-                                theme.colorScheme.surface.withOpacity(0),
-                                theme.colorScheme.surface.withOpacity(0.8),
+                                theme.colorScheme.surface.withValues(alpha: 0),
+                                theme.colorScheme.surface.withValues(
+                                  alpha: 0.8,
+                                ),
                               ],
                             ),
                           ),
@@ -1303,14 +1258,14 @@ Future<void> _presentAlbumPicker({
                               final isPremiumAsync = buttonContext
                                   .watch<PremiumCubit>()
                                   .state;
-                              final isPremium = isPremiumAsync.maybeWhen(
+                              isPremiumAsync.maybeWhen(
                                 data: (premium) => premium,
                                 orElse: () => false,
                               );
                               final containerColorButton = theme
                                   .colorScheme
                                   .onPrimaryContainer
-                                  .withOpacity(0.8);
+                                  .withValues(alpha: 0.8);
 
                               return Container(
                                 width: double.infinity,
@@ -1320,7 +1275,9 @@ Future<void> _presentAlbumPicker({
                                     end: Alignment.bottomRight,
                                     colors: [
                                       containerColorButton,
-                                      containerColorButton.withOpacity(0.85),
+                                      containerColorButton.withValues(
+                                        alpha: 0.85,
+                                      ),
                                     ],
                                   ),
                                   borderRadius: BorderRadius.circular(16),
@@ -1330,8 +1287,8 @@ Future<void> _presentAlbumPicker({
                                   ),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: containerColorButton.withOpacity(
-                                        0.35,
+                                      color: containerColorButton.withValues(
+                                        alpha: 0.35,
                                       ),
                                       blurRadius: 16,
                                       offset: const Offset(0, 4),
@@ -1362,7 +1319,7 @@ Future<void> _presentAlbumPicker({
                                           Icon(
                                             Icons.check_circle_rounded,
                                             size: 20,
-                                            color: AppColors.white,
+                                            color: AppColors.surface,
                                           ),
                                           const SizedBox(width: 8),
                                           Text(
@@ -1370,7 +1327,7 @@ Future<void> _presentAlbumPicker({
                                             style: TextStyle(
                                               fontWeight: FontWeight.w900,
                                               fontSize: 16,
-                                              color: AppColors.white,
+                                              color: AppColors.surface,
                                               letterSpacing: 0.5,
                                             ),
                                           ),
@@ -1418,133 +1375,6 @@ Future<void> _presentAlbumPicker({
     sortOrderCubit.setSortOrder(result['sortOrder'] as SortOrder);
   }
 }
-
-class _ChangeAlbumZone extends StatelessWidget {
-  const _ChangeAlbumZone({
-    required this.onDragOver,
-    required this.changeAlbumZoneKey,
-  });
-
-  final ValueChanged<bool> onDragOver;
-  final GlobalKey changeAlbumZoneKey;
-
-  @override
-  Widget build(BuildContext context) {
-    // isDraggingOver state'i widget içinde tutulacak - StatefulWidget'a dönüştürülmeli
-    // TODO: StatefulWidget'a dönüştürüldüğünde state'ten alınacak
-    final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-
-    // Premium durumunu kontrol et
-    final isPremiumAsync = context.watch<PremiumCubit>().state;
-    final isPremium = isPremiumAsync.maybeWhen(
-      data: (premium) => premium,
-      orElse: () => false,
-    );
-
-    // Bottom navigation bar'daki container rengiyle aynı
-    final containerColor = theme.colorScheme.onPrimaryContainer.withOpacity(
-      0.8,
-    );
-
-    return Container(
-      key: changeAlbumZoneKey,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // Radial glow background when hovering
-          AnimatedOpacity(
-            opacity: 0.0,
-            duration: const Duration(milliseconds: 180),
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                gradient: RadialGradient(
-                  center: Alignment.center,
-                  radius: 0.95,
-                  colors: [
-                    containerColor.withOpacity(0.12),
-                    AppColors.transparent,
-                  ],
-                  stops: const [0.0, 1.0],
-                ),
-              ),
-            ),
-          ),
-          AnimatedScale(
-            duration: const Duration(milliseconds: 180),
-            curve: Curves.easeOut,
-            scale: 1.0,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              // Container decoration kaldırıldı - sadece içerik gösteriliyor
-              decoration: const BoxDecoration(
-                color: AppColors.transparent, // Container arka planı kaldırıldı
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  AnimatedRotation(
-                    turns: 0,
-                    duration: const Duration(milliseconds: 200),
-                    child: Icon(
-                      Icons.photo_library_outlined,
-                      size: 26,
-                      color: theme.colorScheme.onSurface.withOpacity(0.7),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        l10n.changeAlbum,
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: theme.colorScheme.onSurface.withOpacity(0.9),
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        l10n.dragPhotoHere,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurface.withOpacity(0.6),
-                          fontSize: 11,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(width: 8),
-                  Icon(
-                    Icons.arrow_upward,
-                    size: 22,
-                    color: theme.colorScheme.onSurface.withOpacity(0.6),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// Modern loading overlay widget
-
-// Tab pages
-// Note: BlurTab is now in tabs/blur/blur_tab.dart
-// Note: DuplicateTab is now in tabs/duplicate/duplicate_tab.dart
-
-// Note: _DuplicateTab and _DuplicateTabState classes have been moved to tabs/duplicate/duplicate_tab.dart
-// Note: _DuplicateTabIndicator has been moved to tabs/duplicate/widgets/duplicate_tab_indicator.dart
-// Note: _DuplicateModeSelector has been moved to tabs/duplicate/widgets/duplicate_mode_selector.dart
-// Note: Helper functions (_estimateScanDurationStatic, _formatEstimatedTimeStatic, _buildModernScanButton)
-//       have been moved to tabs/duplicate/widgets/duplicate_tab_helpers.dart
 
 class SwipePage extends StatefulWidget {
   const SwipePage({super.key});
@@ -1697,6 +1527,14 @@ class _SwipePageState extends State<SwipePage>
       // Previous state'i güncelle
       previousBlurState = next;
 
+      // Yeni bir tarama başladığında navigation flag'ini sıfırla
+      if (!wasScanning && isNowScanning && _isNavigatingToResults) {
+        debugPrint(
+          '🧭 [SwipePage] Blur scan started, resetting navigation guard flag',
+        );
+        _isNavigatingToResults = false;
+      }
+
       // Scan tamamlandığında bildirim gönder ve results sayfasına yönlendir
       if (wasScanning &&
           !isNowScanning &&
@@ -1766,6 +1604,14 @@ class _SwipePageState extends State<SwipePage>
       // Previous state'i güncelle
       previousDuplicateState = next;
 
+      // Yeni bir tarama başladığında navigation flag'ini sıfırla
+      if (!wasScanning && isNowScanning && _isNavigatingToResults) {
+        debugPrint(
+          '🧭 [SwipePage] Duplicate scan started, resetting navigation guard flag',
+        );
+        _isNavigatingToResults = false;
+      }
+
       // Scan tamamlandığında bildirim gönder ve results sayfasına yönlendir
       if (wasScanning &&
           !isNowScanning &&
@@ -1830,7 +1676,9 @@ class _SwipePageState extends State<SwipePage>
       }
 
       // Galeri yüklendi mi kontrol et - assets yüklendikten sonra göster
-      final galleryAssets = context.read<GalleryPagingCubit>().state;
+      if (!mounted) return;
+      final galleryCubit = context.read<GalleryPagingCubit>();
+      final galleryAssets = galleryCubit.state;
       final hasAssets = galleryAssets.maybeWhen(
         data: (assets) => assets.isNotEmpty,
         orElse: () => false,
@@ -1842,7 +1690,8 @@ class _SwipePageState extends State<SwipePage>
         int attempts = 0;
         while (attempts < 20 && mounted) {
           await Future.delayed(const Duration(milliseconds: 500));
-          final currentAssets = context.read<GalleryPagingCubit>().state;
+          if (!mounted) return;
+          final currentAssets = galleryCubit.state;
           final hasCurrentAssets = currentAssets.maybeWhen(
             data: (assets) => assets.isNotEmpty,
             orElse: () => false,
@@ -2095,8 +1944,8 @@ class _SwipePageState extends State<SwipePage>
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                theme.colorScheme.primary.withOpacity(0.1),
-                theme.colorScheme.secondary.withOpacity(0.05),
+                theme.colorScheme.primary.withValues(alpha: 0.1),
+                theme.colorScheme.secondary.withValues(alpha: 0.05),
                 AppColors.transparent,
               ],
             ),
@@ -2134,7 +1983,7 @@ class _SwipePageState extends State<SwipePage>
     // İzin yoksa izin ekranı göster
     if (permission != GalleryPermissionStatus.authorized) {
       return Scaffold(
-        backgroundColor: theme.colorScheme.background,
+        backgroundColor: theme.colorScheme.surface,
         extendBodyBehindAppBar: true,
         appBar: AppBar(
           backgroundColor: AppColors.transparent,
@@ -2151,7 +2000,7 @@ class _SwipePageState extends State<SwipePage>
                 width: 220,
                 height: 220,
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.primary.withOpacity(0.10),
+                  color: theme.colorScheme.primary.withValues(alpha: 0.10),
                   shape: BoxShape.circle,
                 ),
               ),
@@ -2163,7 +2012,7 @@ class _SwipePageState extends State<SwipePage>
                 width: 160,
                 height: 160,
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.tertiary.withOpacity(0.10),
+                  color: theme.colorScheme.tertiary.withValues(alpha: 0.10),
                   shape: BoxShape.circle,
                 ),
               ),
@@ -2192,8 +2041,8 @@ class _SwipePageState extends State<SwipePage>
                       l10n.galleryPermissionDescription,
                       textAlign: TextAlign.center,
                       style: theme.textTheme.bodyLarge?.copyWith(
-                        color: theme.textTheme.bodyMedium?.color?.withOpacity(
-                          0.8,
+                        color: theme.textTheme.bodyMedium?.color?.withValues(
+                          alpha: 0.8,
                         ),
                       ),
                     ),
@@ -2206,7 +2055,7 @@ class _SwipePageState extends State<SwipePage>
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.black.withOpacity(0.06),
+                            color: AppColors.black.withValues(alpha: 0.06),
                             blurRadius: 16,
                             offset: const Offset(0, 8),
                           ),
@@ -2265,7 +2114,7 @@ class _SwipePageState extends State<SwipePage>
     }
 
     return Scaffold(
-      backgroundColor: theme.colorScheme.background,
+      backgroundColor: theme.colorScheme.surface,
       extendBody: true, // Bottom bar'ın arkasından içerik geçebilsin
       extendBodyBehindAppBar: false,
       resizeToAvoidBottomInset: false,
@@ -2274,13 +2123,10 @@ class _SwipePageState extends State<SwipePage>
         children: [
           // Ana içerik
           SafeArea(
-            top: false,
-            bottom: false,
+            top: true,
+            bottom: true,
             child: Column(
               children: [
-                // Top spacing
-                const SizedBox(height: 50),
-                // Modern Top Info Bar
                 _ModernTopInfoBar(
                   tabController: _tabController,
                   isScanning: isScanning,
@@ -2305,11 +2151,11 @@ class _SwipePageState extends State<SwipePage>
           Positioned(
             left: 0,
             right: 0,
-            bottom: MediaQuery.of(context).padding.bottom + 16,
+            bottom: MediaQuery.of(context).padding.bottom,
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Material(
-                color: Colors.transparent,
+                color: AppColors.transparent,
                 child: _LiquidGlassBottomNavBar(
                   tabController: _tabController,
                   isScanning: isScanning,
@@ -2420,7 +2266,9 @@ class _HistoryButtonState extends State<_HistoryButton> {
             icon: Icon(
               Icons.history,
               color: widget.isScanning
-                  ? Theme.of(context).colorScheme.onSurface.withOpacity(0.38)
+                  ? Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.38)
                   : shouldPulse
                   ? Theme.of(context).colorScheme.primary
                   : Theme.of(context).colorScheme.onSurface,
@@ -2555,57 +2403,6 @@ class _ModernTopInfoBarState extends State<_ModernTopInfoBar>
   }
 }
 
-// Helper widget for snowflakes background
-Widget _buildSnowflakesBackground(BuildContext context) {
-  final theme = Theme.of(context);
-  final isDark = theme.brightness == Brightness.dark;
-
-  // Tema uyumlu renk paleti
-  final palette = isDark
-      ? [
-          AppColors.white.withOpacity(0.82),
-          theme.colorScheme.secondary.withOpacity(0.78),
-          theme.colorScheme.primary.withOpacity(0.72),
-        ]
-      : [
-          theme.colorScheme.primary.withOpacity(0.72),
-          theme.colorScheme.secondary.withOpacity(0.68),
-          theme.colorScheme.onSurface.withOpacity(0.45),
-        ];
-
-  // Rastgele snowflake'ler - container boyutuna göre optimize edilmiş
-  final flakes = List.generate(15, (index) {
-    final top = (index * 47 + 18 * (index % 3)) % 80;
-    final left = (index * 61 + 23 * (index % 4)) % 200;
-    final opacity =
-        (isDark ? 0.18 : 0.14) + (index % 6) * (isDark ? 0.05 : 0.04);
-    final size = 10.0 + (index % 5) * 4.0 + ((index % 3 == 0) ? 2.0 : 0.0);
-    final rotationDeg = (index * 17 + 11 * (index % 5)) % 360;
-    final color = palette[index % palette.length];
-
-    return Positioned(
-      top: top.toDouble(),
-      left: left.toDouble(),
-      child: Opacity(
-        opacity: opacity.clamp(0.12, 0.9),
-        child: Transform.rotate(
-          angle: rotationDeg * math.pi / 180,
-          child: Image.asset(
-            'assets/new_year/snowflake.png',
-            width: size,
-            height: size,
-            fit: BoxFit.contain,
-            color: color,
-            colorBlendMode: BlendMode.srcIn,
-          ),
-        ),
-      ),
-    );
-  });
-
-  return Stack(children: flakes);
-}
-
 // Modern Delete Limit Badge
 class _ModernDeleteLimitBadge extends StatelessWidget {
   const _ModernDeleteLimitBadge();
@@ -2619,27 +2416,22 @@ class _ModernDeleteLimitBadge extends StatelessWidget {
 
     return deleteLimitAsync.when(
       loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
       data: (deleteLimit) {
         return isPremiumAsync.when(
           loading: () => const SizedBox.shrink(),
-          error: (_, __) => const SizedBox.shrink(),
+          error: (_, _) => const SizedBox.shrink(),
           data: (isPremium) {
             final displayValue = isPremium ? '∞' : '$deleteLimit';
-            final bgColors = [
-              theme.colorScheme.surfaceContainerHighest.withOpacity(0.92),
-              theme.colorScheme.surfaceContainerHighest.withOpacity(0.86),
-            ];
-            final borderColor = theme.colorScheme.outlineVariant.withOpacity(
-              0.35,
-            );
 
             return Stack(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 10,
+                  padding: const EdgeInsets.only(
+                    left: 14,
+                    top: 10,
+                    bottom: 10,
+                    right: 4,
                   ),
                   constraints: const BoxConstraints(minHeight: 44),
                   decoration: BoxDecoration(
@@ -2647,87 +2439,102 @@ class _ModernDeleteLimitBadge extends StatelessWidget {
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [
-                        AppColors.error.withOpacity(0.15),
-                        AppColors.error.withOpacity(0.08),
+                        AppColors.error.withValues(alpha: 0.15),
+                        AppColors.error.withValues(alpha: 0.08),
                       ],
                     ),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: AppColors.error.withOpacity(0.3),
+                      color: AppColors.error.withValues(alpha: 0.3),
                       width: 1.5,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.error.withOpacity(0.2),
+                        color: AppColors.error.withValues(alpha: 0.2),
                         blurRadius: 12,
                         offset: const Offset(0, 6),
                       ),
                     ],
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
+                  child: Row(
                     children: [
-                      Text(
-                        l10n.remainingDeletionRights,
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 10,
-                          color: AppColors.error.withOpacity(0.9),
-                          letterSpacing: 0.3,
-                          shadows: null,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              l10n.remainingDeletionRights,
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 10,
+                                color: AppColors.error.withValues(alpha: 0.9),
+                                letterSpacing: 0.3,
+                                shadows: null,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              displayValue,
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w900,
+                                fontSize: 20,
+                                color: AppColors.error,
+                                letterSpacing: -0.5,
+                                height: 1,
+                                shadows: isPremium
+                                    ? [
+                                        Shadow(
+                                          color: AppColors.error.withValues(
+                                            alpha: 0.5,
+                                          ),
+                                          blurRadius: 10,
+                                        ),
+                                      ]
+                                    : [
+                                        Shadow(
+                                          color: AppColors.error.withValues(
+                                            alpha: 0.3,
+                                          ),
+                                          blurRadius: 6,
+                                        ),
+                                      ],
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
                         ),
-                        overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        displayValue,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w900,
-                          fontSize: 20,
-                          color: AppColors.error,
-                          letterSpacing: -0.5,
-                          height: 1,
-                          shadows: isPremium
-                              ? [
-                                  Shadow(
-                                    color: AppColors.error.withOpacity(0.5),
-                                    blurRadius: 10,
-                                  ),
-                                ]
-                              : [
-                                  Shadow(
-                                    color: AppColors.error.withOpacity(0.3),
-                                    blurRadius: 6,
-                                  ),
-                                ],
+                      if (!isPremium) ...[
+                        Material(
+                          color: AppColors.transparent,
+                          child: InkWell(
+                            onTap: () => context.push('/paywall'),
+                            borderRadius: BorderRadius.circular(14),
+                            child: Container(
+                              width: 28,
+                              height: 28,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: AppColors.error.withValues(alpha: 0.2),
+                                border: Border.all(
+                                  color: AppColors.error.withValues(alpha: 0.5),
+                                  width: 1.2,
+                                ),
+                              ),
+                              child: Icon(
+                                Icons.add_rounded,
+                                size: 18,
+                                color: AppColors.error.withValues(alpha: 0.95),
+                              ),
+                            ),
+                          ),
                         ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                        const SizedBox(width: 6),
+                      ],
                     ],
-                  ),
-                ),
-                // Rastgele snowflake PNG'leri arka plan
-                Positioned.fill(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: _buildSnowflakesBackground(context),
-                  ),
-                ),
-                // Snowman görseli container içinde sağ altta
-                Positioned(
-                  right: 8,
-                  bottom: 8,
-                  child: IgnorePointer(
-                    child: Opacity(
-                      opacity: 0.4,
-                      child: Image.asset(
-                        'assets/new_year/snowman.png',
-                        width: 40,
-                        height: 40,
-                        fit: BoxFit.contain,
-                      ),
-                    ),
                   ),
                 ),
               ],
@@ -2749,6 +2556,9 @@ class _ModernScanLimitBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
+    final containerColor = theme.colorScheme.onPrimaryContainer.withValues(
+      alpha: 0.8,
+    );
     final scanLimitAsync = adUnitType == AdUnitType.blurScanLimit
         ? context.watch<BlurScanLimitCubit>().state
         : context.watch<DuplicateScanLimitCubit>().state;
@@ -2756,27 +2566,13 @@ class _ModernScanLimitBadge extends StatelessWidget {
 
     return scanLimitAsync.when(
       loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
       data: (scanLimit) {
         return isPremiumAsync.when(
           loading: () => const SizedBox.shrink(),
-          error: (_, __) => const SizedBox.shrink(),
+          error: (_, _) => const SizedBox.shrink(),
           data: (isPremium) {
             final displayValue = isPremium ? '∞' : '$scanLimit';
-            final bgColors = [
-              theme.colorScheme.surfaceContainerHighest.withOpacity(0.92),
-              theme.colorScheme.surfaceContainerHighest.withOpacity(0.86),
-            ];
-            final borderColor = theme.colorScheme.outlineVariant.withOpacity(
-              0.35,
-            );
-            final boxShadow = [
-              BoxShadow(
-                color: theme.colorScheme.shadow.withOpacity(0.12),
-                blurRadius: 12,
-                offset: const Offset(0, 6),
-              ),
-            ];
 
             return Stack(
               clipBehavior: Clip.hardEdge,
@@ -2789,22 +2585,15 @@ class _ModernScanLimitBadge extends StatelessWidget {
                   ),
                   constraints: const BoxConstraints(minHeight: 44),
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        theme.colorScheme.primary.withOpacity(0.15),
-                        theme.colorScheme.primary.withOpacity(0.08),
-                      ],
-                    ),
+                    color: containerColor,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: theme.colorScheme.primary.withOpacity(0.3),
+                      color: containerColor.withValues(alpha: 0.9),
                       width: 1.5,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: theme.colorScheme.primary.withOpacity(0.2),
+                        color: containerColor.withValues(alpha: 0.35),
                         blurRadius: 12,
                         offset: const Offset(0, 6),
                       ),
@@ -2819,7 +2608,7 @@ class _ModernScanLimitBadge extends StatelessWidget {
                         style: theme.textTheme.labelSmall?.copyWith(
                           fontWeight: FontWeight.w600,
                           fontSize: 10,
-                          color: theme.colorScheme.primary.withOpacity(0.9),
+                          color: AppColors.surface.withValues(alpha: 0.9),
                           letterSpacing: 0.3,
                           shadows: null,
                         ),
@@ -2831,24 +2620,10 @@ class _ModernScanLimitBadge extends StatelessWidget {
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w900,
                           fontSize: 20,
-                          color: theme.colorScheme.primary,
+                          color: AppColors.surface,
                           letterSpacing: -0.5,
                           height: 1,
-                          shadows: isPremium
-                              ? [
-                                  Shadow(
-                                    color: theme.colorScheme.primary
-                                        .withOpacity(0.5),
-                                    blurRadius: 10,
-                                  ),
-                                ]
-                              : [
-                                  Shadow(
-                                    color: theme.colorScheme.primary
-                                        .withOpacity(0.3),
-                                    blurRadius: 6,
-                                  ),
-                                ],
+                          shadows: null,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -2856,28 +2631,7 @@ class _ModernScanLimitBadge extends StatelessWidget {
                   ),
                 ),
                 // Rastgele snowflake PNG'leri arka plan
-                Positioned.fill(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: _buildSnowflakesBackground(context),
-                  ),
-                ),
                 // Snowman görseli container içinde sağ altta
-                Positioned(
-                  right: 8,
-                  bottom: 8,
-                  child: IgnorePointer(
-                    child: Opacity(
-                      opacity: 0.4,
-                      child: Image.asset(
-                        'assets/new_year/snowman.png',
-                        width: 40,
-                        height: 40,
-                        fit: BoxFit.contain,
-                      ),
-                    ),
-                  ),
-                ),
               ],
             );
           },
@@ -2902,6 +2656,9 @@ class _ModernAlbumSelectionButton extends StatelessWidget {
     final albumsData = albumsAsync.valueOrNull;
     final canOpenAlbumPicker = albumsData != null && albumsData.isNotEmpty;
     final displayAlbumName = selectedAlbum?.name ?? l10n.allPhotos;
+    final containerColor = theme.colorScheme.onPrimaryContainer.withValues(
+      alpha: 0.8,
+    );
 
     final hasDateFilter = dateFilter.hasFilter;
     final sortText = sortOrder == SortOrder.newest ? l10n.newest : l10n.oldest;
@@ -2930,24 +2687,23 @@ class _ModernAlbumSelectionButton extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               constraints: const BoxConstraints(minHeight: 44),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    theme.colorScheme.primary.withOpacity(0.15),
-                    theme.colorScheme.primary.withOpacity(0.08),
-                  ],
-                ),
+                color: canOpenAlbumPicker
+                    ? containerColor
+                    : theme.colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: theme.colorScheme.primary.withOpacity(0.3),
+                  color: canOpenAlbumPicker
+                      ? containerColor.withValues(alpha: 0.9)
+                      : theme.colorScheme.onSurface.withValues(alpha: 0.3),
                   width: 1.5,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: theme.colorScheme.primary.withOpacity(0.2),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
+                    color: canOpenAlbumPicker
+                        ? containerColor.withValues(alpha: 0.35)
+                        : theme.colorScheme.shadow.withValues(alpha: 0.08),
+                    blurRadius: 12,
+                    offset: const Offset(0, 6),
                     spreadRadius: 0,
                   ),
                 ],
@@ -2969,9 +2725,9 @@ class _ModernAlbumSelectionButton extends StatelessWidget {
                               fontWeight: FontWeight.w600,
                               fontSize: 10,
                               color: canOpenAlbumPicker
-                                  ? theme.colorScheme.primary.withOpacity(0.9)
-                                  : theme.colorScheme.onSurface.withOpacity(
-                                      0.3,
+                                  ? AppColors.surface.withValues(alpha: 0.9)
+                                  : theme.colorScheme.onSurface.withValues(
+                                      alpha: 0.3,
                                     ),
                               letterSpacing: 0.3,
                             ),
@@ -2988,8 +2744,10 @@ class _ModernAlbumSelectionButton extends StatelessWidget {
                                 ? 11
                                 : 12,
                             color: canOpenAlbumPicker
-                                ? theme.colorScheme.primary
-                                : theme.colorScheme.onSurface.withOpacity(0.3),
+                                ? AppColors.surface
+                                : theme.colorScheme.onSurface.withValues(
+                                    alpha: 0.3,
+                                  ),
                             letterSpacing: 0.2,
                           ),
                           overflow: TextOverflow.ellipsis,
@@ -3008,7 +2766,7 @@ class _ModernAlbumSelectionButton extends StatelessWidget {
                                     final isPremiumAsync = badgeContext
                                         .watch<PremiumCubit>()
                                         .state;
-                                    final isPremium = isPremiumAsync.maybeWhen(
+                                    isPremiumAsync.maybeWhen(
                                       data: (premium) => premium,
                                       orElse: () => false,
                                     );
@@ -3017,7 +2775,7 @@ class _ModernAlbumSelectionButton extends StatelessWidget {
                                     final containerColor = theme
                                         .colorScheme
                                         .onPrimaryContainer
-                                        .withOpacity(0.8);
+                                        .withValues(alpha: 0.8);
 
                                     return Container(
                                       padding: const EdgeInsets.symmetric(
@@ -3025,7 +2783,9 @@ class _ModernAlbumSelectionButton extends StatelessWidget {
                                         vertical: 2,
                                       ),
                                       decoration: BoxDecoration(
-                                        color: containerColor.withOpacity(0.3),
+                                        color: containerColor.withValues(
+                                          alpha: 0.3,
+                                        ),
                                         borderRadius: BorderRadius.circular(6),
                                       ),
                                       child: Row(
@@ -3034,7 +2794,7 @@ class _ModernAlbumSelectionButton extends StatelessWidget {
                                           Icon(
                                             Icons.calendar_today_rounded,
                                             size: 10,
-                                            color: containerColor,
+                                            color: AppColors.surface,
                                           ),
                                           const SizedBox(width: 4),
                                           Flexible(
@@ -3044,7 +2804,7 @@ class _ModernAlbumSelectionButton extends StatelessWidget {
                                                   ?.copyWith(
                                                     fontSize: 9,
                                                     fontWeight: FontWeight.w600,
-                                                    color: containerColor,
+                                                    color: AppColors.surface,
                                                   ),
                                               overflow: TextOverflow.ellipsis,
                                               maxLines: 1,
@@ -3062,7 +2822,7 @@ class _ModernAlbumSelectionButton extends StatelessWidget {
                                     final isPremiumAsync = badgeContext
                                         .watch<PremiumCubit>()
                                         .state;
-                                    final isPremium = isPremiumAsync.maybeWhen(
+                                    isPremiumAsync.maybeWhen(
                                       data: (premium) => premium,
                                       orElse: () => false,
                                     );
@@ -3071,7 +2831,7 @@ class _ModernAlbumSelectionButton extends StatelessWidget {
                                     final containerColor = theme
                                         .colorScheme
                                         .onPrimaryContainer
-                                        .withOpacity(0.8);
+                                        .withValues(alpha: 0.8);
 
                                     return Container(
                                       padding: const EdgeInsets.symmetric(
@@ -3079,7 +2839,9 @@ class _ModernAlbumSelectionButton extends StatelessWidget {
                                         vertical: 2,
                                       ),
                                       decoration: BoxDecoration(
-                                        color: containerColor.withOpacity(0.3),
+                                        color: containerColor.withValues(
+                                          alpha: 0.3,
+                                        ),
                                         borderRadius: BorderRadius.circular(6),
                                       ),
                                       child: Row(
@@ -3090,7 +2852,7 @@ class _ModernAlbumSelectionButton extends StatelessWidget {
                                                 ? Icons.arrow_upward_rounded
                                                 : Icons.arrow_downward_rounded,
                                             size: 10,
-                                            color: containerColor,
+                                            color: AppColors.surface,
                                           ),
                                           const SizedBox(width: 4),
                                           Text(
@@ -3099,7 +2861,7 @@ class _ModernAlbumSelectionButton extends StatelessWidget {
                                                 ?.copyWith(
                                                   fontSize: 9,
                                                   fontWeight: FontWeight.w600,
-                                                  color: containerColor,
+                                                  color: AppColors.surface,
                                                 ),
                                             overflow: TextOverflow.ellipsis,
                                             maxLines: 1,
@@ -3127,26 +2889,8 @@ class _ModernAlbumSelectionButton extends StatelessWidget {
               ),
             ),
             // Rastgele snowflake PNG'leri arka plan
-            Positioned.fill(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: _buildSnowflakesBackground(context),
-              ),
-            ),
+
             // Christmas Wreath görseli sağ altta
-            Positioned(
-              right: 8,
-              bottom: 8,
-              child: Opacity(
-                opacity: 0.4,
-                child: Image.asset(
-                  'assets/new_year/christmas-wreath.png',
-                  width: 40,
-                  height: 40,
-                  fit: BoxFit.contain,
-                ),
-              ),
-            ),
           ],
         ),
       ),
@@ -3161,72 +2905,6 @@ class _DeleteLimitInfo extends StatefulWidget {
   State<_DeleteLimitInfo> createState() => _DeleteLimitInfoState();
 }
 
-class _ScanProgressCard extends StatelessWidget {
-  const _ScanProgressCard({
-    required this.title,
-    required this.processed,
-    required this.total,
-    required this.fallbackLabel,
-  });
-
-  final String title;
-  final int processed;
-  final int total;
-  final String fallbackLabel;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final hasTotal = total > 0;
-    final progressValue = hasTotal ? (processed / total).clamp(0.0, 1.0) : null;
-    final primaryLabel = title.isEmpty ? fallbackLabel : title;
-    // Sayısal ilerleme gösterimi (0/500, 100/500 gibi)
-    final statusText = hasTotal ? '$processed/$total' : '$processed';
-    final helperText = hasTotal ? 'photos scanned' : 'photos analyzed';
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.primaryContainer.withOpacity(0.25),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            primaryLabel,
-            style: theme.textTheme.titleSmall?.copyWith(
-              color: theme.colorScheme.primary,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(6),
-            child: LinearProgressIndicator(value: progressValue, minHeight: 6),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            statusText,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.primary,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            helperText,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.primary.withOpacity(0.8),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _DeleteLimitInfoState extends State<_DeleteLimitInfo>
     with CubitStateMixin<_DeleteLimitInfo> {
   void _showAddRightsDialog(BuildContext context) {
@@ -3236,7 +2914,7 @@ class _DeleteLimitInfoState extends State<_DeleteLimitInfo>
     showDialog(
       context: context,
       barrierDismissible: true,
-      barrierColor: AppColors.black.withOpacity(0.6),
+      barrierColor: AppColors.black.withValues(alpha: 0.6),
       builder: (dialogContext) => Dialog(
         backgroundColor: AppColors.transparent,
         elevation: 0,
@@ -3259,7 +2937,7 @@ class _DeleteLimitInfoState extends State<_DeleteLimitInfo>
               borderRadius: BorderRadius.circular(24),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.black.withOpacity(0.2),
+                  color: AppColors.black.withValues(alpha: 0.2),
                   blurRadius: 24,
                   spreadRadius: 2,
                   offset: const Offset(0, 12),
@@ -3313,8 +2991,8 @@ class _DeleteLimitInfoState extends State<_DeleteLimitInfo>
                 TextButton(
                   onPressed: () => Navigator.of(dialogContext).pop(),
                   style: TextButton.styleFrom(
-                    foregroundColor: theme.colorScheme.onSurface.withOpacity(
-                      0.7,
+                    foregroundColor: theme.colorScheme.onSurface.withValues(
+                      alpha: 0.7,
                     ),
                   ),
                   child: Text(
@@ -3342,11 +3020,11 @@ class _DeleteLimitInfoState extends State<_DeleteLimitInfo>
 
     return deleteLimitAsync.when(
       loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
       data: (deleteLimit) {
         return isPremiumAsync.when(
           loading: () => const SizedBox.shrink(),
-          error: (_, __) => const SizedBox.shrink(),
+          error: (_, _) => const SizedBox.shrink(),
           data: (isPremium) {
             // Container decoration kaldırıldı
             return Column(
@@ -3371,20 +3049,22 @@ class _DeleteLimitInfoState extends State<_DeleteLimitInfo>
                               end: Alignment.bottomRight,
                               colors: [
                                 theme.colorScheme.primaryContainer,
-                                theme.colorScheme.primaryContainer.withOpacity(
-                                  0.8,
+                                theme.colorScheme.primaryContainer.withValues(
+                                  alpha: 0.8,
                                 ),
                               ],
                             ),
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
-                              color: theme.colorScheme.primary.withOpacity(0.2),
+                              color: theme.colorScheme.primary.withValues(
+                                alpha: 0.2,
+                              ),
                               width: 1,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: theme.colorScheme.primary.withOpacity(
-                                  0.15,
+                                color: theme.colorScheme.primary.withValues(
+                                  alpha: 0.15,
                                 ),
                                 blurRadius: 8,
                                 offset: const Offset(0, 3),
@@ -3410,7 +3090,7 @@ class _DeleteLimitInfoState extends State<_DeleteLimitInfo>
                                               theme
                                                   .colorScheme
                                                   .onPrimaryContainer
-                                                  .withOpacity(0.9),
+                                                  .withValues(alpha: 0.9),
                                               BlendMode.srcATop,
                                             ),
                                             child: Lottie.asset(
@@ -3438,7 +3118,7 @@ class _DeleteLimitInfoState extends State<_DeleteLimitInfo>
                                                   color: theme
                                                       .colorScheme
                                                       .onPrimaryContainer
-                                                      .withOpacity(0.9),
+                                                      .withValues(alpha: 0.9),
                                                   letterSpacing: isPremium
                                                       ? 0.4
                                                       : 0.3,
@@ -3468,7 +3148,9 @@ class _DeleteLimitInfoState extends State<_DeleteLimitInfo>
                                                       color: theme
                                                           .colorScheme
                                                           .primary
-                                                          .withOpacity(0.5),
+                                                          .withValues(
+                                                            alpha: 0.5,
+                                                          ),
                                                       blurRadius: 10,
                                                       offset: const Offset(
                                                         0,
@@ -3479,7 +3161,9 @@ class _DeleteLimitInfoState extends State<_DeleteLimitInfo>
                                                       color: theme
                                                           .colorScheme
                                                           .onPrimaryContainer
-                                                          .withOpacity(0.3),
+                                                          .withValues(
+                                                            alpha: 0.3,
+                                                          ),
                                                       blurRadius: 6,
                                                       offset: const Offset(
                                                         0,
@@ -3506,26 +3190,26 @@ class _DeleteLimitInfoState extends State<_DeleteLimitInfo>
                                       colors: [
                                         theme.colorScheme.primaryContainer,
                                         theme.colorScheme.primaryContainer
-                                            .withOpacity(0.7),
+                                            .withValues(alpha: 0.7),
                                       ],
                                     ),
                                     shape: BoxShape.circle,
                                     border: Border.all(
                                       color: theme.colorScheme.primary
-                                          .withOpacity(0.4),
+                                          .withValues(alpha: 0.4),
                                       width: 2,
                                     ),
                                     boxShadow: [
                                       BoxShadow(
                                         color: theme.colorScheme.primary
-                                            .withOpacity(0.5),
+                                            .withValues(alpha: 0.5),
                                         blurRadius: 12,
                                         offset: const Offset(0, 2),
                                         spreadRadius: 2,
                                       ),
                                       BoxShadow(
                                         color: theme.colorScheme.primary
-                                            .withOpacity(0.3),
+                                            .withValues(alpha: 0.3),
                                         blurRadius: 6,
                                         offset: const Offset(0, 1),
                                         spreadRadius: 0,
@@ -3551,13 +3235,13 @@ class _DeleteLimitInfoState extends State<_DeleteLimitInfo>
                                         color: theme
                                             .colorScheme
                                             .onPrimaryContainer
-                                            .withOpacity(0.15),
+                                            .withValues(alpha: 0.15),
                                         shape: BoxShape.circle,
                                         border: Border.all(
                                           color: theme
                                               .colorScheme
                                               .onPrimaryContainer
-                                              .withOpacity(0.3),
+                                              .withValues(alpha: 0.3),
                                           width: 1.5,
                                         ),
                                       ),
@@ -3596,8 +3280,9 @@ class _DeleteLimitInfoState extends State<_DeleteLimitInfo>
                             Future<void> openAlbumPicker() async {
                               final availableAlbums = albumsData;
                               if (availableAlbums == null ||
-                                  availableAlbums.isEmpty)
+                                  availableAlbums.isEmpty) {
                                 return;
+                              }
                               await _presentAlbumPicker(
                                 context: context,
                                 albums: availableAlbums,
@@ -3627,11 +3312,11 @@ class _DeleteLimitInfoState extends State<_DeleteLimitInfo>
                                     color: theme
                                         .colorScheme
                                         .surfaceContainerHighest
-                                        .withOpacity(0.6),
+                                        .withValues(alpha: 0.6),
                                     borderRadius: BorderRadius.circular(16),
                                     border: Border.all(
                                       color: theme.colorScheme.outline
-                                          .withOpacity(0.2),
+                                          .withValues(alpha: 0.2),
                                       width: 1,
                                     ),
                                   ),
@@ -3643,7 +3328,7 @@ class _DeleteLimitInfoState extends State<_DeleteLimitInfo>
                                         color: canOpenAlbumPicker
                                             ? theme.colorScheme.onSurface
                                             : theme.colorScheme.onSurface
-                                                  .withOpacity(0.3),
+                                                  .withValues(alpha: 0.3),
                                       ),
                                       const SizedBox(width: 8),
                                       Expanded(
@@ -3660,7 +3345,9 @@ class _DeleteLimitInfoState extends State<_DeleteLimitInfo>
                                                     : theme
                                                           .colorScheme
                                                           .onSurface
-                                                          .withOpacity(0.3),
+                                                          .withValues(
+                                                            alpha: 0.3,
+                                                          ),
                                               ),
                                           overflow: TextOverflow.ellipsis,
                                         ),
@@ -3671,9 +3358,9 @@ class _DeleteLimitInfoState extends State<_DeleteLimitInfo>
                                         size: 20,
                                         color: canOpenAlbumPicker
                                             ? theme.colorScheme.onSurface
-                                                  .withOpacity(0.7)
+                                                  .withValues(alpha: 0.7)
                                             : theme.colorScheme.onSurface
-                                                  .withOpacity(0.3),
+                                                  .withValues(alpha: 0.3),
                                       ),
                                     ],
                                   ),
@@ -3691,43 +3378,6 @@ class _DeleteLimitInfoState extends State<_DeleteLimitInfo>
           },
         );
       },
-    );
-  }
-}
-
-class _PurchaseFeatureItem extends StatelessWidget {
-  const _PurchaseFeatureItem({required this.icon, required this.text});
-
-  final IconData icon;
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Row(
-      children: [
-        Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            color: theme.colorScheme.primary.withOpacity(0.15),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(icon, size: 20, color: theme.colorScheme.primary),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            text,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-              fontSize: 14,
-              color: theme.colorScheme.onSurface,
-            ),
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
     );
   }
 }
@@ -3756,6 +3406,9 @@ class _LiquidGlassBottomNavBar extends StatefulWidget {
 }
 
 class _LiquidGlassBottomNavBarState extends State<_LiquidGlassBottomNavBar> {
+  int? _lastDragIndex;
+  double? _dragProgress;
+
   @override
   void initState() {
     super.initState();
@@ -3770,18 +3423,57 @@ class _LiquidGlassBottomNavBarState extends State<_LiquidGlassBottomNavBar> {
 
   void _onTabChanged() {
     if (!mounted) return;
-    
+
     final newIndex = widget.tabController.index;
     widget.onTabChanged(newIndex);
-    
-    // Rebuild için setState - TabController'ın animasyonu otomatik takip edilecek
+
+    if (_dragProgress == null) {
+      setState(() {});
+    }
+  }
+
+  void _handleDragSelection({required double dx, required double maxWidth}) {
+    if (maxWidth <= 0) return;
+    final tabWidth = maxWidth / 4;
+    if (tabWidth <= 0) return;
+
+    final safeDx = dx.clamp(0.0, maxWidth);
+    final progress = (safeDx / tabWidth).clamp(0.0, 3.0);
+    _dragProgress = progress;
+
+    final targetIndex = (safeDx / tabWidth).floor().clamp(0, 3);
+    if (_lastDragIndex != targetIndex) {
+      _lastDragIndex = targetIndex;
+      widget.tabController.animateTo(
+        targetIndex,
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+      );
+      widget.onTabTap(targetIndex);
+    }
+
+    setState(() {});
+  }
+
+  void _completeDragSelection() {
+    final progress = _dragProgress;
+    if (progress == null) return;
+
+    final targetIndex = progress.floor().clamp(0, 3);
+    widget.tabController.animateTo(
+      targetIndex,
+      duration: const Duration(milliseconds: 240),
+      curve: Curves.easeOutCubic,
+    );
+    widget.onTabTap(targetIndex);
+    _dragProgress = null;
+    _lastDragIndex = null;
     setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final l10n = AppLocalizations.of(context)!;
 
     return IgnorePointer(
       ignoring: widget.isScanning,
@@ -3789,213 +3481,167 @@ class _LiquidGlassBottomNavBarState extends State<_LiquidGlassBottomNavBar> {
         opacity: widget.isScanning ? 0.5 : 1.0,
         child: LayoutBuilder(
           builder: (context, constraints) {
-            // Padding'den sonra kalan genişliği kullan (16*2 = 32)
             final availableWidth = constraints.maxWidth;
-            final navWidth = math.min(availableWidth, 360.0);
-            final itemWidth =
-                constraints.maxWidth / 4; // Stack'in gerçek genişliğini kullan
+            final navWidth = availableWidth;
+            final itemWidth = navWidth / 4;
+            final navBg1 = theme.colorScheme.primary.withValues(alpha: 0.15);
+            final navBg2 = theme.colorScheme.primary.withValues(alpha: 0.08);
+            final borderColor = theme.colorScheme.primary.withValues(alpha: 0.3);
 
-            return SizedBox(
-              width: navWidth,
-              height: 56,
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  // Floating background
-                  Positioned.fill(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(28),
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-                        child: Container(
+            return GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onHorizontalDragStart: (details) {
+                _handleDragSelection(
+                  dx: details.localPosition.dx,
+                  maxWidth: constraints.maxWidth,
+                );
+              },
+              onHorizontalDragUpdate: (details) {
+                _handleDragSelection(
+                  dx: details.localPosition.dx,
+                  maxWidth: constraints.maxWidth,
+                );
+              },
+              onHorizontalDragEnd: (_) => _completeDragSelection(),
+              onHorizontalDragCancel: _completeDragSelection,
+              child: SizedBox(
+                width: navWidth,
+                height: 56,
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    // Liquid glass background (no blur)
+                    Positioned.fill(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(28),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 320),
+                          curve: Curves.easeOutCubic,
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(28),
-                            color: theme.colorScheme.surface.withOpacity(0.85),
-                            border: Border.all(
-                              color: theme.colorScheme.outline.withOpacity(
-                                0.08,
-                              ),
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                navBg1,
+                                navBg2,
+                              ],
                             ),
+                            border: Border.all(color: borderColor, width: 1.2),
                             boxShadow: [
                               BoxShadow(
-                                color: theme.colorScheme.shadow.withOpacity(
-                                  0.15,
+                                color: theme.colorScheme.primary.withValues(
+                                  alpha: 0.2,
                                 ),
-                                blurRadius: 18,
-                                offset: const Offset(0, 10),
+                                blurRadius: 12,
+                                offset: const Offset(0, 6),
+                                spreadRadius: -2,
                               ),
                             ],
                           ),
                         ),
                       ),
                     ),
-                  ),
-                  // Sliding indicator - TabController'ın animasyonunu direkt kullan
-                  AnimatedBuilder(
-                    animation: widget.tabController.animation ?? 
-                        AlwaysStoppedAnimation(widget.tabController.index.toDouble()),
-                    builder: (context, child) {
-                      // Indicator için seçili index
-                      final selectedIndex = widget.tabController.index.clamp(0, 3);
-                      final indicatorCenter = (selectedIndex * itemWidth) + (itemWidth / 2);
-                      final indicatorWidth = itemWidth - 12;
-                      final indicatorLeft = indicatorCenter - (indicatorWidth / 2);
+                    // Sliding indicator - TabController'ın animasyonunu direkt kullan
+                    AnimatedBuilder(
+                      animation:
+                          widget.tabController.animation ??
+                          AlwaysStoppedAnimation(
+                            widget.tabController.index.toDouble(),
+                          ),
+                      builder: (context, child) {
+                        final animationValue =
+                            (_dragProgress ??
+                                    widget.tabController.animation?.value ??
+                                    widget.tabController.index.toDouble())
+                                .clamp(0.0, 3.0);
+                        final indicatorCenter =
+                            (animationValue * itemWidth) + (itemWidth / 2);
+                        final indicatorWidth = itemWidth - 12;
+                        final indicatorLeft =
+                            indicatorCenter - (indicatorWidth / 2);
 
-                      // "remaining deletion" text rengiyle aynı renk
-                      final containerColor = theme
-                          .colorScheme
-                          .onPrimaryContainer
-                          .withOpacity(0.8);
+                        final containerColor =
+                            theme.colorScheme.onPrimaryContainer;
 
-                      return Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          // Indicator background
-                          Positioned(
-                            left: indicatorLeft,
-                            top: 4,
-                            bottom: 4,
-                            width: indicatorWidth,
-                            child: DecoratedBox(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(24),
-                                gradient: LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: [
-                                    containerColor,
-                                    containerColor.withOpacity(0.85),
-                                  ],
+                        return Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            Positioned(
+                              left: indicatorLeft,
+                              top: 4,
+                              bottom: 4,
+                              width: indicatorWidth,
+                              child: DecoratedBox(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(24),
+                                  color: containerColor,
                                 ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: containerColor.withOpacity(0.35),
-                                    blurRadius: 16,
-                                    offset: const Offset(0, 4),
-                                    spreadRadius: -2,
-                                  ),
-                                ],
                               ),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                    // Tab buttons - Eşit genişlikte itemlar, seçili item'ın ikonu tam ortada
+                    Positioned.fill(
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: _buildTabButton(
+                              context: context,
+                              theme: theme,
+                              index: 0,
+                              icon: Icons.swipe_rounded,
+                            ),
+                          ),
+                          Expanded(
+                            child: Builder(
+                              builder: (context) {
+                                final selectedTabIndex = context
+                                    .watch<TabSelectionCubit>()
+                                    .state;
+                                return _buildTabButton(
+                                  context: context,
+                                  theme: theme,
+                                  index: 1,
+                                  customWidget: BlurTabIndicator(
+                                    isSelected: selectedTabIndex == 1,
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                          Expanded(
+                            child: Builder(
+                              builder: (context) {
+                                final selectedTabIndex = context
+                                    .watch<TabSelectionCubit>()
+                                    .state;
+                                return _buildTabButton(
+                                  context: context,
+                                  theme: theme,
+                                  index: 2,
+                                  customWidget: DuplicateTabIndicator(
+                                    isSelected: selectedTabIndex == 2,
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                          Expanded(
+                            child: _buildTabButton(
+                              context: context,
+                              theme: theme,
+                              index: 3,
+                              icon: Icons.settings_rounded,
                             ),
                           ),
                         ],
-                      );
-                    },
-                  ),
-                  // Snowman - TabController animasyonu ile tam senkronize
-                  AnimatedBuilder(
-                    animation: widget.tabController.animation ?? 
-                        AlwaysStoppedAnimation(widget.tabController.index.toDouble()),
-                    builder: (context, child) {
-                      // TabController'ın animasyon değerini direkt kullan (0.0 - 3.0 arası)
-                      final tabAnimation = widget.tabController.animation;
-                      final animatedTabPosition = tabAnimation != null 
-                          ? tabAnimation.value 
-                          : widget.tabController.index.toDouble();
-                      
-                      // Clamp değeri 0-3 arasında tut
-                      final clampedPosition = animatedTabPosition.clamp(0.0, 3.0);
-                      
-                      // Her item'ın merkez pozisyonunu hesapla
-                      final currentIndex = clampedPosition.floor().clamp(0, 3);
-                      final nextIndex = clampedPosition.ceil().clamp(0, 3);
-                      
-                      // Eğer aynı index'teyse direkt merkez pozisyonu kullan
-                      double animatedSnowmanCenter;
-                      if (currentIndex == nextIndex) {
-                        animatedSnowmanCenter = (currentIndex * itemWidth) + (itemWidth / 2);
-                      } else {
-                        // İki index arasında smooth interpolasyon
-                        final progress = clampedPosition - currentIndex;
-                        final currentCenter = (currentIndex * itemWidth) + (itemWidth / 2);
-                        final nextCenter = (nextIndex * itemWidth) + (itemWidth / 2);
-                        animatedSnowmanCenter = currentCenter + (nextCenter - currentCenter) * progress;
-                      }
-                      
-                      final animatedSnowmanLeft = animatedSnowmanCenter - 20;
-                      
-                      // Snowman - TabController ile tam senkronize, kesintisiz animasyon
-                      return Positioned(
-                        left: animatedSnowmanLeft,
-                        top: -30,
-                        child: RepaintBoundary(
-                          child: Image.asset(
-                            'assets/new_year/snowman.png',
-                            width: 40,
-                            height: 40,
-                            fit: BoxFit.contain,
-                            filterQuality: FilterQuality.medium,
-                            cacheWidth: 40,
-                            cacheHeight: 40,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                  // Tab buttons - Eşit genişlikte itemlar, seçili item'ın ikonu tam ortada
-                  Positioned.fill(
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: _buildTabButton(
-                            context: context,
-                            theme: theme,
-                            l10n: l10n,
-                            index: 0,
-                            icon: Icons.swipe_rounded,
-                            label: l10n.swipeTab,
-                          ),
-                        ),
-                        Expanded(
-                          child: Builder(
-                            builder: (context) {
-                              final selectedTabIndex = context
-                                  .watch<TabSelectionCubit>()
-                                  .state;
-                              return _buildTabButton(
-                                context: context,
-                                theme: theme,
-                                l10n: l10n,
-                                index: 1,
-                                customWidget: BlurTabIndicator(
-                                  isSelected: selectedTabIndex == 1,
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                        Expanded(
-                          child: Builder(
-                            builder: (context) {
-                              final selectedTabIndex = context
-                                  .watch<TabSelectionCubit>()
-                                  .state;
-                              return _buildTabButton(
-                                context: context,
-                                theme: theme,
-                                l10n: l10n,
-                                index: 2,
-                                customWidget: DuplicateTabIndicator(
-                                  isSelected: selectedTabIndex == 2,
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                        Expanded(
-                          child: _buildTabButton(
-                            context: context,
-                            theme: theme,
-                            l10n: l10n,
-                            index: 3,
-                            icon: Icons.settings_rounded,
-                            label: l10n.settings,
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             );
           },
@@ -4007,17 +3653,14 @@ class _LiquidGlassBottomNavBarState extends State<_LiquidGlassBottomNavBar> {
   Widget _buildTabButton({
     required BuildContext context,
     required ThemeData theme,
-    required AppLocalizations l10n,
     required int index,
     IconData? icon,
-    String? label,
     Widget? customWidget,
   }) {
     final selectedTabIndex = context.watch<TabSelectionCubit>().state;
     final isSelected = selectedTabIndex == index;
 
-    // Seçili item ikon rengi: ekranın arka plan rengiyle aynı
-    final selectedIconColor = theme.colorScheme.background;
+    final selectedIconColor = theme.colorScheme.surface;
 
     return Material(
       color: AppColors.transparent,
@@ -4031,40 +3674,20 @@ class _LiquidGlassBottomNavBarState extends State<_LiquidGlassBottomNavBar> {
         child: Container(
           height: 48,
           width: double.infinity,
-          alignment: Alignment.center, // İçeriği tam ortala
-          child: customWidget != null
-              ? customWidget
-              : Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    // Seçili item'ın ikonu için üstte padding ekle
-                    SizedBox(height: isSelected ? 4 : 0),
-                    Icon(
-                      icon,
-                      size: isSelected ? 20 : 18,
-                      color: isSelected
-                          ? selectedIconColor
-                          : theme.colorScheme.onSurface.withOpacity(0.7),
-                    ),
-                    // Seçili olmayanlarda text göster, seçili olanlarda görünmez ama yer kaplıyor
-                    SizedBox(height: 2),
-                    SizedBox(
-                      height: 13, // Text yüksekliğini sabit tut
-                      child: Opacity(
-                        opacity: isSelected ? 0.0 : 1.0,
-                        child: Text(
-                          label!,
-                          textAlign: TextAlign.center,
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 1,
-                          style: const TextStyle(height: 1.1, fontSize: 11),
-                        ),
-                      ),
-                    ),
-                  ],
+          alignment: Alignment.center,
+          child:
+              customWidget ??
+              Semantics(
+                button: true,
+                selected: isSelected,
+                child: Icon(
+                  icon,
+                  size: isSelected ? 22 : 18,
+                  color: isSelected
+                      ? selectedIconColor
+                      : theme.colorScheme.onSurface.withValues(alpha: 0.75),
                 ),
+              ),
         ),
       ),
     );
@@ -4111,7 +3734,9 @@ class _PermissionFeature extends StatelessWidget {
               Text(
                 description,
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.textTheme.bodyMedium?.color?.withOpacity(0.7),
+                  color: theme.textTheme.bodyMedium?.color?.withValues(
+                    alpha: 0.7,
+                  ),
                 ),
               ),
             ],
@@ -4139,8 +3764,7 @@ Future<void> _showDeleteSuccessDialog(
   }
 
   // Root context'i başta sakla - reklam akışından sonra kullanmak için
-  final rootNavigator = Navigator.of(context, rootNavigator: true);
-  final rootContext = rootNavigator.context;
+  final dialogContext = context;
   final l10n = AppLocalizations.of(context)!;
   final theme = Theme.of(context);
 
@@ -4209,21 +3833,8 @@ Future<void> _showDeleteSuccessDialog(
     debugPrint('💰 [SwipePage] Premium user, skipping ad...');
   }
 
-  // Context kontrolü - ad gösterildikten sonra
-  // Root context'i kullan - başta sakladığımız root context'i kullan
-  BuildContext dialogContext;
-  if (context.mounted) {
-    dialogContext = context;
-  } else {
-    // Context unmount olduysa başta sakladığımız root context'i kullan
-    dialogContext = rootContext;
-    debugPrint(
-      '✅ [SwipePage] Using root navigator context for dialog (original context unmounted)',
-    );
-  }
-
   // Dialog'u göster (ad gösterilmiş olsun veya olmasın - HER KOŞULDA)
-  // Root navigator kullanarak context unmount olsa bile dialog göster
+  // dialogContext başta saklandı, async gap sonrası kullanım güvenli
   debugPrint(
     '✅ [SwipePage] Showing cleanup complete dialog - deletedCount: $deletedCount',
   );
@@ -4232,16 +3843,16 @@ Future<void> _showDeleteSuccessDialog(
     debugPrint('🎬 [SwipePage] Calling showDialog...');
     await Future.delayed(const Duration(milliseconds: 100)); // Kısa bir bekleme
     await showDialog(
-      context: dialogContext,
+      context: dialogContext, // ignore: use_build_context_synchronously
       useRootNavigator: true, // Root navigator kullan
       barrierDismissible: true,
-      barrierColor: AppColors.black.withOpacity(0.5),
+      barrierColor: AppColors.black.withValues(alpha: 0.5),
       builder: (dialogContext) {
         debugPrint('🎬 [SwipePage] Dialog builder called');
 
         // Bottom navigation bar'daki container rengiyle aynı
-        final containerColor = theme.colorScheme.onPrimaryContainer.withOpacity(
-          0.8,
+        final containerColor = theme.colorScheme.onPrimaryContainer.withValues(
+          alpha: 0.8,
         );
 
         return Dialog(
@@ -4268,7 +3879,7 @@ Future<void> _showDeleteSuccessDialog(
                     borderRadius: BorderRadius.circular(28),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.black.withOpacity(0.2),
+                        color: AppColors.black.withValues(alpha: 0.2),
                         blurRadius: 32,
                         spreadRadius: 0,
                         offset: const Offset(0, 12),
@@ -4283,21 +3894,16 @@ Future<void> _showDeleteSuccessDialog(
                         width: 100,
                         height: 100,
                         decoration: BoxDecoration(
-                          color: theme.colorScheme.primaryContainer.withOpacity(
-                            0.2,
+                          color: theme.colorScheme.primaryContainer.withValues(
+                            alpha: 0.2,
                           ),
                           shape: BoxShape.circle,
                         ),
                         child: Center(
-                          child: SizedBox(
-                            width: 80,
-                            height: 80,
-                            child: Lottie.asset(
-                              'assets/new_year/Santa surprise gift.json',
-                              fit: BoxFit.contain,
-                              repeat: true,
-                              animate: true,
-                            ),
+                          child: Icon(
+                            Icons.auto_awesome_rounded,
+                            size: 64,
+                            color: theme.colorScheme.primary,
                           ),
                         ),
                       ),
@@ -4321,7 +3927,7 @@ Future<void> _showDeleteSuccessDialog(
                         ),
                         decoration: BoxDecoration(
                           color: theme.colorScheme.surfaceContainerHighest
-                              .withOpacity(0.5),
+                              .withValues(alpha: 0.5),
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: Column(
@@ -4377,7 +3983,9 @@ Future<void> _showDeleteSuccessDialog(
                           deletedSizeMB.toStringAsFixed(1),
                         ),
                         style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurface.withOpacity(0.75),
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.75,
+                          ),
                           fontSize: 15,
                           height: 1.6,
                         ),
@@ -4397,32 +4005,6 @@ Future<void> _showDeleteSuccessDialog(
                   ),
                 ),
                 // Decorative New Year elements
-                Positioned(
-                  top: -30,
-                  right: -30,
-                  child: Opacity(
-                    opacity: 0.3,
-                    child: Image.asset(
-                      'assets/new_year/gift-box.png',
-                      width: 100,
-                      height: 100,
-                      fit: BoxFit.contain,
-                    ),
-                  ),
-                ),
-                Positioned(
-                  bottom: -20,
-                  left: -20,
-                  child: Opacity(
-                    opacity: 0.25,
-                    child: Image.asset(
-                      'assets/new_year/candy-cane.png',
-                      width: 80,
-                      height: 80,
-                      fit: BoxFit.contain,
-                    ),
-                  ),
-                ),
               ],
             ),
           ),
@@ -4579,6 +4161,7 @@ class _FirstPaywallDialogState extends State<_FirstPaywallDialog>
     await context.read<DeleteLimitCubit>().refresh();
 
     // Dialog'u kapat
+    if (!mounted) return;
     Navigator.of(context).pop();
 
     // Premium success dialog göster
@@ -4604,14 +4187,12 @@ class _FirstPaywallDialogState extends State<_FirstPaywallDialog>
     final pricePrimaryTextColor = AppColors.textPrimary(theme.brightness);
     final priceSecondaryTextColor = AppColors.textSecondary(theme.brightness);
     // Dinamik container rengi (premium durumuna göre)
-    final isPremiumAsync = context.watch<PremiumCubit>().state;
-    final isPremium = isPremiumAsync.valueOrNull ?? false;
-    final containerColor = theme.colorScheme.onPrimaryContainer.withOpacity(
-      0.8,
+    final containerColor = theme.colorScheme.onPrimaryContainer.withValues(
+      alpha: 0.8,
     );
 
     return Dialog(
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppColors.transparent,
       insetPadding: const EdgeInsets.all(16),
       child: Container(
         constraints: const BoxConstraints(maxWidth: 500),
@@ -4620,7 +4201,7 @@ class _FirstPaywallDialogState extends State<_FirstPaywallDialog>
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: AppColors.black.withOpacity(0.2),
+              color: AppColors.black.withValues(alpha: 0.2),
               blurRadius: 24,
               offset: const Offset(0, 8),
             ),
@@ -4640,8 +4221,8 @@ class _FirstPaywallDialogState extends State<_FirstPaywallDialog>
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: [
-                      containerColor.withOpacity(0.15),
-                      containerColor.withOpacity(0.0),
+                      containerColor.withValues(alpha: 0.15),
+                      containerColor.withValues(alpha: 0.0),
                     ],
                   ),
                 ),
@@ -4657,8 +4238,8 @@ class _FirstPaywallDialogState extends State<_FirstPaywallDialog>
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: [
-                      AppColors.accent.withOpacity(0.12),
-                      AppColors.accent.withOpacity(0.0),
+                      AppColors.accent.withValues(alpha: 0.12),
+                      AppColors.accent.withValues(alpha: 0.0),
                     ],
                   ),
                 ),
@@ -4674,8 +4255,8 @@ class _FirstPaywallDialogState extends State<_FirstPaywallDialog>
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: [
-                      AppColors.secondary.withOpacity(0.1),
-                      AppColors.secondary.withOpacity(0.0),
+                      AppColors.secondary.withValues(alpha: 0.1),
+                      AppColors.secondary.withValues(alpha: 0.0),
                     ],
                   ),
                 ),
@@ -4712,25 +4293,25 @@ class _FirstPaywallDialogState extends State<_FirstPaywallDialog>
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [
-                        containerColor.withOpacity(0.2),
-                        AppColors.accent.withOpacity(0.15),
-                        AppColors.secondary.withOpacity(0.1),
+                        containerColor.withValues(alpha: 0.2),
+                        AppColors.accent.withValues(alpha: 0.15),
+                        AppColors.secondary.withValues(alpha: 0.1),
                       ],
                     ),
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: containerColor.withOpacity(0.3),
+                      color: containerColor.withValues(alpha: 0.3),
                       width: 2,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: containerColor.withOpacity(0.3),
+                        color: containerColor.withValues(alpha: 0.3),
                         blurRadius: 15,
                         spreadRadius: 2,
                         offset: const Offset(0, 6),
                       ),
                       BoxShadow(
-                        color: AppColors.accent.withOpacity(0.2),
+                        color: AppColors.accent.withValues(alpha: 0.2),
                         blurRadius: 20,
                         spreadRadius: 1,
                         offset: const Offset(0, 8),
@@ -4810,7 +4391,7 @@ class _FirstPaywallDialogState extends State<_FirstPaywallDialog>
                           fontWeight: FontWeight.w900,
                           fontSize: 10,
                           letterSpacing: 1.2,
-                          color: theme.colorScheme.background,
+                          color: theme.colorScheme.surface,
                         ),
                       ),
                     ),
@@ -4824,13 +4405,13 @@ class _FirstPaywallDialogState extends State<_FirstPaywallDialog>
                         gradient: LinearGradient(
                           colors: [
                             AppColors.success,
-                            AppColors.success.withOpacity(0.8),
+                            AppColors.success.withValues(alpha: 0.8),
                           ],
                         ),
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.success.withOpacity(0.3),
+                            color: AppColors.success.withValues(alpha: 0.3),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           ),
@@ -4870,17 +4451,23 @@ class _FirstPaywallDialogState extends State<_FirstPaywallDialog>
                     ),
                     decoration: BoxDecoration(
                       color: isDark
-                          ? theme.colorScheme.primaryContainer.withOpacity(0.3)
-                          : theme.colorScheme.primaryContainer.withOpacity(0.8),
+                          ? theme.colorScheme.primaryContainer.withValues(
+                              alpha: 0.3,
+                            )
+                          : theme.colorScheme.primaryContainer.withValues(
+                              alpha: 0.8,
+                            ),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: containerColor.withOpacity(isDark ? 0.3 : 0.5),
+                        color: containerColor.withValues(
+                          alpha: isDark ? 0.3 : 0.5,
+                        ),
                         width: 2,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: containerColor.withOpacity(
-                            isDark ? 0.15 : 0.3,
+                          color: containerColor.withValues(
+                            alpha: isDark ? 0.15 : 0.3,
                           ),
                           blurRadius: 15,
                           spreadRadius: 1,
@@ -4925,12 +4512,12 @@ class _FirstPaywallDialogState extends State<_FirstPaywallDialog>
                                             decorationThickness: 2,
                                             decorationColor:
                                                 priceSecondaryTextColor
-                                                    .withOpacity(
-                                                      isDark ? 0.8 : 0.7,
+                                                    .withValues(
+                                                      alpha: isDark ? 0.8 : 0.7,
                                                     ),
                                             color: priceSecondaryTextColor
-                                                .withOpacity(
-                                                  isDark ? 0.85 : 0.65,
+                                                .withValues(
+                                                  alpha: isDark ? 0.85 : 0.65,
                                                 ),
                                             fontSize: 11,
                                             fontWeight: FontWeight.w500,
@@ -4945,11 +4532,13 @@ class _FirstPaywallDialogState extends State<_FirstPaywallDialog>
                                       vertical: 2,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: AppColors.success.withOpacity(0.2),
+                                      color: AppColors.success.withValues(
+                                        alpha: 0.2,
+                                      ),
                                       borderRadius: BorderRadius.circular(6),
                                       border: Border.all(
-                                        color: AppColors.success.withOpacity(
-                                          0.4,
+                                        color: AppColors.success.withValues(
+                                          alpha: 0.4,
                                         ),
                                         width: 1,
                                       ),
@@ -5060,13 +4649,15 @@ class _FirstPaywallDialogState extends State<_FirstPaywallDialog>
                             ),
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
-                              color: containerColor.withOpacity(0.9),
+                              color: containerColor.withValues(alpha: 0.9),
                               width: 1.5,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: containerColor.withOpacity(
-                                  (isDark ? 0.3 : 0.5) * _pulseAnimation.value,
+                                color: containerColor.withValues(
+                                  alpha:
+                                      (isDark ? 0.3 : 0.5) *
+                                      _pulseAnimation.value,
                                 ),
                                 blurRadius: 25 * _pulseAnimation.value,
                                 spreadRadius: 2 * _pulseAnimation.value,
@@ -5141,7 +4732,7 @@ class _FirstPaywallDialogState extends State<_FirstPaywallDialog>
                     ),
                     minimumSize: Size.zero,
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    side: const BorderSide(color: Colors.transparent),
+                    side: const BorderSide(color: AppColors.transparent),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -5151,7 +4742,7 @@ class _FirstPaywallDialogState extends State<_FirstPaywallDialog>
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 13,
-                      color: theme.colorScheme.onSurface.withOpacity(0.7),
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                     ),
                   ),
                 ),
@@ -5165,14 +4756,18 @@ class _FirstPaywallDialogState extends State<_FirstPaywallDialog>
                       Icon(
                         Icons.lock_outline,
                         size: 12,
-                        color: theme.colorScheme.onSurface.withOpacity(0.5),
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.5,
+                        ),
                       ),
                       const SizedBox(width: 4),
                       Text(
                         l10n.noSubscriptionsNoFees,
                         style: theme.textTheme.bodySmall?.copyWith(
                           fontSize: 10,
-                          color: theme.colorScheme.onSurface.withOpacity(0.5),
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.5,
+                          ),
                         ),
                       ),
                     ],
@@ -5204,22 +4799,28 @@ class _FirstPaywallDialogState extends State<_FirstPaywallDialog>
           end: Alignment.bottomRight,
           colors: isDark
               ? [
-                  theme.colorScheme.surfaceContainerHighest.withOpacity(0.4),
-                  theme.colorScheme.surfaceContainerHighest.withOpacity(0.2),
+                  theme.colorScheme.surfaceContainerHighest.withValues(
+                    alpha: 0.4,
+                  ),
+                  theme.colorScheme.surfaceContainerHighest.withValues(
+                    alpha: 0.2,
+                  ),
                 ]
               : [
-                  theme.colorScheme.surface.withOpacity(0.95),
-                  theme.colorScheme.surfaceContainerHighest.withOpacity(0.6),
+                  theme.colorScheme.surface.withValues(alpha: 0.95),
+                  theme.colorScheme.surfaceContainerHighest.withValues(
+                    alpha: 0.6,
+                  ),
                 ],
         ),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: color.withOpacity(isDark ? 0.25 : 0.18),
+          color: color.withValues(alpha: isDark ? 0.25 : 0.18),
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(isDark ? 0.15 : 0.12),
+            color: color.withValues(alpha: isDark ? 0.15 : 0.12),
             blurRadius: 14,
             spreadRadius: 0,
             offset: const Offset(0, 6),
@@ -5236,13 +4837,19 @@ class _FirstPaywallDialogState extends State<_FirstPaywallDialog>
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [color.withOpacity(0.25), color.withOpacity(0.12)],
+                colors: [
+                  color.withValues(alpha: 0.25),
+                  color.withValues(alpha: 0.12),
+                ],
               ),
               shape: BoxShape.circle,
-              border: Border.all(color: color.withOpacity(0.35), width: 1.5),
+              border: Border.all(
+                color: color.withValues(alpha: 0.35),
+                width: 1.5,
+              ),
               boxShadow: [
                 BoxShadow(
-                  color: color.withOpacity(0.2),
+                  color: color.withValues(alpha: 0.2),
                   blurRadius: 10,
                   spreadRadius: 1,
                   offset: const Offset(0, 3),
@@ -5269,9 +4876,12 @@ class _FirstPaywallDialogState extends State<_FirstPaywallDialog>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.12),
+              color: color.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: color.withOpacity(0.25), width: 1),
+              border: Border.all(
+                color: color.withValues(alpha: 0.25),
+                width: 1,
+              ),
             ),
             child: Icon(Icons.check_rounded, size: 12, color: color),
           ),

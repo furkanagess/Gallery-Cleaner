@@ -23,7 +23,7 @@ import '../widgets/sound_toggle_button.dart' show SoundToggleButton;
 
 // Duplicate Tab
 class DuplicateTab extends StatefulWidget {
-  const DuplicateTab();
+  const DuplicateTab({super.key});
 
   @override
   State<DuplicateTab> createState() => DuplicateTabState();
@@ -33,13 +33,10 @@ class DuplicateTabState extends State<DuplicateTab>
     with CubitStateMixin<DuplicateTab> {
   final SoundService _soundService = SoundService();
   final PreferencesService _prefsService = PreferencesService();
-  DuplicateDetectionMode _duplicateMode = DuplicateDetectionMode.balanced;
+  DuplicateDetectionMode _duplicateMode =
+      DuplicateDetectionMode.mediumSensitivity;
   bool _isSoundEnabled = true;
-  int _currentTipIndex = 0;
-  Timer? _tipTimer;
   StreamSubscription? _duplicateDetectionSubscription;
-  final List<int> _tipOrder = [];
-  int _tipOrderIndex = 0;
 
   @override
   void initState() {
@@ -78,7 +75,6 @@ class DuplicateTabState extends State<DuplicateTab>
           debugPrint(
             '✅ [DuplicateTab] Scan completed (notification and navigation will be handled by SwipePage)',
           );
-          _stopTipRotation();
         }
       });
     });
@@ -87,7 +83,6 @@ class DuplicateTabState extends State<DuplicateTab>
   @override
   void dispose() {
     _soundService.stopScannerSound();
-    _tipTimer?.cancel();
     _duplicateDetectionSubscription?.cancel();
     super.dispose();
   }
@@ -107,72 +102,11 @@ class DuplicateTabState extends State<DuplicateTab>
     await _soundService.setSoundEnabled(currentState);
 
     // Eğer ses açıldıysa ve scan devam ediyorsa sesi başlat
-    if (currentState) {
+    if (currentState && mounted) {
       final duplicateState = context.read<DuplicateDetectionCubit>().state;
       if (duplicateState.isScanning) {
         _soundService.playScannerSound();
       }
-    }
-  }
-
-  void _startTipRotation() {
-    _tipTimer?.cancel();
-    // Random tip sırası oluştur (15 tip var)
-    if (_tipOrder.isEmpty) {
-      _tipOrder.addAll(List.generate(15, (index) => index));
-      _tipOrder.shuffle();
-      _tipOrderIndex = 0;
-      // İlk tipi de random seç
-      _currentTipIndex = _tipOrder[_tipOrderIndex];
-    }
-    _tipTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
-      if (mounted) {
-        cubitSetState(() {
-          _tipOrderIndex = (_tipOrderIndex + 1) % _tipOrder.length;
-          _currentTipIndex = _tipOrder[_tipOrderIndex];
-        });
-      }
-    });
-  }
-
-  void _stopTipRotation() {
-    _tipTimer?.cancel();
-  }
-
-  String _getCurrentTip(AppLocalizations l10n) {
-    switch (_currentTipIndex) {
-      case 0:
-        return l10n.scanTip1;
-      case 1:
-        return l10n.scanTip2;
-      case 2:
-        return l10n.scanTip3;
-      case 3:
-        return l10n.scanTip4;
-      case 4:
-        return l10n.scanTip5;
-      case 5:
-        return l10n.scanTip6;
-      case 6:
-        return l10n.scanTip7;
-      case 7:
-        return l10n.scanTip8;
-      case 8:
-        return l10n.scanTip9;
-      case 9:
-        return l10n.scanTip10;
-      case 10:
-        return l10n.scanTip11;
-      case 11:
-        return l10n.scanTip12;
-      case 12:
-        return l10n.scanTip13;
-      case 13:
-        return l10n.scanTip14;
-      case 14:
-        return l10n.scanTip15;
-      default:
-        return l10n.scanTip1;
     }
   }
 
@@ -185,15 +119,15 @@ class DuplicateTabState extends State<DuplicateTab>
     final duplicateState = context.watch<DuplicateDetectionCubit>().state;
 
     // Bottom navigation bar'daki container rengiyle aynı
-    final containerColor = theme.colorScheme.onPrimaryContainer.withOpacity(
-      0.8,
+    final containerColor = theme.colorScheme.onPrimaryContainer.withValues(
+      alpha: 0.8,
     );
 
     final isScanning = duplicateState.isScanning;
 
     return PopScope(
       canPop: !isScanning,
-      onPopInvoked: (didPop) {
+      onPopInvokedWithResult: (didPop, result) {
         if (!didPop && isScanning) {
           // Kullanıcı scan sırasında geri tuşuna bastı, bilgilendirme göster
           ScaffoldMessenger.of(context).showSnackBar(
@@ -218,153 +152,132 @@ class DuplicateTabState extends State<DuplicateTab>
               ? [selectedAlbum]
               : albums.where((a) => !a.isAll).toList();
 
-          // Tarama yapılırken full-screen overlay göster
+          // Tarama yapılırken full-screen overlay göster (blur tab ile aynı yapı)
           if (isScanning) {
-            // Timer'ı başlat
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              _startTipRotation();
-            });
-
-            return Center(
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 32,
-                    vertical: 24,
+            return Stack(
+              children: [
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: ColoredBox(
+                      color: theme.colorScheme.scrim.withValues(alpha: 0.32),
+                    ),
                   ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Ses açma/kapama butonu
-                      Align(
-                        alignment: Alignment.topRight,
-                        child: SoundToggleButton(
-                          isSoundEnabled: _isSoundEnabled,
-                          onToggle: () {
-                            // Anında state'i CubitStateMixin ile güncelle
-                            cubitSetState(() {
-                              _isSoundEnabled = !_isSoundEnabled;
-                            });
-                            // Sonra async işlemi yap
-                            _toggleSound();
-                          },
-                        ),
+                ),
+                Center(
+                  child: SingleChildScrollView(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 18,
+                        vertical: 20,
                       ),
-                      const SizedBox(height: 8),
-                      // Lottie animasyonu - daha büyük
-                      SizedBox(
-                        width: 200,
-                        height: 200,
-                        child: Lottie.asset(
-                          'assets/lottie/gallery_loading.json',
-                          fit: BoxFit.contain,
-                          repeat: true,
-                          animate: true,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      // Progress bilgisi - scan başladığı andan itibaren göster
-                      ScanProgressCard(
-                        title:
-                            duplicateState.currentAlbum ??
-                            l10n.scanningDuplicatePhotos,
-                        processed: duplicateState.processedCount,
-                        total: duplicateState.totalCount,
-                        fallbackLabel: l10n.scanningDuplicatePhotos,
-                      ),
-                      const SizedBox(height: 20),
-                      // Değişen textler
-                      AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 500),
-                        transitionBuilder: (child, animation) {
-                          return FadeTransition(
-                            opacity: animation,
-                            child: child,
-                          );
-                        },
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 420),
                         child: Container(
-                          key: ValueKey(_currentTipIndex),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 14,
-                          ),
+                          padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                containerColor.withOpacity(0.3),
-                                containerColor.withOpacity(0.2),
-                              ],
-                            ),
-                            borderRadius: BorderRadius.circular(16),
+                            color: theme.colorScheme.surface,
+                            borderRadius: BorderRadius.circular(22),
                             border: Border.all(
-                              color: containerColor.withOpacity(0.3),
-                              width: 1.5,
+                              color: theme.colorScheme.outline.withValues(
+                                alpha: 0.25,
+                              ),
+                              width: 1,
                             ),
                           ),
-                          child: Row(
+                          child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(
-                                Icons.lightbulb_outline_rounded,
-                                size: 20,
-                                color: containerColor,
-                              ),
-                              const SizedBox(width: 12),
-                              Flexible(
-                                child: Text(
-                                  _getCurrentTip(l10n),
-                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                    color: theme.colorScheme.onSurface,
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 13,
-                                    height: 1.4,
+                              Row(
+                                children: [
+                                  Container(
+                                    width: 40,
+                                    height: 40,
+                                    decoration: AppDecorations.glassSurface(
+                                      borderRadius: 14,
+                                      tint: theme.colorScheme.primaryContainer,
+                                      opacity: 0.35,
+                                    ),
+                                    child: Icon(
+                                      Icons.content_copy_rounded,
+                                      size: 20,
+                                      color: containerColor,
+                                    ),
                                   ),
-                                  textAlign: TextAlign.center,
+                                  const Spacer(),
+                                  SoundToggleButton(
+                                    isSoundEnabled: _isSoundEnabled,
+                                    onToggle: () {
+                                      cubitSetState(() {
+                                        _isSoundEnabled = !_isSoundEnabled;
+                                      });
+                                      _toggleSound();
+                                    },
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 10),
+                              SizedBox(
+                                width: 160,
+                                height: 160,
+                                child: Lottie.asset(
+                                  'assets/lottie/gallery_loading.json',
+                                  fit: BoxFit.contain,
+                                  repeat: true,
+                                  animate: true,
+                                ),
+                              ),
+                              const SizedBox(height: 14),
+                              ScanProgressCard(
+                                title:
+                                    duplicateState.currentAlbum ??
+                                    l10n.scanningDuplicatePhotos,
+                                processed: duplicateState.processedCount,
+                                total: duplicateState.totalCount,
+                                fallbackLabel: l10n.scanningDuplicatePhotos,
+                                icon: Icons.tune_rounded,
+                              ),
+                              const SizedBox(height: 14),
+                              SizedBox(
+                                width: double.infinity,
+                                child: FilledButton.tonalIcon(
+                                  onPressed: () {
+                                    context
+                                        .read<DuplicateDetectionCubit>()
+                                        .cancel();
+                                  },
+                                  icon: const Icon(Icons.stop_rounded),
+                                  label: Text(l10n.stop),
+                                  style: FilledButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 14,
+                                    ),
+                                    backgroundColor:
+                                        theme.colorScheme.errorContainer,
+                                    foregroundColor:
+                                        theme.colorScheme.onErrorContainer,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                    side: BorderSide(
+                                      color: theme.colorScheme.error.withValues(
+                                        alpha: 0.25,
+                                      ),
+                                      width: 1.2,
+                                    ),
+                                  ),
                                 ),
                               ),
                             ],
                           ),
                         ),
                       ),
-                      const SizedBox(height: 20),
-                      // Durdur butonu - tüm ekran genişliğinde
-                      SizedBox(
-                        width: double.infinity,
-                        child: FilledButton.icon(
-                          onPressed: () {
-                            _stopTipRotation();
-                            context.read<DuplicateDetectionCubit>().cancel();
-                          },
-                          icon: const Icon(Icons.stop),
-                          label: Text(l10n.stop),
-                          style: FilledButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 24,
-                              vertical: 16,
-                            ),
-                            backgroundColor: theme.colorScheme.error,
-                            foregroundColor: theme.colorScheme.onError,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            side: BorderSide(
-                              color: AppColors.error.withOpacity(0.9),
-                              width: 1.5,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
-              ),
+              ],
             );
           } else {
-            // Scan durduğunda timer'ı durdur
-            _stopTipRotation();
+            // Scan durduğunda ekstra UI timer yok
           }
 
           return SingleChildScrollView(
@@ -383,13 +296,12 @@ class DuplicateTabState extends State<DuplicateTab>
                     final duplicateScanLimitAsync = context
                         .watch<DuplicateScanLimitCubit>()
                         .state;
-                    final isPremiumAsync = context
-                        .watch<PremiumCubit>()
-                        .state;
+                    final isPremiumAsync = context.watch<PremiumCubit>().state;
 
                     return duplicateScanLimitAsync.when(
                       loading: () => const SizedBox.shrink(),
-                      error: (_, __) => const SizedBox.shrink(),
+                      error: (e, _) =>
+                          Center(child: Text(l10n.errorMessage(e.toString()))),
                       data: (scanLimit) {
                         return _buildStartScanButton(
                           context,
@@ -427,14 +339,14 @@ class DuplicateTabState extends State<DuplicateTab>
 
     return isPremiumAsync.when(
       loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (e, _) => Center(child: Text(l10n.errorMessage(e.toString()))),
       data: (isPremium) {
         final hasNoScanRights = !isPremium && scanLimit <= 0;
 
         // Önce önceki sonuçlar varsa "Start New Scan" + "View Last Results"
         if (hasResults) {
           final containerColor = theme.colorScheme.onPrimaryContainer
-              .withOpacity(0.8);
+              .withValues(alpha: 0.8);
 
           return Row(
             children: [
@@ -449,7 +361,7 @@ class DuplicateTabState extends State<DuplicateTab>
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     minimumSize: const Size(0, 56),
                     side: BorderSide(
-                      color: containerColor.withOpacity(0.5),
+                      color: containerColor.withValues(alpha: 0.5),
                       width: 1.5,
                     ),
                   ),
@@ -469,7 +381,7 @@ class DuplicateTabState extends State<DuplicateTab>
                     backgroundColor: containerColor,
                     foregroundColor: AppColors.white,
                     side: BorderSide(
-                      color: containerColor.withOpacity(0.9),
+                      color: containerColor.withValues(alpha: 0.9),
                       width: 1.5,
                     ),
                   ),
@@ -492,9 +404,9 @@ class DuplicateTabState extends State<DuplicateTab>
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 minimumSize: const Size(double.infinity, 56),
                 backgroundColor: premiumColor,
-                foregroundColor: theme.colorScheme.background,
+                foregroundColor: theme.colorScheme.surface,
                 side: BorderSide(
-                  color: premiumColor.withOpacity(0.9),
+                  color: premiumColor.withValues(alpha: 0.9),
                   width: 1.5,
                 ),
               ),
@@ -507,11 +419,15 @@ class DuplicateTabState extends State<DuplicateTab>
           future: _checkAlbumsHavePhotos(selectedAlbums),
           builder: (context, albumsSnapshot) {
             final hasPhotosInAlbums = albumsSnapshot.data ?? false;
-            final isLoadingAlbums = albumsSnapshot.connectionState ==
-                ConnectionState.waiting;
+            final isLoadingAlbums =
+                albumsSnapshot.connectionState == ConnectionState.waiting;
 
             return FutureBuilder<
-              ({int estimatedSeconds, int totalPhotoCount, bool hasLimitWarning})
+              ({
+                int estimatedSeconds,
+                int totalPhotoCount,
+                bool hasLimitWarning,
+              })
             >(
               future: estimateDuplicateScanDuration(selectedAlbums),
               builder: (context, snapshot) {
@@ -539,18 +455,18 @@ class DuplicateTabState extends State<DuplicateTab>
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                             colors: [
-                              AppColors.warning.withOpacity(0.2),
-                              AppColors.warning.withOpacity(0.1),
+                              AppColors.warning.withValues(alpha: 0.2),
+                              AppColors.warning.withValues(alpha: 0.1),
                             ],
                           ),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: AppColors.warning.withOpacity(0.3),
+                            color: AppColors.warning.withValues(alpha: 0.3),
                             width: 1.5,
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: AppColors.warning.withOpacity(0.15),
+                              color: AppColors.warning.withValues(alpha: 0.15),
                               blurRadius: 12,
                               offset: const Offset(0, 4),
                               spreadRadius: 0,
@@ -584,91 +500,158 @@ class DuplicateTabState extends State<DuplicateTab>
                       context: context,
                       theme: theme,
                       l10n: l10n,
-                      onPressed: isScanning ||
+                      onPressed:
+                          isScanning ||
                               hasNoScanRights ||
                               !hasPhotosInAlbums ||
                               isLoadingAlbums
                           ? null
                           : () async {
-                              final albumNames = selectedAlbums
-                                  .map((a) => a.name)
-                                  .join(', ');
-
                               final confirmed = await showDialog<bool>(
                                 context: context,
                                 builder: (dialogContext) {
                                   final containerColor = theme
                                       .colorScheme
                                       .onPrimaryContainer
-                                      .withOpacity(0.8);
+                                      .withValues(alpha: 0.8);
 
                                   return AlertDialog(
                                     title: Text(l10n.confirmDuplicateScan),
-                                    content: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(l10n.confirmDuplicateScanMessage),
-                                        const SizedBox(height: 12),
-                                        Container(
-                                          padding: const EdgeInsets.all(12),
-                                          decoration: BoxDecoration(
-                                            color:
-                                                containerColor.withOpacity(0.3),
-                                            borderRadius:
-                                                BorderRadius.circular(8),
-                                            border: Border.all(
-                                              color: containerColor
-                                                  .withOpacity(0.2),
-                                              width: 1,
+                                    content: Container(
+                                      decoration: BoxDecoration(
+                                        color: theme
+                                            .colorScheme
+                                            .surfaceContainerHighest
+                                            .withValues(alpha: 0.9),
+                                        borderRadius: BorderRadius.circular(14),
+                                        border: Border.all(
+                                          color: containerColor.withValues(
+                                            alpha: 0.25,
+                                          ),
+                                          width: 1.2,
+                                        ),
+                                      ),
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(10),
+                                        child: ConstrainedBox(
+                                          constraints: BoxConstraints(
+                                            maxHeight:
+                                                MediaQuery.of(
+                                                  dialogContext,
+                                                ).size.height *
+                                                0.35,
+                                          ),
+                                          child: SingleChildScrollView(
+                                            child: Wrap(
+                                              spacing: 8,
+                                              runSpacing: 8,
+                                              children: selectedAlbums
+                                                  .map(
+                                                    (album) => Container(
+                                                      padding:
+                                                          const EdgeInsets.symmetric(
+                                                            horizontal: 10,
+                                                            vertical: 6,
+                                                          ),
+                                                      decoration: BoxDecoration(
+                                                        color: theme
+                                                            .colorScheme
+                                                            .surface
+                                                            .withValues(
+                                                              alpha: 0.9,
+                                                            ),
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              999,
+                                                            ),
+                                                        border: Border.all(
+                                                          color: containerColor
+                                                              .withValues(
+                                                                alpha: 0.4,
+                                                              ),
+                                                          width: 1.1,
+                                                        ),
+                                                      ),
+                                                      child: Row(
+                                                        mainAxisSize:
+                                                            MainAxisSize.min,
+                                                        children: [
+                                                          Icon(
+                                                            Icons
+                                                                .folder_rounded,
+                                                            size: 16,
+                                                            color:
+                                                                containerColor,
+                                                          ),
+                                                          const SizedBox(
+                                                            width: 6,
+                                                          ),
+                                                          Text(
+                                                            album.name,
+                                                            style: theme
+                                                                .textTheme
+                                                                .bodyMedium
+                                                                ?.copyWith(
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w600,
+                                                                  color: theme
+                                                                      .colorScheme
+                                                                      .onSurface,
+                                                                ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  )
+                                                  .toList(),
                                             ),
                                           ),
-                                          child: Row(
-                                            children: [
-                                              Icon(
-                                                Icons.folder_rounded,
-                                                size: 20,
-                                                color: containerColor,
-                                              ),
-                                              const SizedBox(width: 8),
-                                              Expanded(
-                                                child: Text(
-                                                  albumNames,
-                                                  style: theme
-                                                      .textTheme.bodyMedium
-                                                      ?.copyWith(
-                                                        color: containerColor,
-                                                        fontWeight:
-                                                            FontWeight.w600,
-                                                      ),
-                                                  maxLines: 3,
-                                                  overflow:
-                                                      TextOverflow.ellipsis,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
                                         ),
-                                      ],
+                                      ),
                                     ),
                                     actions: [
-                                      TextButton(
-                                        onPressed: () =>
-                                            Navigator.of(dialogContext).pop(
-                                              false,
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            flex: 2,
+                                            child: SizedBox(
+                                              height: 48,
+                                              child: TextButton(
+                                                onPressed: () => Navigator.of(
+                                                  dialogContext,
+                                                ).pop(false),
+                                                style: TextButton.styleFrom(
+                                                  padding: EdgeInsets.zero,
+                                                ),
+                                                child: Center(
+                                                  child: Text(l10n.cancel),
+                                                ),
+                                              ),
                                             ),
-                                        child: Text(l10n.cancel),
-                                      ),
-                                      FilledButton(
-                                        onPressed: () =>
-                                            Navigator.of(dialogContext).pop(
-                                              true,
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            flex: 3,
+                                            child: SizedBox(
+                                              height: 48,
+                                              child: FilledButton(
+                                                onPressed: () => Navigator.of(
+                                                  dialogContext,
+                                                ).pop(true),
+                                                style: FilledButton.styleFrom(
+                                                  backgroundColor:
+                                                      containerColor,
+                                                  side: BorderSide.none,
+                                                  padding: EdgeInsets.zero,
+                                                ),
+                                                child: Center(
+                                                  child: Text(l10n.scan),
+                                                ),
+                                              ),
                                             ),
-                                        style: FilledButton.styleFrom(
-                                          backgroundColor: containerColor,
-                                        ),
-                                        child: Text(l10n.scan),
+                                          ),
+                                        ],
                                       ),
                                     ],
                                   );
@@ -727,11 +710,14 @@ class DuplicateTabState extends State<DuplicateTab>
 
                               if (!context.mounted) return;
                             },
-                      icon: hasNoScanRights ? Icons.block : Icons.search_rounded,
+                      icon: hasNoScanRights
+                          ? Icons.block
+                          : Icons.search_rounded,
                       label: hasNoScanRights
                           ? l10n.noScanRightsLeft
                           : l10n.scanSelectedAlbums,
-                      isEnabled: !isScanning &&
+                      isEnabled:
+                          !isScanning &&
                           !hasNoScanRights &&
                           hasPhotosInAlbums &&
                           !isLoadingAlbums,
@@ -752,9 +738,7 @@ class DuplicateTabState extends State<DuplicateTab>
   }
 
   /// Seçili albümlerde fotoğraf olup olmadığını kontrol eder
-  Future<bool> _checkAlbumsHavePhotos(
-    List<pm.AssetPathEntity> albums,
-  ) async {
+  Future<bool> _checkAlbumsHavePhotos(List<pm.AssetPathEntity> albums) async {
     if (albums.isEmpty) return false;
 
     for (final album in albums) {
@@ -779,8 +763,8 @@ class DuplicateTabState extends State<DuplicateTab>
     AppLocalizations l10n,
   ) {
     // Bottom navigation bar'daki container rengiyle aynı
-    final containerColor = theme.colorScheme.onPrimaryContainer.withOpacity(
-      0.8,
+    final containerColor = theme.colorScheme.onPrimaryContainer.withValues(
+      alpha: 0.8,
     );
 
     return Column(
@@ -790,16 +774,34 @@ class DuplicateTabState extends State<DuplicateTab>
         // Kompakt info card
         Container(
           padding: const EdgeInsets.all(14),
-          decoration: AppDecorations.floatingCard(
-            borderRadius: 18,
-            color: theme.colorScheme.surface,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                theme.colorScheme.primary.withValues(alpha: 0.15),
+                theme.colorScheme.primary.withValues(alpha: 0.08),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: theme.colorScheme.primary.withValues(alpha: 0.3),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: theme.colorScheme.primary.withValues(alpha: 0.2),
+                blurRadius: 12,
+                offset: const Offset(0, 6),
+              ),
+            ],
           ),
           child: Row(
             children: [
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: containerColor.withOpacity(0.15),
+                  color: containerColor.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
@@ -822,7 +824,7 @@ class DuplicateTabState extends State<DuplicateTab>
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: containerColor.withOpacity(0.2),
+                            color: containerColor.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Row(
@@ -862,7 +864,7 @@ class DuplicateTabState extends State<DuplicateTab>
                       style: theme.textTheme.bodySmall?.copyWith(
                         fontSize: 11,
                         height: 1.4,
-                        color: containerColor.withOpacity(0.8),
+                        color: containerColor.withValues(alpha: 0.8),
                       ),
                     ),
                   ],
@@ -872,11 +874,11 @@ class DuplicateTabState extends State<DuplicateTab>
           ),
         ),
         const SizedBox(height: 16),
-        // Mode selection
+        // Sensitivity selection (same concept as blur tab)
         DuplicateModeSelector(
           currentMode: _duplicateMode,
           onModeChanged: (DuplicateDetectionMode mode) {
-            // Anında mod değişimi - state'i güncelle
+            // Anında hassasiyet değişimi - state'i güncelle
             cubitSetState(() {
               _duplicateMode = mode;
             });

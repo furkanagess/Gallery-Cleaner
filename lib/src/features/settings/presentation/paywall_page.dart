@@ -246,718 +246,609 @@ class _PaywallPageState extends State<PaywallPage>
     final isPremiumAsync = context.watch<PremiumCubit>().state;
     final isPremium = isPremiumAsync.valueOrNull ?? false;
     // Dinamik container rengi (premium durumuna göre)
-    final containerColor = theme.colorScheme.onPrimaryContainer.withOpacity(
-      0.8,
+    final containerColor = theme.colorScheme.onPrimaryContainer.withValues(
+      alpha: 0.8,
     );
 
     return buildWithCubit(
       () => Scaffold(
-        backgroundColor: theme.colorScheme.background,
+        backgroundColor: theme.colorScheme.surface,
         body: SafeArea(
           child: Column(
-                children: [
-                  // Header with close and restore buttons
-                  Padding(
+            children: [
+              // Header with close and restore buttons
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.close, size: 22),
+                      onPressed: () => context.pop(),
+                      color: theme.colorScheme.onSurface,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                    TextButton(
+                      onPressed: (_isLoading || _isRestoring)
+                          ? null
+                          : _handleRestorePurchases,
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        side: const BorderSide(color: AppColors.transparent),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      child: Builder(
+                        builder: (buttonContext) {
+                          final isPremiumButtonAsync = buttonContext
+                              .watch<PremiumCubit>()
+                              .state;
+                          isPremiumButtonAsync.maybeWhen(
+                            data: (premium) => premium,
+                            orElse: () => false,
+                          );
+                          isPremiumButtonAsync.valueOrNull ?? false;
+                          final containerColorButton = theme
+                              .colorScheme
+                              .onPrimaryContainer
+                              .withValues(alpha: 0.8);
+                          return _isRestoring
+                              ? SizedBox(
+                                  height: 14,
+                                  width: 14,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      containerColorButton,
+                                    ),
+                                  ),
+                                )
+                              : Text(
+                                  l10n.restorePurchases,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 12,
+                                    color: containerColorButton,
+                                  ),
+                                );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              // Features - Vertical List (Compact)
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Expanded(
+                        flex: 1,
+                        child: _PaywallFeatureItem(
+                          icon: Icons.all_inclusive_rounded,
+                          title: l10n.featureUnlimitedDeletions,
+                          description: l10n.featureUnlimitedDeletionsDesc,
+                          isCompact: true,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Expanded(
+                        flex: 1,
+                        child: _PaywallFeatureItem(
+                          icon: Icons.grid_view_rounded,
+                          title: l10n.featureAIDetection,
+                          description: l10n.featureAIDetectionDesc,
+                          isCompact: true,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Expanded(
+                        flex: 1,
+                        child: _PaywallFeatureItem(
+                          icon: Icons.auto_awesome_rounded,
+                          title: l10n.featureAutoClean,
+                          description: l10n.featureAutoCleanDesc,
+                          isCompact: true,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Expanded(
+                        flex: 1,
+                        child: _PaywallFeatureItem(
+                          icon: Icons.block_rounded,
+                          title: l10n.featureAdFree,
+                          description: l10n.featureAdFreeDesc,
+                          isCompact: true,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              if (!isPremium) ...[
+                // One-time Offer Badge
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.accent,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Text(
+                    l10n.oneTimeOffer,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 10,
+                      letterSpacing: 1.2,
+                      color: theme.colorScheme.surface,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                // Price section
+                if (_productPrice != null && _originalPrice != null) ...[
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 20),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16,
-                      vertical: 8,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? theme.colorScheme.primaryContainer.withValues(
+                              alpha: 0.3,
+                            )
+                          : theme.colorScheme.primaryContainer.withValues(
+                              alpha: 0.8,
+                            ),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: containerColor.withValues(
+                          alpha: isDark ? 0.3 : 0.5,
+                        ),
+                        width: 2,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: containerColor.withValues(
+                            alpha: isDark ? 0.15 : 0.3,
+                          ),
+                          blurRadius: 15,
+                          spreadRadius: 1,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
                     ),
                     child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        IconButton(
-                          icon: const Icon(Icons.close, size: 22),
-                          onPressed: () => context.pop(),
-                          color: theme.colorScheme.onSurface,
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                        ),
-                        TextButton(
-                          onPressed: (_isLoading || _isRestoring)
-                              ? null
-                              : _handleRestorePurchases,
-                          style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            minimumSize: Size.zero,
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            side: const BorderSide(color: Colors.transparent),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
+                        Expanded(
+                          flex: 2,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                l10n.payOnceOwnForever,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 13,
+                                  color: pricePrimaryTextColor,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 4),
+                              Wrap(
+                                spacing: 6,
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                children: [
+                                  ConstrainedBox(
+                                    constraints: const BoxConstraints(
+                                      maxWidth: 120,
+                                    ),
+                                    child: Text(
+                                      _originalPrice!,
+                                      style: theme.textTheme.bodySmall
+                                          ?.copyWith(
+                                            decoration:
+                                                TextDecoration.lineThrough,
+                                            decorationThickness: 2,
+                                            decorationColor:
+                                                priceSecondaryTextColor
+                                                    .withValues(
+                                                      alpha: isDark ? 0.8 : 0.7,
+                                                    ),
+                                            color: priceSecondaryTextColor
+                                                .withValues(
+                                                  alpha: isDark ? 0.85 : 0.65,
+                                                ),
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.success.withValues(
+                                        alpha: 0.2,
+                                      ),
+                                      borderRadius: BorderRadius.circular(6),
+                                      border: Border.all(
+                                        color: AppColors.success.withValues(
+                                          alpha: 0.4,
+                                        ),
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      l10n.discount25Short,
+                                      style: theme.textTheme.labelSmall
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.w800,
+                                            fontSize: 9,
+                                            color: AppColors.success,
+                                            letterSpacing: 0.3,
+                                          ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
-                          child: Builder(
-                            builder: (buttonContext) {
-                              final isPremiumButtonAsync = buttonContext
-                                  .watch<PremiumCubit>()
-                                  .state;
-                              final isPremiumButton =
-                                  isPremiumButtonAsync.valueOrNull ?? false;
-                              final containerColorButton = theme
-                                  .colorScheme
-                                  .onPrimaryContainer
-                                  .withOpacity(0.8);
-                              return _isRestoring
-                                  ? SizedBox(
-                                      height: 14,
-                                      width: 14,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        valueColor:
-                                            AlwaysStoppedAnimation<Color>(
-                                              containerColorButton,
-                                            ),
-                                      ),
-                                    )
-                                  : Text(
-                                      l10n.restorePurchases,
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 12,
-                                        color: containerColorButton,
-                                      ),
-                                    );
+                        ),
+                        const SizedBox(width: 12),
+                        Flexible(
+                          flex: 1,
+                          fit: FlexFit.loose,
+                          child: AnimatedBuilder(
+                            animation: _pulseAnimation,
+                            builder: (context, child) {
+                              return Transform.scale(
+                                scale:
+                                    0.98 + (_pulseAnimation.value - 1) * 0.02,
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  alignment: Alignment.centerRight,
+                                  child: Text(
+                                    _productPrice!,
+                                    style: theme.textTheme.headlineMedium
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.w900,
+                                          fontSize: 32,
+                                          color: pricePrimaryTextColor,
+                                          letterSpacing: -0.8,
+                                        ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              );
                             },
                           ),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  // New Year themed header card
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Stack(
-                      clipBehavior: Clip.hardEdge,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
+                  const SizedBox(height: 12),
+                ],
+                // Upgrade button
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: AnimatedBuilder(
+                    animation: _pulseAnimation,
+                    builder: (context, child) {
+                      return Transform.scale(
+                        scale: _pulseAnimation.value,
+                        child: Container(
+                          width: double.infinity,
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                theme.colorScheme.primary.withOpacity(0.18),
-                                theme.colorScheme.error.withOpacity(0.16),
-                              ],
+                              begin: Alignment.centerLeft,
+                              end: Alignment.centerRight,
+                              colors: [containerColor, AppColors.accent],
                             ),
-                            borderRadius: BorderRadius.circular(22),
+                            borderRadius: BorderRadius.circular(16),
                             border: Border.all(
-                              color: theme.colorScheme.primary.withOpacity(
-                                0.35,
-                              ),
-                              width: 1.2,
+                              color: containerColor.withValues(alpha: 0.9),
+                              width: 1.5,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: theme.colorScheme.shadow.withOpacity(
-                                  0.25,
+                                color: containerColor.withValues(
+                                  alpha:
+                                      (isDark ? 0.3 : 0.5) *
+                                      _pulseAnimation.value,
                                 ),
-                                blurRadius: 24,
-                                offset: const Offset(0, 10),
+                                blurRadius: 25 * _pulseAnimation.value,
+                                spreadRadius: 2 * _pulseAnimation.value,
+                                offset: Offset(0, 10 * _pulseAnimation.value),
                               ),
                             ],
                           ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(8),
-                                    decoration: BoxDecoration(
-                                      color: theme.colorScheme.background
-                                          .withOpacity(0.3),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Image.asset(
-                                      'assets/new_year/santa-claus.png',
-                                      width: 26,
-                                      height: 26,
-                                      fit: BoxFit.contain,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      l10n.paywallTitle,
-                                      style: theme.textTheme.titleLarge
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.w900,
-                                            letterSpacing: -0.4,
-                                            color: theme.colorScheme.onSurface,
-                                          ),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                l10n.paywallSubtitle,
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  fontWeight: FontWeight.w500,
-                                  fontSize: 13,
-                                  color: theme.colorScheme.onSurface
-                                      .withOpacity(0.86),
-                                  height: 1.3,
+                          child: Material(
+                            color: AppColors.transparent,
+                            child: InkWell(
+                              onTap: _isLoading ? null : _handlePurchase,
+                              borderRadius: BorderRadius.circular(16),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
                                 ),
-                                maxLines: 3,
-                                overflow: TextOverflow.ellipsis,
+                                child: _isLoading
+                                    ? Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          SizedBox(
+                                            height: 18,
+                                            width: 18,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              valueColor:
+                                                  AlwaysStoppedAnimation<Color>(
+                                                    theme.colorScheme.onPrimary,
+                                                  ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 10),
+                                          Text(
+                                            l10n.processing,
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w800,
+                                              fontSize: 14,
+                                              color: theme.colorScheme.surface,
+                                              letterSpacing: 0.3,
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ],
+                                      )
+                                    : Text(
+                                        l10n.upgradeToPremium,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w900,
+                                          fontSize: 16,
+                                          color: theme.colorScheme.surface,
+                                          letterSpacing: 0.5,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
                               ),
-                            ],
+                            ),
                           ),
                         ),
-                        Positioned(
-                          right: -4,
-                          bottom: -10,
-                          child: Opacity(
-                            opacity: 0.35,
-                            child: Image.asset(
-                              'assets/new_year/gift-box.png',
-                              width: 72,
-                              height: 72,
-                              fit: BoxFit.contain,
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 8),
+                // Continue with free version
+                TextButton(
+                  onPressed: () => context.pop(),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    side: const BorderSide(color: AppColors.transparent),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: Text(
+                    l10n.continueWithFree,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                // Footer text
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.lock_outline,
+                        size: 12,
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.5,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        l10n.noSubscriptionsNoFees,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontSize: 10,
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.5,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ] else ...[
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 20),
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: containerColor.withValues(alpha: 0.2),
+                      width: 1.5,
+                    ),
+                    color: theme.colorScheme.surface,
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: AppColors.success.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.verified_rounded,
+                          color: AppColors.success,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              l10n.youArePremium,
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w800,
+                              ),
                             ),
+                            const SizedBox(height: 4),
+                            Text(
+                              l10n.premiumAccessDescription,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurface.withValues(
+                                  alpha: 0.7,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: FilledButton(
+                    onPressed: () {
+                      if (Navigator.of(context).canPop()) {
+                        context.pop();
+                      }
+                    },
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    child: Text(
+                      l10n.startCleaningButton,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 8),
+              // Error/Success messages
+              if (_errorMessage != null) ...[
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.errorContainer,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.error_outline,
+                          color: theme.colorScheme.onErrorContainer,
+                          size: 18,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _errorMessage!,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onErrorContainer,
+                              fontSize: 11,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  // Features - Vertical List (Compact)
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Expanded(
-                            flex: 1,
-                            child: _PaywallFeatureItem(
-                              icon: Icons.all_inclusive_rounded,
-                              title: l10n.featureUnlimitedDeletions,
-                              description: l10n.featureUnlimitedDeletionsDesc,
-                              isCompact: true,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Expanded(
-                            flex: 1,
-                            child: _PaywallFeatureItem(
-                              icon: Icons.grid_view_rounded,
-                              title: l10n.featureAIDetection,
-                              description: l10n.featureAIDetectionDesc,
-                              isCompact: true,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Expanded(
-                            flex: 1,
-                            child: _PaywallFeatureItem(
-                              icon: Icons.auto_awesome_rounded,
-                              title: l10n.featureAutoClean,
-                              description: l10n.featureAutoCleanDesc,
-                              isCompact: true,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Expanded(
-                            flex: 1,
-                            child: _PaywallFeatureItem(
-                              icon: Icons.block_rounded,
-                              title: l10n.featureAdFree,
-                              description: l10n.featureAdFreeDesc,
-                              isCompact: true,
-                            ),
-                          ),
-                        ],
+                ),
+                const SizedBox(height: 4),
+              ],
+              if (_successMessage != null) ...[
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? AppColors.success.withValues(alpha: 0.2)
+                          : AppColors.success.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: AppColors.success.withValues(
+                          alpha: isDark ? 0.3 : 0.2,
+                        ),
+                        width: 1,
                       ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.check_circle_outline,
+                          color: AppColors.success,
+                          size: 18,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _successMessage!,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: AppColors.success,
+                              fontSize: 11,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  if (!isPremium) ...[
-                    // One-time Offer Badge
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.accent,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Text(
-                        l10n.oneTimeOffer,
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          fontWeight: FontWeight.w900,
-                          fontSize: 10,
-                          letterSpacing: 1.2,
-                          color: theme.colorScheme.background,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    // Price section
-                    if (_productPrice != null && _originalPrice != null) ...[
-                      Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 20),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? theme.colorScheme.primaryContainer.withOpacity(
-                                  0.3,
-                                )
-                              : theme.colorScheme.primaryContainer.withOpacity(
-                                  0.8,
-                                ),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: containerColor.withOpacity(
-                              isDark ? 0.3 : 0.5,
-                            ),
-                            width: 2,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: containerColor.withOpacity(
-                                isDark ? 0.15 : 0.3,
-                              ),
-                              blurRadius: 15,
-                              spreadRadius: 1,
-                              offset: const Offset(0, 6),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Expanded(
-                              flex: 2,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    l10n.payOnceOwnForever,
-                                    style: theme.textTheme.bodyMedium?.copyWith(
-                                      fontWeight: FontWeight.w800,
-                                      fontSize: 13,
-                                      color: pricePrimaryTextColor,
-                                    ),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Wrap(
-                                    spacing: 6,
-                                    crossAxisAlignment:
-                                        WrapCrossAlignment.center,
-                                    children: [
-                                      ConstrainedBox(
-                                        constraints: const BoxConstraints(
-                                          maxWidth: 120,
-                                        ),
-                                        child: Text(
-                                          _originalPrice!,
-                                          style: theme.textTheme.bodySmall
-                                              ?.copyWith(
-                                                decoration:
-                                                    TextDecoration.lineThrough,
-                                                decorationThickness: 2,
-                                                decorationColor:
-                                                    priceSecondaryTextColor
-                                                        .withOpacity(
-                                                          isDark ? 0.8 : 0.7,
-                                                        ),
-                                                color: priceSecondaryTextColor
-                                                    .withOpacity(
-                                                      isDark ? 0.85 : 0.65,
-                                                    ),
-                                                fontSize: 11,
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 6,
-                                          vertical: 2,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: AppColors.success.withOpacity(
-                                            0.2,
-                                          ),
-                                          borderRadius: BorderRadius.circular(
-                                            6,
-                                          ),
-                                          border: Border.all(
-                                            color: AppColors.success
-                                                .withOpacity(0.4),
-                                            width: 1,
-                                          ),
-                                        ),
-                                        child: Text(
-                                          l10n.discount25Short,
-                                          style: theme.textTheme.labelSmall
-                                              ?.copyWith(
-                                                fontWeight: FontWeight.w800,
-                                                fontSize: 9,
-                                                color: AppColors.success,
-                                                letterSpacing: 0.3,
-                                              ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Flexible(
-                              flex: 1,
-                              fit: FlexFit.loose,
-                              child: AnimatedBuilder(
-                                animation: _pulseAnimation,
-                                builder: (context, child) {
-                                  return Transform.scale(
-                                    scale:
-                                        0.98 +
-                                        (_pulseAnimation.value - 1) * 0.02,
-                                    child: FittedBox(
-                                      fit: BoxFit.scaleDown,
-                                      alignment: Alignment.centerRight,
-                                      child: Text(
-                                        _productPrice!,
-                                        style: theme.textTheme.headlineMedium
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.w900,
-                                              fontSize: 32,
-                                              color: pricePrimaryTextColor,
-                                              letterSpacing: -0.8,
-                                            ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                    ],
-                    // Upgrade button
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: AnimatedBuilder(
-                        animation: _pulseAnimation,
-                        builder: (context, child) {
-                          return Transform.scale(
-                            scale: _pulseAnimation.value,
-                            child: Container(
-                              width: double.infinity,
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.centerLeft,
-                                  end: Alignment.centerRight,
-                                  colors: [containerColor, AppColors.accent],
-                                ),
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                  color: containerColor.withOpacity(0.9),
-                                  width: 1.5,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: containerColor.withOpacity(
-                                      (isDark ? 0.3 : 0.5) *
-                                          _pulseAnimation.value,
-                                    ),
-                                    blurRadius: 25 * _pulseAnimation.value,
-                                    spreadRadius: 2 * _pulseAnimation.value,
-                                    offset: Offset(
-                                      0,
-                                      10 * _pulseAnimation.value,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              child: Material(
-                                color: AppColors.transparent,
-                                child: InkWell(
-                                  onTap: _isLoading ? null : _handlePurchase,
-                                  borderRadius: BorderRadius.circular(16),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 14,
-                                    ),
-                                    child: _isLoading
-                                        ? Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                            children: [
-                                              SizedBox(
-                                                height: 18,
-                                                width: 18,
-                                                child: CircularProgressIndicator(
-                                                  strokeWidth: 2,
-                                                  valueColor:
-                                                      AlwaysStoppedAnimation<
-                                                        Color
-                                                      >(
-                                                        theme
-                                                            .colorScheme
-                                                            .onPrimary,
-                                                      ),
-                                                ),
-                                              ),
-                                              const SizedBox(width: 10),
-                                              Text(
-                                                l10n.processing,
-                                                style: TextStyle(
-                                                  fontWeight: FontWeight.w800,
-                                                  fontSize: 14,
-                                                  color: theme
-                                                      .colorScheme
-                                                      .background,
-                                                  letterSpacing: 0.3,
-                                                ),
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                            ],
-                                          )
-                                        : Text(
-                                            l10n.upgradeToPremium,
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.w900,
-                                              fontSize: 16,
-                                              color:
-                                                  theme.colorScheme.background,
-                                              letterSpacing: 0.5,
-                                            ),
-                                            textAlign: TextAlign.center,
-                                          ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    // Continue with free version
-                    TextButton(
-                      onPressed: () => context.pop(),
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        minimumSize: Size.zero,
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        side: const BorderSide(color: Colors.transparent),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: Text(
-                        l10n.continueWithFree,
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 13,
-                          color: theme.colorScheme.onSurface.withOpacity(0.7),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    // Footer text
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.lock_outline,
-                            size: 12,
-                            color: theme.colorScheme.onSurface.withOpacity(0.5),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            l10n.noSubscriptionsNoFees,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              fontSize: 10,
-                              color: theme.colorScheme.onSurface.withOpacity(
-                                0.5,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ] else ...[
-                    Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 20),
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: containerColor.withOpacity(0.2),
-                          width: 1.5,
-                        ),
-                        color: theme.colorScheme.surface,
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 48,
-                            height: 48,
-                            decoration: BoxDecoration(
-                              color: AppColors.success.withOpacity(0.15),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Icon(
-                              Icons.verified_rounded,
-                              color: AppColors.success,
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  l10n.youArePremium,
-                                  style: theme.textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  l10n.premiumAccessDescription,
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: theme.colorScheme.onSurface
-                                        .withOpacity(0.7),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: FilledButton(
-                        onPressed: () {
-                          if (Navigator.of(context).canPop()) {
-                            context.pop();
-                          }
-                        },
-                        style: FilledButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                        ),
-                        child: Text(
-                          l10n.startCleaningButton,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: 8),
-                  // Error/Success messages
-                  if (_errorMessage != null) ...[
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.errorContainer,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.error_outline,
-                              color: theme.colorScheme.onErrorContainer,
-                              size: 18,
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                _errorMessage!,
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: theme.colorScheme.onErrorContainer,
-                                  fontSize: 11,
-                                ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                  ],
-                  if (_successMessage != null) ...[
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? AppColors.success.withOpacity(0.2)
-                              : AppColors.success.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: AppColors.success.withOpacity(
-                              isDark ? 0.3 : 0.2,
-                            ),
-                            width: 1,
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.check_circle_outline,
-                              color: AppColors.success,
-                              size: 18,
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                _successMessage!,
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: AppColors.success,
-                                  fontSize: 11,
-                                ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                  ],
-                ],
-              ),
+                ),
+                const SizedBox(height: 4),
+              ],
+            ],
+          ),
         ),
       ),
     );
@@ -981,8 +872,8 @@ class _PaywallFeatureItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isPremiumAsync = context.watch<PremiumCubit>().state;
-    final isPremium = isPremiumAsync.valueOrNull ?? false;
-    final color = theme.colorScheme.onPrimaryContainer.withOpacity(0.8);
+    isPremiumAsync.maybeWhen(data: (premium) => premium, orElse: () => false);
+    final color = theme.colorScheme.onPrimaryContainer.withValues(alpha: 0.8);
 
     final isDark = theme.brightness == Brightness.dark;
 
@@ -994,22 +885,28 @@ class _PaywallFeatureItem extends StatelessWidget {
           end: Alignment.bottomRight,
           colors: isDark
               ? [
-                  theme.colorScheme.surfaceContainerHighest.withOpacity(0.4),
-                  theme.colorScheme.surfaceContainerHighest.withOpacity(0.2),
+                  theme.colorScheme.surfaceContainerHighest.withValues(
+                    alpha: 0.4,
+                  ),
+                  theme.colorScheme.surfaceContainerHighest.withValues(
+                    alpha: 0.2,
+                  ),
                 ]
               : [
-                  theme.colorScheme.surface.withOpacity(0.95),
-                  theme.colorScheme.surfaceContainerHighest.withOpacity(0.6),
+                  theme.colorScheme.surface.withValues(alpha: 0.95),
+                  theme.colorScheme.surfaceContainerHighest.withValues(
+                    alpha: 0.6,
+                  ),
                 ],
         ),
         borderRadius: BorderRadius.circular(isCompact ? 14 : 18),
         border: Border.all(
-          color: color.withOpacity(isDark ? 0.25 : 0.18),
+          color: color.withValues(alpha: isDark ? 0.25 : 0.18),
           width: isCompact ? 1 : 1.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(isDark ? 0.15 : 0.12),
+            color: color.withValues(alpha: isDark ? 0.15 : 0.12),
             blurRadius: 14,
             spreadRadius: 0,
             offset: const Offset(0, 6),
@@ -1017,7 +914,7 @@ class _PaywallFeatureItem extends StatelessWidget {
           BoxShadow(
             color: AppColors.shadow(
               theme.brightness,
-            ).withOpacity(isDark ? 0.2 : 0.04),
+            ).withValues(alpha: isDark ? 0.2 : 0.04),
             blurRadius: 8,
             spreadRadius: 0,
             offset: const Offset(0, 2),
@@ -1034,16 +931,19 @@ class _PaywallFeatureItem extends StatelessWidget {
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [color.withOpacity(0.25), color.withOpacity(0.12)],
+                colors: [
+                  color.withValues(alpha: 0.25),
+                  color.withValues(alpha: 0.12),
+                ],
               ),
               shape: BoxShape.circle,
               border: Border.all(
-                color: color.withOpacity(0.35),
+                color: color.withValues(alpha: 0.35),
                 width: isCompact ? 1.5 : 2,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: color.withOpacity(0.2),
+                  color: color.withValues(alpha: 0.2),
                   blurRadius: 10,
                   spreadRadius: 1,
                   offset: const Offset(0, 3),
@@ -1080,10 +980,10 @@ class _PaywallFeatureItem extends StatelessWidget {
                         vertical: isCompact ? 2 : 3,
                       ),
                       decoration: BoxDecoration(
-                        color: color.withOpacity(0.12),
+                        color: color.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(999),
                         border: Border.all(
-                          color: color.withOpacity(0.25),
+                          color: color.withValues(alpha: 0.25),
                           width: 1,
                         ),
                       ),
@@ -1101,7 +1001,7 @@ class _PaywallFeatureItem extends StatelessWidget {
                   style: theme.textTheme.bodySmall?.copyWith(
                     fontWeight: FontWeight.w600,
                     fontSize: isCompact ? 11 : 12.5,
-                    color: theme.colorScheme.onSurface.withOpacity(0.72),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.72),
                     height: 1.25,
                   ),
                   maxLines: 2,
@@ -1160,8 +1060,8 @@ class _PaywallFeatureCardState extends State<_PaywallFeatureCard>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isPremiumAsync = context.watch<PremiumCubit>().state;
-    final isPremium = isPremiumAsync.valueOrNull ?? false;
-    final color = theme.colorScheme.onPrimaryContainer.withOpacity(0.8);
+    isPremiumAsync.maybeWhen(data: (premium) => premium, orElse: () => false);
+    final color = theme.colorScheme.onPrimaryContainer.withValues(alpha: 0.8);
     final isDark = theme.brightness == Brightness.dark;
 
     return FadeTransition(
@@ -1176,16 +1076,20 @@ class _PaywallFeatureCardState extends State<_PaywallFeatureCard>
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
             color: isDark
-                ? theme.colorScheme.surfaceContainerHighest.withOpacity(0.4)
-                : theme.colorScheme.surfaceContainerHighest.withOpacity(0.8),
+                ? theme.colorScheme.surfaceContainerHighest.withValues(
+                    alpha: 0.4,
+                  )
+                : theme.colorScheme.surfaceContainerHighest.withValues(
+                    alpha: 0.8,
+                  ),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: color.withOpacity(isDark ? 0.3 : 0.2),
+              color: color.withValues(alpha: isDark ? 0.3 : 0.2),
               width: 1.5,
             ),
             boxShadow: [
               BoxShadow(
-                color: color.withOpacity(isDark ? 0.15 : 0.1),
+                color: color.withValues(alpha: isDark ? 0.15 : 0.1),
                 blurRadius: 15,
                 spreadRadius: 1,
                 offset: const Offset(0, 4),
@@ -1203,13 +1107,19 @@ class _PaywallFeatureCardState extends State<_PaywallFeatureCard>
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                    colors: [color.withOpacity(0.25), color.withOpacity(0.15)],
+                    colors: [
+                      color.withValues(alpha: 0.25),
+                      color.withValues(alpha: 0.15),
+                    ],
                   ),
                   shape: BoxShape.circle,
-                  border: Border.all(color: color.withOpacity(0.4), width: 2.5),
+                  border: Border.all(
+                    color: color.withValues(alpha: 0.4),
+                    width: 2.5,
+                  ),
                   boxShadow: [
                     BoxShadow(
-                      color: color.withOpacity(0.2),
+                      color: color.withValues(alpha: 0.2),
                       blurRadius: 12,
                       spreadRadius: 1,
                     ),
@@ -1235,7 +1145,7 @@ class _PaywallFeatureCardState extends State<_PaywallFeatureCard>
                 style: theme.textTheme.bodyMedium?.copyWith(
                   fontWeight: FontWeight.w500,
                   fontSize: 14,
-                  color: theme.colorScheme.onSurface.withOpacity(0.7),
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                   height: 1.4,
                 ),
                 maxLines: 2,

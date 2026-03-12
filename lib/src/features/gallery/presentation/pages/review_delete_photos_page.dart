@@ -1,7 +1,5 @@
 import 'dart:io';
 import 'dart:typed_data';
-import 'dart:math' as math;
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -121,13 +119,13 @@ class _PhotoGridItem extends StatelessWidget {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.45),
+                        color: AppColors.black.withValues(alpha:0.45),
                         borderRadius: BorderRadius.circular(999),
                       ),
                       child: Text(
                         '${sizeMB.toStringAsFixed(sizeMB >= 100 ? 0 : 1)} MB',
                         style: theme.textTheme.labelSmall?.copyWith(
-                          color: Colors.white,
+                          color: AppColors.white,
                           fontWeight: FontWeight.w600,
                           fontSize: 10,
                         ),
@@ -149,7 +147,7 @@ class _PhotoGridItem extends StatelessWidget {
                         child: const Icon(
                           Icons.delete_outline,
                           size: 18,
-                          color: Colors.white,
+                          color: AppColors.white,
                         ),
                       ),
                     ),
@@ -182,63 +180,13 @@ class _ReviewDeletePhotosPageState extends State<ReviewDeletePhotosPage> {
 
   @override
   void dispose() {
-    // Sayfa kapanırken seçimleri temizle
-    context.read<ReviewDeleteSelectionCubit>().clear();
+    // context kullanılmaz; dispose sırasında widget deaktive olabilir (örn. success sonrası go('/swipe'))
     super.dispose();
   }
 
   void _togglePhotoSelection(String photoId) {
     context.read<ReviewDeleteSelectionCubit>().toggleSelection(photoId);
   }
-
-  Widget _buildSnowflakesBackground(ThemeData theme) {
-    final isDark = theme.brightness == Brightness.dark;
-    final random = math.Random();
-
-    // Tema uyumlu renk paleti
-    final List<Color> palette = isDark
-        ? [
-            Colors.white.withOpacity(0.75),
-            theme.colorScheme.primary.withOpacity(0.82),
-            theme.colorScheme.secondary.withOpacity(0.68),
-          ]
-        : [
-            theme.colorScheme.primary.withOpacity(0.72),
-            theme.colorScheme.secondary.withOpacity(0.65),
-            Colors.white.withOpacity(0.6),
-          ];
-
-    return Stack(
-      children: List.generate(20, (index) {
-        final top = random.nextDouble() * 1000; // Random top position
-        final left = random.nextDouble() * 400; // Random left position
-        final opacity = 0.15 + random.nextDouble() * 0.45; // Random opacity
-        final size = 18.0 + random.nextDouble() * 12.0; // Random size
-        final rotationDeg = random.nextDouble() * 360; // Random rotation
-        final color = palette[random.nextInt(palette.length)]; // Random color from palette
-
-        return Positioned(
-          top: top,
-          left: left,
-          child: Opacity(
-            opacity: opacity.clamp(0.15, 0.8),
-            child: Transform.rotate(
-              angle: rotationDeg * math.pi / 180,
-              child: Image.asset(
-                'assets/new_year/snowflake.png',
-                width: size,
-                height: size,
-                fit: BoxFit.contain,
-                color: color,
-                colorBlendMode: BlendMode.srcIn,
-              ),
-            ),
-          ),
-        );
-      }),
-    );
-  }
-
 
   Future<void> _deleteSelectedPhotos() async {
     final selectedIds = context.read<ReviewDeleteSelectionCubit>().state;
@@ -259,111 +207,176 @@ class _ReviewDeletePhotosPageState extends State<ReviewDeletePhotosPage> {
     final totalMB = totalBytes > 0 ? totalBytes / (1024 * 1024) : 0.0;
     final totalMBText = totalMB.toStringAsFixed(totalMB >= 100 ? 0 : 1);
 
-    // Onay dialogu göster
+    // Onay dialogu göster (modern, kullanıcı dostu)
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(
-          l10n.deletePhoto,
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w700,
-            color: theme.colorScheme.onSurface,
+      barrierDismissible: false,
+      builder: (dialogContext) => Dialog(
+        backgroundColor: AppColors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: theme.colorScheme.outline.withValues(alpha:0.2),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: theme.colorScheme.shadow.withValues(alpha:0.15),
+                blurRadius: 24,
+                offset: const Offset(0, 12),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.error.withValues(alpha:0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.delete_outline_rounded,
+                  size: 32,
+                  color: theme.colorScheme.error,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                l10n.deletePhotos(selectedIds.length),
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: theme.colorScheme.onSurface,
+                  letterSpacing: -0.3,
+                ),
+                textAlign: TextAlign.center,
+              ),
+
+              const SizedBox(height: 20),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 16,
+                ),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest.withValues(alpha:
+                    0.6,
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: theme.colorScheme.outline.withValues(alpha:0.1),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Column(
+                      children: [
+                        Text(
+                          selectedIds.length.toString(),
+                          style: theme.textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.w800,
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          l10n.photoUnit,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: theme.colorScheme.onSurface.withValues(alpha:0.7),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Container(
+                      width: 1,
+                      height: 36,
+                      margin: const EdgeInsets.symmetric(horizontal: 24),
+                      color: theme.colorScheme.outline.withValues(alpha:0.3),
+                    ),
+                    Column(
+                      children: [
+                        Text(
+                          '$totalMBText MB',
+                          style: theme.textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.w800,
+                            color: theme.colorScheme.error,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'MB',
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: theme.colorScheme.onSurface.withValues(alpha:0.7),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.of(dialogContext).pop(false),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        side: BorderSide(
+                          color: theme.colorScheme.outline.withValues(alpha:0.5),
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      child: Text(
+                        l10n.cancel,
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: theme.colorScheme.onSurface,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: () => Navigator.of(dialogContext).pop(true),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: theme.colorScheme.error,
+                        foregroundColor: theme.colorScheme.onError,
+                        side: BorderSide(
+                          color: theme.colorScheme.error,
+                          width: 1.5,
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      child: Text(
+                        l10n.delete,
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: theme.colorScheme.onError,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              l10n.deletePhotos(selectedIds.length),
-              style: theme.textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: theme.colorScheme.onSurface,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.baseline,
-              textBaseline: TextBaseline.alphabetic,
-              children: [
-                Text(
-                  selectedIds.length.toString(),
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: theme.colorScheme.primary,
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  l10n.photoUnit,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: theme.colorScheme.onSurface.withOpacity(0.8),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.baseline,
-              textBaseline: TextBaseline.alphabetic,
-              children: [
-                Text(
-                  totalMBText,
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: theme.colorScheme.error,
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  'MB',
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: theme.colorScheme.onSurface.withOpacity(0.8),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Text(
-              l10n.mbFreed(totalMBText),
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.7),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(
-              l10n.cancel,
-              style: theme.textTheme.labelLarge?.copyWith(
-                color: theme.colorScheme.onSurface,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.error,
-              foregroundColor: AppColors.white,
-              side: BorderSide(color: theme.colorScheme.error, width: 1.4),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: Text(
-              l10n.delete,
-              style: theme.textTheme.labelLarge?.copyWith(
-                color: AppColors.white,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ],
       ),
     );
 
@@ -374,9 +387,10 @@ class _ReviewDeletePhotosPageState extends State<ReviewDeletePhotosPage> {
     });
 
     try {
+      if (!mounted) return;
       final reviewActionsCubit = context.read<ReviewActionsCubit>();
       final deleteLimitCubit = context.read<DeleteLimitCubit>();
-
+      if (!mounted) return;
       // Seçili olmayan fotoğrafları pending listesinden kaldır
       final pendingActions = reviewActionsCubit.state;
       final currentSelectedIds = context
@@ -399,18 +413,6 @@ class _ReviewDeletePhotosPageState extends State<ReviewDeletePhotosPage> {
           ? (selectedCount > deleteLimit ? deleteLimit : selectedCount)
           : selectedCount;
 
-      if (maxDeleteCount < selectedCount) {
-        // Limit aşıldı, kullanıcıya bildir
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(l10n.deleteLimitReached(maxDeleteCount)),
-              backgroundColor: AppColors.warning,
-            ),
-          );
-        }
-      }
-
       // Silme işlemini başlat
       final deleteResult = await reviewActionsCubit.applyPendingDeletes(
         maxDeleteCount: maxDeleteCount,
@@ -423,59 +425,45 @@ class _ReviewDeletePhotosPageState extends State<ReviewDeletePhotosPage> {
         if (mounted) {
           // Başarılı silme sonrası animasyonlu özet bottom sheet'ini göster
           // Dialog'u hemen göster ki "no photos to delete" ekranı görünmesin
-          await showModalBottomSheet<void>(
-            context: context,
-            isScrollControlled: true,
-            backgroundColor: AppColors.transparent,
-            isDismissible: false,
-            enableDrag: false,
-            builder: (sheetContext) {
-              return _DeleteSummaryBottomSheet(
-                deletedCount: deleteResult.deletedCount,
-                deletedSizeMB: deleteResult.deletedSizeMB,
-                onDone: () async {
-                  Navigator.of(sheetContext).pop();
-                  
-                  if (mounted) {
-                    // Kalan tüm pending actions'ları temizle
-                    final remainingPendingActions = reviewActionsCubit.state;
-                    if (remainingPendingActions.isNotEmpty) {
-                      // Tüm kalan pending actions'ları undo et
-                      for (final action in remainingPendingActions) {
-                        await reviewActionsCubit.undoDecision(
-                          action.asset,
-                          wasKeep: false,
-                        );
-                      }
-                    }
-
-                    // Silinen fotoğrafları deckte tekrar görünmemesi için galeriyi yenile
-                    try {
-                      context.read<GalleryPagingCubit>().reload();
-                    } catch (e) {
-                      debugPrint('⚠️ [ReviewDeletePhotosPage] Gallery reload failed: $e');
-                    }
-
-                    // Swipe tab'ına geri dön ve swipe deck'i başa al
-                    // Swipe index'ini 0 yap
-                    final prefsService = PreferencesService();
-                    final selectedAlbum = context.read<SelectedAlbumCubit>().state;
-                    await prefsService.saveSwipeIndex(0, selectedAlbum?.id);
-
-                    context.go('/swipe');
+          if (!mounted) return;
+          await showDeleteSummaryBottomSheet(
+            context,
+            deletedCount: deleteResult.deletedCount,
+            deletedSizeMB: deleteResult.deletedSizeMB,
+            onDone: () async {
+              if (mounted) {
+                // Kalan tüm pending actions'ları temizle
+                final remainingPendingActions = reviewActionsCubit.state;
+                if (remainingPendingActions.isNotEmpty) {
+                  // Tüm kalan pending actions'ları undo et
+                  for (final action in remainingPendingActions) {
+                    await reviewActionsCubit.undoDecision(
+                      action.asset,
+                      wasKeep: false,
+                    );
                   }
-                },
-              );
+                }
+
+                // Silinen fotoğrafları deckte tekrar görünmemesi için galeriyi yenile
+                if (!mounted) return;
+                try {
+                  context.read<GalleryPagingCubit>().reload();
+                } catch (e) {
+                  debugPrint(
+                    '⚠️ [ReviewDeletePhotosPage] Gallery reload failed: $e',
+                  );
+                }
+
+                // Swipe tab'ına geri dön ve swipe deck'i başa al
+                // Swipe index'ini 0 yap
+                final prefsService = PreferencesService();
+                final selectedAlbum = context.read<SelectedAlbumCubit>().state;
+                await prefsService.saveSwipeIndex(0, selectedAlbum?.id);
+
+                if (!mounted) return;
+                context.go('/swipe');
+              }
             },
-          );
-        }
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(l10n.errorOccurred),
-              backgroundColor: AppColors.error,
-            ),
           );
         }
       }
@@ -504,56 +492,23 @@ class _ReviewDeletePhotosPageState extends State<ReviewDeletePhotosPage> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: theme.colorScheme.background,
+      backgroundColor: theme.colorScheme.surface,
       appBar: AppBar(
-        backgroundColor: theme.colorScheme.background,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
-        centerTitle: false,
-        titleSpacing: 16,
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primary.withOpacity(0.08),
-                shape: BoxShape.circle,
-              ),
-              child: Image.asset(
-                'assets/new_year/santa-claus.png',
-                width: 20,
-                height: 20,
-                fit: BoxFit.contain,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Text(
-              l10n.reviewDeletePhotos,
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-                letterSpacing: -0.2,
-                color: theme.colorScheme.onBackground,
-              ),
-            ),
-          ],
-        ),
+        title: const SizedBox.shrink(),
         leading: IconButton(
           icon: Icon(
             Platform.isIOS
                 ? CupertinoIcons.chevron_back
                 : Icons.arrow_back_rounded,
-            color: theme.colorScheme.onBackground,
+            color: theme.colorScheme.onSurface,
           ),
           onPressed: () => context.go('/swipe'),
         ),
-        automaticallyImplyLeading: false,
       ),
       body: Stack(
         children: [
-          // New Year snowflakes background
-          Positioned.fill(
-            child: _buildSnowflakesBackground(theme),
-          ),
           BlocBuilder<ReviewActionsCubit, List<PendingDeleteAction>>(
             builder: (context, pendingActions) {
               if (pendingActions.isEmpty) {
@@ -561,21 +516,10 @@ class _ReviewDeletePhotosPageState extends State<ReviewDeletePhotosPage> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          Icon(
-                            Icons.photo_library_outlined,
-                            size: 70,
-                            color: theme.colorScheme.primary.withOpacity(0.18),
-                          ),
-                          Image.asset(
-                            'assets/new_year/christmas-tree.png',
-                            width: 56,
-                            height: 56,
-                            fit: BoxFit.contain,
-                          ),
-                        ],
+                      Icon(
+                        Icons.photo_library_outlined,
+                        size: 70,
+                        color: theme.colorScheme.primary.withValues(alpha:0.18),
                       ),
                       const SizedBox(height: 16),
                       Text(
@@ -675,8 +619,8 @@ class _ReviewDeletePhotosPageState extends State<ReviewDeletePhotosPage> {
                                         theme
                                             .colorScheme
                                             .surfaceContainerHighest
-                                            .withOpacity(0.98),
-                                        theme.colorScheme.surface.withOpacity(
+                                            .withValues(alpha:0.98),
+                                        theme.colorScheme.surface.withValues(alpha:
                                           0.96,
                                         ),
                                       ],
@@ -684,13 +628,13 @@ class _ReviewDeletePhotosPageState extends State<ReviewDeletePhotosPage> {
                                     borderRadius: BorderRadius.circular(20),
                                     border: Border.all(
                                       color: theme.colorScheme.primary
-                                          .withOpacity(0.25),
+                                          .withValues(alpha:0.25),
                                       width: 1.2,
                                     ),
                                     boxShadow: [
                                       BoxShadow(
                                         color: theme.colorScheme.shadow
-                                            .withOpacity(0.18),
+                                            .withValues(alpha:0.18),
                                         blurRadius: 22,
                                         offset: const Offset(0, 8),
                                       ),
@@ -702,16 +646,15 @@ class _ReviewDeletePhotosPageState extends State<ReviewDeletePhotosPage> {
                                         padding: const EdgeInsets.all(7),
                                         decoration: BoxDecoration(
                                           color: theme.colorScheme.primary
-                                              .withOpacity(0.16),
+                                              .withValues(alpha:0.16),
                                           borderRadius: BorderRadius.circular(
                                             999,
                                           ),
                                         ),
-                                        child: Image.asset(
-                                          'assets/new_year/snowman.png',
-                                          width: 22,
-                                          height: 22,
-                                          fit: BoxFit.contain,
+                                        child: Icon(
+                                          Icons.check_circle_rounded,
+                                          size: 22,
+                                          color: theme.colorScheme.primary,
                                         ),
                                       ),
                                       const SizedBox(width: 12),
@@ -729,7 +672,7 @@ class _ReviewDeletePhotosPageState extends State<ReviewDeletePhotosPage> {
                                                     color: theme
                                                         .colorScheme
                                                         .onSurface
-                                                        .withOpacity(0.7),
+                                                        .withValues(alpha:0.7),
                                                   ),
                                             ),
                                             const SizedBox(height: 4),
@@ -785,7 +728,7 @@ class _ReviewDeletePhotosPageState extends State<ReviewDeletePhotosPage> {
                                                           color: theme
                                                               .colorScheme
                                                               .onSurface
-                                                              .withOpacity(0.8),
+                                                              .withValues(alpha:0.8),
                                                         ),
                                                   ),
                                                   const SizedBox(width: 10),
@@ -814,7 +757,7 @@ class _ReviewDeletePhotosPageState extends State<ReviewDeletePhotosPage> {
                                                           color: theme
                                                               .colorScheme
                                                               .onSurface
-                                                              .withOpacity(0.8),
+                                                              .withValues(alpha:0.8),
                                                         ),
                                                   ),
                                                 ],
@@ -853,13 +796,13 @@ class _ReviewDeletePhotosPageState extends State<ReviewDeletePhotosPage> {
                                     ).extension<AppSemanticColors>()?.delete ??
                                     Theme.of(context).colorScheme.error;
 
-                                final deleteLimitCubit =
-                                    context.watch<DeleteLimitCubit>();
-                                final currentLimit =
-                                    deleteLimitCubit.state.maybeWhen(
-                                  data: (limit) => limit,
-                                  orElse: () => 0,
-                                );
+                                final deleteLimitCubit = context
+                                    .watch<DeleteLimitCubit>();
+                                final currentLimit = deleteLimitCubit.state
+                                    .maybeWhen(
+                                      data: (limit) => limit,
+                                      orElse: () => 0,
+                                    );
 
                                 final bool hasRights = currentLimit > 0;
                                 final label = !hasRights
@@ -915,7 +858,8 @@ class _DeleteSummaryBottomSheet extends StatefulWidget {
   final VoidCallback onDone;
 
   @override
-  State<_DeleteSummaryBottomSheet> createState() => _DeleteSummaryBottomSheetState();
+  State<_DeleteSummaryBottomSheet> createState() =>
+      _DeleteSummaryBottomSheetState();
 }
 
 class _DeleteSummaryBottomSheetState extends State<_DeleteSummaryBottomSheet>
@@ -965,57 +909,6 @@ class _DeleteSummaryBottomSheetState extends State<_DeleteSummaryBottomSheet>
     super.dispose();
   }
 
-  Widget _buildDialogSnowflakes(ThemeData theme) {
-    final isDark = theme.brightness == Brightness.dark;
-    final random = math.Random();
-
-    // Tema uyumlu renk paleti (daha hafif opacity)
-    final List<Color> palette = isDark
-        ? [
-            Colors.white.withOpacity(0.5),
-            theme.colorScheme.primary.withOpacity(0.55),
-            theme.colorScheme.secondary.withOpacity(0.45),
-          ]
-        : [
-            theme.colorScheme.primary.withOpacity(0.48),
-            theme.colorScheme.secondary.withOpacity(0.43),
-            Colors.white.withOpacity(0.4),
-          ];
-
-    return Opacity(
-      opacity: 0.18,
-      child: Stack(
-        children: List.generate(15, (index) {
-          final top = random.nextDouble() * 300; // Random top position
-          final left = random.nextDouble() * 300; // Random left position
-          final opacity = 0.1 + random.nextDouble() * 0.3; // Random opacity
-          final size = 14.0 + random.nextDouble() * 10.0; // Random size
-          final rotationDeg = random.nextDouble() * 360; // Random rotation
-          final color = palette[random.nextInt(palette.length)]; // Random color from palette
-
-          return Positioned(
-            top: top,
-            left: left,
-            child: Opacity(
-              opacity: opacity.clamp(0.1, 0.6),
-              child: Transform.rotate(
-                angle: rotationDeg * math.pi / 180,
-                child: Image.asset(
-                  'assets/new_year/snowflake.png',
-                  width: size,
-                  height: size,
-                  fit: BoxFit.contain,
-                  color: color,
-                  colorBlendMode: BlendMode.srcIn,
-                ),
-              ),
-            ),
-          );
-        }),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -1031,13 +924,13 @@ class _DeleteSummaryBottomSheetState extends State<_DeleteSummaryBottomSheet>
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            theme.colorScheme.surface.withOpacity(0.98),
-            theme.colorScheme.surfaceContainerHighest.withOpacity(0.98),
+            theme.colorScheme.surface.withValues(alpha:0.98),
+            theme.colorScheme.surfaceContainerHighest.withValues(alpha:0.98),
           ],
         ),
         boxShadow: [
           BoxShadow(
-            color: theme.colorScheme.shadow.withOpacity(0.35),
+            color: theme.colorScheme.shadow.withValues(alpha:0.35),
             blurRadius: 30,
             offset: const Offset(0, -8),
           ),
@@ -1050,10 +943,6 @@ class _DeleteSummaryBottomSheetState extends State<_DeleteSummaryBottomSheet>
         ),
         child: Stack(
           children: [
-            // Hafif kar efekti arka plan
-            Positioned.fill(
-              child: _buildDialogSnowflakes(theme),
-            ),
             SafeArea(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 22, 20, 32),
@@ -1068,7 +957,7 @@ class _DeleteSummaryBottomSheetState extends State<_DeleteSummaryBottomSheet>
                         height: 4,
                         margin: const EdgeInsets.only(bottom: 16),
                         decoration: BoxDecoration(
-                          color: theme.colorScheme.onSurface.withOpacity(0.3),
+                          color: theme.colorScheme.onSurface.withValues(alpha:0.3),
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),
@@ -1078,16 +967,13 @@ class _DeleteSummaryBottomSheetState extends State<_DeleteSummaryBottomSheet>
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: theme.colorScheme.primary.withOpacity(
-                              0.12,
-                            ),
+                            color: theme.colorScheme.primary.withValues(alpha:0.12),
                             borderRadius: BorderRadius.circular(16),
                           ),
-                          child: Image.asset(
-                            'assets/new_year/christmas-tree.png',
-                            width: 26,
-                            height: 26,
-                            fit: BoxFit.contain,
+                          child: Icon(
+                            Icons.warning_amber_rounded,
+                            size: 26,
+                            color: theme.colorScheme.primary,
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -1118,84 +1004,101 @@ class _DeleteSummaryBottomSheetState extends State<_DeleteSummaryBottomSheet>
                           animatedMB >= 100 ? 0 : 1,
                         );
 
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Text(
-                                  animatedCount.toString(),
-                                  style: theme.textTheme.displaySmall
-                                      ?.copyWith(
-                                        fontWeight: FontWeight.w900,
-                                        color: theme.colorScheme.primary,
-                                      ),
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  l10n.photoUnit,
-                                  style: theme.textTheme.titleMedium
-                                      ?.copyWith(
-                                        fontWeight: FontWeight.w600,
-                                        color: theme.colorScheme.onSurface
-                                            .withOpacity(0.8),
-                                      ),
-                                ),
+                        return Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                theme.colorScheme.primaryContainer
+                                    .withValues(alpha:0.24),
+                                theme.colorScheme.secondaryContainer
+                                    .withValues(alpha:0.18),
+                                theme.colorScheme.surface
+                                    .withValues(alpha:0.12),
                               ],
                             ),
-                            const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                Text(
-                                  sizeText,
-                                  style: theme.textTheme.headlineSmall
-                                      ?.copyWith(
-                                        fontWeight: FontWeight.w800,
-                                        color: theme.colorScheme.error,
-                                      ),
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  'MB',
-                                  style: theme.textTheme.titleSmall
-                                      ?.copyWith(
-                                        fontWeight: FontWeight.w600,
-                                        color: theme.colorScheme.onSurface
-                                            .withOpacity(0.8),
-                                      ),
-                                ),
-                              ],
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(
+                              color: theme.colorScheme.primary.withValues(alpha:0.22),
+                              width: 1.2,
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              l10n.mbFreed(sizeText),
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurface
-                                    .withOpacity(0.75),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Text(
+                                    animatedCount.toString(),
+                                    style: theme.textTheme.displaySmall
+                                        ?.copyWith(
+                                      fontWeight: FontWeight.w900,
+                                      color: theme.colorScheme.primary,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    l10n.photoUnit,
+                                    style: theme.textTheme.titleMedium
+                                        ?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      color: theme.colorScheme.onSurface
+                                          .withValues(alpha:0.85),
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ),
-                          ],
+                              const SizedBox(height: 6),
+                              Row(
+                                children: [
+                                  Text(
+                                    sizeText,
+                                    style: theme.textTheme.headlineSmall
+                                        ?.copyWith(
+                                      fontWeight: FontWeight.w800,
+                                      color: theme.colorScheme.error,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'MB',
+                                    style: theme.textTheme.titleSmall
+                                        ?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      color: theme.colorScheme.onSurface
+                                          .withValues(alpha:0.8),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                l10n.mbFreed(sizeText),
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.onSurface
+                                      .withValues(alpha:0.78),
+                                ),
+                              ),
+                            ],
+                          ),
                         );
                       },
                     ),
-                    const SizedBox(height: 20),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton(
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      child: AppThreeDButton(
+                        label: l10n.done,
                         onPressed: widget.onDone,
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 18,
-                            vertical: 8,
-                          ),
-                          foregroundColor: theme.colorScheme.primary,
+                        baseColor:
+                            theme.colorScheme.onPrimaryContainer.withValues(alpha:
+                          0.85,
                         ),
-                        child: Text(
-                          l10n.done,
-                          style: theme.textTheme.labelLarge?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
+                        textColor: AppColors.white,
+                        fullWidth: true,
+                        height: 52,
                       ),
                     ),
                   ],
@@ -1221,4 +1124,29 @@ class _DeleteSummaryBottomSheetState extends State<_DeleteSummaryBottomSheet>
       ),
     );
   }
+}
+
+Future<void> showDeleteSummaryBottomSheet(
+  BuildContext context, {
+  required int deletedCount,
+  required double deletedSizeMB,
+  required VoidCallback onDone,
+}) async {
+  await showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: AppColors.transparent,
+    isDismissible: false,
+    enableDrag: false,
+    builder: (sheetContext) {
+      return _DeleteSummaryBottomSheet(
+        deletedCount: deletedCount,
+        deletedSizeMB: deletedSizeMB,
+        onDone: () async {
+          Navigator.of(sheetContext).pop();
+          onDone();
+        },
+      );
+    },
+  );
 }

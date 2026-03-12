@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lottie/lottie.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../app/theme/app_colors.dart';
 import '../application/permissions_controller.dart';
 import '../../gallery/application/gallery_providers.dart' show PremiumCubit;
 
@@ -53,13 +54,13 @@ class _PermissionsPageState extends State<PermissionsPage> {
             Builder(
               builder: (iconContext) {
                 final isPremiumAsync = iconContext.watch<PremiumCubit>().state;
-                final isPremium = isPremiumAsync.maybeWhen(
+                isPremiumAsync.maybeWhen(
                   data: (premium) => premium,
                   orElse: () => false,
                 );
                 final containerColor = Theme.of(
                   context,
-                ).colorScheme.onPrimaryContainer.withOpacity(0.8);
+                ).colorScheme.onPrimaryContainer.withValues(alpha: 0.8);
                 return Icon(
                   Icons.photo_library_outlined,
                   size: 72,
@@ -87,18 +88,18 @@ class _PermissionsPageState extends State<PermissionsPage> {
                   final isPremiumAsync = buttonContext
                       .watch<PremiumCubit>()
                       .state;
-                  final isPremium = isPremiumAsync.maybeWhen(
+                  isPremiumAsync.maybeWhen(
                     data: (premium) => premium,
                     orElse: () => false,
                   );
                   final containerColor = Theme.of(
                     context,
-                  ).colorScheme.onPrimaryContainer.withOpacity(0.8);
+                  ).colorScheme.onPrimaryContainer.withValues(alpha: 0.8);
                   return FilledButton(
                     onPressed: () => context.read<PermissionsCubit>().request(),
                     style: FilledButton.styleFrom(
                       backgroundColor: containerColor,
-                      foregroundColor: Colors.white,
+                      foregroundColor: AppColors.white,
                       side: BorderSide(color: containerColor, width: 1.5),
                     ),
                     child: Text(l10n.allowAccess),
@@ -111,20 +112,20 @@ class _PermissionsPageState extends State<PermissionsPage> {
                   final isPremiumAsync = buttonContext
                       .watch<PremiumCubit>()
                       .state;
-                  final isPremium = isPremiumAsync.maybeWhen(
+                  isPremiumAsync.maybeWhen(
                     data: (premium) => premium,
                     orElse: () => false,
                   );
                   final containerColor = Theme.of(
                     context,
-                  ).colorScheme.onPrimaryContainer.withOpacity(0.8);
+                  ).colorScheme.onPrimaryContainer.withValues(alpha: 0.8);
                   return TextButton(
                     onPressed: () =>
                         context.read<PermissionsCubit>().openSettings(),
                     style: TextButton.styleFrom(
                       foregroundColor: containerColor,
                       side: BorderSide(
-                        color: containerColor.withOpacity(0.6),
+                        color: containerColor.withValues(alpha: 0.6),
                         width: 1.5,
                       ),
                     ),
@@ -151,19 +152,19 @@ class _PermissionsPageState extends State<PermissionsPage> {
                 final isPremiumAsync = buttonContext
                     .watch<PremiumCubit>()
                     .state;
-                final isPremium = isPremiumAsync.maybeWhen(
+                isPremiumAsync.maybeWhen(
                   data: (premium) => premium,
                   orElse: () => false,
                 );
                 final containerColor = Theme.of(
                   context,
-                ).colorScheme.onPrimaryContainer.withOpacity(0.8);
+                ).colorScheme.onPrimaryContainer.withValues(alpha: 0.8);
                 return TextButton(
                   onPressed: () => context.read<PermissionsCubit>().refresh(),
                   style: TextButton.styleFrom(
                     foregroundColor: containerColor,
                     side: BorderSide(
-                      color: containerColor.withOpacity(0.6),
+                      color: containerColor.withValues(alpha: 0.6),
                       width: 1.5,
                     ),
                   ),

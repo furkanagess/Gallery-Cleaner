@@ -103,7 +103,7 @@
   "cancel": "Cancelar",
   "restore": "Restaurar",
   "photoRestored": "Foto restaurada",
-  "remainingDeletionRights": "Eliminación Diaria Restante",
+  "remainingDeletionRights": "Derecho de Eliminación",
   "@remainingDeletionRights": {
     "description": "Remaining deletion rights label (daily)"
   },
@@ -458,13 +458,17 @@
   "@noDeleteRightsLeft": {
     "description": "Title when deletion rights are exhausted"
   },
-  "noDeleteRightsLeftMessage": "No tienes derechos de eliminación. Obtén derechos de eliminación ilimitados para continuar limpiando tu galería.",
+  "noDeleteRightsLeftMessage": "Obtén eliminación ilimitada con un único pago.",
   "@noDeleteRightsLeftMessage": {
     "description": "Message when deletion rights are exhausted"
   },
   "galleryStatsTitle": "Estadísticas de Galería",
   "@galleryStatsTitle": {
     "description": "Gallery statistics page title"
+  },
+  "galleryStatsHistoryTitle": "Tus acciones",
+  "@galleryStatsHistoryTitle": {
+    "description": "Title for user actions summary (keep/delete/size freed)"
   },
   "generalStatistics": "Estadísticas Generales",
   "@generalStatistics": {
@@ -919,6 +923,68 @@
   "@weNeedYourAccessTitle": {
     "description": "Permission request page title with line break"
   },
+  "warmupTitle": "Vamos a calentar un poco",
+  "@warmupTitle": {
+    "description": "Warm-up screen title"
+  },
+  "warmupRemaining": "{remaining} restantes",
+  "@warmupRemaining": {
+    "description": "Warm-up remaining count",
+    "placeholders": {
+      "remaining": {
+        "type": "int"
+      }
+    }
+  },
+  "warmupCountProgress": "{current}/{total} foto",
+  "@warmupCountProgress": {
+    "description": "Warm-up progress e.g. 1/5 foto",
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "warmupLoading": "Cargando tus fotos más antiguas...",
+  "@warmupLoading": {
+    "description": "Warm-up loading message"
+  },
+  "warmupNoPhotos": "No se encontraron fotos. Puedes saltar a la app.",
+  "@warmupNoPhotos": {
+    "description": "Warm-up no photos message"
+  },
+  "warmupRetry": "Reintentar",
+  "@warmupRetry": {
+    "description": "Warm-up retry button"
+  },
+  "warmupSkip": "Ir a la app",
+  "@warmupSkip": {
+    "description": "Warm-up skip button"
+  },
+  "warmupContinue": "Continuar a la app",
+  "@warmupContinue": {
+    "description": "Warm-up continue button when 5 deletes done"
+  },
+  "warmupCompletionTitle": "¡Genial! Limpiaste {count} fotos",
+  "@warmupCompletionTitle": {
+    "description": "Warm-up completion title after deleting/swiping photos",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "warmupCompletionDescription": "¿Por qué parar aquí? Sigue y empieza a limpiar tu galería.",
+  "@warmupCompletionDescription": {
+    "description": "Warm-up completion slogan shown at the end of warm-up swipe deck"
+  },
+  "settingsTrySwipeAgain": "Probar deslizar (5 fotos)",
+  "@settingsTrySwipeAgain": {
+    "description": "Settings item to open warmup screen"
+  },
   "resetToStart": "Volver al Inicio",
   "@resetToStart": {
     "description": "Button text to reset gallery to start"
@@ -1013,15 +1079,15 @@
   "@openAppAndViewResults": {
     "description": "Message telling user to open app and view scan results"
   },
-  "rateApp": "Calificar App",
+  "rateApp": "¡Califícanos!",
   "@rateApp": {
     "description": "Title for rate app section"
   },
-  "rateAppDescription": "¿Te gusta la app? ¡Por favor califícanos en la tienda!",
+  "rateAppDescription": "¡Tu opinión nos importa! ¿Nos calificarías en la tienda?",
   "@rateAppDescription": {
     "description": "Description for rate app section"
   },
-  "rateAppSupportMessage": "¡Apoya nuestro crecimiento! ¿Podrías tomar 3 segundos para calificar la app?",
+  "rateAppSupportMessage": "¡Califícanos! Solo toma unos segundos y nos ayuda a mejorar.",
   "@rateAppSupportMessage": {
     "description": "Support message for rate app dialog"
   },
@@ -1108,6 +1174,10 @@
   "duplicateModeLevelsDescription": "Baja Velocidad/Alta Precisión: Resultados más precisos, toma más tiempo\nEquilibrado: Equilibrio entre velocidad y precisión\nAlta Velocidad/Baja Precisión: Resultados rápidos, menos precisos",
   "@duplicateModeLevelsDescription": {
     "description": "Detailed description of duplicate detection mode levels"
+  },
+  "duplicateSensitivityLevelsDescription": "Baja: Coincidencia más flexible, más pares se consideran duplicados\nMedia: Sensibilidad equilibrada\nAlta: Coincidencia más estricta, solo fotos muy similares cuentan como duplicados",
+  "@duplicateSensitivityLevelsDescription": {
+    "description": "Description of duplicate detection sensitivity levels (Low/Medium/High)"
   },
   "allPhotosReviewedTitle": "¡Todas las Fotos Revisadas!",
   "@allPhotosReviewedTitle": {
@@ -1265,10 +1335,6 @@
   "@scanTip15": {
     "description": "Tip shown during scan"
   },
-  "galleryReportTitle": "Informe de Galería",
-  "@galleryReportTitle": {
-    "description": "Title for gallery report page"
-  },
   "photos": "Fotos",
   "@photos": {
     "description": "Photos label"
@@ -1284,10 +1350,6 @@
   "media": "Medios",
   "@media": {
     "description": "Media label"
-  },
-  "galleryReportDescription": "Nuestros usuarios limpian aproximadamente el 50% de su galería en promedio, liberando significativamente espacio de almacenamiento",
-  "@galleryReportDescription": {
-    "description": "Description text on gallery report page"
   },
   "reviewDeletePhotos": "Revisar Fotos para Eliminar",
   "@reviewDeletePhotos": {

@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lottie/lottie.dart';
 import 'package:photo_manager/photo_manager.dart';
 
 import '../../../../../l10n/app_localizations.dart';
@@ -90,13 +89,8 @@ class _GalleryStatsPageState extends State<GalleryStatsPage>
 
     return buildWithCubit(
       () => Scaffold(
-        backgroundColor: theme.colorScheme.background,
+        backgroundColor: theme.colorScheme.surface,
         appBar: AppBar(
-          title: Text(
-            l10n.galleryStatsTitle,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
           leading: Platform.isIOS
               ? IconButton(
                   icon: const Icon(CupertinoIcons.chevron_left),
@@ -128,10 +122,8 @@ class _GalleryStatsPageState extends State<GalleryStatsPage>
                         label: l10n.grantPermission,
                         icon: Icons.lock_open,
                         onPressed: () => context.go('/permission'),
-                        baseColor:
-                            theme.colorScheme.onPrimaryContainer.withOpacity(
-                          0.9,
-                        ),
+                        baseColor: theme.colorScheme.onPrimaryContainer
+                            .withValues(alpha: 0.9),
                         fullWidth: true,
                       ),
                     ],
@@ -236,81 +228,52 @@ class _GalleryStatsPageState extends State<GalleryStatsPage>
                   // Tarama yapılırken full-screen loading göster
                   if (isScanning) {
                     return Scaffold(
-                      backgroundColor: theme.colorScheme.background,
-                      body: Stack(
-                        children: [
-                          // Kar yağma efekti - arka planda
-                          Positioned.fill(
-                            child: IgnorePointer(
-                              child: Opacity(
-                                opacity: 0.6,
-                                child: ColorFiltered(
-                                  colorFilter: const ColorFilter.mode(
-                                    Colors.white,
-                                    BlendMode.srcATop,
-                                  ),
-                                  child: Lottie.asset(
-                                    'assets/new_year/Snowing.json',
-                                    fit: BoxFit.cover,
-                                    repeat: true,
-                                    animate: true,
-                                  ),
+                      backgroundColor: theme.colorScheme.surface,
+                      body: Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(32),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const SizedBox(
+                                width: 72,
+                                height: 72,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 6,
                                 ),
                               ),
-                            ),
-                          ),
-                          Center(
-                            child: Padding(
-                              padding: const EdgeInsets.all(32),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  // Reindeer animation
-                                  SizedBox(
-                                    width: 200,
-                                    height: 200,
-                                    child: Lottie.asset(
-                                      'assets/new_year/Reindeer.json',
-                                      fit: BoxFit.contain,
-                                      repeat: true,
-                                      animate: true,
-                                    ),
-                                  ),
-                            const SizedBox(height: 24),
-                            Text(
-                              l10n.galleryInfoLoading,
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                color: theme.colorScheme.onSurface,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              l10n.loadingMayTakeFewSeconds,
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: theme.colorScheme.onSurface.withOpacity(
-                                  0.7,
+                              const SizedBox(height: 24),
+                              Text(
+                                l10n.galleryInfoLoading,
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: theme.colorScheme.onSurface,
                                 ),
+                                textAlign: TextAlign.center,
                               ),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 24),
-                            // Durdur butonu
-                                  AppThreeDButton(
-                                    label: l10n.stop,
-                                    icon: Icons.stop,
-                              onPressed: () {
-                                context.read<GalleryStatsCubit>().cancel();
-                              },
-                                    baseColor: AppColors.error,
-                                    fullWidth: true,
+                              const SizedBox(height: 12),
+                              Text(
+                                l10n.loadingMayTakeFewSeconds,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: theme.colorScheme.onSurface.withValues(
+                                    alpha: 0.7,
                                   ),
-                                ],
+                                ),
+                                textAlign: TextAlign.center,
                               ),
-                            ),
+                              const SizedBox(height: 24),
+                              AppThreeDButton(
+                                label: l10n.stop,
+                                icon: Icons.stop,
+                                onPressed: () {
+                                  context.read<GalleryStatsCubit>().cancel();
+                                },
+                                baseColor: AppColors.error,
+                                fullWidth: true,
+                              ),
+                            ],
                           ),
-                        ],
+                        ),
                       ),
                     );
                   }
@@ -323,6 +286,14 @@ class _GalleryStatsPageState extends State<GalleryStatsPage>
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
+                              Text(
+                                l10n.galleryStatsHistoryTitle,
+                                style: theme.textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: -0.3,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
                               // Keep/Delete Stats Section (en üstte)
                               _buildKeepDeleteStatsSection(
                                 context,
@@ -361,121 +332,29 @@ class _GalleryStatsPageState extends State<GalleryStatsPage>
                           width: double.infinity,
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: theme.colorScheme.background,
+                            color: theme.colorScheme.surface,
                           ),
                           child: SafeArea(
                             top: false,
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                // Otomatik analiz toggle
-                                FutureBuilder<bool>(
-                                  future: context
-                                      .read<PreferencesService>()
-                                      .isAutoAnalyzeOnLaunchEnabled(),
-                                  builder: (context, snapshot) {
-                                    final isEnabled = snapshot.data ?? true;
-                                    return Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                        vertical: 12,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: theme
-                                            .colorScheme
-                                            .surfaceContainerHighest
-                                            .withOpacity(isEnabled ? 0.5 : 0.7),
-                                        borderRadius: BorderRadius.circular(12),
-                                        border: Border.all(
-                                          color: isEnabled
-                                              ? theme.colorScheme.outline
-                                                    .withOpacity(0.1)
-                                              : theme.colorScheme.outline
-                                                    .withOpacity(0.3),
-                                          width: 1,
-                                        ),
-                                      ),
-                                      child: Row(
-                                        children: [
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Text(
-                                                  l10n.autoAnalyzeOnLaunch,
-                                                  style: theme
-                                                      .textTheme
-                                                      .titleSmall
-                                                      ?.copyWith(
-                                                        fontWeight:
-                                                            FontWeight.w700,
-                                                        fontSize: 14,
-                                                        color: theme
-                                                            .colorScheme
-                                                            .onSurface,
-                                                      ),
-                                                ),
-                                                const SizedBox(height: 4),
-                                                Text(
-                                                  l10n.autoAnalyzeOnLaunchDescription,
-                                                  style: theme
-                                                      .textTheme
-                                                      .bodySmall
-                                                      ?.copyWith(
-                                                        color: theme
-                                                            .colorScheme
-                                                            .onSurface
-                                                            .withOpacity(0.65),
-                                                      ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                          CupertinoSwitch(
-                                            value: isEnabled,
-                                            onChanged: (value) async {
-                                              await context
-                                                  .read<PreferencesService>()
-                                                  .setAutoAnalyzeOnLaunch(
-                                                    value,
-                                                  );
-                                              if (mounted) {
-                                                cubitSetState(() {});
-                                              }
-                                            },
-                                          ),
-                                        ],
-                                      ),
-                                    );
-                                  },
-                                ),
-                                const SizedBox(height: 12),
-                                // Re-Analyze butonu
-                                Builder(
-                                  builder: (buttonContext) {
-                                    // Premium durumunu kontrol et
-                                    // Bottom navigation bar'daki container rengiyle aynı
-                                    final containerColor = theme
-                                        .colorScheme
-                                        .onPrimaryContainer
-                                        .withOpacity(0.8);
+                            child: Builder(
+                              builder: (buttonContext) {
+                                // Bottom navigation bar'daki container rengiyle aynı
+                                final containerColor = theme
+                                    .colorScheme
+                                    .onPrimaryContainer
+                                    .withValues(alpha: 0.8);
 
-                                    return AppThreeDButton(
-                                      label: l10n.reAnalyze,
-                                      icon: Icons.refresh,
-                                      onPressed: () {
-                                        context
-                                            .read<GalleryStatsCubit>()
-                                            .refresh();
-                                      },
-                                      baseColor: containerColor,
-                                      fullWidth: true,
-                                    );
+                                return AppThreeDButton(
+                                  label: l10n.reAnalyze,
+                                  icon: Icons.refresh,
+                                  onPressed: () {
+                                    context.read<GalleryStatsCubit>().refresh();
                                   },
-                                ),
-                              ],
+                                  baseColor: containerColor,
+                                  textColor: AppColors.surface,
+                                  fullWidth: true,
+                                );
+                              },
                             ),
                           ),
                         ),
@@ -491,8 +370,9 @@ class _GalleryStatsPageState extends State<GalleryStatsPage>
   String _formatBytes(int bytes) {
     if (bytes < 1024) return '$bytes B';
     if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
-    if (bytes < 1024 * 1024 * 1024)
+    if (bytes < 1024 * 1024 * 1024) {
       return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    }
     return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(2)} GB';
   }
 
@@ -516,13 +396,19 @@ class _GalleryStatsPageState extends State<GalleryStatsPage>
             value: '$keepCount',
             iconColor: semanticColors?.keep ?? AppColors.success,
             gradientColors: [
-              (semanticColors?.keep ?? AppColors.success).withOpacity(0.25),
-              (semanticColors?.keep ?? AppColors.success).withOpacity(0.15),
+              (semanticColors?.keep ?? AppColors.success).withValues(
+                alpha: 0.25,
+              ),
+              (semanticColors?.keep ?? AppColors.success).withValues(
+                alpha: 0.15,
+              ),
             ],
-            borderColor: (semanticColors?.keep ?? AppColors.success)
-                .withOpacity(0.4),
-            shadowColor: (semanticColors?.keep ?? AppColors.success)
-                .withOpacity(0.15),
+            borderColor: (semanticColors?.keep ?? AppColors.success).withValues(
+              alpha: 0.4,
+            ),
+            shadowColor: (semanticColors?.keep ?? AppColors.success).withValues(
+              alpha: 0.15,
+            ),
           ),
         ),
         const SizedBox(width: 12),
@@ -534,21 +420,26 @@ class _GalleryStatsPageState extends State<GalleryStatsPage>
             value: '$deleteCount',
             iconColor: semanticColors?.delete ?? AppColors.error,
             gradientColors: [
-              (semanticColors?.delete ?? AppColors.error).withOpacity(0.25),
-              (semanticColors?.delete ?? AppColors.error).withOpacity(0.15),
+              (semanticColors?.delete ?? AppColors.error).withValues(
+                alpha: 0.25,
+              ),
+              (semanticColors?.delete ?? AppColors.error).withValues(
+                alpha: 0.15,
+              ),
             ],
-            borderColor: (semanticColors?.delete ?? AppColors.error)
-                .withOpacity(0.4),
-            shadowColor: (semanticColors?.delete ?? AppColors.error)
-                .withOpacity(0.15),
+            borderColor: (semanticColors?.delete ?? AppColors.error).withValues(
+              alpha: 0.4,
+            ),
+            shadowColor: (semanticColors?.delete ?? AppColors.error).withValues(
+              alpha: 0.15,
+            ),
           ),
         ),
         const SizedBox(width: 12),
         Builder(
           builder: (builderContext) {
-            // Bottom navigation bar'daki container rengiyle aynı
-            final containerColor = theme.colorScheme.onPrimaryContainer
-                .withOpacity(0.8);
+            // Kazanılan alan kartı için, tema ile uyumlu ancak ayrı duran bir renk
+            final savedColor = theme.colorScheme.primary;
 
             return Expanded(
               child: _buildStatCardEnhanced(
@@ -556,13 +447,13 @@ class _GalleryStatsPageState extends State<GalleryStatsPage>
                 theme: theme,
                 label: l10n.spaceSaved,
                 value: _formatBytes(totalBytesFreed),
-                iconColor: containerColor,
+                iconColor: savedColor,
                 gradientColors: [
-                  containerColor.withOpacity(0.25),
-                  containerColor.withOpacity(0.15),
+                  savedColor.withValues(alpha: 0.25),
+                  savedColor.withValues(alpha: 0.15),
                 ],
-                borderColor: containerColor.withOpacity(0.4),
-                shadowColor: containerColor.withOpacity(0.15),
+                borderColor: savedColor.withValues(alpha: 0.4),
+                shadowColor: savedColor.withValues(alpha: 0.15),
               ),
             );
           },
@@ -612,7 +503,7 @@ class _GalleryStatsPageState extends State<GalleryStatsPage>
               height: 80,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: iconColor.withOpacity(0.1),
+                color: iconColor.withValues(alpha: 0.1),
               ),
             ),
           ),
@@ -628,7 +519,7 @@ class _GalleryStatsPageState extends State<GalleryStatsPage>
                   style: theme.textTheme.labelSmall?.copyWith(
                     fontWeight: FontWeight.w600,
                     fontSize: 11,
-                    color: theme.colorScheme.onSurface.withOpacity(0.8),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
                     letterSpacing: 0.3,
                   ),
                   maxLines: 1,
@@ -683,7 +574,7 @@ class _GalleryStatsPageState extends State<GalleryStatsPage>
           builder: (builderContext) {
             // Bottom navigation bar'daki container rengiyle aynı
             final containerColor = theme.colorScheme.onPrimaryContainer
-                .withOpacity(0.8);
+                .withValues(alpha: 0.8);
 
             return Column(
               children: [
@@ -698,11 +589,11 @@ class _GalleryStatsPageState extends State<GalleryStatsPage>
                         value: _formatNumber(albumCount),
                         iconColor: containerColor,
                         gradientColors: [
-                          containerColor.withOpacity(0.25),
-                          containerColor.withOpacity(0.15),
+                          containerColor.withValues(alpha: 0.25),
+                          containerColor.withValues(alpha: 0.15),
                         ],
-                        borderColor: containerColor.withOpacity(0.4),
-                        shadowColor: containerColor.withOpacity(0.15),
+                        borderColor: containerColor.withValues(alpha: 0.4),
+                        shadowColor: containerColor.withValues(alpha: 0.15),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -714,11 +605,11 @@ class _GalleryStatsPageState extends State<GalleryStatsPage>
                         value: _formatNumber(photoCount),
                         iconColor: containerColor,
                         gradientColors: [
-                          containerColor.withOpacity(0.25),
-                          containerColor.withOpacity(0.15),
+                          containerColor.withValues(alpha: 0.25),
+                          containerColor.withValues(alpha: 0.15),
                         ],
-                        borderColor: containerColor.withOpacity(0.4),
-                        shadowColor: containerColor.withOpacity(0.15),
+                        borderColor: containerColor.withValues(alpha: 0.4),
+                        shadowColor: containerColor.withValues(alpha: 0.15),
                       ),
                     ),
                   ],
@@ -735,11 +626,11 @@ class _GalleryStatsPageState extends State<GalleryStatsPage>
                         value: _formatNumber(videoCount),
                         iconColor: containerColor,
                         gradientColors: [
-                          containerColor.withOpacity(0.25),
-                          containerColor.withOpacity(0.15),
+                          containerColor.withValues(alpha: 0.25),
+                          containerColor.withValues(alpha: 0.15),
                         ],
-                        borderColor: containerColor.withOpacity(0.4),
-                        shadowColor: containerColor.withOpacity(0.15),
+                        borderColor: containerColor.withValues(alpha: 0.4),
+                        shadowColor: containerColor.withValues(alpha: 0.15),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -751,11 +642,11 @@ class _GalleryStatsPageState extends State<GalleryStatsPage>
                         value: _formatSizeMB(stats.totalSizeMB),
                         iconColor: containerColor,
                         gradientColors: [
-                          containerColor.withOpacity(0.25),
-                          containerColor.withOpacity(0.15),
+                          containerColor.withValues(alpha: 0.25),
+                          containerColor.withValues(alpha: 0.15),
                         ],
-                        borderColor: containerColor.withOpacity(0.4),
-                        shadowColor: containerColor.withOpacity(0.15),
+                        borderColor: containerColor.withValues(alpha: 0.4),
+                        shadowColor: containerColor.withValues(alpha: 0.15),
                       ),
                     ),
                   ],
@@ -819,7 +710,7 @@ class _GalleryStatsPageState extends State<GalleryStatsPage>
         color: theme.colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: theme.colorScheme.outline.withOpacity(0.1),
+          color: theme.colorScheme.outline.withValues(alpha: 0.1),
           width: 1,
         ),
       ),
@@ -842,7 +733,9 @@ class _GalleryStatsPageState extends State<GalleryStatsPage>
                 // Placeholder while loading or if no thumbnail
                 return Container(
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+                    color: theme.colorScheme.primaryContainer.withValues(
+                      alpha: 0.3,
+                    ),
                     borderRadius: const BorderRadius.vertical(
                       top: Radius.circular(16),
                     ),
@@ -875,7 +768,7 @@ class _GalleryStatsPageState extends State<GalleryStatsPage>
                 Text(
                   '${album.mediaCount} ${l10n.items}',
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.7),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                   ),
                 ),
               ],
@@ -956,7 +849,9 @@ class _GalleryStatsPageState extends State<GalleryStatsPage>
             errorBuilder: (context, error, stackTrace) {
               debugPrint('Error loading thumbnail: $error');
               return Container(
-                color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+                color: theme.colorScheme.primaryContainer.withValues(
+                  alpha: 0.3,
+                ),
                 child: Center(
                   child: Icon(
                     Icons.broken_image,
@@ -971,7 +866,7 @@ class _GalleryStatsPageState extends State<GalleryStatsPage>
         if (snapshot.hasError) {
           debugPrint('Thumbnail error: ${snapshot.error}');
           return Container(
-            color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+            color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
             child: Center(
               child: Icon(
                 Icons.broken_image,
@@ -982,7 +877,7 @@ class _GalleryStatsPageState extends State<GalleryStatsPage>
           );
         }
         return Container(
-          color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+          color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
           child: Center(
             child: CircularProgressIndicator(
               strokeWidth: 2,

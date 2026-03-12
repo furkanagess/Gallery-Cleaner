@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -13,8 +14,8 @@ import '../../onboarding/application/permissions_controller.dart';
 
 class SelectedAlbumCubit extends Cubit<pm.AssetPathEntity?> {
   SelectedAlbumCubit({PreferencesService? preferencesService})
-      : _preferencesService = preferencesService,
-        super(null);
+    : _preferencesService = preferencesService,
+      super(null);
 
   final PreferencesService? _preferencesService;
 
@@ -37,13 +38,14 @@ class AlbumsCubit extends Cubit<AsyncValue<List<pm.AssetPathEntity>>> {
     required PermissionsCubit permissionsCubit,
     SelectedAlbumCubit? selectedAlbumCubit,
     PreferencesService? preferencesService,
-  })  : _mediaLibraryService = mediaLibraryService,
-        _permissionsCubit = permissionsCubit,
-        _selectedAlbumCubit = selectedAlbumCubit,
-        _preferencesService = preferencesService,
-        super(const AsyncValue.loading()) {
-    _permissionSubscription =
-        _permissionsCubit.stream.listen(_handlePermissionChange);
+  }) : _mediaLibraryService = mediaLibraryService,
+       _permissionsCubit = permissionsCubit,
+       _selectedAlbumCubit = selectedAlbumCubit,
+       _preferencesService = preferencesService,
+       super(const AsyncValue.loading()) {
+    _permissionSubscription = _permissionsCubit.stream.listen(
+      _handlePermissionChange,
+    );
     _handlePermissionChange(_permissionsCubit.state);
   }
 
@@ -73,35 +75,40 @@ class AlbumsCubit extends Cubit<AsyncValue<List<pm.AssetPathEntity>>> {
         onlyAll: false,
         type: pm.RequestType.image,
       );
-      
+
       // Albümleri en çok fotoğrafa sahip olanlara göre sırala (gösterim ve default seçim için)
       final sortedAlbumsByCount = await _sortAlbumsByPhotoCount(albums);
-      
+
       // İlk yüklemede, eğer hiç albüm seçilmemişse, önce son seçilen albümü kontrol et
-      if (!_hasSelectedDefaultAlbum && 
-          _selectedAlbumCubit != null && 
+      if (!_hasSelectedDefaultAlbum &&
+          _selectedAlbumCubit != null &&
           _selectedAlbumCubit.state == null) {
         _hasSelectedDefaultAlbum = true;
-        
+
         // Son seçilen albümü PreferencesService'den al
         String? lastSelectedAlbumId;
         if (_preferencesService != null) {
-          lastSelectedAlbumId = await _preferencesService.getLastSelectedAlbumId();
+          lastSelectedAlbumId = await _preferencesService
+              .getLastSelectedAlbumId();
         }
-        
+
         // Eğer son seçilen albüm ID'si varsa ve bu albüm hala mevcutsa, onu seç
         if (lastSelectedAlbumId != null) {
           final lastSelectedAlbum = albums.firstWhere(
             (album) => album.id == lastSelectedAlbumId,
             orElse: () => albums.first, // Bulunamazsa ilk albümü kullan
           );
-          
+
           if (lastSelectedAlbum.id == lastSelectedAlbumId) {
-            debugPrint('🎯 [AlbumsCubit] Son seçilen albüm yüklendi: ${lastSelectedAlbum.name}');
+            debugPrint(
+              '🎯 [AlbumsCubit] Son seçilen albüm yüklendi: ${lastSelectedAlbum.name}',
+            );
             _selectedAlbumCubit.select(lastSelectedAlbum);
           } else {
             // Son seçilen albüm bulunamadı, default seçime geç
-            debugPrint('⚠️ [AlbumsCubit] Son seçilen albüm bulunamadı, default seçime geçiliyor');
+            debugPrint(
+              '⚠️ [AlbumsCubit] Son seçilen albüm bulunamadı, default seçime geçiliyor',
+            );
             _selectDefaultAlbum(sortedAlbumsByCount);
           }
         } else {
@@ -109,7 +116,7 @@ class AlbumsCubit extends Cubit<AsyncValue<List<pm.AssetPathEntity>>> {
           _selectDefaultAlbum(sortedAlbumsByCount);
         }
       }
-      
+
       // Gösterim için fotoğraf sayısına göre sıralanmış listeyi kullan
       emit(AsyncValue.data(sortedAlbumsByCount));
     } catch (e, st) {
@@ -125,21 +132,27 @@ class AlbumsCubit extends Cubit<AsyncValue<List<pm.AssetPathEntity>>> {
   /// - Eğer 1 albüm varsa: 1. albüm
   void _selectDefaultAlbum(List<pm.AssetPathEntity> sortedAlbumsByCount) {
     if (_selectedAlbumCubit == null) return;
-    
+
     if (sortedAlbumsByCount.length >= 3) {
       // En çok fotoğrafa sahip 3. albüm
       final thirdByCountAlbum = sortedAlbumsByCount[2]; // Index 2 = 3. albüm
-      debugPrint('🎯 [AlbumsCubit] İlk yüklemede en çok fotoğrafa sahip 3. albüm seçiliyor: ${thirdByCountAlbum.name}');
+      debugPrint(
+        '🎯 [AlbumsCubit] İlk yüklemede en çok fotoğrafa sahip 3. albüm seçiliyor: ${thirdByCountAlbum.name}',
+      );
       _selectedAlbumCubit.select(thirdByCountAlbum);
     } else if (sortedAlbumsByCount.length == 2) {
       // Eğer sadece 2 albüm varsa, en çok fotoğrafa sahip 2. albümü seç
       final secondByCountAlbum = sortedAlbumsByCount[1];
-      debugPrint('🎯 [AlbumsCubit] İlk yüklemede en çok fotoğrafa sahip 2. albüm seçiliyor: ${secondByCountAlbum.name}');
+      debugPrint(
+        '🎯 [AlbumsCubit] İlk yüklemede en çok fotoğrafa sahip 2. albüm seçiliyor: ${secondByCountAlbum.name}',
+      );
       _selectedAlbumCubit.select(secondByCountAlbum);
     } else if (sortedAlbumsByCount.length == 1) {
       // Eğer sadece 1 albüm varsa, onu seç
       final firstAlbum = sortedAlbumsByCount[0];
-      debugPrint('🎯 [AlbumsCubit] İlk yüklemede tek albüm seçiliyor: ${firstAlbum.name}');
+      debugPrint(
+        '🎯 [AlbumsCubit] İlk yüklemede tek albüm seçiliyor: ${firstAlbum.name}',
+      );
       _selectedAlbumCubit.select(firstAlbum);
     }
   }
@@ -149,14 +162,14 @@ class AlbumsCubit extends Cubit<AsyncValue<List<pm.AssetPathEntity>>> {
     List<pm.AssetPathEntity> albums,
   ) async {
     if (albums.isEmpty) return albums;
-    
+
     // Her albüm için fotoğraf sayısını al (paralel işleme için batch'ler halinde)
     final albumCounts = <pm.AssetPathEntity, int>{};
     const batchSize = 10; // Her seferde 10 albüm paralel işle
-    
+
     for (var i = 0; i < albums.length; i += batchSize) {
       final batch = albums.skip(i).take(batchSize).toList();
-      
+
       // Batch'i paralel işle
       await Future.wait(
         batch.map((album) async {
@@ -165,13 +178,15 @@ class AlbumsCubit extends Cubit<AsyncValue<List<pm.AssetPathEntity>>> {
             final assetCount = await album.assetCountAsync;
             albumCounts[album] = assetCount;
           } catch (e) {
-            debugPrint('⚠️ [AlbumsCubit] Albüm ${album.name} için fotoğraf sayısı alınamadı: $e');
+            debugPrint(
+              '⚠️ [AlbumsCubit] Albüm ${album.name} için fotoğraf sayısı alınamadı: $e',
+            );
             albumCounts[album] = 0;
           }
         }),
       );
     }
-    
+
     // Albümleri fotoğraf sayısına göre sırala (en çok fotoğraf önce)
     final sortedAlbums = List<pm.AssetPathEntity>.from(albums);
     sortedAlbums.sort((a, b) {
@@ -179,7 +194,7 @@ class AlbumsCubit extends Cubit<AsyncValue<List<pm.AssetPathEntity>>> {
       final countB = albumCounts[b] ?? 0;
       return countB.compareTo(countA); // Büyükten küçüğe
     });
-    
+
     return sortedAlbums;
   }
 
@@ -206,13 +221,13 @@ class GalleryPagingCubit extends Cubit<AsyncValue<List<pm.AssetEntity>>> {
     required AlbumFilterCubit albumFilterCubit,
     required AlbumSortOrderCubit albumSortOrderCubit,
     PreferencesService? preferencesService,
-  })  : _mediaLibraryService = mediaLibraryService,
-        _selectedAlbumCubit = selectedAlbumCubit,
-        _permissionsCubit = permissionsCubit,
-        _albumFilterCubit = albumFilterCubit,
-        _albumSortOrderCubit = albumSortOrderCubit,
-        _preferencesService = preferencesService,
-        super(const AsyncLoading()) {
+  }) : _mediaLibraryService = mediaLibraryService,
+       _selectedAlbumCubit = selectedAlbumCubit,
+       _permissionsCubit = permissionsCubit,
+       _albumFilterCubit = albumFilterCubit,
+       _albumSortOrderCubit = albumSortOrderCubit,
+       _preferencesService = preferencesService,
+       super(const AsyncLoading()) {
     _albumSubscription = _selectedAlbumCubit.stream.listen((album) {
       // Sadece albüm gerçekten değiştiyse reload yap
       final albumId = album?.id;
@@ -232,8 +247,7 @@ class GalleryPagingCubit extends Cubit<AsyncValue<List<pm.AssetEntity>>> {
         _scheduleReload(const Duration(milliseconds: 100));
       }
     });
-    _permissionSubscription =
-        _permissionsCubit.stream.listen((status) {
+    _permissionSubscription = _permissionsCubit.stream.listen((status) {
       final previous = _lastPermission;
       _lastPermission = status;
       if (status == GalleryPermissionStatus.authorized &&
@@ -269,17 +283,18 @@ class GalleryPagingCubit extends Cubit<AsyncValue<List<pm.AssetEntity>>> {
   GalleryPermissionStatus? _lastPermission;
   bool _canLoadMore = true;
   static const int _pageSize = 1000;
-  
+  static const int _persistentCacheLimit = 4000;
+
   // State management için
   String? _currentLoadedAlbumId; // Şu an yüklenmiş albüm ID'si
   SortOrder? _currentLoadedSortOrder; // Şu an yüklenmiş sıralama
   DateRangeFilter? _currentLoadedFilter; // Şu an yüklenmiş filtre
   bool _isLoading = false; // Yükleme devam ediyor mu
-  
+
   // Progress tracking için
   int _currentLoadingProgress = 0; // Şu an yüklenen item sayısı
   int? _currentLoadingTotal; // Toplam item sayısı
-  
+
   // Progress getter'ları
   int get currentLoadingProgress => _currentLoadingProgress;
   int? get currentLoadingTotal => _currentLoadingTotal;
@@ -297,7 +312,9 @@ class GalleryPagingCubit extends Cubit<AsyncValue<List<pm.AssetEntity>>> {
           return false;
         }
         if (dateFilter.endDate != null &&
-            createDate.isAfter(dateFilter.endDate!.add(const Duration(days: 1)))) {
+            createDate.isAfter(
+              dateFilter.endDate!.add(const Duration(days: 1)),
+            )) {
           return false;
         }
         return true;
@@ -316,18 +333,21 @@ class GalleryPagingCubit extends Cubit<AsyncValue<List<pm.AssetEntity>>> {
   void _scheduleReload(Duration delay) {
     // Eğer zaten yükleme devam ediyorsa, reload yapma
     if (_isLoading) {
-      debugPrint('⚠️ [GalleryPagingCubit] Reload already in progress, skipping...');
+      debugPrint(
+        '⚠️ [GalleryPagingCubit] Reload already in progress, skipping...',
+      );
       return;
     }
-    
+
     _reloadTimer?.cancel();
     _reloadTimer = Timer(delay, () {
-      if (_permissionsCubit.state == GalleryPermissionStatus.authorized && !_isLoading) {
+      if (_permissionsCubit.state == GalleryPermissionStatus.authorized &&
+          !_isLoading) {
         reload();
       }
     });
   }
-  
+
   // Filtrelerin eşit olup olmadığını kontrol et
   bool _filtersEqual(DateRangeFilter? a, DateRangeFilter? b) {
     if (a == null && b == null) return true;
@@ -338,23 +358,27 @@ class GalleryPagingCubit extends Cubit<AsyncValue<List<pm.AssetEntity>>> {
   Future<void> reload() async {
     // Yükleme zaten devam ediyorsa, yeni reload'ı atla
     if (_isLoading) {
-      debugPrint('⚠️ [GalleryPagingCubit] Reload already in progress, skipping duplicate reload');
+      debugPrint(
+        '⚠️ [GalleryPagingCubit] Reload already in progress, skipping duplicate reload',
+      );
       return;
     }
-    
+
     final dateFilter = _albumFilterCubit.state;
     final sortOrder = _albumSortOrderCubit.state;
     final album = _selectedAlbumCubit.state;
     final albumId = album?.id;
-    
+
     // Cache key oluştur
     final cacheKey = _getCacheKey(albumId, sortOrder, dateFilter);
-    
+
     // Cache'de var mı kontrol et
     if (_albumCache.containsKey(cacheKey)) {
-      debugPrint('✅ [GalleryPagingCubit] Cache hit for album: $albumId, sort: $sortOrder');
+      debugPrint(
+        '✅ [GalleryPagingCubit] Cache hit for album: $albumId, sort: $sortOrder',
+      );
       var cachedPhotos = _albumCache[cacheKey]!;
-      
+
       // Oldest sort için cache'den yüklenen fotoğrafları da sırala (garantile)
       if (sortOrder == SortOrder.oldest && cachedPhotos.isNotEmpty) {
         cachedPhotos = List.from(cachedPhotos);
@@ -362,54 +386,53 @@ class GalleryPagingCubit extends Cubit<AsyncValue<List<pm.AssetEntity>>> {
           return a.createDateTime.compareTo(b.createDateTime);
         });
       }
-      
-      // Silinen fotoğrafları filtrele
-      if (_preferencesService != null) {
-        final deletedIds = await _preferencesService.getDeletedPhotoIds();
-        if (deletedIds.isNotEmpty) {
-          final beforeCount = cachedPhotos.length;
-          cachedPhotos = cachedPhotos
-              .where((asset) => !deletedIds.contains(asset.id))
-              .toList();
-          final afterCount = cachedPhotos.length;
-          if (beforeCount != afterCount) {
-            debugPrint('🚫 [GalleryPagingCubit] Cache\'den ${beforeCount - afterCount} silinen fotoğraf filtrelendi (${beforeCount} -> ${afterCount})');
-          }
-        }
-      }
-      
+
+      cachedPhotos = await _removeDeletedAssets(cachedPhotos);
+
       // State'i güncelle
       _currentLoadedAlbumId = albumId;
       _currentLoadedSortOrder = sortOrder;
       _currentLoadedFilter = dateFilter;
       _allFilteredAssets = cachedPhotos;
       _isLoading = false;
-      
+
       // Cache'den direkt emit et
       emit(AsyncValue.data(cachedPhotos));
       return;
     }
-    
+
     // Eğer aynı albüm, aynı filtre ve aynı sıralama zaten yüklenmişse, reload yapma
     if (albumId == _currentLoadedAlbumId &&
         sortOrder == _currentLoadedSortOrder &&
         _filtersEqual(dateFilter, _currentLoadedFilter) &&
         !state.isLoading) {
-      debugPrint('ℹ️ [GalleryPagingCubit] Album, filter and sort order unchanged, skipping reload');
+      debugPrint(
+        'ℹ️ [GalleryPagingCubit] Album, filter and sort order unchanged, skipping reload',
+      );
       return;
     }
-    
-    // Yükleme başlatılıyor
+
     _isLoading = true;
+
+    final usedPersistentCache = await _emitPersistentCacheIfAvailable(
+      albumId: albumId,
+      sortOrder: sortOrder,
+      dateFilter: dateFilter,
+    );
+    if (usedPersistentCache) {
+      _isLoading = false;
+      return;
+    }
+
+    // Yükleme başlatılıyor
     _canLoadMore = true;
     _allFilteredAssets.clear();
     _loadedPages.clear();
     _currentLoadingProgress = 0;
     _currentLoadingTotal = null;
     emit(const AsyncLoading());
-    
+
     try {
-      
       // If oldest sort order is selected, we need to start from the oldest photos
       // Get total asset count to calculate starting page
       int? totalAssets;
@@ -420,13 +443,17 @@ class GalleryPagingCubit extends Cubit<AsyncValue<List<pm.AssetEntity>>> {
           if (totalAssets > 0) {
             lastPage = ((totalAssets - 1) ~/ _pageSize);
             _currentLoadingTotal = totalAssets;
-            debugPrint('📊 [GalleryPagingCubit] Total assets: $totalAssets, Last page: $lastPage');
+            debugPrint(
+              '📊 [GalleryPagingCubit] Total assets: $totalAssets, Last page: $lastPage',
+            );
           } else {
             debugPrint('⚠️ [GalleryPagingCubit] Total assets is 0 or negative');
           }
         } catch (e) {
           // If assetCountAsync fails, try to estimate by loading pages
-          debugPrint('⚠️ [GalleryPagingCubit] assetCountAsync failed: $e, trying to estimate...');
+          debugPrint(
+            '⚠️ [GalleryPagingCubit] assetCountAsync failed: $e, trying to estimate...',
+          );
           try {
             // Try to find the last page by loading pages until we get an empty page
             int testPage = 0;
@@ -439,64 +466,84 @@ class GalleryPagingCubit extends Cubit<AsyncValue<List<pm.AssetEntity>>> {
               );
               if (testItems.isEmpty || testItems.length < _pageSize) {
                 lastPage = testPage > 0 ? testPage - 1 : 0;
-                debugPrint('📊 [GalleryPagingCubit] Estimated last page: $lastPage (by testing pages)');
+                debugPrint(
+                  '📊 [GalleryPagingCubit] Estimated last page: $lastPage (by testing pages)',
+                );
                 break;
               }
               testPage++;
             }
             if (lastPage == null) {
               lastPage = maxTestPages - 1;
-              debugPrint('⚠️ [GalleryPagingCubit] Could not find last page, using max: $lastPage');
+              debugPrint(
+                '⚠️ [GalleryPagingCubit] Could not find last page, using max: $lastPage',
+              );
             }
           } catch (e2) {
-            debugPrint('❌ [GalleryPagingCubit] Failed to estimate last page: $e2');
+            debugPrint(
+              '❌ [GalleryPagingCubit] Failed to estimate last page: $e2',
+            );
           }
         }
       }
-      
+
       final allItems = <pm.AssetEntity>[];
       int page = 0;
-      
+
       // Load ALL photos from the album - no limits
       if (sortOrder == SortOrder.oldest && album != null) {
         // Oldest sort için: tüm fotoğrafları index bazlı range ile yükle
         try {
           totalAssets ??= await album.assetCountAsync;
         } catch (_) {}
-        
+
         if (totalAssets == null || totalAssets == 0) {
-          debugPrint('⚠️ [GalleryPagingCubit] Total assets is null or 0 for oldest sort');
+          debugPrint(
+            '⚠️ [GalleryPagingCubit] Total assets is null or 0 for oldest sort',
+          );
         } else {
-          debugPrint('🔄 [GalleryPagingCubit] Loading ALL oldest photos via getAssetListRange (total: $totalAssets)');
+          debugPrint(
+            '🔄 [GalleryPagingCubit] Loading ALL oldest photos via getAssetListRange (total: $totalAssets)',
+          );
           final loadedAssetIds = <String>{};
           const int chunkSize = 1000;
-          
+
           for (int start = 0; start < totalAssets; start += chunkSize) {
-            final end = (start + chunkSize) > totalAssets ? totalAssets : (start + chunkSize);
+            final end = (start + chunkSize) > totalAssets
+                ? totalAssets
+                : (start + chunkSize);
             final items = await album.getAssetListRange(start: start, end: end);
-            
+
             if (items.isEmpty) {
-              debugPrint('⚠️ [GalleryPagingCubit] Empty range [$start, $end) returned, breaking');
+              debugPrint(
+                '⚠️ [GalleryPagingCubit] Empty range [$start, $end) returned, breaking',
+              );
               break;
             }
-            
+
             for (final item in items) {
               if (!loadedAssetIds.contains(item.id)) {
                 allItems.add(item);
                 loadedAssetIds.add(item.id);
               }
             }
-            
+
             _currentLoadingProgress = loadedAssetIds.length;
-            debugPrint('📄 [GalleryPagingCubit] Loaded range [$start, $end): ${items.length} items (unique total: ${loadedAssetIds.length})');
+            debugPrint(
+              '📄 [GalleryPagingCubit] Loaded range [$start, $end): ${items.length} items (unique total: ${loadedAssetIds.length})',
+            );
           }
-          
-          debugPrint('✅ [GalleryPagingCubit] Loaded ALL ${loadedAssetIds.length} unique photos from album via range');
+
+          debugPrint(
+            '✅ [GalleryPagingCubit] Loaded ALL ${loadedAssetIds.length} unique photos from album via range',
+          );
         }
       } else {
         // For newest sort: start from page 0 and load ALL pages forward
-        debugPrint('🔄 [GalleryPagingCubit] Loading ALL newest photos: starting from page 0');
-        
+        debugPrint(
+          '🔄 [GalleryPagingCubit] Loading ALL newest photos: starting from page 0',
+        );
+
         // Load ALL pages from the beginning (no limit)
         while (true) {
           // Skip if already loaded
@@ -504,7 +551,7 @@ class GalleryPagingCubit extends Cubit<AsyncValue<List<pm.AssetEntity>>> {
             page++;
             continue;
           }
-          
+
           final items = await _mediaLibraryService.fetchRecentAssets(
             page: page,
             pageSize: _pageSize,
@@ -514,35 +561,45 @@ class GalleryPagingCubit extends Cubit<AsyncValue<List<pm.AssetEntity>>> {
           allItems.addAll(items);
           _loadedPages.add(page);
           _currentLoadingProgress = allItems.length; // Progress güncelle
-          debugPrint('📄 [GalleryPagingCubit] Loaded page $page: ${items.length} items (total: ${allItems.length})');
+          debugPrint(
+            '📄 [GalleryPagingCubit] Loaded page $page: ${items.length} items (total: ${allItems.length})',
+          );
           if (items.length < _pageSize) break; // Last page
           page++;
         }
-        
-        debugPrint('✅ [GalleryPagingCubit] Loaded ALL ${allItems.length} items from pages starting at 0');
+
+        debugPrint(
+          '✅ [GalleryPagingCubit] Loaded ALL ${allItems.length} items from pages starting at 0',
+        );
       }
 
       // Apply filters and sorting
       // For oldest sort, this will sort by date ascending (oldest first)
       var filtered = _applyFilters(allItems);
-      
+
       // Oldest sort için mutlaka tarihe göre ascending sıralama yap (en eski önce)
       if (sortOrder == SortOrder.oldest && filtered.isNotEmpty) {
         // Tarihe göre ascending sıralama (en eski önce) - _applyFilters'da yapılan sıralamayı garantile
         filtered.sort((a, b) {
           return a.createDateTime.compareTo(b.createDateTime);
         });
-        
-        debugPrint('📊 [GalleryPagingCubit] Filtered items: ${filtered.length}');
-        debugPrint('📅 [GalleryPagingCubit] Oldest photo date: ${filtered.first.createDateTime}');
-        debugPrint('📅 [GalleryPagingCubit] Newest photo date in filtered: ${filtered.last.createDateTime}');
+
+        debugPrint(
+          '📊 [GalleryPagingCubit] Filtered items: ${filtered.length}',
+        );
+        debugPrint(
+          '📅 [GalleryPagingCubit] Oldest photo date: ${filtered.first.createDateTime}',
+        );
+        debugPrint(
+          '📅 [GalleryPagingCubit] Newest photo date in filtered: ${filtered.last.createDateTime}',
+        );
       }
 
       // If we have date filter, continue loading ALL pages to find matching items
       // No limits - load all pages
       if (dateFilter.hasFilter) {
         int currentPage = page;
-        
+
         // Continue loading ALL remaining pages (no limit)
         if (sortOrder == SortOrder.oldest && lastPage != null) {
           // For oldest sort with date filter: load all pages from 0 to lastPage
@@ -561,7 +618,7 @@ class GalleryPagingCubit extends Cubit<AsyncValue<List<pm.AssetEntity>>> {
               currentPage++;
               continue;
             }
-            
+
             // Add only new items (avoid duplicates)
             for (final item in items) {
               if (!allItems.any((existing) => existing.id == item.id)) {
@@ -599,7 +656,7 @@ class GalleryPagingCubit extends Cubit<AsyncValue<List<pm.AssetEntity>>> {
           }
         }
         page = currentPage;
-        
+
         // Date filter uygulandıktan sonra oldest sort için tekrar sırala
         if (sortOrder == SortOrder.oldest && filtered.isNotEmpty) {
           filtered.sort((a, b) {
@@ -612,37 +669,38 @@ class GalleryPagingCubit extends Cubit<AsyncValue<List<pm.AssetEntity>>> {
       // For oldest sort, filtered list is sorted ascending (oldest first),
       // so all photos will be shown starting from the oldest
       var allFilteredPhotos = filtered.toList();
-      
-      // Silinen fotoğrafları filtrele
-      if (_preferencesService != null) {
-        final deletedIds = await _preferencesService.getDeletedPhotoIds();
-        if (deletedIds.isNotEmpty) {
-          final beforeCount = allFilteredPhotos.length;
-          allFilteredPhotos = allFilteredPhotos
-              .where((asset) => !deletedIds.contains(asset.id))
-              .toList();
-          final afterCount = allFilteredPhotos.length;
-          if (beforeCount != afterCount) {
-            debugPrint('🚫 [GalleryPagingCubit] ${beforeCount - afterCount} silinen fotoğraf filtrelendi (${beforeCount} -> ${afterCount})');
-          }
-        }
-      }
-      
+
+      allFilteredPhotos = await _removeDeletedAssets(allFilteredPhotos);
+
       if (sortOrder == SortOrder.oldest && allFilteredPhotos.isNotEmpty) {
-        debugPrint('📸 [GalleryPagingCubit] All filtered photos (oldest): ${allFilteredPhotos.length} photos');
-        debugPrint('📅 [GalleryPagingCubit] First photo date: ${allFilteredPhotos.first.createDateTime}');
-        debugPrint('📅 [GalleryPagingCubit] Last photo date: ${allFilteredPhotos.last.createDateTime}');
+        debugPrint(
+          '📸 [GalleryPagingCubit] All filtered photos (oldest): ${allFilteredPhotos.length} photos',
+        );
+        debugPrint(
+          '📅 [GalleryPagingCubit] First photo date: ${allFilteredPhotos.first.createDateTime}',
+        );
+        debugPrint(
+          '📅 [GalleryPagingCubit] Last photo date: ${allFilteredPhotos.last.createDateTime}',
+        );
       }
-      
+
       // Since we're loading ALL photos, canLoadMore is false (all photos are already loaded)
       _canLoadMore = false;
       _allFilteredAssets = allFilteredPhotos;
       _lastLoadedPage = page;
-      
+
       // Cache'e kaydet
       _albumCache[cacheKey] = allFilteredPhotos;
-      debugPrint('💾 [GalleryPagingCubit] Cached ${allFilteredPhotos.length} photos for key: $cacheKey');
-      
+      debugPrint(
+        '💾 [GalleryPagingCubit] Cached ${allFilteredPhotos.length} photos for key: $cacheKey',
+      );
+      await _persistGalleryCacheIfEligible(
+        allFilteredPhotos,
+        album?.id,
+        sortOrder,
+        dateFilter,
+      );
+
       // State'i güncelle - yüklenen albüm, filtre ve sıralama bilgilerini sakla
       _currentLoadedAlbumId = album?.id;
       _currentLoadedSortOrder = sortOrder;
@@ -650,7 +708,7 @@ class GalleryPagingCubit extends Cubit<AsyncValue<List<pm.AssetEntity>>> {
       _isLoading = false;
       _currentLoadingProgress = 0; // Progress sıfırla
       _currentLoadingTotal = null;
-      
+
       emit(AsyncValue.data(allFilteredPhotos));
     } catch (e, st) {
       // Hata durumunda state'i sıfırla
@@ -662,48 +720,176 @@ class GalleryPagingCubit extends Cubit<AsyncValue<List<pm.AssetEntity>>> {
   }
 
   List<pm.AssetEntity> _allFilteredAssets = [];
-  Set<int> _loadedPages = {};
+  final Set<int> _loadedPages = {};
   int _lastLoadedPage = -1;
-  
+
   // Cache mekanizması - albüm ID + sort order + filter kombinasyonu için
   final Map<String, List<pm.AssetEntity>> _albumCache = {};
-  
+
   // Cache key oluştur
-  String _getCacheKey(String? albumId, SortOrder sortOrder, DateRangeFilter filter) {
-    final filterHash = filter.hasFilter 
+  String _getCacheKey(
+    String? albumId,
+    SortOrder sortOrder,
+    DateRangeFilter filter,
+  ) {
+    final filterHash = filter.hasFilter
         ? '${filter.startDate?.millisecondsSinceEpoch ?? 0}_${filter.endDate?.millisecondsSinceEpoch ?? 0}'
         : 'no_filter';
     return '${albumId ?? 'all_photos'}_${sortOrder.name}_$filterHash';
   }
 
+  Future<List<pm.AssetEntity>> _removeDeletedAssets(
+    List<pm.AssetEntity> assets,
+  ) async {
+    final prefs = _preferencesService;
+    if (prefs == null || assets.isEmpty) return assets;
+    final deletedIds = await prefs.getDeletedPhotoIds();
+    if (deletedIds.isEmpty) return assets;
+    final filtered = assets
+        .where((asset) => !deletedIds.contains(asset.id))
+        .toList();
+    if (assets.length != filtered.length) {
+      debugPrint(
+        '🚫 [GalleryPagingCubit] ${assets.length - filtered.length} silinen fotoğraf filtrelendi (${assets.length} -> ${filtered.length})',
+      );
+    }
+    return filtered;
+  }
+
+  bool _canUsePersistentCache(
+    String? albumId,
+    SortOrder sortOrder,
+    DateRangeFilter filter,
+  ) {
+    return albumId == null &&
+        sortOrder == SortOrder.newest &&
+        !filter.hasFilter;
+  }
+
+  Future<bool> _emitPersistentCacheIfAvailable({
+    required String? albumId,
+    required SortOrder sortOrder,
+    required DateRangeFilter dateFilter,
+  }) async {
+    final prefs = _preferencesService;
+    if (prefs == null) return false;
+    if (!_canUsePersistentCache(albumId, sortOrder, dateFilter)) return false;
+
+    final forceRefresh = await prefs.isGalleryRefreshPending();
+    if (forceRefresh) {
+      debugPrint(
+        '🔁 [GalleryPagingCubit] Refresh pending, persistent cache atlanıyor',
+      );
+      return false;
+    }
+
+    final cachedEntries = await prefs.getGalleryAssetCacheEntries();
+    if (cachedEntries == null || cachedEntries.isEmpty) {
+      return false;
+    }
+
+    final restored = await _restoreAssetsFromCache(cachedEntries);
+    if (restored.isEmpty) {
+      debugPrint(
+        '⚠️ [GalleryPagingCubit] Persistent cache restore boş sonuç döndürdü',
+      );
+      return false;
+    }
+
+    final filtered = await _removeDeletedAssets(restored);
+    final cacheKey = _getCacheKey(albumId, sortOrder, dateFilter);
+    _albumCache[cacheKey] = filtered;
+    _currentLoadedAlbumId = albumId;
+    _currentLoadedSortOrder = sortOrder;
+    _currentLoadedFilter = dateFilter;
+    _allFilteredAssets = filtered;
+    emit(AsyncValue.data(filtered));
+    debugPrint(
+      '💾 [GalleryPagingCubit] Persistent cache kullanıldı (${filtered.length} kayıt)',
+    );
+    return true;
+  }
+
+  Future<List<pm.AssetEntity>> _restoreAssetsFromCache(
+    List<Map<String, dynamic>> entries,
+  ) async {
+    final restored = <pm.AssetEntity>[];
+    const batchSize = 50;
+    for (var i = 0; i < entries.length; i += batchSize) {
+      final batch = entries.skip(i).take(batchSize).toList();
+      final futures = batch.map((entry) async {
+        final id = entry['id'] as String?;
+        if (id == null) return null;
+        return pm.AssetEntity.fromId(id);
+      });
+      final results = await Future.wait(futures);
+      for (final asset in results) {
+        if (asset != null) {
+          restored.add(asset);
+        }
+      }
+    }
+    return restored;
+  }
+
+  Future<void> _persistGalleryCacheIfEligible(
+    List<pm.AssetEntity> assets,
+    String? albumId,
+    SortOrder sortOrder,
+    DateRangeFilter filter,
+  ) async {
+    final prefs = _preferencesService;
+    if (prefs == null) return;
+    if (!_canUsePersistentCache(albumId, sortOrder, filter)) return;
+    await prefs.clearGalleryAssetCache();
+    if (assets.isEmpty) return;
+
+    final limit = math.min(assets.length, _persistentCacheLimit);
+    final entries = <Map<String, dynamic>>[];
+    for (var i = 0; i < limit; i++) {
+      final asset = assets[i];
+      entries.add({
+        'id': asset.id,
+        'created': asset.createDateTime.millisecondsSinceEpoch,
+      });
+    }
+    await prefs.saveGalleryAssetCache(entries);
+    await prefs.completeGalleryRefreshCycle();
+    debugPrint(
+      '💾 [GalleryPagingCubit] Persistent cache güncellendi (ilk $limit kayıt)',
+    );
+  }
+
   /// Undo edilen fotoğrafları assets listesine geri ekle (reload etmeden)
   void restoreUndoneAssets(List<pm.AssetEntity> assets) {
     if (assets.isEmpty) return;
-    
+
     final current = state.value ?? [];
     final currentIds = current.map((a) => a.id).toSet();
-    
+
     // Sadece yeni fotoğrafları ekle (duplicate kontrolü)
-    final newAssets = assets.where((asset) => !currentIds.contains(asset.id)).toList();
+    final newAssets = assets
+        .where((asset) => !currentIds.contains(asset.id))
+        .toList();
     if (newAssets.isEmpty) return;
-    
+
     // Yeni fotoğrafları mevcut listeye ekle
     final combined = [...current, ...newAssets];
-    
+
     // Sıralamayı uygula
     final sortOrder = _albumSortOrderCubit.state;
     combined.sort((a, b) {
       final comparison = a.createDateTime.compareTo(b.createDateTime);
       return sortOrder == SortOrder.newest ? -comparison : comparison;
     });
-    
+
     // _allFilteredAssets'e de ekle
     _allFilteredAssets.addAll(newAssets);
     _allFilteredAssets.sort((a, b) {
       final comparison = a.createDateTime.compareTo(b.createDateTime);
       return sortOrder == SortOrder.newest ? -comparison : comparison;
     });
-    
+
     // Duplicate'leri temizle
     final seen = <String>{};
     final uniqueCombined = combined.where((asset) {
@@ -711,16 +897,18 @@ class GalleryPagingCubit extends Cubit<AsyncValue<List<pm.AssetEntity>>> {
       seen.add(asset.id);
       return true;
     }).toList();
-    
+
     emit(AsyncValue.data(uniqueCombined));
-    debugPrint('✅ [GalleryPagingCubit] Restored ${newAssets.length} undone assets (total: ${uniqueCombined.length})');
+    debugPrint(
+      '✅ [GalleryPagingCubit] Restored ${newAssets.length} undone assets (total: ${uniqueCombined.length})',
+    );
   }
 
   Future<void> loadMore() async {
     if (!_canLoadMore || state.isLoading) return;
     final current = state.value ?? [];
     emit(AsyncValue.data(current));
-    
+
     try {
       // If we have cached filtered assets, use them
       if (_allFilteredAssets.length > current.length) {
@@ -731,25 +919,25 @@ class GalleryPagingCubit extends Cubit<AsyncValue<List<pm.AssetEntity>>> {
         emit(AsyncValue.data(combined));
         return;
       }
-      
+
       // Otherwise, load more pages and filter
       final sortOrder = _albumSortOrderCubit.state;
       final album = _selectedAlbumCubit.state;
       final allItems = <pm.AssetEntity>[];
       int page;
-      
+
       // Load ALL remaining pages - no limits
       if (sortOrder == SortOrder.oldest) {
         // Start from previous page (going backwards) and load ALL remaining pages
         page = _lastLoadedPage - 1;
-        
+
         // Load ALL remaining pages going backwards (no limit)
         while (page >= 0) {
           if (_loadedPages.contains(page)) {
             page--;
             continue;
           }
-          
+
           final items = await _mediaLibraryService.fetchRecentAssets(
             page: page,
             pageSize: _pageSize,
@@ -765,14 +953,14 @@ class GalleryPagingCubit extends Cubit<AsyncValue<List<pm.AssetEntity>>> {
       } else {
         // Start from next page (going forwards) and load ALL remaining pages
         page = _lastLoadedPage + 1;
-        
+
         // Load ALL remaining pages going forwards (no limit)
         while (true) {
           if (_loadedPages.contains(page)) {
             page++;
             continue;
           }
-          
+
           final items = await _mediaLibraryService.fetchRecentAssets(
             page: page,
             pageSize: _pageSize,
@@ -786,18 +974,18 @@ class GalleryPagingCubit extends Cubit<AsyncValue<List<pm.AssetEntity>>> {
           page++;
         }
       }
-      
+
       if (allItems.isNotEmpty) {
         // Add new items to existing filtered list
         final newFiltered = _applyFilters(allItems);
         _allFilteredAssets.addAll(newFiltered);
-        
+
         // Re-sort entire list
         _allFilteredAssets.sort((a, b) {
           final comparison = a.createDateTime.compareTo(b.createDateTime);
           return sortOrder == SortOrder.newest ? -comparison : comparison;
         });
-        
+
         // Remove duplicates
         final seen = <String>{};
         _allFilteredAssets = _allFilteredAssets.where((asset) {
@@ -806,7 +994,7 @@ class GalleryPagingCubit extends Cubit<AsyncValue<List<pm.AssetEntity>>> {
           return true;
         }).toList();
       }
-      
+
       // Get all remaining filtered assets (no limit - all photos)
       final remaining = _allFilteredAssets.skip(current.length).toList();
       final combined = [...current, ...remaining];
@@ -903,7 +1091,9 @@ class PremiumCubit extends Cubit<AsyncValue<bool>> {
       final newPremium = !currentPremium;
       await _prefs.setPremium(newPremium);
       emit(AsyncValue.data(newPremium));
-      debugPrint('🧪 [PremiumCubit] Premium durumu toggle edildi: $currentPremium -> $newPremium');
+      debugPrint(
+        '🧪 [PremiumCubit] Premium durumu toggle edildi: $currentPremium -> $newPremium',
+      );
     } catch (e, st) {
       emit(AsyncValue.error(e, st));
     }
@@ -999,6 +1189,50 @@ class ReviewDeleteSelectionCubit extends Cubit<Set<String>> {
   }
 }
 
+class BlurSelectionCubit extends Cubit<Set<String>> {
+  BlurSelectionCubit() : super({});
+
+  void selectAll(List<String> photoIds) {
+    emit(Set<String>.from(photoIds));
+  }
+
+  void toggleSelection(String photoId) {
+    final updated = Set<String>.from(state);
+    if (updated.contains(photoId)) {
+      updated.remove(photoId);
+    } else {
+      updated.add(photoId);
+    }
+    emit(updated);
+  }
+
+  void clear() {
+    emit({});
+  }
+}
+
+class DuplicateSelectionCubit extends Cubit<Set<String>> {
+  DuplicateSelectionCubit() : super({});
+
+  void selectAll(List<String> photoIds) {
+    emit(Set<String>.from(photoIds));
+  }
+
+  void toggleSelection(String photoId) {
+    final updated = Set<String>.from(state);
+    if (updated.contains(photoId)) {
+      updated.remove(photoId);
+    } else {
+      updated.add(photoId);
+    }
+    emit(updated);
+  }
+
+  void clear() {
+    emit({});
+  }
+}
+
 class TabSelectionCubit extends Cubit<int> {
   TabSelectionCubit() : super(0);
 
@@ -1015,17 +1249,11 @@ class DateRangeFilter {
   final DateTime? startDate;
   final DateTime? endDate;
 
-  const DateRangeFilter({
-    this.startDate,
-    this.endDate,
-  });
+  const DateRangeFilter({this.startDate, this.endDate});
 
   bool get hasFilter => startDate != null || endDate != null;
 
-  DateRangeFilter copyWith({
-    DateTime? startDate,
-    DateTime? endDate,
-  }) {
+  DateRangeFilter copyWith({DateTime? startDate, DateTime? endDate}) {
     return DateRangeFilter(
       startDate: startDate ?? this.startDate,
       endDate: endDate ?? this.endDate,

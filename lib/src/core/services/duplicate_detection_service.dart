@@ -5,16 +5,16 @@ import '../models/duplicate_photo.dart';
 import '../utils/app_logger.dart';
 import 'duplicate_detection_isolate.dart';
 
-/// Duplicate detection modu - hız ve hassasiyet dengesi
+/// Duplicate tespit hassasiyeti - modlar hassasiyete göre (hıza göre değil)
 enum DuplicateDetectionMode {
-  /// Düşük hız - Yüksek hassasiyet: En doğru sonuçlar, daha uzun süre
-  lowSpeedHighAccuracy,
+  /// Yüksek hassasiyet: Sadece çok benzer fotoğraflar duplicate sayılır (sıkı eşik)
+  highSensitivity,
 
-  /// Yüksek hız - Düşük hassasiyet: Hızlı sonuçlar, daha az doğru
-  highSpeedLowAccuracy,
+  /// Orta hassasiyet: Dengeli eşik
+  mediumSensitivity,
 
-  /// Dengeli: Hız ve hassasiyet dengesi
-  balanced,
+  /// Düşük hassasiyet: Daha fazla benzer çift duplicate sayılır (gevşek eşik)
+  lowSensitivity,
 }
 
 /// Asset hash'lerini saklamak için class
@@ -132,41 +132,30 @@ class DuplicateDetectionService {
     return dotProduct / (math.sqrt(norm1) * math.sqrt(norm2));
   }
 
-  /// Mode'a göre threshold değerlerini döndür
+  /// Hassasiyete göre eşik değerleri (hız değil, sadece tespit hassasiyeti)
   (int dHash, int dHashVertical, int pHash, int aHash, double histogram)
   _getThresholdsForMode(DuplicateDetectionMode mode) {
     switch (mode) {
-      case DuplicateDetectionMode.lowSpeedHighAccuracy:
-        // Düşük hız - Yüksek hassasiyet: Çok sıkı threshold'lar
-        return (10, 10, 4, 10, 0.93); // Çok sıkı
+      case DuplicateDetectionMode.highSensitivity:
+        // Yüksek hassasiyet: Çok sıkı eşik, sadece çok benzerler duplicate
+        return (10, 10, 4, 10, 0.93);
 
-      case DuplicateDetectionMode.highSpeedLowAccuracy:
-        // Yüksek hız - Düşük hassasiyet: Gevşek threshold'lar
-        return (25, 25, 12, 25, 0.80); // Gevşek
+      case DuplicateDetectionMode.lowSensitivity:
+        // Düşük hassasiyet: Gevşek eşik, daha fazla eşleşme
+        return (25, 25, 12, 25, 0.80);
 
-      case DuplicateDetectionMode.balanced:
-        // Dengeli: Orta seviye threshold'lar
-        return (16, 16, 7, 16, 0.88); // Orta
+      case DuplicateDetectionMode.mediumSensitivity:
+        // Orta hassasiyet: Dengeli eşik
+        return (16, 16, 7, 16, 0.88);
     }
   }
 
-  /// Mode'a göre thumbnail size ve quality döndür
+  /// Tüm hassasiyetlerde aynı thumbnail (tespit sadece hassasiyete göre, hıza göre değil)
   (int size, int quality) _getThumbnailSettingsForMode(
     DuplicateDetectionMode mode,
   ) {
-    switch (mode) {
-      case DuplicateDetectionMode.lowSpeedHighAccuracy:
-        // Düşük hız - Yüksek hassasiyet: Orta thumbnail, yüksek kalite
-        return (256, 90); // Performans optimizasyonu - task 1
-
-      case DuplicateDetectionMode.highSpeedLowAccuracy:
-        // Yüksek hız - Düşük hassasiyet: Küçük thumbnail, düşük kalite
-        return (128, 75); // Performans optimizasyonu - task 1
-
-      case DuplicateDetectionMode.balanced:
-        // Dengeli: Orta boyut ve kalite
-        return (256, 85); // Performans optimizasyonu - task 1
-    }
+    (int, int) same() => (256, 85);
+    return same();
   }
 
   /// Duplicate grupları bul (Task 4: Hash bucket kullan - O(n²) yerine)
@@ -464,7 +453,7 @@ class DuplicateDetectionService {
     bool Function()? shouldCancel,
     bool isPremium = false,
     int maxScanLimit = 999999999,
-    DuplicateDetectionMode mode = DuplicateDetectionMode.balanced,
+    DuplicateDetectionMode mode = DuplicateDetectionMode.mediumSensitivity,
   }) async {
     AppLogger.i(
       '🔍 [DuplicateDetection] findDuplicatesInAlbum başladı: ${album.name} (ID: ${album.id})',
@@ -749,7 +738,7 @@ class DuplicateDetectionService {
     bool Function()? shouldCancel,
     bool isPremium = false,
     int maxScanLimit = 999999999,
-    DuplicateDetectionMode mode = DuplicateDetectionMode.balanced,
+    DuplicateDetectionMode mode = DuplicateDetectionMode.mediumSensitivity,
   }) async {
     AppLogger.i(
       '🔍 [DuplicateDetection] findDuplicatesInAlbums başladı - ${albums.length} albüm',

@@ -4,9 +4,9 @@ import 'package:go_router/go_router.dart';
 import '../features/onboarding/presentation/splash_page.dart';
 import '../features/onboarding/presentation/onboarding_page.dart';
 import '../features/onboarding/presentation/permission_request_page.dart';
+import '../features/onboarding/presentation/warmup_swipe_page.dart';
 import '../features/gallery/presentation/pages/swipe_page.dart';
 import '../features/gallery/presentation/pages/gallery_stats_page.dart';
-import '../features/gallery/presentation/pages/gallery_report_page.dart';
 import '../features/gallery/presentation/pages/results_page.dart';
 import '../features/gallery/presentation/pages/review_delete_photos_page.dart';
 import '../features/settings/presentation/settings_page.dart';
@@ -23,8 +23,8 @@ GoRouter createAppRouter() {
       if (location == '/splash' ||
           location == '/onboarding' ||
           location == '/permission' ||
+          location == '/warmup' ||
           location == '/swipe' ||
-          location == '/gallery-report' ||
           location == '/review-delete-photos' ||
           location.startsWith('/settings') ||
           location.startsWith('/duplicates') ||
@@ -68,6 +68,11 @@ GoRouter createAppRouter() {
         builder: (context, state) => const PermissionRequestPage(),
       ),
       GoRoute(
+        path: '/warmup',
+        name: 'warmup',
+        builder: (context, state) => const WarmupSwipePage(),
+      ),
+      GoRoute(
         path: '/swipe',
         name: 'swipe',
         builder: (BuildContext context, GoRouterState state) {
@@ -90,45 +95,6 @@ GoRouter createAppRouter() {
         path: '/gallery/stats',
         name: 'galleryStats',
         builder: (context, state) => const GalleryStatsPage(),
-      ),
-      GoRoute(
-        path: '/gallery-report',
-        name: 'galleryReport',
-        pageBuilder: (context, state) {
-          return CustomTransitionPage(
-            key: state.pageKey,
-            child: const GalleryReportPage(),
-            transitionDuration: const Duration(milliseconds: 500),
-            reverseTransitionDuration: const Duration(milliseconds: 400),
-            transitionsBuilder:
-                (context, animation, secondaryAnimation, child) {
-              final curved = CurvedAnimation(
-                parent: animation,
-                curve: Curves.easeOutCubic,
-                reverseCurve: Curves.easeInCubic,
-              );
-              final slideTween =
-                  Tween<Offset>(begin: const Offset(0, 0.08), end: Offset.zero)
-                      .chain(CurveTween(curve: Curves.easeOut));
-              final fadeTween =
-                  Tween<double>(begin: 0.0, end: 1.0).chain(
-                CurveTween(curve: Curves.easeOut),
-              );
-
-              return FadeTransition(
-                opacity: curved.drive(fadeTween),
-                child: SlideTransition(
-                  position: curved.drive(slideTween),
-                  child: ScaleTransition(
-                    scale: Tween<double>(begin: 0.985, end: 1.0)
-                        .animate(curved),
-                    child: child,
-                  ),
-                ),
-              );
-            },
-          );
-        },
       ),
       GoRoute(
         path: '/results/:type',

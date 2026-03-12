@@ -335,7 +335,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get photoRestored => 'Fotoğraf geri alındı';
 
   @override
-  String get remainingDeletionRights => 'Günlük Kalan Silme';
+  String get remainingDeletionRights => 'Silme Hakkı';
 
   @override
   String get watchAdToEarn => 'Reklam İzle';
@@ -666,7 +666,7 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String get startNewScan => 'Yeni Tarama Başlat';
+  String get startNewScan => 'Yeni Tarama';
 
   @override
   String get scanResults => 'Tarama Sonuçları';
@@ -713,10 +713,13 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get noDeleteRightsLeftMessage =>
-      'Silme hakkınız kalmadı. Galerinizi temizlemeye devam etmek için sınırsız silme hakkı satın alın.';
+      'Tek seferlik ödeme ile sınırsız silme hakkı elde edin.';
 
   @override
   String get galleryStatsTitle => 'Galeri İstatistikleri';
+
+  @override
+  String get galleryStatsHistoryTitle => 'Hareketlerin';
 
   @override
   String get generalStatistics => 'Genel İstatistikler';
@@ -974,6 +977,47 @@ class AppLocalizationsTr extends AppLocalizations {
   String get weNeedYourAccessTitle => 'Erişiminize\nİhtiyacımız Var';
 
   @override
+  String get warmupTitle => 'Haydi biraz ısınalım';
+
+  @override
+  String warmupRemaining(int remaining) {
+    return '$remaining kaldı';
+  }
+
+  @override
+  String warmupCountProgress(int current, int total) {
+    return '$current/$total fotoğraf';
+  }
+
+  @override
+  String get warmupLoading => 'En eski fotoğraflarınız yükleniyor...';
+
+  @override
+  String get warmupNoPhotos =>
+      'Fotoğraf bulunamadı. Uygulamaya geçebilirsiniz.';
+
+  @override
+  String get warmupRetry => 'Tekrar dene';
+
+  @override
+  String get warmupSkip => 'Uygulamaya geç';
+
+  @override
+  String get warmupContinue => 'Uygulamaya geç';
+
+  @override
+  String warmupCompletionTitle(int count) {
+    return 'Fotoğrafları silerek devam et';
+  }
+
+  @override
+  String get warmupCompletionDescription =>
+      'Uygulamaya devam et ve daha fazlasını sil.';
+
+  @override
+  String get settingsTrySwipeAgain => 'Kaydırma denemesi (5 fotoğraf)';
+
+  @override
   String get resetToStart => 'Galeri Başına Dön';
 
   @override
@@ -1036,15 +1080,15 @@ class AppLocalizationsTr extends AppLocalizations {
   String get openAppAndViewResults => 'Uygulamayı aç ve sonuçları gör';
 
   @override
-  String get rateApp => 'Uygulamayı Değerlendir';
+  String get rateApp => 'Bizi Değerlendir';
 
   @override
   String get rateAppDescription =>
-      'Uygulamayı beğendiniz mi? Lütfen mağazada bizi değerlendirin!';
+      'Görüşünüz bizim için çok değerli! Mağazada bizi değerlendirir misiniz?';
 
   @override
   String get rateAppSupportMessage =>
-      'Gelişimimize destek olun! 3 saniye ayırıp uygulamayı değerlendirir misiniz?';
+      'Bizi değerlendirin! Sadece birkaç saniyenizi alır, gelişimimize katkı olur.';
 
   @override
   String get thankYou => 'Teşekkürler!';
@@ -1108,6 +1152,10 @@ class AppLocalizationsTr extends AppLocalizations {
       'Düşük Hız/Yüksek Hassasiyet: En doğru sonuçlar, daha uzun sürer\nDengeli: Hız ve hassasiyet dengesi\nYüksek Hız/Düşük Hassasiyet: Hızlı sonuçlar, daha az doğru';
 
   @override
+  String get duplicateSensitivityLevelsDescription =>
+      'Düşük: Gevşek eşleşme, daha fazla çift duplicate sayılır\nOrta: Dengeli hassasiyet\nYüksek: Sıkı eşleşme, sadece çok benzer fotoğraflar duplicate sayılır';
+
+  @override
   String get allPhotosReviewedTitle => 'Tüm Fotoğraflar Gözden Geçirildi!';
 
   @override
@@ -1127,10 +1175,10 @@ class AppLocalizationsTr extends AppLocalizations {
       'Lütfen tarama işlemi devam ederken bu ekrandan ayrılmayın.';
 
   @override
-  String get viewResults => 'Sonuçları Görüntüle';
+  String get viewResults => 'Sonuçlar';
 
   @override
-  String get viewLastResults => 'Sonuçları Görüntüle';
+  String get viewLastResults => 'Sonuçlar';
 
   @override
   String get filterAndSort => 'Filtre ve Sıralama';
@@ -1224,9 +1272,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get scanTip15 => '🎮 Bir oyun oynayabilirsin!';
 
   @override
-  String get galleryReportTitle => 'Galeri Raporu';
-
-  @override
   String get videos => 'Video';
 
   @override
@@ -1234,10 +1279,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get media => 'Medya';
-
-  @override
-  String get galleryReportDescription =>
-      'Kullanıcılarımız ortalama olarak galerilerinin yaklaşık %50\'sini temizleyerek depolama alanlarını önemli ölçüde boşaltıyorlar';
 
   @override
   String get reviewDeletePhotos => 'Silinecek Fotoğrafları İncele';

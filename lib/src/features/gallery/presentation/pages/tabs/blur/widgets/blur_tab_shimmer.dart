@@ -42,11 +42,11 @@ class _ShimmerWidgetState extends State<_ShimmerWidget>
 
     // More subtle colors for a modern look
     final baseColor = brightness == Brightness.light
-        ? theme.colorScheme.surfaceContainerHighest.withOpacity(0.3)
-        : theme.colorScheme.surfaceContainerHighest.withOpacity(0.2);
+        ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3)
+        : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.2);
     final highlightColor = brightness == Brightness.light
-        ? theme.colorScheme.surfaceContainerHighest.withOpacity(0.6)
-        : theme.colorScheme.surfaceContainerHighest.withOpacity(0.4);
+        ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.6)
+        : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4);
 
     return AnimatedBuilder(
       animation: _controller,
@@ -88,7 +88,7 @@ class _ShimmerWidgetState extends State<_ShimmerWidget>
 
 // Shimmer for scan form (blur/duplicate tabs)
 class ScanFormShimmer extends StatelessWidget {
-  const ScanFormShimmer();
+  const ScanFormShimmer({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -142,4 +142,3 @@ class ScanFormShimmer extends StatelessWidget {
     );
   }
 }
-

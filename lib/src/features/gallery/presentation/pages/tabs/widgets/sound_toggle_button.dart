@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../../../app/theme/app_colors.dart';
+
 class SoundToggleButton extends StatefulWidget {
   final bool isSoundEnabled;
   final VoidCallback onToggle;
@@ -7,6 +9,7 @@ class SoundToggleButton extends StatefulWidget {
   final Color? iconColor;
 
   const SoundToggleButton({
+    super.key,
     required this.isSoundEnabled,
     required this.onToggle,
     this.backgroundColor,
@@ -31,16 +34,10 @@ class _SoundToggleButtonState extends State<SoundToggleButton>
       duration: const Duration(milliseconds: 200),
     );
     _scaleAnimation = Tween<double>(begin: 1.0, end: 0.85).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeInOut,
-      ),
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
     _rotationAnimation = Tween<double>(begin: 0.0, end: 0.2).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeInOut,
-      ),
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
   }
 
@@ -65,12 +62,14 @@ class _SoundToggleButtonState extends State<SoundToggleButton>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final backgroundColor = widget.backgroundColor ??
-        theme.colorScheme.surfaceContainerHighest.withOpacity(0.9);
-    final iconColor = widget.iconColor ??
+    final backgroundColor =
+        widget.backgroundColor ??
+        theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.9);
+    final iconColor =
+        widget.iconColor ??
         (widget.isSoundEnabled
             ? theme.colorScheme.primary
-            : theme.colorScheme.onSurface.withOpacity(0.5));
+            : theme.colorScheme.onSurface.withValues(alpha: 0.5));
 
     return GestureDetector(
       onTapDown: _handleTapDown,
@@ -93,15 +92,15 @@ class _SoundToggleButtonState extends State<SoundToggleButton>
                   shape: BoxShape.circle,
                   border: Border.all(
                     color: widget.isSoundEnabled
-                        ? theme.colorScheme.primary.withOpacity(0.3)
-                        : theme.colorScheme.outline.withOpacity(0.2),
+                        ? theme.colorScheme.primary.withValues(alpha: 0.3)
+                        : theme.colorScheme.outline.withValues(alpha: 0.2),
                     width: 1.5,
                   ),
                   boxShadow: [
                     BoxShadow(
                       color: widget.isSoundEnabled
-                          ? theme.colorScheme.primary.withOpacity(0.2)
-                          : Colors.black.withOpacity(0.1),
+                          ? theme.colorScheme.primary.withValues(alpha: 0.2)
+                          : AppColors.black.withValues(alpha: 0.1),
                       blurRadius: 12,
                       offset: const Offset(0, 4),
                       spreadRadius: 0,
@@ -110,15 +109,16 @@ class _SoundToggleButtonState extends State<SoundToggleButton>
                 ),
                 child: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 250),
-                  transitionBuilder: (Widget child, Animation<double> animation) {
-                    return ScaleTransition(
-                      scale: animation,
-                      child: FadeTransition(
-                        opacity: animation,
-                        child: child,
-                      ),
-                    );
-                  },
+                  transitionBuilder:
+                      (Widget child, Animation<double> animation) {
+                        return ScaleTransition(
+                          scale: animation,
+                          child: FadeTransition(
+                            opacity: animation,
+                            child: child,
+                          ),
+                        );
+                      },
                   child: Icon(
                     widget.isSoundEnabled
                         ? Icons.volume_up_rounded
@@ -136,4 +136,3 @@ class _SoundToggleButtonState extends State<SoundToggleButton>
     );
   }
 }
-

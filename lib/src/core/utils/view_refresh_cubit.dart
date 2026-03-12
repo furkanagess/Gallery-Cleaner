@@ -24,7 +24,7 @@ mixin CubitStateMixin<T extends StatefulWidget> on State<T> {
     return BlocBuilder<ViewRefreshCubit, int>(
       bloc: _viewRefreshCubit,
       buildWhen: (previous, current) => previous != current,
-      builder: (_, __) => builder(),
+      builder: (_, _) => builder(),
     );
   }
 

@@ -81,6 +81,9 @@ class PhotoSwipeDeck extends StatefulWidget {
     this.onResetCallbackReady,
     this.onDragOffsetChanged,
     this.onUndoDecision,
+    this.isCompleted = false,
+    this.completedTitle,
+    this.completedDescription,
   });
 
   final List<pm.AssetEntity> assets;
@@ -96,6 +99,9 @@ class PhotoSwipeDeck extends StatefulWidget {
   final void Function(Offset dragOffset)? onDragOffsetChanged;
   final void Function(pm.AssetEntity asset, SwipeDecision decision)?
   onUndoDecision;
+  final bool isCompleted;
+  final String? completedTitle;
+  final String? completedDescription;
 
   @override
   State<PhotoSwipeDeck> createState() => _PhotoSwipeDeckState();
@@ -316,13 +322,13 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck>
     return Tooltip(
       message: label,
       child: Material(
-        color: AppColors.black.withOpacity(canUndo ? 0.7 : 0.35),
+        color: AppColors.black.withValues(alpha:canUndo ? 0.7 : 0.35),
         shape: const CircleBorder(),
         elevation: canUndo ? 6 : 0,
         child: IconButton(
           icon: Icon(
             Icons.undo_rounded,
-            color: AppColors.white.withOpacity(canUndo ? 1 : 0.4),
+            color: AppColors.white.withValues(alpha:canUndo ? 1 : 0.4),
           ),
           onPressed: canUndo ? _undoLastSwipe : null,
           splashRadius: 24,
@@ -361,8 +367,19 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck>
   @override
   Widget build(BuildContext context) {
     return buildWithCubit(() {
+      if (widget.isCompleted) {
+        return _buildAllPhotosReviewedWidget(
+          context,
+          titleOverride: widget.completedTitle,
+          descriptionOverride: widget.completedDescription,
+        );
+      }
       if (_topIndex >= widget.assets.length) {
-        return _buildAllPhotosReviewedWidget(context);
+        return _buildAllPhotosReviewedWidget(
+          context,
+          titleOverride: widget.completedTitle,
+          descriptionOverride: widget.completedDescription,
+        );
       }
 
       final cards = <Widget>[];
@@ -427,7 +444,7 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck>
                 color: AppColors.transparent,
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.black.withOpacity(
+                    color: AppColors.black.withValues(alpha:
                       0.3 - (indexFromTop * 0.06),
                     ),
                     blurRadius: 24 - (indexFromTop * 4),
@@ -530,7 +547,7 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck>
                         begin: Alignment.bottomCenter,
                         end: Alignment.topCenter,
                         colors: [
-                          AppColors.black.withOpacity(0.22),
+                          AppColors.black.withValues(alpha:0.22),
                           AppColors.transparent,
                         ],
                       ),
@@ -561,7 +578,11 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck>
     );
   }
 
-  Widget _buildAllPhotosReviewedWidget(BuildContext context) {
+  Widget _buildAllPhotosReviewedWidget(
+    BuildContext context, {
+    String? titleOverride,
+    String? descriptionOverride,
+  }) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
 
@@ -575,7 +596,7 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck>
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: AppColors.black.withOpacity(0.15),
+              color: AppColors.black.withValues(alpha:0.15),
               blurRadius: 24,
               spreadRadius: 0,
               offset: const Offset(0, 8),
@@ -594,7 +615,7 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck>
                 gradient: AppColors.ctaGradient,
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.primary.withOpacity(0.3),
+                    color: AppColors.primary.withValues(alpha:0.3),
                     blurRadius: 20,
                     spreadRadius: 0,
                     offset: const Offset(0, 8),
@@ -614,7 +635,7 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck>
             const SizedBox(height: 24),
             // Title
             Text(
-              l10n.allPhotosReviewedTitle,
+              titleOverride ?? l10n.allPhotosReviewedTitle,
               style: theme.textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
                 fontSize: 24,
@@ -626,9 +647,9 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck>
             const SizedBox(height: 16),
             // Description
             Text(
-              l10n.allPhotosReviewedDescription,
+              descriptionOverride ?? l10n.allPhotosReviewedDescription,
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.7),
+                color: theme.colorScheme.onSurface.withValues(alpha:0.7),
                 fontSize: 15,
                 height: 1.5,
                 fontWeight: FontWeight.w500,
@@ -726,7 +747,7 @@ class _BadgeWithArrowState extends State<_BadgeWithArrow>
 
   @override
   Widget build(BuildContext context) {
-    final bg = widget.color.withOpacity(1.0);
+    final bg = widget.color.withValues(alpha:1.0);
     final borderRadius = BorderRadius.circular(16);
 
     Widget arrow() {
@@ -743,23 +764,23 @@ class _BadgeWithArrowState extends State<_BadgeWithArrow>
         borderRadius: borderRadius,
         border: Border.all(
           color: widget.isDelete
-              ? AppColors.error.withOpacity(
+              ? AppColors.error.withValues(alpha:
                   0.8,
                 ) // Silme butonu için daha belirgin kırmızı border
-              : AppColors.white.withOpacity(
+              : AppColors.white.withValues(alpha:
                   0.6,
                 ), // Diğer butonlar için beyaz border
           width: 2,
         ),
         boxShadow: [
           BoxShadow(
-            color: widget.color.withOpacity(0.4),
+            color: widget.color.withValues(alpha:0.4),
             blurRadius: 20,
             spreadRadius: 2,
             offset: const Offset(0, 8),
           ),
           BoxShadow(
-            color: AppColors.black.withOpacity(0.2),
+            color: AppColors.black.withValues(alpha:0.2),
             blurRadius: 16,
             offset: const Offset(0, 4),
           ),
@@ -941,8 +962,8 @@ class _PhotoCardState extends State<_PhotoCard> {
           begin: Alignment.bottomCenter,
           end: Alignment.topCenter,
           colors: [
-            AppColors.black.withOpacity(0.35),
-            AppColors.black.withOpacity(0.15),
+            AppColors.black.withValues(alpha:0.35),
+            AppColors.black.withValues(alpha:0.15),
           ],
         ),
       ),
@@ -1009,15 +1030,15 @@ class _PhotoCardState extends State<_PhotoCard> {
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.black.withOpacity(0.6),
+                    color: AppColors.black.withValues(alpha:0.6),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: AppColors.white.withOpacity(0.2),
+                      color: AppColors.white.withValues(alpha:0.2),
                       width: 1,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.black.withOpacity(0.3),
+                        color: AppColors.black.withValues(alpha:0.3),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -1179,9 +1200,9 @@ class _ColorBasedGlowEffectState extends State<_ColorBasedGlowEffect>
                 center: Alignment.center,
                 radius: 1.2,
                 colors: [
-                  _dominantColor!.withOpacity(opacity),
-                  _dominantColor!.withOpacity(opacity * 0.5),
-                  _dominantColor!.withOpacity(0),
+                  _dominantColor!.withValues(alpha:opacity),
+                  _dominantColor!.withValues(alpha:opacity * 0.5),
+                  _dominantColor!.withValues(alpha:0),
                 ],
                 stops: const [0.0, 0.7, 1.0],
               ),

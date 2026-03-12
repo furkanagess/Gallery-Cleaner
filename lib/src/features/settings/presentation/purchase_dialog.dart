@@ -336,7 +336,7 @@ class _PurchaseDialogState extends State<PurchaseDialog>
             borderRadius: BorderRadius.circular(28),
             boxShadow: [
               BoxShadow(
-                color: AppColors.black.withOpacity(0.25),
+                color: AppColors.black.withValues(alpha:0.25),
                 blurRadius: 32,
                 spreadRadius: 2,
                 offset: const Offset(0, 16),
@@ -361,13 +361,13 @@ class _PurchaseDialogState extends State<PurchaseDialog>
                           end: Alignment.bottomRight,
                           colors: [
                             theme.colorScheme.primary,
-                            theme.colorScheme.primary.withOpacity(0.7),
+                            theme.colorScheme.primary.withValues(alpha:0.7),
                           ],
                         ),
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: theme.colorScheme.primary.withOpacity(0.4 * _pulseAnimation.value),
+                            color: theme.colorScheme.primary.withValues(alpha:0.4 * _pulseAnimation.value),
                             blurRadius: 20 * _pulseAnimation.value,
                             spreadRadius: 3 * _pulseAnimation.value,
                           ),
@@ -531,7 +531,7 @@ class _PurchaseDialogState extends State<PurchaseDialog>
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.success.withOpacity(0.15),
+                    color: AppColors.success.withValues(alpha:0.15),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
@@ -565,13 +565,13 @@ class _PurchaseDialogState extends State<PurchaseDialog>
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: [
-                          theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
-                          theme.colorScheme.surface.withOpacity(0.3),
+                          theme.colorScheme.surfaceContainerHighest.withValues(alpha:0.5),
+                          theme.colorScheme.surface.withValues(alpha:0.3),
                         ],
                       ),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: theme.colorScheme.primary.withOpacity(0.2),
+                        color: theme.colorScheme.primary.withValues(alpha:0.2),
                         width: 2,
                       ),
                     ),
@@ -583,7 +583,7 @@ class _PurchaseDialogState extends State<PurchaseDialog>
                             Text(
                               l10n.originalPrice,
                               style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurface.withOpacity(0.6),
+                                color: theme.colorScheme.onSurface.withValues(alpha:0.6),
                                 fontSize: 12,
                               ),
                             ),
@@ -593,7 +593,7 @@ class _PurchaseDialogState extends State<PurchaseDialog>
                               style: theme.textTheme.bodyLarge?.copyWith(
                                 decoration: TextDecoration.lineThrough,
                                 decorationThickness: 2,
-                                color: theme.colorScheme.onSurface.withOpacity(0.5),
+                                color: theme.colorScheme.onSurface.withValues(alpha:0.5),
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -646,13 +646,13 @@ class _PurchaseDialogState extends State<PurchaseDialog>
                             end: Alignment.bottomRight,
                             colors: [
                               theme.colorScheme.primary,
-                              theme.colorScheme.primary.withOpacity(0.8),
+                              theme.colorScheme.primary.withValues(alpha:0.8),
                             ],
                           ),
                           borderRadius: BorderRadius.circular(20),
                           boxShadow: [
                             BoxShadow(
-                              color: theme.colorScheme.primary.withOpacity(0.5 * _pulseAnimation.value),
+                              color: theme.colorScheme.primary.withValues(alpha:0.5 * _pulseAnimation.value),
                               blurRadius: 25 * _pulseAnimation.value,
                               spreadRadius: 3 * _pulseAnimation.value,
                               offset: Offset(0, 10 * _pulseAnimation.value),
@@ -752,7 +752,7 @@ class _PurchaseDialogState extends State<PurchaseDialog>
                       ? null
                       : () => Navigator.of(context).pop(),
                   style: TextButton.styleFrom(
-                    foregroundColor: theme.colorScheme.onSurface.withOpacity(0.7),
+                    foregroundColor: theme.colorScheme.onSurface.withValues(alpha:0.7),
                   ),
                   child: Text(
                     l10n.cancel,
@@ -770,7 +770,7 @@ class _PurchaseDialogState extends State<PurchaseDialog>
                     color: theme.colorScheme.surface,
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: theme.colorScheme.primary.withOpacity(0.2),
+                      color: theme.colorScheme.primary.withValues(alpha:0.2),
                       width: 1.5,
                     ),
                   ),
@@ -780,7 +780,7 @@ class _PurchaseDialogState extends State<PurchaseDialog>
                         width: 48,
                         height: 48,
                         decoration: BoxDecoration(
-                          color: AppColors.success.withOpacity(0.15),
+                          color: AppColors.success.withValues(alpha:0.15),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: const Icon(
@@ -803,7 +803,7 @@ class _PurchaseDialogState extends State<PurchaseDialog>
                             Text(
                               l10n.premiumAccessDescription,
                               style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurface.withOpacity(0.7),
+                                color: theme.colorScheme.onSurface.withValues(alpha:0.7),
                               ),
                             ),
                           ],
@@ -898,24 +898,24 @@ class _PurchaseFeatureCardState extends State<_PurchaseFeatureCard>
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                theme.colorScheme.surface.withOpacity(0.9),
-                theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                theme.colorScheme.surface.withValues(alpha:0.9),
+                theme.colorScheme.surfaceContainerHighest.withValues(alpha:0.5),
               ],
             ),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: color.withOpacity(0.2),
+              color: color.withValues(alpha:0.2),
               width: 2,
             ),
             boxShadow: [
               BoxShadow(
-                color: color.withOpacity(0.15),
+                color: color.withValues(alpha:0.15),
                 blurRadius: 15,
                 spreadRadius: 1,
                 offset: const Offset(0, 4),
               ),
               BoxShadow(
-                color: AppColors.black.withOpacity(0.05),
+                color: AppColors.black.withValues(alpha:0.05),
                 blurRadius: 10,
                 spreadRadius: 0,
               ),
@@ -933,18 +933,18 @@ class _PurchaseFeatureCardState extends State<_PurchaseFeatureCard>
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      color.withOpacity(0.25),
-                      color.withOpacity(0.15),
+                      color.withValues(alpha:0.25),
+                      color.withValues(alpha:0.15),
                     ],
                   ),
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: color.withOpacity(0.4),
+                    color: color.withValues(alpha:0.4),
                     width: 2.5,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: color.withOpacity(0.25),
+                      color: color.withValues(alpha:0.25),
                       blurRadius: 12,
                       spreadRadius: 2,
                     ),
@@ -976,7 +976,7 @@ class _PurchaseFeatureCardState extends State<_PurchaseFeatureCard>
                   style: theme.textTheme.bodySmall?.copyWith(
                     fontWeight: FontWeight.w600,
                     fontSize: 11,
-                    color: theme.colorScheme.onSurface.withOpacity(0.6),
+                    color: theme.colorScheme.onSurface.withValues(alpha:0.6),
                   ),
                   textAlign: TextAlign.center,
                   maxLines: 1,
@@ -987,7 +987,7 @@ class _PurchaseFeatureCardState extends State<_PurchaseFeatureCard>
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.15),
+                  color: color.withValues(alpha:0.15),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
