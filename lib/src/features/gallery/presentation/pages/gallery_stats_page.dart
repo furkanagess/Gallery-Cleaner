@@ -12,7 +12,6 @@ import '../../application/review_history_controller.dart';
 import '../../../onboarding/application/permissions_controller.dart';
 import '../../../../core/services/preferences_service.dart';
 import '../../../../core/models/gallery_stats.dart';
-import '../../../../core/services/sound_service.dart';
 import '../../../../app/theme/app_theme.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_three_d_button.dart';
@@ -27,8 +26,6 @@ class GalleryStatsPage extends StatefulWidget {
 
 class _GalleryStatsPageState extends State<GalleryStatsPage>
     with CubitStateMixin<GalleryStatsPage> {
-  final SoundService _soundService = SoundService();
-  bool _isScannerPlaying = false;
   bool _hasCheckedFirstAnalysis = false;
   final ScrollController _albumScrollController = ScrollController();
 
@@ -73,9 +70,6 @@ class _GalleryStatsPageState extends State<GalleryStatsPage>
 
   @override
   void dispose() {
-    if (_isScannerPlaying) {
-      _soundService.stopScannerSound();
-    }
     _albumScrollController.dispose();
     super.dispose();
   }
@@ -138,10 +132,6 @@ class _GalleryStatsPageState extends State<GalleryStatsPage>
 
                   // Error durumu
                   if (error != null && stats == null) {
-                    if (_isScannerPlaying) {
-                      _soundService.stopScannerSound();
-                      _isScannerPlaying = false;
-                    }
 
                     return Center(
                       child: Padding(
@@ -174,19 +164,6 @@ class _GalleryStatsPageState extends State<GalleryStatsPage>
                         ),
                       ),
                     );
-                  }
-
-                  // Scanner sesini yönet
-                  if (isScanning) {
-                    if (!_isScannerPlaying) {
-                      _soundService.playScannerSound();
-                      _isScannerPlaying = true;
-                    }
-                  } else {
-                    if (_isScannerPlaying) {
-                      _soundService.stopScannerSound();
-                      _isScannerPlaying = false;
-                    }
                   }
 
                   // Stats null ise 0 değerleriyle göster

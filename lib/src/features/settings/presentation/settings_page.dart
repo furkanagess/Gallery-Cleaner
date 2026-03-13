@@ -9,8 +9,9 @@ import '../../../../l10n/app_localizations.dart';
 import '../application/locale_controller.dart';
 import '../../gallery/application/gallery_providers.dart';
 import '../../../app/theme/app_colors.dart';
-import '../../../core/services/sound_service.dart';
 import '../../../core/services/preferences_service.dart';
+import '../../../core/services/revenuecat_service.dart';
+import 'premium_success_dialog.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -24,10 +25,7 @@ class SettingsPage extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
-      appBar: AppBar(
-        title: Text(l10n.settings),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: Text(l10n.settings), centerTitle: true),
       body: Builder(
         builder: (builderContext) {
           return SingleChildScrollView(
@@ -53,9 +51,8 @@ class SettingsPage extends StatelessWidget {
                         style: theme.textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.w700,
                           fontSize: 14,
-                          color: theme.colorScheme.onPrimaryContainer.withValues(
-                            alpha: 0.8,
-                          ),
+                          color: theme.colorScheme.onPrimaryContainer
+                              .withValues(alpha: 0.8),
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -68,8 +65,6 @@ class SettingsPage extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(height: 12),
-                _SoundVolumeControl(),
                 const SizedBox(height: 12),
                 // Try swipe (warmup) - opens warmup screen
 
@@ -218,161 +213,431 @@ class _SettingsCard extends StatelessWidget {
   }
 }
 
-class _PremiumSection extends StatelessWidget {
+class _PremiumSection extends StatefulWidget {
   const _PremiumSection();
+
+  @override
+  State<_PremiumSection> createState() => _PremiumSectionState();
+}
+
+class _PremiumSectionState extends State<_PremiumSection>
+    with SingleTickerProviderStateMixin {
+  String? _productPrice;
+  String? _originalPrice;
+  bool _isLoading = false;
+  late AnimationController _pulseController;
+  late Animation<double> _pulseAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2000),
+    )..repeat(reverse: true);
+
+    _pulseAnimation = Tween<double>(begin: 0.95, end: 1.05).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+    _loadProductPrice();
+  }
+
+  Future<void> _loadProductPrice() async {
+    try {
+      final rc = RevenueCatService.instance;
+      await rc.initialize();
+      final product = await rc.fetchLifetimeProduct();
+      if (product == null) {
+        if (mounted)
+          setState(() {
+            _productPrice = 'N/A';
+            _originalPrice = null;
+          });
+        return;
+      }
+      final priceString = product.priceString;
+      final priceValue = _parsePrice(priceString);
+      if (priceValue != null) {
+        final increasedPrice = priceValue * 1.25;
+        final currencySymbol = _extractCurrencySymbol(priceString);
+        if (mounted) {
+          setState(() {
+            _originalPrice =
+                '$currencySymbol${increasedPrice.toStringAsFixed(2)}';
+            _productPrice = priceString;
+          });
+        }
+      } else {
+        if (mounted)
+          setState(() {
+            _originalPrice = null;
+            _productPrice = priceString;
+          });
+      }
+    } catch (e) {
+      if (mounted)
+        setState(() {
+          _productPrice = 'N/A';
+          _originalPrice = null;
+        });
+    }
+  }
+
+  double? _parsePrice(String price) {
+    final cleaned = price
+        .replaceAll(RegExp(r'[^\d.,]'), '')
+        .replaceAll(',', '.');
+    return double.tryParse(cleaned);
+  }
+
+  String _extractCurrencySymbol(String price) {
+    final match = RegExp(r'[^\d.,\s]').firstMatch(price);
+    return match?.group(0) ?? '';
+  }
+
+  Future<void> _handlePurchase() async {
+    if (_isLoading) return;
+    if (!mounted) return;
+    final l10n = AppLocalizations.of(context)!;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final rc = RevenueCatService.instance;
+      await rc.initialize();
+
+      if (await rc.isPremium()) {
+        if (!mounted) return;
+        setState(() => _isLoading = false);
+        context.read<PremiumCubit>().refresh();
+        await PremiumSuccessDialog.show(context);
+        return;
+      }
+
+      final success = await rc.purchaseLifetime();
+      if (!mounted) return;
+
+      if (success) {
+        setState(() => _isLoading = false);
+        context.read<PremiumCubit>().refresh();
+        await PremiumSuccessDialog.show(context);
+      } else {
+        final premiumNow = await rc.isPremium();
+        if (premiumNow) {
+          setState(() => _isLoading = false);
+          context.read<PremiumCubit>().refresh();
+          await PremiumSuccessDialog.show(context);
+        } else {
+          setState(() => _isLoading = false);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(l10n.failedToInitiatePurchase)),
+            );
+          }
+        }
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('${l10n.purchaseError}: $e')));
+    }
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
     final isPremiumAsync = context.watch<PremiumCubit>().state;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final containerColor = theme.colorScheme.onPrimaryContainer.withValues(
+      alpha: 0.9,
+    );
+    final pricePrimaryTextColor = AppColors.textPrimary(theme.brightness);
+    final priceSecondaryTextColor = AppColors.textSecondary(theme.brightness);
 
     return isPremiumAsync.when(
       loading: () => const SizedBox.shrink(),
       error: (e, _) => Center(child: Text(l10n.errorMessage(e.toString()))),
       data: (isPremium) {
-        // Premium kullanıcı için hiçbir şey gösterme
-        if (isPremium) {
-          return const SizedBox.shrink();
-        }
-
-        // Bottom navigation bar'daki container rengiyle aynı
-        final containerColor = theme.colorScheme.onPrimaryContainer.withValues(
-          alpha: 0.8,
-        );
+        if (isPremium) return const SizedBox.shrink();
 
         return _SettingsCard(
           theme: theme,
           child: Material(
             color: AppColors.transparent,
             child: InkWell(
-              onTap: () => SettingsPage.showPurchaseDialog(context),
+              onTap: _isLoading ? null : _handlePurchase,
               borderRadius: BorderRadius.circular(16),
               child: Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Row(
-                      children: [
-                        // Premium Icon Container - Daha büyük ve vurgulu
-                        Container(
-                          width: 52,
-                          height: 52,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                containerColor,
-                                containerColor.withValues(alpha: 0.8),
-                              ],
+                    Text(
+                      'Sınırsız Silme Edin',
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 26,
+                        color: theme.colorScheme.onSurface,
+                        letterSpacing: -0.4,
+                        height: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    if (_productPrice != null) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? theme.colorScheme.primaryContainer.withValues(
+                                  alpha: 0.3,
+                                )
+                              : theme.colorScheme.primaryContainer.withValues(
+                                  alpha: 0.8,
+                                ),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: containerColor.withValues(
+                              alpha: isDark ? 0.3 : 0.5,
                             ),
-                            borderRadius: BorderRadius.circular(14),
-                            boxShadow: [
-                              BoxShadow(
-                                color: containerColor.withValues(alpha: 0.5),
-                                blurRadius: 16,
-                                offset: const Offset(0, 6),
-                                spreadRadius: 2,
+                            width: 2,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: containerColor.withValues(
+                                alpha: isDark ? 0.15 : 0.3,
                               ),
-                            ],
-                          ),
-                          child: Icon(
-                            Icons.workspace_premium_rounded,
-                            color: AppColors.white,
-                            size: 26,
-                          ),
-                        ),
-                        const SizedBox(width: 14),
-                        // Title and Description
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                l10n.goPremium,
-                                style: theme.textTheme.titleLarge?.copyWith(
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 17,
-                                  color: theme.colorScheme.onSurface,
-                                  letterSpacing: -0.4,
-                                  height: 1.2,
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                l10n.premiumDescription,
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  fontSize: 13,
-                                  color: theme.colorScheme.onSurface.withValues(
-                                    alpha: 0.75,
-                                  ),
-                                  height: 1.4,
-                                ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    // Feature Pills - kompakt
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        _FeaturePill(
-                          icon: Icons.all_inclusive_rounded,
-                          label: l10n.unlimited,
-                          theme: theme,
-                          containerColor: containerColor,
-                        ),
-                        _FeaturePill(
-                          icon: Icons.block_rounded,
-                          label: l10n.adFree,
-                          theme: theme,
-                          containerColor: containerColor,
-                        ),
-                        _FeaturePill(
-                          icon: Icons.verified_rounded,
-                          label: l10n.priority,
-                          theme: theme,
-                          containerColor: containerColor,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      width: double.infinity,
-                      child: FilledButton(
-                        onPressed: () =>
-                            SettingsPage.showPurchaseDialog(context),
-                        style: FilledButton.styleFrom(
-                          backgroundColor: containerColor,
-                          foregroundColor: AppColors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
+                              blurRadius: 15,
+                              spreadRadius: 1,
+                              offset: const Offset(0, 6),
+                            ),
+                          ],
                         ),
                         child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            Icon(Icons.workspace_premium_rounded, size: 20),
-                            const SizedBox(width: 8),
-                            Text(
-                              l10n.upgradeToPremium,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 14,
+                            Expanded(
+                              flex: 2,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    l10n.payOnceOwnForever,
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 13,
+                                      color: pricePrimaryTextColor,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  if (_originalPrice != null) ...[
+                                    const SizedBox(height: 4),
+                                    Wrap(
+                                      spacing: 6,
+                                      crossAxisAlignment:
+                                          WrapCrossAlignment.center,
+                                      children: [
+                                        Text(
+                                          _originalPrice!,
+                                          style: theme.textTheme.bodySmall
+                                              ?.copyWith(
+                                                decoration:
+                                                    TextDecoration.lineThrough,
+                                                decorationThickness: 2,
+                                                decorationColor:
+                                                    priceSecondaryTextColor
+                                                        .withValues(
+                                                          alpha: isDark
+                                                              ? 0.8
+                                                              : 0.7,
+                                                        ),
+                                                color: priceSecondaryTextColor
+                                                    .withValues(
+                                                      alpha: isDark
+                                                          ? 0.85
+                                                          : 0.65,
+                                                    ),
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 6,
+                                            vertical: 2,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.success.withValues(
+                                              alpha: 0.2,
+                                            ),
+                                            borderRadius: BorderRadius.circular(
+                                              6,
+                                            ),
+                                            border: Border.all(
+                                              color: AppColors.success
+                                                  .withValues(alpha: 0.4),
+                                              width: 1,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            l10n.discount25Short,
+                                            style: theme.textTheme.labelSmall
+                                                ?.copyWith(
+                                                  fontWeight: FontWeight.w800,
+                                                  fontSize: 9,
+                                                  color: AppColors.success,
+                                                  letterSpacing: 0.3,
+                                                ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Flexible(
+                              flex: 1,
+                              fit: FlexFit.loose,
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerRight,
+                                child: Text(
+                                  _productPrice!,
+                                  style: theme.textTheme.headlineMedium
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.w900,
+                                        fontSize: 32,
+                                        color: pricePrimaryTextColor,
+                                        letterSpacing: -0.8,
+                                      ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               ),
                             ),
                           ],
                         ),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                    SizedBox(
+                      width: double.infinity,
+                      child: AnimatedBuilder(
+                        animation: _pulseAnimation,
+                        builder: (context, child) {
+                          return Transform.scale(
+                            scale: _pulseAnimation.value,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.centerLeft,
+                                  end: Alignment.centerRight,
+                                  colors: [containerColor, AppColors.accent],
+                                ),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: containerColor.withValues(alpha: 0.9),
+                                  width: 1.5,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: containerColor.withValues(
+                                      alpha:
+                                          (isDark ? 0.3 : 0.5) *
+                                          _pulseAnimation.value,
+                                    ),
+                                    blurRadius: 25 * _pulseAnimation.value,
+                                    spreadRadius: 2 * _pulseAnimation.value,
+                                    offset: Offset(
+                                      0,
+                                      10 * _pulseAnimation.value,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              child: Material(
+                                color: AppColors.transparent,
+                                child: InkWell(
+                                  onTap: _isLoading ? null : _handlePurchase,
+                                  borderRadius: BorderRadius.circular(16),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 14,
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: _isLoading
+                                        ? Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              SizedBox(
+                                                height: 18,
+                                                width: 18,
+                                                child: CircularProgressIndicator(
+                                                  strokeWidth: 2,
+                                                  valueColor:
+                                                      AlwaysStoppedAnimation<
+                                                        Color
+                                                      >(
+                                                        theme
+                                                            .colorScheme
+                                                            .surface,
+                                                      ),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 10),
+                                              Text(
+                                                l10n.processing,
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.w800,
+                                                  fontSize: 14,
+                                                  color:
+                                                      theme.colorScheme.surface,
+                                                  letterSpacing: 0.3,
+                                                ),
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ],
+                                          )
+                                        : Text(
+                                            l10n.upgradeToPremium,
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w900,
+                                              fontSize: 16,
+                                              color: theme.colorScheme.surface,
+                                              letterSpacing: 0.5,
+                                            ),
+                                            textAlign: TextAlign.center,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        },
                       ),
                     ),
                   ],
@@ -382,50 +647,6 @@ class _PremiumSection extends StatelessWidget {
           ),
         );
       },
-    );
-  }
-}
-
-class _FeaturePill extends StatelessWidget {
-  const _FeaturePill({
-    required this.icon,
-    required this.label,
-    required this.theme,
-    required this.containerColor,
-  });
-
-  final IconData icon;
-  final String label;
-  final ThemeData theme;
-  final Color containerColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: containerColor.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: containerColor.withValues(alpha: 0.18),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: containerColor),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: theme.textTheme.labelSmall?.copyWith(
-              fontWeight: FontWeight.w700,
-              fontSize: 11,
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -693,117 +914,6 @@ class _RateAppSectionState extends State<_RateAppSection> {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _SoundVolumeControl extends StatefulWidget {
-  const _SoundVolumeControl();
-
-  @override
-  State<_SoundVolumeControl> createState() => _SoundVolumeControlState();
-}
-
-class _SoundVolumeControlState extends State<_SoundVolumeControl> {
-  final SoundService _soundService = SoundService();
-  final PreferencesService _prefsService = PreferencesService();
-  double _volume = 1.0;
-  bool _isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadVolume();
-  }
-
-  Future<void> _loadVolume() async {
-    final volume = await _prefsService.getSoundVolume();
-    if (mounted) {
-      setState(() {
-        _volume = volume;
-        _isLoading = false;
-      });
-    }
-  }
-
-  Future<void> _updateVolume(double newVolume) async {
-    setState(() {
-      _volume = newVolume;
-    });
-    await _soundService.setSoundVolume(newVolume);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    // Bottom navigation bar'daki container rengiyle aynı
-    final containerColor = theme.colorScheme.onPrimaryContainer.withValues(
-      alpha: 0.8,
-    );
-
-    if (_isLoading) {
-      return const SizedBox.shrink();
-    }
-
-    return _SettingsCard(
-      theme: theme,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Sound Volume',
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w700,
-              fontSize: 14,
-              color: theme.colorScheme.onPrimaryContainer.withValues(
-                alpha: 0.8,
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Icon(
-                Icons.volume_mute_rounded,
-                size: 20,
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Slider(
-                  value: _volume,
-                  min: 0.0,
-                  max: 1.0,
-                  divisions: 10,
-                  activeColor: containerColor,
-                  inactiveColor: containerColor.withValues(alpha: 0.3),
-                  onChanged: _updateVolume,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Icon(
-                Icons.volume_up_rounded,
-                size: 20,
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-              ),
-              const SizedBox(width: 8),
-              SizedBox(
-                width: 45,
-                child: Text(
-                  '${(_volume * 100).toInt()}%',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 12,
-                    color: containerColor,
-                  ),
-                  textAlign: TextAlign.right,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
     );
   }
 }

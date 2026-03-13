@@ -650,9 +650,6 @@ class SwipeAreaContentState extends State<SwipeAreaContent>
     _resetVisuals();
 
     if (isOverChangeAlbumZone && mounted && widget.assets.isNotEmpty) {
-      final soundService = SoundService();
-      soundService.playKeepSound();
-
       await showAlbumSelectionDialog(context, asset, widget.assets);
     }
   }

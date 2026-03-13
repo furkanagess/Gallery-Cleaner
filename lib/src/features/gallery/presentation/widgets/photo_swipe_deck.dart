@@ -265,14 +265,6 @@ class _PhotoSwipeDeckState extends State<PhotoSwipeDeck>
     final asset = widget.assets[_topIndex];
     final currentIndex = _topIndex;
 
-    // Ses efekti çal
-    final soundService = SoundService();
-    if (decision == SwipeDecision.delete) {
-      soundService.playDeleteSound();
-    } else {
-      soundService.playKeepSound();
-    }
-
     cubitSetState(() {
       _topIndex += 1;
       _dragOffset = Offset.zero;

@@ -4,12 +4,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../../../core/services/preferences_service.dart';
 import 'package:photo_manager/photo_manager.dart' as pm;
 import 'package:lottie/lottie.dart';
 import '../../../../application/blur_detection_provider.dart';
 import '../../../../application/gallery_providers.dart';
-import '../../../../../../core/services/sound_service.dart';
 import '../../../../../../app/theme/app_colors.dart';
 import '../../../../../../app/theme/app_decorations.dart';
 import '../../../../../../../l10n/app_localizations.dart';
@@ -21,7 +19,6 @@ import 'widgets/modern_scan_button.dart' show ModernScanButton;
 import 'widgets/blur_tab_helpers.dart'
     show estimateBlurScanDuration, formatEstimatedTime;
 import 'widgets/blur_sensitivity_selector.dart' show BlurSensitivitySelector;
-import '../widgets/sound_toggle_button.dart' show SoundToggleButton;
 
 // Blur Tab
 class BlurTab extends StatefulWidget {
@@ -33,63 +30,6 @@ class BlurTab extends StatefulWidget {
 
 class BlurTabState extends State<BlurTab> with CubitStateMixin<BlurTab> {
   double _blurThreshold = 0.5; // Default: Medium sensitivity
-  final SoundService _soundService = SoundService();
-  final PreferencesService _prefsService = PreferencesService();
-  bool _isSoundEnabled = true;
-  StreamSubscription? _blurDetectionSubscription;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadSoundState();
-
-    // Stream listener'ı ekle
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final blurDetectionCubit = context.read<BlurDetectionCubit>();
-      _blurDetectionSubscription = blurDetectionCubit.stream.listen((next) {
-        if (!mounted) return;
-        final previous = blurDetectionCubit.state;
-        // Scan durumu veya tamamlanma durumu değiştiğinde ses kontrolü yap
-        final wasScanning = previous.isScanning;
-        final isScanning = next.isScanning;
-        final hasCompleted = next.hasCompletedScan && !next.isScanning;
-
-        debugPrint(
-          '🔍 [BlurTab] Stream event - wasScanning: $wasScanning, isScanning: $isScanning, hasCompleted: $hasCompleted',
-        );
-
-        // Scan başladıysa ses çal
-        if (isScanning && !wasScanning) {
-          _soundService.playScannerSound();
-        }
-        // Scan durduysa veya tamamlandıysa ses durdur
-        if ((!isScanning && wasScanning) || hasCompleted) {
-          _soundService.stopScannerSound();
-        }
-
-        // Scan tamamlandığında otomatik olarak sonuçlar ekranına git
-        if (wasScanning && !isScanning && hasCompleted) {
-          debugPrint('✅ [BlurTab] Scan completed, navigating to results...');
-          // Mevcut context hâlâ mounted ise sonuçlar sayfasına geç
-          if (mounted) {
-            context.push('/results/blur');
-          }
-        }
-      });
-    });
-  }
-
-  @override
-  void dispose() {
-    _blurDetectionSubscription?.cancel();
-    _soundService.stopScannerSound();
-    super.dispose();
-  }
-
-  Future<void> _loadSoundState() async {
-    _isSoundEnabled = await _prefsService.isScanSoundEnabled();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -125,10 +65,6 @@ class BlurTabState extends State<BlurTab> with CubitStateMixin<BlurTab> {
         loading: () => const ScanFormShimmer(),
         error: (e, _) => Center(child: Text(l10n.errorMessage(e.toString()))),
         data: (albums) {
-          if (albums.isEmpty) {
-            return Center(child: Text(l10n.albumNotFound));
-          }
-
           final selectedAlbums = selectedAlbum != null
               ? [selectedAlbum]
               : albums.where((a) => !a.isAll).toList();
@@ -185,16 +121,6 @@ class BlurTabState extends State<BlurTab> with CubitStateMixin<BlurTab> {
                                       size: 20,
                                       color: containerColor,
                                     ),
-                                  ),
-                                  const Spacer(),
-                                  SoundToggleButton(
-                                    isSoundEnabled: _isSoundEnabled,
-                                    onToggle: () {
-                                      cubitSetState(() {
-                                        _isSoundEnabled = !_isSoundEnabled;
-                                      });
-                                      _toggleSound();
-                                    },
                                   ),
                                 ],
                               ),
@@ -305,20 +231,6 @@ class BlurTabState extends State<BlurTab> with CubitStateMixin<BlurTab> {
         },
       ),
     );
-  }
-
-  Future<void> _toggleSound() async {
-    // State zaten güncellendi, SoundService'in optimize edilmiş metodunu kullan
-    final currentState = _isSoundEnabled;
-    await _soundService.setSoundEnabled(currentState);
-
-    // Eğer ses açıldıysa ve scan devam ediyorsa sesi başlat
-    if (currentState && mounted) {
-      final blurState = context.read<BlurDetectionCubit>().state;
-      if (blurState.isScanning) {
-        _soundService.playScannerSound();
-      }
-    }
   }
 
   Widget _buildStartScanButton(
@@ -480,7 +392,9 @@ class BlurTabState extends State<BlurTab> with CubitStateMixin<BlurTab> {
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
-                                l10n.noPhotosInSelectedAlbums,
+                                selectedAlbums.isEmpty
+                                    ? l10n.albumNotFound
+                                    : l10n.noPhotosInSelectedAlbums,
                                 style: theme.textTheme.bodyMedium?.copyWith(
                                   color: AppColors.warning,
                                   fontWeight: FontWeight.w600,

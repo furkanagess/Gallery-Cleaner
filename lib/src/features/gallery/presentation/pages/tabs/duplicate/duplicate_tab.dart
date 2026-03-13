@@ -6,8 +6,6 @@ import 'package:photo_manager/photo_manager.dart' as pm;
 import 'package:lottie/lottie.dart';
 import '../../../../application/duplicate_detection_provider.dart';
 import '../../../../application/gallery_providers.dart';
-import '../../../../../../core/services/sound_service.dart';
-import '../../../../../../core/services/preferences_service.dart';
 import '../../../../../../app/theme/app_colors.dart';
 import '../../../../../../app/theme/app_decorations.dart';
 import '../../../../../../../l10n/app_localizations.dart';
@@ -19,7 +17,6 @@ import '../blur/widgets/modern_scan_button.dart' show ModernScanButton;
 import 'widgets/duplicate_tab_helpers.dart'
     show estimateDuplicateScanDuration, formatEstimatedTime;
 import 'widgets/duplicate_mode_selector.dart' show DuplicateModeSelector;
-import '../widgets/sound_toggle_button.dart' show SoundToggleButton;
 
 // Duplicate Tab
 class DuplicateTab extends StatefulWidget {
@@ -31,84 +28,8 @@ class DuplicateTab extends StatefulWidget {
 
 class DuplicateTabState extends State<DuplicateTab>
     with CubitStateMixin<DuplicateTab> {
-  final SoundService _soundService = SoundService();
-  final PreferencesService _prefsService = PreferencesService();
   DuplicateDetectionMode _duplicateMode =
       DuplicateDetectionMode.mediumSensitivity;
-  bool _isSoundEnabled = true;
-  StreamSubscription? _duplicateDetectionSubscription;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadSoundState();
-
-    // Stream listener'ı ekle
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final duplicateDetectionCubit = context.read<DuplicateDetectionCubit>();
-      _duplicateDetectionSubscription = duplicateDetectionCubit.stream.listen((
-        next,
-      ) {
-        if (!mounted) return;
-        final previous = duplicateDetectionCubit.state;
-        // Scan durumu veya tamamlanma durumu değiştiğinde ses kontrolü yap
-        final wasScanning = previous.isScanning;
-        final isScanning = next.isScanning;
-        final hasCompleted = next.hasCompletedScan && !next.isScanning;
-
-        debugPrint(
-          '🔍 [DuplicateTab] Stream event - wasScanning: $wasScanning, isScanning: $isScanning, hasCompleted: $hasCompleted',
-        );
-
-        // Scan başladıysa ses çal
-        if (isScanning && !wasScanning) {
-          _soundService.playScannerSound();
-        }
-        // Scan durduysa veya tamamlandıysa ses durdur
-        else if ((!isScanning && wasScanning) || hasCompleted) {
-          _soundService.stopScannerSound();
-        }
-
-        // Scan tamamlandığında tip rotation'ı durdur (bildirim ve navigation SwipePage'de yapılıyor)
-        if (wasScanning && !isScanning && hasCompleted) {
-          debugPrint(
-            '✅ [DuplicateTab] Scan completed (notification and navigation will be handled by SwipePage)',
-          );
-        }
-      });
-    });
-  }
-
-  @override
-  void dispose() {
-    _soundService.stopScannerSound();
-    _duplicateDetectionSubscription?.cancel();
-    super.dispose();
-  }
-
-  Future<void> _loadSoundState() async {
-    final isEnabled = await _prefsService.isScanSoundEnabled();
-    if (mounted) {
-      cubitSetState(() {
-        _isSoundEnabled = isEnabled;
-      });
-    }
-  }
-
-  Future<void> _toggleSound() async {
-    // State zaten güncellendi, SoundService'in optimize edilmiş metodunu kullan
-    final currentState = _isSoundEnabled;
-    await _soundService.setSoundEnabled(currentState);
-
-    // Eğer ses açıldıysa ve scan devam ediyorsa sesi başlat
-    if (currentState && mounted) {
-      final duplicateState = context.read<DuplicateDetectionCubit>().state;
-      if (duplicateState.isScanning) {
-        _soundService.playScannerSound();
-      }
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -144,10 +65,6 @@ class DuplicateTabState extends State<DuplicateTab>
         loading: () => const ScanFormShimmer(),
         error: (e, _) => Center(child: Text(l10n.errorMessage(e.toString()))),
         data: (albums) {
-          if (albums.isEmpty) {
-            return Center(child: Text(l10n.albumNotFound));
-          }
-
           final selectedAlbums = selectedAlbum != null
               ? [selectedAlbum]
               : albums.where((a) => !a.isAll).toList();
@@ -202,16 +119,6 @@ class DuplicateTabState extends State<DuplicateTab>
                                       size: 20,
                                       color: containerColor,
                                     ),
-                                  ),
-                                  const Spacer(),
-                                  SoundToggleButton(
-                                    isSoundEnabled: _isSoundEnabled,
-                                    onToggle: () {
-                                      cubitSetState(() {
-                                        _isSoundEnabled = !_isSoundEnabled;
-                                      });
-                                      _toggleSound();
-                                    },
                                   ),
                                 ],
                               ),
@@ -483,7 +390,9 @@ class DuplicateTabState extends State<DuplicateTab>
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
-                                l10n.noPhotosInSelectedAlbums,
+                                selectedAlbums.isEmpty
+                                    ? l10n.albumNotFound
+                                    : l10n.noPhotosInSelectedAlbums,
                                 style: theme.textTheme.bodyMedium?.copyWith(
                                   color: AppColors.warning,
                                   fontWeight: FontWeight.w600,
