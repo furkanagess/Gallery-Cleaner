@@ -1046,16 +1046,21 @@ class DeleteLimitCubit extends Cubit<AsyncValue<int>> {
   /// [fromSwipePage] true ise ve silme hakkı 0'a düşerse
   /// deleteLimitZeroEventCount sadece bu durumda artırılır (swipe sayfası).
   Future<int> decrease(int amount, {bool fromSwipePage = false}) async {
+    final before = fromSwipePage ? await currentLimit() : null;
     final newLimit = await _prefs.decreaseDeleteLimit(amount);
     emit(AsyncValue.data(newLimit));
-    if (fromSwipePage && newLimit == 0) {
-      DeleteLimitTrackerService.instance
-          .trackDeleteLimitReachedZero()
-          .catchError((error) {
-        debugPrint(
-          '⚠️ [DeleteLimitCubit] trackDeleteLimitReachedZero hatası: $error',
-        );
-      });
+    if (fromSwipePage && before != null && before > 0 && newLimit == 0) {
+      final alreadySent = await _prefs.hasSentDeleteLimitZeroEvent();
+      if (!alreadySent) {
+        DeleteLimitTrackerService.instance
+            .trackDeleteLimitReachedZero()
+            .catchError((error) {
+          debugPrint(
+            '⚠️ [DeleteLimitCubit] trackDeleteLimitReachedZero hatası: $error',
+          );
+        });
+        await _prefs.markDeleteLimitZeroEventSent();
+      }
     }
     return newLimit;
   }

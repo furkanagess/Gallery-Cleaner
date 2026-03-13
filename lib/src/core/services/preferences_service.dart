@@ -38,6 +38,8 @@ class PreferencesService {
   static const String _deleteLimitLastResetKey = 'delete_limit_last_reset';
   static String _deleteLimitKeyForDevice(String deviceId) =>
       'delete_limit_$deviceId';
+  static const String _deleteLimitZeroEventSentKey =
+      'delete_limit_zero_event_sent';
   static const String _isPremiumKey = 'is_premium';
   static const String _previousGalleryStatsKey = 'previous_gallery_stats';
   static const String _firstAnalysisCompletedKey = 'first_analysis_completed';
@@ -488,6 +490,18 @@ class PreferencesService {
     }
 
     return newLimit;
+  }
+
+  /// deleteLimitZeroEventCount event'ini kullanıcı başına sadece 1 kez göndermek için flag.
+  Future<bool> hasSentDeleteLimitZeroEvent() async {
+    final value = await _getSecureBool(_deleteLimitZeroEventSentKey);
+    return value ?? false;
+  }
+
+  Future<void> markDeleteLimitZeroEventSent() async {
+    await _setSecureBool(_deleteLimitZeroEventSentKey, true);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_deleteLimitZeroEventSentKey, true);
   }
 
   /// Silme hakkını artır (reklam izleyerek)

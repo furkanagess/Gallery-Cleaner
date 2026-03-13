@@ -145,6 +145,61 @@ lib/
 
 ---
 
+## Yüksek Fotoğraf Sayılı Kullanıcılar İçin Olası Sorunlar
+
+Bu bölüm, 50K–200K+ fotoğrafa sahip kullanıcıların yaşayabileceği problemleri ve dikkat edilmesi gereken noktaları özetler.
+
+### Performans ve Akıcılık
+
+- **İlk tarama süresi**: `photo_manager` ile tüm asset’lerin ve metadata’ların okunması uzun sürebilir; kullanıcı uygulamanın donduğunu düşünebilir.  
+- **Swipe akışı FPS düşüşü**: Ağır kart UI’si (animasyonlar, gölgeler, lottie vs.) ve büyük listeler düşük/orta cihazlarda jank yaratabilir.  
+- **Sonuç ekranlarında lag**: Yeterli pagination/virtualization olmadan binlerce fotoğrafı tek ekranda göstermek scroll takılmalarına ve yüksek bellek kullanımına yol açar.  
+- **Blur/duplicate taramalarının süresi**: Yüksek çözünürlüklü binlerce fotoğrafta CPU/IO yükü çok artar; taramalar 10–30 dakika sürebilir.
+
+### Bellek ve Çökme Riskleri
+
+- **Büyük görsellerin RAM’e yüklenmesi**: Aynı anda çok sayıda yüksek çözünürlüklü görsel decode edilirse OOM (out-of-memory) kaynaklı çökmeler olabilir.  
+- **Thumbnail/orijinal karışıklığı**: Yanlış boyuttaki görseller (full-size yerine thumbnail) kullanılmadığında gereksiz bellek tüketimi yaşanır.  
+- **Uzun süren background işler**: OS, uzun süren CPU yoğun blur/duplicate analizlerini arka planda sonlandırabilir.
+
+### Fotoğraf Kütüphanesi ve İzinler
+
+- **iCloud / “Optimize Storage” senaryoları**: Sadece bulutta duran fotoğrafları çekerken ağ gecikmeleri ve hatalar görülebilir.  
+- **Kısıtlı fotoğraf izni (Selected Photos)**: Kullanıcı tüm galeriyi değil sadece bazı albümleri paylaştıysa, eksik fotoğraflar kafa karıştırabilir.  
+- **İzin iptali**: Kullanıcı sistem ayarlarından izinleri kapatırsa, uygulama listeleri ve sayacı doğru güncelleyemeyebilir.
+
+### Silme Akışı ve Güven
+
+- **Geri alma ihtiyacı**: Yanlış silme korkusu yüksek; undo/“Recently Deleted” davranışı net anlatılmazsa kullanıcı güveni azalır.  
+- **iOS “Recently Deleted” ile senkron**: Kullanıcı Fotoğraflar uygulamasından geri aldığında istatistikler (silinen sayısı, boşalan alan) anlık güncellenmeyebilir.  
+- **Silme limiti iletişimi**: Günlük silme hakkı sınırı ve premium’a geçişle ne değiştiğinin açıkça anlatılmaması karışıklık yaratabilir.
+
+### Tespit Doğruluğu (Blur ve Duplicate)
+
+- **Blur false positive/negative’leri**: Değerli ama hafif bulanık fotoğraflar yanlışlıkla “sil” önerisi alabilir; net ama gürültülü fotoğraflar yanlış sınıflanabilir.  
+- **Yanlış duplicate grupları**: Kolajlar, ekran görüntüleri, filtreli versiyonlar “aynı fotoğraf” sanılıp gruplanabilir; kullanıcı seçim yaparken zorlanır.  
+- **Aşırı agresif/defansif filtreler**: Performans adına sadeleştirilen algoritmalar, bazı duplicate veya blur’lu fotoğrafları kaçırabilir.
+
+### UX / UI Ölçeklenebilirliği
+
+- **Aşırı kalabalık sonuç ekranları**: On binlerce öğeyi aynı desenle göstermek hem yavaş hem de okunması zor bir arayüz oluşturur.  
+- **Sonsuz swipe yorgunluğu**: Çok büyük galerilerde kullanıcı yüzlerce kartı tek tek swipe ederken tükenebilir; batch aksiyonlar ve akıllı atlamalar kritik hale gelir.  
+- **Bekleme anlarında geri bildirim**: “X / Y fotoğraf tarandı, tahmini kalan süre” gibi göstergeler olmazsa kullanıcı işlemin takıldığını sanabilir.
+
+### Ağ, Reklam ve Satın Alma
+
+- **RevenueCat / Store hataları**: Ağ veya StoreKit/Play Billing hatalarında premium durumu ile silme hakları uyumsuzlaşabilir.  
+- **Reklam yüklenme sorunları**: Delete limit için reklam izleme akışı, zayıf bağlantıda veya düşük fill-rate durumunda takılı kalabilir.  
+- **Firestore limitleri**: Çok sayıda kullanıcıda yoğun event gönderimi, Firestore read/write kotalarına yaklaşabilir.
+
+### Platform Davranışları
+
+- **Thermal throttling**: Uzun CPU yoğunluklu işler cihazı ısıtır, CPU frekansı düşer ve tüm uygulama yavaşlar.  
+- **Background kısıtları**: iOS’ta uzun analizler app background’a alınırsa yarıda kesilebilir.  
+- **Depolama doluluğu**: Disk çok doluyken cache/thumb oluşturma hataları ve beklenmedik çökmeler görülebilir.
+
+---
+
 ## Kabul Kriterleri (Örnek)
 
 - Kullanıcı, izin verdikten sonra ilk kartı görebilmeli; sağ kaydırma fotoğrafı tutmalı, sol kaydırma silme onayını tetiklemeli.
