@@ -420,7 +420,10 @@ class _ReviewDeletePhotosPageState extends State<ReviewDeletePhotosPage> {
 
       if (deleteResult.deletedCount > 0) {
         // Delete limit'i azalt
-        await deleteLimitCubit.decrease(deleteResult.deletedCount);
+        await deleteLimitCubit.decrease(
+          deleteResult.deletedCount,
+          fromSwipePage: true,
+        );
 
         if (mounted) {
           // Başarılı silme sonrası animasyonlu özet bottom sheet'ini göster

@@ -50,6 +50,14 @@ class _OnboardingPageState extends State<OnboardingPage>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isPremiumAsync = context.watch<PremiumCubit>().state;
+    final isPremium = isPremiumAsync.maybeWhen(
+      data: (premium) => premium,
+      orElse: () => false,
+    );
+    final baseColor = isPremium
+        ? theme.colorScheme.primary
+        : theme.colorScheme.onPrimaryContainer.withValues(alpha: 0.92);
 
     return buildWithCubit(
       () => Scaffold(
@@ -68,15 +76,11 @@ class _OnboardingPageState extends State<OnboardingPage>
                         child: AppThreeDButton(
                           label: AppLocalizations.of(context)!.skip,
                           onPressed: _completeOnboarding,
-                          baseColor: theme.colorScheme.onPrimaryContainer
-                              .withValues(alpha:0.9),
+                          baseColor: baseColor,
                           textColor: theme.colorScheme.surface,
                           fullWidth: false,
-                          height: 36,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
-                          ),
+                          height: 32,
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
                           fontWeight: FontWeight.w700,
                           centerText: true,
                           fontSize: 13,
@@ -132,13 +136,15 @@ class _OnboardingPageState extends State<OnboardingPage>
                                       orElse: () => false,
                                     );
                                     return isPremium
-                                        ? theme.colorScheme.primary.withValues(alpha:
-                                            0.9,
+                                        ? theme.colorScheme.primary.withValues(
+                                            alpha: 0.9,
                                           )
                                         : theme.colorScheme.onPrimaryContainer
-                                              .withValues(alpha:0.8);
+                                              .withValues(alpha: 0.8);
                                   })()
-                                : theme.colorScheme.primary.withValues(alpha:0.3),
+                                : theme.colorScheme.primary.withValues(
+                                    alpha: 0.3,
+                                  ),
                           ),
                         );
                       }),
@@ -152,16 +158,6 @@ class _OnboardingPageState extends State<OnboardingPage>
                       builder: (ctx) {
                         final l10n = AppLocalizations.of(ctx)!;
                         final isLast = _currentPage == _totalPages - 1;
-                        final isPremiumAsync = ctx.watch<PremiumCubit>().state;
-                        final isPremium = isPremiumAsync.maybeWhen(
-                          data: (premium) => premium,
-                          orElse: () => false,
-                        );
-                        final baseColor = isPremium
-                            ? theme.colorScheme.primary
-                            : theme.colorScheme.onPrimaryContainer.withValues(alpha:
-                                0.92,
-                              );
                         return AppThreeDButton(
                           label: isLast
                               ? l10n.startButton
@@ -415,12 +411,12 @@ class _OnboardingSlide1State extends State<_OnboardingSlide1>
               color: AppColors.black,
               borderRadius: BorderRadius.circular(30),
               border: Border.all(
-                color: theme.colorScheme.onSurface.withValues(alpha:0.2),
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.2),
                 width: 6,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.black.withValues(alpha:0.4),
+                  color: AppColors.black.withValues(alpha: 0.4),
                   blurRadius: 20,
                   spreadRadius: 3,
                   offset: const Offset(0, 8),
@@ -488,7 +484,7 @@ class _OnboardingSlide1State extends State<_OnboardingSlide1>
                                         color: theme
                                             .colorScheme
                                             .onPrimaryContainer
-                                            .withValues(alpha:0.8),
+                                            .withValues(alpha: 0.8),
                                       ),
                                     );
                                   },
@@ -548,7 +544,9 @@ class _OnboardingSlide1State extends State<_OnboardingSlide1>
                                                       color: theme
                                                           .colorScheme
                                                           .onPrimaryContainer
-                                                          .withValues(alpha:0.8),
+                                                          .withValues(
+                                                            alpha: 0.8,
+                                                          ),
                                                     ),
                                                   );
                                                 },
@@ -573,12 +571,14 @@ class _OnboardingSlide1State extends State<_OnboardingSlide1>
                                   child: Container(
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
-                                      color: AppColors.error.withValues(alpha:0.9),
+                                      color: AppColors.error.withValues(
+                                        alpha: 0.9,
+                                      ),
                                       shape: BoxShape.circle,
                                       boxShadow: [
                                         BoxShadow(
-                                          color: AppColors.error.withValues(alpha:
-                                            0.6,
+                                          color: AppColors.error.withValues(
+                                            alpha: 0.6,
                                           ),
                                           blurRadius: 10,
                                           spreadRadius: 2,
@@ -605,12 +605,14 @@ class _OnboardingSlide1State extends State<_OnboardingSlide1>
                                   child: Container(
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
-                                      color: AppColors.success.withValues(alpha:0.9),
+                                      color: AppColors.success.withValues(
+                                        alpha: 0.9,
+                                      ),
                                       shape: BoxShape.circle,
                                       boxShadow: [
                                         BoxShadow(
-                                          color: AppColors.success.withValues(alpha:
-                                            0.6,
+                                          color: AppColors.success.withValues(
+                                            alpha: 0.6,
                                           ),
                                           blurRadius: 10,
                                           spreadRadius: 2,
@@ -929,12 +931,12 @@ class _OnboardingSlide4State extends State<_OnboardingSlide4>
               color: AppColors.black,
               borderRadius: BorderRadius.circular(30),
               border: Border.all(
-                color: theme.colorScheme.onSurface.withValues(alpha:0.2),
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.2),
                 width: 6,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.black.withValues(alpha:0.4),
+                  color: AppColors.black.withValues(alpha: 0.4),
                   blurRadius: 20,
                   spreadRadius: 3,
                   offset: const Offset(0, 8),
@@ -1084,8 +1086,9 @@ class _OnboardingSlide4State extends State<_OnboardingSlide4>
                                                                       color: theme
                                                                           .colorScheme
                                                                           .onPrimaryContainer
-                                                                          .withValues(alpha:
-                                                                            0.8,
+                                                                          .withValues(
+                                                                            alpha:
+                                                                                0.8,
                                                                           ),
                                                                     ),
                                                                   );
@@ -1108,14 +1111,16 @@ class _OnboardingSlide4State extends State<_OnboardingSlide4>
                                                                     theme
                                                                         .colorScheme
                                                                         .error
-                                                                        .withValues(alpha:
-                                                                          0.4,
+                                                                        .withValues(
+                                                                          alpha:
+                                                                              0.4,
                                                                         ),
                                                                     theme
                                                                         .colorScheme
                                                                         .error
-                                                                        .withValues(alpha:
-                                                                          0.1,
+                                                                        .withValues(
+                                                                          alpha:
+                                                                              0.1,
                                                                         ),
                                                                   ],
                                                                 ),
@@ -1137,8 +1142,9 @@ class _OnboardingSlide4State extends State<_OnboardingSlide4>
                                                                     color: theme
                                                                         .colorScheme
                                                                         .error
-                                                                        .withValues(alpha:
-                                                                          0.6 /
+                                                                        .withValues(
+                                                                          alpha:
+                                                                              0.6 /
                                                                               pulse,
                                                                         ),
                                                                     width: 1.5,
@@ -1178,8 +1184,9 @@ class _OnboardingSlide4State extends State<_OnboardingSlide4>
                                                                       color: theme
                                                                           .colorScheme
                                                                           .error
-                                                                          .withValues(alpha:
-                                                                            0.5,
+                                                                          .withValues(
+                                                                            alpha:
+                                                                                0.5,
                                                                           ),
                                                                       blurRadius:
                                                                           4,
@@ -1234,11 +1241,15 @@ class _OnboardingSlide4State extends State<_OnboardingSlide4>
                                   width: 60,
                                   height: 60,
                                   decoration: BoxDecoration(
-                                    color: AppColors.error.withValues(alpha:0.9),
+                                    color: AppColors.error.withValues(
+                                      alpha: 0.9,
+                                    ),
                                     shape: BoxShape.circle,
                                     boxShadow: [
                                       BoxShadow(
-                                        color: AppColors.error.withValues(alpha:0.6),
+                                        color: AppColors.error.withValues(
+                                          alpha: 0.6,
+                                        ),
                                         blurRadius: 20,
                                         spreadRadius: 3,
                                       ),
@@ -1317,14 +1328,15 @@ class _OnboardingSlide4State extends State<_OnboardingSlide4>
                                         vertical: 10,
                                       ),
                                       decoration: BoxDecoration(
-                                        color: AppColors.success.withValues(alpha:
-                                          0.95,
+                                        color: AppColors.success.withValues(
+                                          alpha: 0.95,
                                         ),
                                         borderRadius: BorderRadius.circular(14),
                                         boxShadow: [
                                           BoxShadow(
-                                            color: AppColors.success
-                                                .withValues(alpha:0.45),
+                                            color: AppColors.success.withValues(
+                                              alpha: 0.45,
+                                            ),
                                             blurRadius: 12,
                                             spreadRadius: 2,
                                           ),
@@ -1571,12 +1583,12 @@ class _OnboardingSlide5State extends State<_OnboardingSlide5>
               color: AppColors.black,
               borderRadius: BorderRadius.circular(30),
               border: Border.all(
-                color: theme.colorScheme.onSurface.withValues(alpha:0.2),
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.2),
                 width: 6,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.black.withValues(alpha:0.4),
+                  color: AppColors.black.withValues(alpha: 0.4),
                   blurRadius: 20,
                   spreadRadius: 3,
                   offset: const Offset(0, 8),
@@ -1744,7 +1756,9 @@ class _OnboardingSlide5State extends State<_OnboardingSlide5>
                                                       ),
                                                   decoration: BoxDecoration(
                                                     color: AppColors.success
-                                                        .withValues(alpha:0.95),
+                                                        .withValues(
+                                                          alpha: 0.95,
+                                                        ),
                                                     borderRadius:
                                                         BorderRadius.circular(
                                                           14,
@@ -1752,7 +1766,9 @@ class _OnboardingSlide5State extends State<_OnboardingSlide5>
                                                     boxShadow: [
                                                       BoxShadow(
                                                         color: AppColors.success
-                                                            .withValues(alpha:0.45),
+                                                            .withValues(
+                                                              alpha: 0.45,
+                                                            ),
                                                         blurRadius: 12,
                                                         spreadRadius: 2,
                                                       ),
@@ -2183,12 +2199,12 @@ class _OnboardingSlide6State extends State<_OnboardingSlide6>
               color: AppColors.black,
               borderRadius: BorderRadius.circular(30),
               border: Border.all(
-                color: theme.colorScheme.onSurface.withValues(alpha:0.2),
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.2),
                 width: 6,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.black.withValues(alpha:0.4),
+                  color: AppColors.black.withValues(alpha: 0.4),
                   blurRadius: 20,
                   spreadRadius: 3,
                   offset: const Offset(0, 8),
@@ -2283,7 +2299,7 @@ class _OnboardingSlide6State extends State<_OnboardingSlide6>
                                           ),
                                           border: Border.all(
                                             color: theme.colorScheme.onSurface
-                                                .withValues(alpha:0.1),
+                                                .withValues(alpha: 0.1),
                                             width: 1,
                                           ),
                                         ),
@@ -2474,8 +2490,8 @@ class _OnboardingSlide6State extends State<_OnboardingSlide6>
                                                                           color: theme
                                                                               .colorScheme
                                                                               .onPrimaryContainer
-                                                                              .withValues(alpha:
-                                                                                0.8,
+                                                                              .withValues(
+                                                                                alpha: 0.8,
                                                                               ),
                                                                         ),
                                                                       );
@@ -2498,14 +2514,14 @@ class _OnboardingSlide6State extends State<_OnboardingSlide6>
                                                                         theme
                                                                             .colorScheme
                                                                             .error
-                                                                            .withValues(alpha:
-                                                                              0.4,
+                                                                            .withValues(
+                                                                              alpha: 0.4,
                                                                             ),
                                                                         theme
                                                                             .colorScheme
                                                                             .error
-                                                                            .withValues(alpha:
-                                                                              0.1,
+                                                                            .withValues(
+                                                                              alpha: 0.1,
                                                                             ),
                                                                       ],
                                                                     ),
@@ -2526,16 +2542,17 @@ class _OnboardingSlide6State extends State<_OnboardingSlide6>
                                                                       shape: BoxShape
                                                                           .circle,
                                                                       border: Border.all(
-                                                                        color: theme.colorScheme.error.withValues(alpha:
-                                                                          (0.6 /
-                                                                                  pulse.clamp(
-                                                                                    0.95,
-                                                                                    1.05,
-                                                                                  ))
-                                                                              .clamp(
-                                                                                0.0,
-                                                                                1.0,
-                                                                              ),
+                                                                        color: theme.colorScheme.error.withValues(
+                                                                          alpha:
+                                                                              (0.6 /
+                                                                                      pulse.clamp(
+                                                                                        0.95,
+                                                                                        1.05,
+                                                                                      ))
+                                                                                  .clamp(
+                                                                                    0.0,
+                                                                                    1.0,
+                                                                                  ),
                                                                         ),
                                                                         width:
                                                                             1.5,
@@ -2591,12 +2608,12 @@ class _OnboardingSlide6State extends State<_OnboardingSlide6>
                                               height: 50,
                                               decoration: BoxDecoration(
                                                 color: AppColors.error
-                                                    .withValues(alpha:0.9),
+                                                    .withValues(alpha: 0.9),
                                                 shape: BoxShape.circle,
                                                 boxShadow: [
                                                   BoxShadow(
                                                     color: AppColors.error
-                                                        .withValues(alpha:0.6),
+                                                        .withValues(alpha: 0.6),
                                                     blurRadius: 15,
                                                     spreadRadius: 2,
                                                   ),
@@ -2681,7 +2698,9 @@ class _OnboardingSlide6State extends State<_OnboardingSlide6>
                                                       ),
                                                   decoration: BoxDecoration(
                                                     color: AppColors.success
-                                                        .withValues(alpha:0.95),
+                                                        .withValues(
+                                                          alpha: 0.95,
+                                                        ),
                                                     borderRadius:
                                                         BorderRadius.circular(
                                                           14,
@@ -2689,7 +2708,9 @@ class _OnboardingSlide6State extends State<_OnboardingSlide6>
                                                     boxShadow: [
                                                       BoxShadow(
                                                         color: AppColors.success
-                                                            .withValues(alpha:0.45),
+                                                            .withValues(
+                                                              alpha: 0.45,
+                                                            ),
                                                         blurRadius: 12,
                                                         spreadRadius: 2,
                                                       ),

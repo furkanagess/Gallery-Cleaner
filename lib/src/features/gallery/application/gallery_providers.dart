@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:photo_manager/photo_manager.dart' as pm;
 
+import '../../../core/services/delete_limit_tracker_service.dart';
 import '../../../core/services/media_library_service.dart';
 import '../../../core/services/preferences_service.dart';
 import '../../../core/services/revenuecat_service.dart';
@@ -1042,9 +1043,20 @@ class DeleteLimitCubit extends Cubit<AsyncValue<int>> {
     return await refresh();
   }
 
-  Future<int> decrease(int amount) async {
+  /// [fromSwipePage] true ise ve silme hakkı 0'a düşerse
+  /// deleteLimitZeroEventCount sadece bu durumda artırılır (swipe sayfası).
+  Future<int> decrease(int amount, {bool fromSwipePage = false}) async {
     final newLimit = await _prefs.decreaseDeleteLimit(amount);
     emit(AsyncValue.data(newLimit));
+    if (fromSwipePage && newLimit == 0) {
+      DeleteLimitTrackerService.instance
+          .trackDeleteLimitReachedZero()
+          .catchError((error) {
+        debugPrint(
+          '⚠️ [DeleteLimitCubit] trackDeleteLimitReachedZero hatası: $error',
+        );
+      });
+    }
     return newLimit;
   }
 

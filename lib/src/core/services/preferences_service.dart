@@ -6,7 +6,6 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:crypto/crypto.dart';
 import '../../features/settings/application/theme_controller.dart';
 import '../models/gallery_stats.dart';
-import 'delete_limit_tracker_service.dart';
 
 class PreferencesService {
   // Secure Storage instance (Keychain/Keystore)
@@ -488,19 +487,6 @@ class PreferencesService {
       await _setSecureInt(key, newLimit);
     }
 
-    if (currentLimit > 0 && newLimit == 0) {
-      debugPrint(
-        '📊 [PreferencesService] Silme hakkı sıfıra düştü, Firestore\'a kayıt ekleniyor...',
-      );
-      DeleteLimitTrackerService.instance
-          .trackDeleteLimitReachedZero()
-          .catchError((error) {
-        debugPrint(
-          '⚠️ [PreferencesService] Firestore kayıt hatası (devam ediliyor): $error',
-        );
-      });
-    }
-
     return newLimit;
   }
 
@@ -919,29 +905,11 @@ class PreferencesService {
     debugPrint('💾 [PreferencesService] Interstisial ad sayısı sıfırlandı');
   }
 
-  /// Scan sesinin açık olup olmadığını kontrol et (varsayılan: true)
-  Future<bool> isScanSoundEnabled() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(_scanSoundEnabledKey) ?? true;
-  }
-
-  /// Scan sesini aç/kapa
-  Future<void> setScanSoundEnabled(bool enabled) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_scanSoundEnabledKey, enabled);
-  }
-
-  /// Ses seviyesini al (0.0 - 1.0, varsayılan: 1.0)
-  Future<double> getSoundVolume() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getDouble(_soundVolumeKey) ?? 1.0;
-  }
-
-  /// Ses seviyesini ayarla (0.0 - 1.0)
-  Future<void> setSoundVolume(double volume) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setDouble(_soundVolumeKey, volume.clamp(0.0, 1.0));
-  }
+  /// Scan sesi ve ses seviyesi özellikleri kaldırıldı (geri uyumluluk için key'ler korunuyor).
+  Future<bool> isScanSoundEnabled() async => false;
+  Future<void> setScanSoundEnabled(bool enabled) async {}
+  Future<double> getSoundVolume() async => 0.0;
+  Future<void> setSoundVolume(double volume) async {}
 
   /// Silme sayacını al (paywall dialog için)
   Future<int> getDeleteCountForPaywall() async {

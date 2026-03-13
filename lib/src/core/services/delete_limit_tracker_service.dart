@@ -17,7 +17,8 @@ class DeleteLimitTrackerService {
   // Genel analytics için
   static const String _collectionPath = 'analytics';
   static const String _documentId = 'delete_limit_stats';
-  static const String _counterField = 'usersReachedZeroCount';
+  // Firestore'daki alan adı: yeni tanımlanan counter
+  static const String _counterField = 'deleteLimitZeroEventCount';
 
   /// Silme hakkı sıfıra düştüğünde çağrılır
   /// Analytics counter'ı 1 artırır
